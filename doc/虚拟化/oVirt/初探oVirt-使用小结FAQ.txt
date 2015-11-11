@@ -1,5 +1,5 @@
 初探oVirt-使用小结FAQ
-2015/11/11 time 13:42
+2015/11/11 time 18:16
 
 
 【Q01】如何快速的部署 ovirt 环境
@@ -638,9 +638,12 @@ Manage Domains completed successfully
 
 登录到ovirt查看这个用户，是 SuperUser 角色，和admin@internal一样。
 
+
 【Q13】登录ovirt页面遇到错误：无法登录。用户帐号被禁用或锁住，请联系系统管理员。 （Cannot Login. User Account is Disabled or Locked, Please contact your system administrator.）
-A：显而易见，，用户被锁定了，可能是输入了几次错误的密码导致的。
+A：显而易见，，用户被锁定了，可能是输入了3次错误的密码导致的。
 解锁即可：
 [root@e01 ~]# ovirt-aaa-jdbc-tool user unlock admin
 updating user admin...
 user updated successfully
+
+
