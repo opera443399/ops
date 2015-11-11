@@ -1,0 +1,38 @@
+»ñÈ¡tcp×´Ì¬
+
+1£©ss
+[root@test234 ~]# ss state all |awk '{++a[$1]} END {for(b in a) {printf"%11-s%s\n", b, a[b]}}'
+ESTAB      3
+State      1
+TIME-WAIT  55
+LISTEN     10
+
+
+2£©netstat
+[root@test234 ~]# netstat -an |awk '/^tcp/ {++a[$NF]} END {for(b in a) {printf"%11-s%s\n", b, a[b]}}'
+TIME_WAIT  51
+ESTABLISHED3
+LISTEN     10
+
+3£©/proc/net/tcp
+[root@test234 ~]# cat /proc/net/tcp
+  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode                                                     
+   0: 00000000:0050 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 175759 1 ffff88007b19a7c0 99 0 0 10 -1                    
+   1: 00000000:2756 00000000:0000 0A 00000000:00000000 00:00000000 00000000   500        0 10647 1 ffff88007c8f1400 99 0 0 10 -1                     
+   2: 00000000:0016 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 9995 1 ffff880037c553c0 99 0 0 10 -1                      
+   3: 00000000:2757 00000000:0000 0A 00000000:00000000 00:00000000 00000000   500        0 10843 1 ffff88007c8f0080 99 0 0 10 -1                     
+   
+   
+   00 ERROR_STATUS
+   01 TCP_ESTABLISHED
+   02 TCP_SYN_SENT
+   03 TCP_SYN_RECV
+   04 TCP_FIN_WAIT1
+   05 TCP_FIN_WAIT2
+   06 TCP_TIME_WAIT
+   07 TCP_CLOSE
+   08 TCP_CLOSE_WAIT
+   09 TCP_LAST_ACK
+   0A TCP_LISTEN
+   0B TCP_CLOSING
+   

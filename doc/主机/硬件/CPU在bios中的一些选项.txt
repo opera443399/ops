@@ -1,0 +1,19 @@
+CPU在bios中的一些选项
+
+涉及：
+【C1E】：CPU Enhanced Halt，节能技术。建议：禁用。
+【C-States】：节能技术。建议：禁用。
+【Power Management】：电源管理。建议：使用最高性能。
+
+关键词：
+关闭C1E和C-State功能，不要节能技术来动态调节CPU的频率。
+
+
+
+参考文章：
+1、关于CPU C-States 省电模式，你需要知道的事情 
+http://blog.chinaunix.net/uid-25871104-id-3072582.html
+2、DELL服务器关闭C1E和C-State功能.
+http://jingyan.baidu.com/article/1e5468f90ab768484861b75a.html?st=3&net_type=1&bd_page_type=1&os=0&showimg=0&rst=2
+3、云计算之路-阿里云上：对“黑色n秒”问题的最终猜想——CPU C-states引起的
+http://www.cnblogs.com/cmt/p/xen-cpu-c-states.html

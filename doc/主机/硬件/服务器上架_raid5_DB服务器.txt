@@ -1,0 +1,260 @@
+【时间】2014-02-10 ~ 2014-02-18
+【主机】IP: s77
+【目的】外网新数据库服务器s77上架
+【操作记录】
+1）基础设置。
+【iDRAC】IP: 192.168.5.21，通过http方式访问
+【raid】7块盘配置raid5，1块盘做热备。
+条带：256K
+预读：启用
+回写：启用
+高速缓存：启用
+force WB with no battery：启用
+【bios】
+system bios setting -> integrated devices -> I/OAT DMA Engine：启用
+
+【OS】安装系统，Oracle Linux 6.5 x86_64。
+【hostname】s77.workec.com
+【管理员】设置root密码
+【IP】局域网em1（192.168.5.77），外网em2（121.201.96.77），外网em2:1（122.13.147.77），检查Gateway，DNS设置
+【分区】
+/     20G
+/usr  20G
+/var  20G
+swap  16G
+/home 3T
+【kernel】为了避免SWAP导致的数据库性能下降，关闭numa这个特性。
+参考：
+http://www.woqutech.com/?p=1200
+http://os.51cto.com/art/201310/412638.htm
+
+操作系统方面，修改/etc/grub.conf，增加numa=off到末尾
+ kernel /boot/vmlinuz-3.8.13-16.2.1.el6uek.x86_64 ro root=UUID=ee879b51-14a5-4155-a05b-d2e76d956427 rd_NO_LUKS rd_NO_LVM LANG=en_US.UTF-8 rd_NO_MD SYSFONT=latarcyrheb-sun16   KEYBOARDTYPE=pc KEYTABLE=us rd_NO_DM rhgb quiet numa=off
+ 
+另外可以设置 vm.zone_reclaim_mode=0尽量回收内存。 
+然后在启动MySQL的时候，关闭NUMA特性： 
+numactl --interleave=all ${d_base}/bin/mysqld_safe --defaults-file="${d_base}/my.cnf" &
+这个后边在启动mysql的脚本中有设置。
+
+【selinux】/etc/selinux/config,关闭selinux，重启生效
+【基础目录】
+mkdir /data/{ops,download,backup}
+mkdir /data/ops/{bin,conf,info} -p
+【时间】
+chkconfig ntpd on
+service ntpd start
+【用户】脚本增加用户pengchao, tyzam，并设置ssh key。
+[root@s77 bin]# cat bin/create_user_with_sshkey.sh 
+#!/bin/bash
+# $ ssh-keygen -t rsa -b 2048 -C you_comment_here -f filename
+# create user with ssh public key
+username='yourname'
+useradd ${username}
+#useradd -G ec ${username}
+id ${username}
+
+[ -d /home/${username}/.ssh ] || mkdir -p /home/${username}/.ssh
+
+cat <<_PUBKEY >> /home/${username}/.ssh/authorized_keys
+your public key
+_PUBKEY
+
+chmod 700 /home/${username}/.ssh
+chmod 600 /home/${username}/.ssh/authorized_keys
+chown -R ${username}:${username} /home/${username}/.ssh
+
+cat /home/${username}/.ssh/authorized_keys
+
+
+【firewall，ssh，rsyslog】
+[root@s77 bin]# cat bin/setting_sshd.sh
+#清空firewall
+iptables-save >/root/rc.firewall.txt
+iptables -F
+service iptables save
+
+#设置SSH
+cat << _SSHCONFIG >> sshd_config.new
+Port 932
+Protocol 2
+SyslogFacility AUTHPRIV
+LogLevel VERBOSE
+PermitRootLogin no
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+UsePAM yes
+AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+AcceptEnv XMODIFIERS
+UseDNS no
+Subsystem       sftp    /usr/libexec/openssh/sftp-server -f LOCAL0 -l VERBOSE
+_SSHCONFIG
+
+mv /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+mv sshd_config.new /etc/ssh/sshd_config
+service sshd restart
+
+
+#设置rsyslog
+echo "local0.* /var/log/sftp.log" >/etc/rsyslog.d/sftp.conf
+service rsyslog restart
+
+【系统参数调整】
+[root@s77 bin]# cat bin/setting_limits.sh
+#limits，增加到最后
+cat <<_LIMIT >>/etc/security/limits.conf
+* soft nofile 65535 
+* hard nofile 65535
+_LIMIT
+
+#limits，替换
+set -i 's/65535/unlimited/' /etc/security/limits.d/90-nproc.conf
+
+[root@s77 bin]# cat bin/setting_sysctl.sh
+#sysctl，增加到最后
+cat <<_SYSCTL >>/etc/sysctl.conf
+vm.zone_reclaim_mode=0
+vm.swappiness=0
+fs.aio-max-nr=3145728
+
+net.ipv4.tcp_thin_dupack = 1
+net.ipv4.tcp_thin_linear_timeouts = 1
+net.ipv4.tcp_timestamps = 0
+
+net.ipv4.tcp_max_syn_backlog = 819200
+net.core.netdev_max_backlog = 400000
+net.core.somaxconn = 4096
+_SYSCTL
+#生效
+sysctl -p
+
+[root@s77 bin]# cat bin/setting_profile.sh
+#profile，增加到最后
+cat <<_PROFILE >>/etc/profile
+alias ls='ls --color=tty'
+alias ll='ls -l --color=tty'
+alias l.='ls -d .* --color=tty'
+alias vi='vim'
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+alias grep='grep --color'
+alias pgrep='pgrep -l'
+alias fgrep='fgrep --color'
+alias which='alias | /usr/bin/which --tty-only --read-alias --show-dot --show-tilde'
+
+export HISTTIMEFORMAT="%F %T "
+
+_PROFILE
+
+[root@s77 bin]# cat bin/setting_rclocal.sh
+#开机启动，增加到最后
+cat <<_RCLOCAL >>/etc/rc.local
+echo 16 > /sys/block/sda/queue/read_ahead_kb 
+echo 512 > /sys/block/sda/queue/nr_requests
+_RCLOCAL
+
+
+[root@s77 bin]# cat bin/setting_ntp.sh
+#NTP
+cp /etc/ntp.conf /etc/ntp.conf.default
+cat <<_NTP >/etc/ntp.conf
+#
+server 127.127.1.0
+server cn.pool.ntp.org
+server 0.centos.pool.ntp.org
+server 210.72.145.44
+#
+restrict 127.0.0.1
+restrict -6 ::1
+restrict cn.pool.ntp.org
+restrict 0.centos.pool.ntp.org
+restrict default kod noserve
+restrict -6 default kod noserve
+#
+fudge   127.127.1.0 stratum 10
+driftfile /var/lib/ntp/drift
+keys /etc/ntp/keys
+_NTP
+
+service ntpd stop
+ntpdate cn.pool.ntp.org
+sleep 2s
+service ntpd start
+
+
+2）准备运输到机房上架，后续请泰山、文科等同事协助，在现网调试部署mysql。
+和机房、快递公司沟通确认如何运货，等待快递公司的回应。
+
+20140211
+
+联系快递方，准备寄送到广州信息港机房：
+广州市天河区科韵路16号广州信息港C座国际电子商务中心4楼
+莫业鹏 15374049774
+
+18点，将服务器交给圆通物流，预计明天上午到达广州目的地。
+
+
+20140212 
+11点，机房已签收，和睿江客服(客户服务团队，陈燕华)沟通上架问题（指明服务器大小，IP等信息）。
+18点，睿江方面通知机房上架。
+19点，机房通知机柜的外网交换机没有端口可以接网线（一个是TP-LINK，一个是cisco，都是8口的交换机），明天和同事们沟通这个问题。
+
+
+20140213
+先接上内网端口，测试可以登录访问。
+采购TP千兆16口交换机2台，替换原来的2个8口的交换机。 
+http://item.jd.com/204623.html，请机房方面将发票寄回到公司。
+原交换机留在机房备用。
+预计请机房在周六晚11点升级交换机设备。
+
+
+20140214
+确认升级交换机的事情，下工单。
+3. 新数据库服务器上线准备工作。
+状态：研究mysql的高可用方案，mariadb gelera cluster。
+预计数据库备份恢复等操作需要的时间。
+完全备份：3h。
+备份文件传输+还原：1h。
+检查准备：1h。
+合计：5h
+
+考虑趁机将现网的mysql的版本保持一致。
+
+下午DBA&运维会议讨论工作方向，确定第1步工作是将s77作为从库运行起来，第2步是在检查数据一致性后将s77升级为主库，s76作为新的从库。
+计划选择一个半夜的时间，在s74上做完整备份，然后拷贝备份文件到s77上建立从库，需要在s74上建立一个用于同步的数据库帐号。
+
+20140215 11:00-12:00PM
+机房更换交换机，测试内外网的网络状态，正常。
+重启s72，s91的web服务，测试服务状况，正常。
+
+20140217
+在s74上布置数据库备份的脚本。完成
+计划本周一晚上在s74上做完全备份。已经增加到jobs中
+调整s77为13306从库的角色，配置my.cnf文件，例如关于slowquery日志的记录，web杨超反馈：long_query_time = 0.1可能设置的时间太短，记录的内容过多，可以尝试设置为：long_query_time = 0.5，主从库的配置参数每一条都需要沟通确认。完成
+更新s77的root密码。完成
+将s77增加到zabbix监控平台中。完成，后续将测试和部署针对mysql的监控
+
+20140218
+设置防火墙
+[root@s77 ~]# iptables-save >rc.firewall.txt.old
+[root@s77 ~]# iptables-save >rc.firewall.txt
+[root@s77 ~]# vim rc.firewall.txt
+*filter
+:INPUT ACCEPT [461:23972]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [59479:2484106]
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -i lo -j ACCEPT
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 932 -j ACCEPT
+-A INPUT -p tcp -m state --state NEW -m tcp -s 192.168.5.0/24 --dport 13306 -j ACCEPT
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 10050 -j ACCEPT
+-A INPUT -p udp -m state --state NEW -m udp --dport 123 -j ACCEPT
+-A INPUT -p udp -m state --state NEW -m udp --dport 10050 -j ACCEPT
+-A INPUT -j REJECT --reject-with icmp-host-prohibited
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited
+COMMIT
+
+[root@s77 ~]# iptables-restore <rc.firewall.txt

@@ -1,0 +1,5 @@
+# 禁用selinux
+# modify /etc/sysconfig/selinux 
+# to: SELINUX=disabled
+# and reboot later.
+setenforce 0 && sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config

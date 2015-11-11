@@ -1,0 +1,33 @@
+nmap用法记录
+
+
+1、扫描udp端口
+
+[root@vm_1_1 ~]# nmap -p 67 -sU 192.168.20.100-105
+
+Starting Nmap 5.51 ( http://nmap.org ) at 2015-11-05 15:44 CST
+Nmap scan report for test01 (192.168.20.101)
+Host is up (0.0027s latency).
+PORT   STATE  SERVICE
+67/udp closed dhcps
+MAC Address: 00:0C:29:15:B6:37 (VMware)
+
+Nmap scan report for test02 (192.168.20.102)
+Host is up (0.00087s latency).
+PORT   STATE  SERVICE
+67/udp closed dhcps
+MAC Address: 00:0C:29:68:1D:6D (VMware)
+
+Nmap scan report for test03 (192.168.20.103)
+Host is up (0.00092s latency).
+PORT   STATE         SERVICE
+67/udp open|filtered dhcps
+MAC Address: 00:0C:29:63:63:C0 (VMware)
+
+Nmap scan report for 192.168.20.104
+Host is up (0.0010s latency).
+PORT   STATE  SERVICE
+67/udp closed dhcps
+MAC Address: 00:50:56:9E:42:F7 (VMware)
+
+Nmap done: 6 IP addresses (4 hosts up) scanned in 7.00 seconds

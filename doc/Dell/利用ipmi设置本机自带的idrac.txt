@@ -1,0 +1,53 @@
+利用ipmi更改本机自带的idrac
+
+
+# yum -y install ipmitool
+打印当前信息：
+# ipmitool lan print
+
+设置IP：
+# ipmitool lan set 1 ipaddr 10.0.200.101
+Setting LAN IP Address to 10.0.200.101
+# ipmitool lan set 1 defgw ipaddr 10.0.200.254
+Setting LAN Default Gateway IP to 10.0.200.254
+
+设置用户：
+# ipmitool user list 1
+# ipmitool user set password 2 "your_passwd"
+
+复查：
+# ipmitool lan print
+Set in Progress         : Set Complete
+Auth Type Support       : NONE MD2 MD5 PASSWORD 
+Auth Type Enable        : Callback : MD2 MD5 
+                        : User     : MD2 MD5 
+                        : Operator : MD2 MD5 
+                        : Admin    : MD2 MD5 
+                        : OEM      : 
+IP Address Source       : Static Address
+IP Address              : 10.0.200.101
+Subnet Mask             : 255.255.255.0
+MAC Address             : b0:83:fe:cb:2f:ce
+SNMP Community String   : public
+IP Header               : TTL=0x40 Flags=0x40 Precedence=0x00 TOS=0x10
+BMC ARP Control         : ARP Responses Enabled, Gratuitous ARP Disabled
+Gratituous ARP Intrvl   : 2.0 seconds
+Default Gateway IP      : 10.0.200.254
+Default Gateway MAC     : 00:00:00:00:00:00
+Backup Gateway IP       : 0.0.0.0
+Backup Gateway MAC      : 00:00:00:00:00:00
+802.1q VLAN ID          : Disabled
+802.1q VLAN Priority    : 0
+RMCP+ Cipher Suites     : 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
+Cipher Suite Priv Max   : Xaaaaaaaaaaaaaa
+                        :     X=Cipher Suite Unused
+                        :     c=CALLBACK
+                        :     u=USER
+                        :     o=OPERATOR
+                        :     a=ADMIN
+                        :     O=OEM
+                        
+排错：
+提示：Could not open device at /dev/ipmi0 or /dev/ipmi/0 or /dev/ipmidev/0: No such file or directory
+尝试：
+modprobe ipmi_devintf

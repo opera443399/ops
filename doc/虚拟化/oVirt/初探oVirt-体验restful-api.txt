@@ -1,0 +1,387 @@
+日期：2015/10/20 - 2015/11/9 time 11:49
+主机：n86
+目的：初探oVirt-测试restful-api
+操作内容：
+一、示例
+1、列出资源，使用GET方法
+######### 列出所有vm的资源（请注意，输出是 XML 格式） #########
+【实例】获取所有的vm的信息
+[root@n86 ~]# curl -s -k -u "admin@internal:TestVM" -H "Content-type: application/xml" -X GET https://e01.test/api/vms -o all.xml
+
+######### 列出指定vm名称为“test02”（使用test02的uuid）的资源 #########
+【实例】获取test02的信息
+[root@n86 ~]# curl -s -k -u "admin@internal:TestVM" -H "Content-type: application/xml" -X GET https://e01.test/api/vms/7f64702f-9b6d-42cf-b899-4a506bd50d57
+
+2、创建资源，POST方法
+######### 新建一个VM #########
+【实例】创建vm：test03，指定集群和模版名称
+[root@n86 ~]# curl -s -k \
+-u "admin@internal:TestVM" \
+-H "Content-type: application/xml" \
+-d '
+<vm>
+<name>test03</name>
+<cluster><name>Host-Only</name></cluster>
+<template><name>centos6u5x64-small-01</name></template>
+</vm>
+' \
+'https://e01.test/api/vms' -o test03.xml
+
+
+3、更新资源，PUT方法
+【实例】更新test02的VM名称字段
+[root@n86 ~]# echo '<vm><name>test02-renamed</name></vm>' >/tmp/upload.xml
+[root@n86 ~]# curl -s -k \
+-u "admin@internal:TestVM" \
+-H "Content-type: application/xml" \
+-T /tmp/upload.xml \
+'https://e01.test/api/vms/7f64702f-9b6d-42cf-b899-4a506bd50d57' -o test02.xml
+
+
+4、移除资源，DELETE方法
+【实例】
+[root@n86 ~]# curl -s -k \
+-u "admin@internal:TestVM" \
+-X DELETE \
+'https://e01.test/api/vms/0d261c5d-ea5b-4184-bf7a-a7d18c14a45a'
+
+
+
+二、脚本示例
+----------------------------------------------------------------------------
+[root@n86 bin]# cat ovirt_api.sh 
+#!/bin/bash
+# 
+# 2015/11/9
+# __version__='0.2.5'
+# for ovirt-engine-sdk-python-3.6.0
+
+#
+DEBUG=0
+## ovirt engine 信息
+oe_url='https://e01.test/api'
+oe_user='admin@internal'
+oe_password='TestVM'
+
+## curl 运行时固有的参数
+curl_opts='curl -s --cacert ca.crt'
+
+## 列出所有的 vm
+function vm_list() {
+    local s_vm_name=$1
+    local f_xml="vms.xml"
+    
+    ${curl_opts} \
+-H "Content-Type: application/xml" \
+-u "${oe_user}:${oe_password}" \
+"${oe_url}/vms" -o ${f_xml}
+    return 0
+}
+
+## 获取 vm id
+function vm_uuid() {
+    local s_vm_name="$1"
+    local f_xml="vms.xml"
+    
+    vm_list
+    s_vm_id=`grep -A 1 "<name>${s_vm_name}</name>" ${f_xml} |grep 'href=' |cut -d'"' -f2 |cut -d'/' -f4`
+    if [ -z ${s_vm_id} ]; then
+        echo '[ERROR] Not found: VM id'
+        exit 1
+    fi
+    return 0
+}
+
+## 获取 vm 的状态
+function vm_state() {
+    local s_vm_name="$1"   
+    vm_uuid ${s_vm_name}
+    local f_xml="${s_vm_name}.state.xml"
+    local state='unknown'
+        
+    echo -e '--------------------------------\n'
+    echo -n 'Waiting..'
+    while true
+    do  
+        ${curl_opts} \
+-H "Content-Type: application/xml" \
+-u "${oe_user}:${oe_password}" \
+"${oe_url}/vms/${s_vm_id}" -o ${f_xml}
+
+        state=`sed -nr 's/(.*)<state>(.*)<\/state>(.*)/\2/p' ${f_xml}`
+        case ${state} in
+            down)
+                echo ' vm is down.'              
+                break
+                ;;
+            up)
+                echo ' vm is up.'
+                break
+                ;; 
+            *)
+                [ ${DEBUG} -eq 1 ] && echo " vm state: ${state}" || echo -n '.'
+                sleep 1
+        esac
+    done
+    echo -e '--------------------------------\n'
+    echo "vm: ${s_vm_name}, id: ${s_vm_id}"
+    [ ${DEBUG} -eq 0 ] && rm -fv ${f_xml}
+    exit 0
+}
+
+## 检查 curl 请求返回的结果
+function check_fault() {
+    local f_xml=$1
+    
+    grep 'fault' ${f_xml} >/dev/null
+    local r1=$?
+    grep 'Request syntactically incorrect' ${f_xml} >/dev/null
+    local r2=$?
+    if [ $r1 -eq 0 ]; then
+        echo "result: failed"
+        echo "reason: `sed -nr 's/(.*)<reason>(.*)<\/reason>(.*)/\2/p' ${f_xml}`"
+        echo "detail: `sed -nr 's/(.*)<detail>(.*)<\/detail>(.*)/\2/p' ${f_xml}`"
+        exit 1
+    fi
+    if [ $r2 -eq 0 ]; then
+        echo 'result: Request syntactically incorrect'
+        exit 2
+    fi
+
+    state=`sed -nr 's/(.*)<state>(.*)<\/state>(.*)/\2/p' ${f_xml}`
+    echo "result: ${state}"
+    return 0
+}
+
+## 启动 vm
+function vm_start() {
+    local s_vm_name="$1"
+    vm_uuid ${s_vm_name}
+    local f_xml="${s_vm_name}.start.xml"
+    
+    ${curl_opts} \
+-H "Content-Type: application/xml" \
+-u "${oe_user}:${oe_password}" \
+-d "
+<action>
+  <vm>
+    <status>start</status>
+  </vm>
+</action>
+" \
+"${oe_url}/vms/${s_vm_id}/start" -o ${f_xml}
+
+    check_fault ${f_xml}
+    [ ${DEBUG} -eq 0 ] && rm -fv ${f_xml}
+}
+
+## 停止 vm
+function vm_stop() {
+    local s_vm_name="$1"
+    vm_uuid ${s_vm_name}
+    local f_xml="${s_vm_name}.stop.xml"
+    
+    ${curl_opts} \
+-H "Content-Type: application/xml" \
+-u "${oe_user}:${oe_password}" \
+-d "
+<action>
+  <vm>
+    <status>stop</status>
+  </vm>
+</action>
+" \
+"${oe_url}/vms/${s_vm_id}/stop" -o ${f_xml}
+
+    check_fault ${f_xml}
+    [ ${DEBUG} -eq 0 ] && rm -fv ${f_xml}
+}
+
+## 删除 vm
+function vm_delete() {
+    local s_vm_name="$1"
+    vm_uuid ${s_vm_name}
+    local f_xml="${s_vm_name}.delete.xml"
+    
+    ${curl_opts} \
+-u "${oe_user}:${oe_password}" \
+-X DELETE \
+"${oe_url}/vms/${s_vm_id}" -o ${f_xml}
+
+    check_fault ${f_xml}
+    [ ${DEBUG} -eq 0 ] && rm -fv ${f_xml}
+}
+
+## 只运行一次，使用固定的模版配置 cloud-init
+function vm_runonce() {
+    local s_vm_name="$1"
+    vm_uuid ${s_vm_name}
+    local f_xml="${s_vm_name}.runonce.xml"
+    
+    local s_vm_password="$2"
+    local s_vm_ip="$3"
+    local s_vm_netmask="$4"
+    local s_vm_gateway="$5"
+    local s_vm_dns="$6"
+
+    local tpl_cloud_init="
+<action>
+<use_cloud_init>true</use_cloud_init>
+<vm>
+    <initialization>
+        <cloud_init>
+            <host>
+                <address>${s_vm_name}</address>
+            </host>
+            <regenerate_ssh_keys>true</regenerate_ssh_keys>
+            <users>
+                <user>
+                    <user_name>root</user_name>
+                    <password>${s_vm_password}</password>
+                </user>
+            </users>
+            <network_configuration>
+                <nics>
+                    <nic>
+                        <name>eth0</name>
+                        <boot_protocol>static</boot_protocol>
+                        <network>
+                            <ip address=\"${s_vm_ip}\" netmask=\"${s_vm_netmask}\" gateway=\"${s_vm_gateway}\" />
+                        </network>
+                        <on_boot>true</on_boot>
+                    </nic>
+                </nics>
+                <dns>
+                    <servers>
+                        <host>
+                            <address>${s_vm_dns}</address>
+                        </host>
+                    </servers>
+                </dns>
+            </network_configuration>
+        </cloud_init>
+    </initialization>
+</vm>
+</action>
+"
+    # 仅用作调试，输出 cloud-init 的 xml 文件
+    local f_xml_init="${s_vm_name}.cloud-init.xml"
+    [ ${DEBUG} -eq 1 ] && echo "${tpl_cloud_init}" >${f_xml_init}
+
+    ${curl_opts} \
+-H "Content-Type: application/xml" \
+-u "${oe_user}:${oe_password}" \
+-d "${tpl_cloud_init}" \
+"${oe_url}/vms/${s_vm_id}/start" -o ${f_xml}
+
+    check_fault ${f_xml}
+    [ ${DEBUG} -eq 0 ] && rm -fv ${f_xml}
+}
+
+## 只运行一次，使用指定的模版
+function vm_runonce_tpl() {
+    local s_vm_name="$1"
+    vm_uuid ${s_vm_name}
+    local f_xml="${s_vm_name}.runonce.xml"
+    local tpl_cloud_init="`cat $2`"
+
+
+    ${curl_opts} \
+-H "Content-Type: application/xml" \
+-u "${oe_user}:${oe_password}" \
+-d "${tpl_cloud_init}" \
+"${oe_url}/vms/${s_vm_id}/start" -o ${f_xml}
+
+    check_fault ${f_xml}
+}
+
+## 从模版创建 VM ，不是(Clone/Independent)，而是(Thin/Dependent)
+function vm_create_from_tpl() {
+    local s_vm_name="$1"
+    local s_tpl_name=$2
+    local s_cluster_name=$3
+    
+    local f_xml="${s_vm_name}.create.xml"
+
+    ${curl_opts} \
+-H "Content-Type: application/xml" \
+-u "${oe_user}:${oe_password}" \
+-d "
+<vm>
+  <name>${s_vm_name}</name>
+  <cluster><name>${s_cluster_name}</name></cluster>
+  <template><name>${s_tpl_name}</name></template>
+</vm>
+" \
+"${oe_url}/vms" -o ${f_xml}
+
+    check_fault ${f_xml}
+    [ ${DEBUG} -eq 0 ] && rm -fv ${f_xml}
+}
+
+## Usage
+function usage() {
+    echo "
+
+usage: $0 [list|start|stop|delete|create|init|init-tpl] vm_name
+
+    列出所有的VM：              list
+    启动VM：                    start [vm_name]
+    停止VM：                    stop [vm_name]
+    删除VM：                    delete [vm_name]
+    创建VM：                    create [vm_name template cluster]
+    只运行一次：                init [vm_name root_password vm_ip vm_netmask vm_gateway vm_dns]
+    只运行一次（指定模版）：    init-tpl [vm_name template-file]
+
+"
+    exit 1
+}
+
+## Main
+s_action=$1
+s_vm_name=$2
+## $3 to $7 预留给 vm_runonce_tpl
+
+case ${s_action} in
+    list)
+        vm_list
+        grep -A1 '</actions>' vms.xml |grep name |sed -nr 's/<name>(.*)<\/name>/\1/p' |sed 's/\ //g'
+        ;;
+    start|stop)
+        vm_${s_action} ${s_vm_name}
+        vm_state ${s_vm_name}
+        ;;
+    delete)
+        vm_${s_action} ${s_vm_name}
+        ;;
+    create)
+        vm_create_from_tpl ${s_vm_name} 'tpl-s1' 'Host-Only'
+        vm_state ${s_vm_name}
+        ;;
+    init)
+        if [ ! $# -eq 7 ]; then
+            usage
+        fi
+        vm_runonce ${s_vm_name} $3 $4 $5 $6 $7
+        vm_state ${s_vm_name}
+        ;;
+    init-tpl)
+        if [ ! $# -eq 3 ]; then
+            usage
+        fi
+        vm_runonce_tpl ${s_vm_name} $3
+        vm_state ${s_vm_name}
+        ;;
+    *)
+        usage
+        ;;
+esac
+----------------------------------------------------------------------------
+
+
+ZYXW、参考
+1、docs
+http://www.ovirt.org/REST-Api
+http://www.ovirt.org/Features/Cloud-Init_Integration
+https://access.redhat.com/documentation/zh-CN/Red_Hat_Enterprise_Virtualization/3.5/html-single/Technical_Guide/index.html#chap-REST_API_Quick_Start_Example
+

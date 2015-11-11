@@ -1,0 +1,89 @@
+
+Linux sticky位的用法
+
+
+1）创建 server 用户组，svr组用户加入组 server ，用户不能修改组成员的文件（使用粘滞位sticky）。
+将可发布的服务端程序和配置，统一拷贝到/home/server/{bin,conf,log,var}目录中，调整配置文件后运行服务；
+
+groupadd server
+mkdir -p /home/server/{bin,conf,var,log}
+chown -R root:server /home/server
+chmod -R 1770 /home/server
+
+[root@testsvr ~]# cd /home/server
+[root@testsvr server]# ll
+total 16
+drwxrwx--T 2 root server 4096 Jan 26 15:27 bin
+drwxrwx--T 2 root server 4096 Jan 26 11:42 conf
+drwxrwx--T 2 root server 4096 Jan 26 11:42 log
+drwxrwx--T 2 root server 4096 Jan 26 11:42 var
+
+
+
+2）开发人员a01，在自己的用户目录/home/a01下工作，可读写/home/server目录。
+[root@testsvr ~]# useradd -g server a01
+[root@testsvr ~]# useradd -g server a03
+[root@testsvr ~]# id a01
+uid=506(a01) gid=508(server) groups=508(server)
+[root@testsvr ~]# id a03
+uid=507(a03) gid=508(server) groups=508(server)
+
+
+
+3）效果
+
+先使用用户a01创建一个脚本程序：
+[root@testsvr bin]# vim a01.sh
+[root@testsvr bin]# cat a01.sh 
+#!/bin/bash
+# 
+for a in $(seq 1 100);
+do        
+    echo $a       
+    sleep 1s
+done
+[root@testsvr bin]# ll
+total 4
+-rw-r--r-- 1 root root 86 Jan 26 15:34 a01.sh
+
+（若不希望a03也可以读取或者执行这个脚本，请设置脚本程序的权限）
+[root@testsvr bin]# chmod 700 a01.sh 
+[root@testsvr bin]# ll
+total 4
+-rwx------ 1 root root 86 Jan 26 15:34 a01.sh
+
+
+
+接着，再验证a03能否修改：
+
+[root@testsvr ~]# su a03
+[a03@testsvr root]$ cd /home/server/bin/
+[a03@testsvr bin]$ ls
+a01.sh
+[a03@testsvr bin]$ ll
+total 4
+-rwx------ 1 root root 86 Jan 26 15:34 a01.sh
+
+编辑文件：
+[a03@testsvr bin]$ vim a01.sh
+"a01.sh" [Permission Denied] 
+
+移动文件：
+[a03@testsvr bin]$ mv a01.sh a03.sh
+mv: cannot move `a01.sh' to `a03.sh': Operation not permitted
+
+删除文件：
+[a03@testsvr bin]$ rm a01.sh 
+rm: remove write-protected regular file `a01.sh'? y
+rm: cannot remove `a01.sh': Operation not permitted
+[a03@testsvr bin]$ ls
+a01.sh
+
+
+
+linux 特殊位的用法可以参考：
+http://www.cnblogs.com/huangzhen/archive/2011/08/22/2149300.html
+
+
+
+

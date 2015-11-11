@@ -1,0 +1,58 @@
+ntpdate 命令现在已经废弃了，因为使用 ntpq 命令和 -q 选项可以实现同样的功能，见清单 65。
+清单 65. 使用 ntpd -q 设置系统时间
+[root@lyrebird ~]# ntpd -q
+ntpd: time slew -0.014406s
+注意，ntpd 命令使用来自 /etc/ntp.conf 或命令行上提供的配置文件的时间服务器信息。关于 ntpd 的更多信息参见手册页。还要注意，如果 ntpd 守护进程正在运行，那么 ntpd -q 会悄悄退出，并在 /var/log/messages 中记录一个失败消息。
+另一个相关命令是 ntpq 命令，可以用它查询 NTP 守护进程。更多细节参见手册页。
+
+
+ntpdate和ntpd的区别（附国内常用ntp服务器列表）  
+
+2012-11-29 10:48:17|  分类： 默认分类 |举报|字号 订阅
+ntpd不仅仅是时间同步服务器，他还可以做客户端与标准时间服务器进行同步时间，而且是平滑同步，并非ntpdate立即同步，在生产环境中慎用ntpdate.
+
+我们可以想象以下，假如LINUX服务器的时间是01:00 AM,标准时间是00:30 AM,很明显LINUX服务器经过他自己的时间 00:40 AM.假若此时直接使用ntpdate将服务器与标准时间同步，那么意味着LINUX服务器将在同一天经过两个00:40 AM,这对于某些计划任务来说可能是致命的.
+
+对于这种情况这么办呢，很幸运，ntpd可以解决这个问题，并且对于RHEL和CentOS默认都是启动了ntpd服务，可见他们早已意识到这个问题。
+
+还好ntpd只有一个配置文件/etc/ntp.conf，默认在配置文件中是有几台CentOS的同步服务器的(0.centos.pool.ntp.org、1.centos.pool.ntp.org、2.centos.pool.ntp.org)，很遗憾网络延迟过高.另外很多LINUX服务器是跑在内网里的,根本无法访问互联网。
+
+所以一般最好的解决方案是在内网搭建时间同步服务器，让这些应用服务器可以在内网中与时间同步服务器同步时间。当然了，这台时间服务器是需要联网的。
+
+所以最后的建议是，如果是首次装机建议先ntpdate，然后再开启ntpd服务与时间服务器进行实时同步
+
+
+#210.72.145.44  (国家授时中心服务器IP地址)
+#133.100.11.8  日本 福冈大学
+#time-a.nist.gov 129.6.15.28 NIST, Gaithersburg, Maryland 
+#time-b.nist.gov 129.6.15.29 NIST, Gaithersburg, Maryland 
+#time-a.timefreq.bldrdoc.gov 132.163.4.101 NIST, Boulder, Colorado 
+#time-b.timefreq.bldrdoc.gov 132.163.4.102 NIST, Boulder, Colorado 
+#time-c.timefreq.bldrdoc.gov 132.163.4.103 NIST, Boulder, Colorado 
+#utcnist.colorado.edu 128.138.140.44 University of Colorado, Boulder 
+#time.nist.gov 192.43.244.18 NCAR, Boulder, Colorado 
+#time-nw.nist.gov 131.107.1.10 Microsoft, Redmond, Washington 
+#nist1.symmetricom.com 69.25.96.13 Symmetricom, San Jose, California 
+#nist1-dc.glassey.com 216.200.93.8 Abovenet, Virginia 
+#nist1-ny.glassey.com 208.184.49.9 Abovenet, New York City 
+#nist1-sj.glassey.com 207.126.98.204 Abovenet, San Jose, California 
+#nist1.aol-ca.truetime.com 207.200.81.113 TrueTime, AOL facility, Sunnyvale, California 
+#nist1.aol-va.truetime.com 64.236.96.53 TrueTime, AOL facility, Virginia
+#————————————————————————————————————
+#ntp.sjtu.edu.cn 202.120.2.101 (上海交通大学网络中心NTP服务器地址）
+#s1a.time.edu.cn 北京邮电大学
+#s1b.time.edu.cn 清华大学
+#s1c.time.edu.cn 北京大学
+#s1d.time.edu.cn 东南大学
+#s1e.time.edu.cn 清华大学
+#s2a.time.edu.cn 清华大学
+#s2b.time.edu.cn 清华大学
+#s2c.time.edu.cn 北京邮电大学
+#s2d.time.edu.cn 西南地区网络中心
+#s2e.time.edu.cn 西北地区网络中心
+#s2f.time.edu.cn 东北地区网络中心
+#s2g.time.edu.cn 华东南地区网络中心
+#s2h.time.edu.cn 四川大学网络管理中心
+#s2j.time.edu.cn 大连理工大学网络中心
+#s2k.time.edu.cn CERNET桂林主节点
+#s2m.time.edu.cn 北京大学

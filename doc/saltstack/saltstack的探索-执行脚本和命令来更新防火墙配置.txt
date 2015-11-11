@@ -1,0 +1,123 @@
+执行脚本和命令来更新防火墙配置
+
+需求：zabbix-agent服务需调整防火墙，增加端口10050
+
+[root@master salt]# cat firewall/init.sls 
+/home/ops/bin/firewall_add_dport.sh:
+  file.managed:
+    - source: salt://firewall/bin/firewall_add_dport.sh
+    - mode: 755
+
+iptables-add-dport:
+  cmd.run:
+    - require:
+      - file: /home/ops/bin/firewall_add_dport.sh
+    - name: /bin/bash /home/ops/bin/firewall_add_dport.sh
+
+[root@master salt]# cat firewall/bin/firewall_add_dport.sh 
+#!/bin/bash
+# 
+# 2015/4/10
+
+s_port=10050
+
+echo "[-] add dport ${s_port}"
+cd /home/ops/conf/
+iptables-save >rc.firewall.txt
+grep "dport ${s_port} -j" rc.firewall.txt || sed -i "/-A INPUT -j REJECT --reject-with icmp-host-prohibited/i\-A INPUT -p tcp -m state --state NEW -m tcp --dport ${s_port} -j ACCEPT" rc.firewall.txt
+iptables-restore rc.firewall.txt
+echo "[-] iptables status:"
+iptables -nL
+
+echo "[-] check it before running 'service iptables save'"
+
+
+在其中一台上测试执行这个sls：
+[root@master salt]# salt 'test1.company.com' state.sls firewall
+test1.company.com:
+----------
+          ID: /home/ops/bin/firewall_add_dport.sh
+    Function: file.managed
+      Result: True
+     Comment: File /home/ops/bin/firewall_add_dport.sh is in the correct state
+     Started: 17:49:51.332723
+    Duration: 326.191 ms
+     Changes:   
+----------
+          ID: iptables-add-dport
+    Function: cmd.run
+        Name: /bin/bash /home/ops/bin/firewall_add_dport.sh
+      Result: True
+     Comment: Command "/bin/bash /home/ops/bin/firewall_add_dport.sh" run
+     Started: 17:49:51.659900
+    Duration: 30.57 ms
+     Changes:   
+              ----------
+              pid:
+                  3945
+              retcode:
+                  0
+              stderr:
+                  
+              stdout:
+                  [-] add dport 10050
+                  -A INPUT -p tcp -m state --state NEW -m tcp --dport 10050 -j ACCEPT 
+                  [-] iptables status:
+                  Chain INPUT (policy ACCEPT)
+                  target     prot opt source               destination         
+                  ACCEPT     all  --  0.0.0.0/0            0.0.0.0/0           state RELATED,ESTABLISHED 
+                  ACCEPT     icmp --  0.0.0.0/0            0.0.0.0/0           
+                  ACCEPT     all  --  0.0.0.0/0            0.0.0.0/0           
+                  ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0           state NEW tcp dpt:22 
+                  ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0           state NEW tcp dpt:10050 
+                  REJECT     all  --  0.0.0.0/0            0.0.0.0/0           reject-with icmp-host-prohibited 
+                  
+                  Chain FORWARD (policy ACCEPT)
+                  target     prot opt source               destination         
+                  REJECT     all  --  0.0.0.0/0            0.0.0.0/0           reject-with icmp-host-prohibited 
+                  
+                  Chain OUTPUT (policy ACCEPT)
+                  target     prot opt source               destination         
+                  [-] check it before running 'service iptables save'
+
+Summary
+------------
+Succeeded: 2 (changed=1)
+Failed:    0
+------------
+Total states run:     2
+
+
+
+确认无误后，批量执行：
+[root@master salt]# salt '*.company.com' state.sls firewall
+
+
+
+确认无误，保存防火墙配置：
+[root@master salt]# salt '*.company.com' cmd.run 'service iptables save' 
+test1.company.com:
+    iptables: Saving firewall rules to /etc/sysconfig/iptables: [  OK  ]
+test2.company.com:
+    iptables: Saving firewall rules to /etc/sysconfig/iptables: [  OK  ]
+test3.company.com:
+    iptables: Saving firewall rules to /etc/sysconfig/iptables: [  OK  ]
+test4.company.com:
+    iptables: Saving firewall rules to /etc/sysconfig/iptables: [  OK  ]
+test5.company.com:
+    iptables: Saving firewall rules to /etc/sysconfig/iptables: [  OK  ]
+test6.company.com:
+    iptables: Saving firewall rules to /etc/sysconfig/iptables: [  OK  ]
+test7.company.com:
+    iptables: Saving firewall rules to /etc/sysconfig/iptables: [  OK  ]
+test8.company.com:
+    iptables: Saving firewall rules to /etc/sysconfig/iptables: [  OK  ]
+test9.company.com:
+    iptables: Saving firewall rules to /etc/sysconfig/iptables: [  OK  ]
+
+
+
+
+
+
+

@@ -1,0 +1,139 @@
+
+安装：
+[root@server200-20 ~]# yum -y install samba
+编辑配置文件：
+[root@server200-20 ~]# vim /etc/samba/smb.conf 
+[global]
+
+        workgroup = WORKGROUP
+        server string = EC Samba Server on server200-20
+
+
+        hosts allow = 127. 10.
+
+        security = SHARE
+        passdb backend = tdbsam
+
+[homes]
+        comment = Home Directories
+        browseable = no
+        writable = yes
+
+        [public]
+        comment = Public Stuff
+        path = /data/samba
+        public = yes
+        writable = yes
+        browseable = yes
+        guest ok = yes
+        printable = no
+        
+        
+测试
+[root@server200-20 ~]# testparm 
+Load smb config files from /etc/samba/smb.conf
+rlimit_max: increasing rlimit_max (1024) to minimum Windows limit (16384)
+Processing section "[homes]"
+Processing section "[public]"
+WARNING: The security=share option is deprecated
+Loaded services file OK.
+Server role: ROLE_STANDALONE
+Press enter to see a dump of your service definitions
+
+[global]
+        server string = EC Samba Server on test200-20
+        security = SHARE
+        log file = /var/log/samba/log.%m
+        max log size = 50
+        idmap config * : backend = tdb
+        hosts allow = 127., 10.
+        cups options = raw
+
+[homes]
+        comment = Home Directories
+        read only = No
+        browseable = No
+
+[public]
+        comment = Public Stuff
+        path = /data/samba
+        read only = No
+        guest ok = Yes
+
+
+ 
+ 
+2. 系统设置
+【防火墙】
+保存iptables配置：
+
+[root@server200-20 ~]# iptables-save >rc.firewall.txt
+
+编辑：
+[root@server200-20 ~]# vim rc.firewall.txt
+
+增加139和445端口后，查看配置：
+[root@server200-20 ~]# cat rc.firewall.txt
+*filter
+
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT 
+-A INPUT -p icmp -j ACCEPT 
+-A INPUT -i lo -j ACCEPT 
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT 
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 139 -j ACCEPT 
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 445 -j ACCEPT 
+-A INPUT -j REJECT --reject-with icmp-host-prohibited 
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited 
+
+COMMIT
+
+应用iptables配置：
+[root@server200-20 ~]# iptables-restore rc.firewall.txt
+
+查看防火墙：
+[root@server200-20 ~]# iptables -nL
+
+
+保存防火墙：
+[root@server200-20 ~]# service iptables save
+
+【sshd】
+编辑：
+[root@server200-20 ~]# vim /etc/ssh/sshd_config
+将useDNS yes 调整为：
+useDNS no
+
+reload一下ssh服务：
+[root@server200-20 ~]# service sshd reload
+
+【selinux】
+关闭
+[root@server200-20 ~]# vim /etc/selinux/config 
+SELINUX=disabled
+
+重启：
+[root@server200-20 ~]# reboot
+
+
+建立目录
+[root@server200-20 ~]# mkdir -p /data/samba
+[root@server200-20 ~]# chmod 777 /data/samba/
+
+3. 启动samba服务
+
+[root@server200-20 ~]# service smb start
+
+windows下访问方式：
+\\10.0.200.20
+
+
+4. 加入开机启动的服务中
+[root@server200-20 ~]# chkconfig --list |grep smb
+smb             0:off   1:off   2:off   3:off   4:off   5:off   6:off
+[root@server200-20 ~]# chkconfig smb on       
+[root@server200-20 ~]# chkconfig --list |grep smb
+smb             0:off   1:off   2:on    3:on    4:on    5:on    6:off

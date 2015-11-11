@@ -1,0 +1,52 @@
+crontab执行失败
+
+
+可能原因：
+-环境变量问题。
+-权限问题。
+
+
+可以增加一个cron，输出$PATH，检查。
+*/1 * * * * echo $PATH >> /tmp/123
+
+可以通过执行bashrc文件来设置变量：
+
+每分钟执行：
+*/1 * * * * source ~/.bashrc && cd ~ && ./mailman.py
+# [daily]每20分钟同步一次时间。
+*/20 * * * * /usr/sbin/ntpdate stdtime.gov.hk >/dev/null 2>&1 &
+
+
+
+每2小时执行：
+00 */2 * * * /bin/sh /root/scripts/test.sh ADSLIP "`/usr/local/bin/python3 /root/scripts/adslip.py`"
+
+# This is a sample cron file for rsnapshot.
+# The values used correspond to the examples in /etc/rsnapshot.conf.
+# There you can also set the backup points and many other things.
+#
+# To activate this cron file you have to uncomment the lines below.
+# Feel free to adapt it to your needs.
+
+0     */4    * * *    root    /usr/bin/rsnapshot hourly 2>&1  | \/usr/local/bin/rsnapreport.pl | mail -s "Hourly Backup" yourname@email.com
+30     3     * * *    root    /usr/bin/rsnapshot daily 2>&1  | \/usr/local/bin/rsnapreport.pl | mail -s "Daily Backup" yourname@email.com
+0      3     * * 1    root    /usr/bin/rsnapshot weekly 2>&1  | \/usr/local/bin/rsnapreport.pl | mail -s "Weekly Backup" yourname@email.com
+30     2     1 * *    root    /usr/bin/rsnapshot monthly 2>&1  | \/usr/local/bin/rsnapreport.pl | mail -s "Montly Backup" yourname@email.com
+
+还可以查看这里：
+# cat /etc/crontab 
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+HOME=/
+
+# For details see man 4 crontabs
+
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+# |  |  |  |  |
+# *  *  *  *  * user-name command to be executed

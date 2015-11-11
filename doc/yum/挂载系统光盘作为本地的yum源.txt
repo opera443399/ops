@@ -1,0 +1,27 @@
+挂载系统光盘作为本地的yum源
+
+问题：不小心删除了lvm这个包，，郁闷，系统启动失败，怎么办？
+思路：没有本地yum源服务器的话，通过挂载DVD作为本地的yum源来安装lvm，然后重启即可。
+
+
+系统启动时，进入修复模式，重新挂载/分区：
+# mount -o remount,rw /
+
+挂载dvd到/media目录下
+# mount /dev/scd0 /media
+mount: block device /dev/sr0 is write-protected, mounting read-only
+
+建立一个repo文件：
+# cat /etc/yum.repos.d/local.repo 
+[dvd]
+name=test local
+baseurl=file:///media/Server
+enabled=1
+gpgcheck=0
+
+
+# yum update
+# yum --disablerepo=\* --enablerepo=dvd install lvm2
+
+
+

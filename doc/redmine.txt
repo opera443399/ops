@@ -1,0 +1,278 @@
+redmine3的安装和升级
+
+参考：
+http://www.redmine.org/projects/redmine/wiki/RedmineInstall#Requirements
+
+Redmine 3.0的需求：
+current trunk	ruby 1.9.3, 2.0.01, 2.1, 2.2	Rails 4.2
+
+1. 搭建redmine3环境
+
+【安装软件包】
+# yum install zlib-devel gcc gcc-c++ make autoconf curl-devel ImageMagick-devel mysql mysql-devel
+
+
+【下载安装包，修改db和email的设置】
+# tar zxvf redmine-3.0.0.tar.gz && cd redmine-3.0.0/config
+# cp -a database.yml.example database.yml
+# cp -a configuration.yml.example configuration.yml
+
+
+【建立ruby2.2 + rails 4.2的环境】
+# gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+# curl -sSL https://get.rvm.io | bash -s stable --ruby --rails               
+
+重新登录一次：
+$ ruby -v
+ruby 2.2.0p0 (2014-12-25 revision 49005) [x86_64-linux]
+$ rails -v
+Rails 4.2.0
+
+
+# rvm gemset list
+
+gemsets for ruby-2.2.0 (found in /usr/local/rvm/gems/ruby-2.2.0)
+=> (default)
+   global
+
+# cd /data/website/redmine-3.0.0
+
+【安装依赖包】
+# bundle install --without development test
+# useradd -s /sbin/nologin -M -c "redmine" redmine
+# chown -R redmine:redmine /data/website/redmine-3.0.0
+
+若是全新安装：
+【db】
+
+mysql登录后，建立redmine数据库和用户：
+# mysql -h x.x.x.x -P xxxx -uroot -p  
+mysql> create database redmine character set utf8 collate utf8_bin;
+mysql> create user 'redmine'@'127.0.0.1' identified by 'xxxxxx';
+mysql> grant all privileges on redmine.* to 'redmine'@'127.0.0.1';
+mysql> exit;
+
+# rake generate_secret_token
+# RAILS_ENV=production rake db:migrate
+# RAILS_ENV=production rake redmine:load_default_data
+# mkdir -p tmp tmp/pdf public/plugin_assets
+# chmod -R 755 files log tmp public/plugin_assets
+
+
+若是升级：
+【db】
+备份数据库
+检查db用户权限
+命令行测试连接
+
+执行：
+# bundle exec rake generate_secret_token
+# bundle exec rake db:migrate RAILS_ENV=production
+若有插件：
+# bundle exec rake redmine:plugins:migrate RAILS_ENV=production
+
+# bundle exec rake tmp:cache:clear tmp:sessions:clear RAILS_ENV=production
+
+
+
+
+启动服务：
+# cd /data/website/redmine-3.0.0/
+# ruby bin/rails server webrick -e production
+也可以放入后台：
+# nohup ruby bin/rails server webrick -e production >>/data/log/web/redmine/running_redmine.log 2>&1 &
+
+
+默认管理员：admin, admin
+访问http://IP:3000
+
+
+2. 迁移redmine服务到nginx下
+# yum install pcre pcre-devel
+# wget http://nginx.org/download/nginx-1.6.2.tar.gz
+# tar zxvf nginx-1.6.2.tar.gz -C /data/download/
+# mkdir -p /var/cache/nginx/{client_temp,proxy_temp,fastcgi_temp,uwsgi_temp,scgi_temp}
+# gem install passenger
+# passenger -v
+Phusion Passenger version 4.0.59
+
+"Phusion Passenger" is a trademark of Hongli Lai & Ninh Bui.
+
+注：若遇到gem install passenger不能生效的问题，可能是ruby的仓库被GFW了，此时，先安装fastthread可以解决问题：
+# gem install fastthread
+# gem install passenger
+
+安装：
+# passenger-install-nginx-module
+
+Enter your choice (1 or 2) or press Ctrl-C to abort: 2
+
+--------------------------------------------
+
+Where is your Nginx source code located?
+
+Please specify the directory: /data/download/nginx-1.6.2
+
+--------------------------------------------
+
+Where do you want to install Nginx to?
+
+Please specify a prefix directory [/opt/nginx]: /etc/nginx
+
+--------------------------------------------
+
+Extra Nginx configure options
+
+If you want to pass extra arguments to the Nginx 'configure' script, then
+please specify them. If not, then specify nothing and press Enter.
+
+If you specify nothing then the 'configure' script will be run as follows:
+
+  sh ./configure --prefix='/etc/nginx' --with-http_ssl_module --with-http_gzip_static_module --with-http_stub_status_module --with-cc-opt='-Wno-error' --add-module='/usr/local/rvm/gems/ruby-2.2.0/gems/passenger-4.0.59/ext/nginx'
+
+Extra arguments to pass to configure script: --sbin-path=/usr/sbin/nginx --conf-path=/etc/nginx/nginx.conf --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --pid-path=/var/run/nginx.pid --lock-path=/var/run/nginx.lock --http-client-body-temp-path=/var/cache/nginx/client_temp --http-proxy-temp-path=/var/cache/nginx/proxy_temp --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp --http-scgi-temp-path=/var/cache/nginx/scgi_temp --user=nginx --group=nginx
+
+--------------------------------------------
+
+Confirm configure flags
+
+The Nginx configure script will be run as follows:
+
+  sh ./configure --prefix='/etc/nginx' --with-http_ssl_module --with-http_gzip_static_module --with-http_stub_status_module --with-cc-opt='-Wno-error' --add-module='/usr/local/rvm/gems/ruby-2.2.0/gems/passenger-4.0.59/ext/nginx' --sbin-path=/usr/sbin/nginx --conf-path=/etc/nginx/nginx.conf --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --pid-path=/var/run/nginx.pid --lock-path=/var/run/nginx.lock --http-client-body-temp-path=/var/cache/nginx/client_temp --http-proxy-temp-path=/var/cache/nginx/proxy_temp --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp --http-scgi-temp-path=/var/cache/nginx/scgi_temp --user=nginx --group=nginx
+
+
+
+--------------------------------------------
+
+Nginx with Passenger support was successfully installed.
+
+Please edit your Nginx configuration file,
+and set the passenger_root and passenger_ruby configuration options in the
+'http' block, like this:
+
+  http {
+      ...
+      passenger_root /usr/local/rvm/gems/ruby-2.2.0/gems/passenger-4.0.59;
+      passenger_ruby /usr/local/rvm/gems/ruby-2.2.0/wrappers/ruby;
+      ...
+  }
+
+After you (re)start Nginx, you are ready to deploy any number of web
+applications on Nginx.
+
+
+Press ENTER to continue.
+
+--------------------------------------------
+
+Deploying a web application: an example
+
+Suppose you have a web application in /somewhere. Add a server block
+to your Nginx configuration file, set its root to /somewhere/public, and set
+'passenger_enabled on', like this:
+
+   server {
+      listen 80;
+      server_name www.yourhost.com;
+      root /somewhere/public;   # <--- be sure to point to 'public'!
+      passenger_enabled on;
+   }
+
+And that's it! You may also want to check the Users Guide for security and
+optimization tips and other useful information:
+
+  /usr/local/rvm/gems/ruby-2.2.0/gems/passenger-4.0.59/doc/Users guide Nginx.html
+  https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx.html
+
+Enjoy Phusion Passenger, a product of Phusion (www.phusion.nl) :-)
+https://www.phusionpassenger.com
+
+Phusion Passenger is a trademark of Hongli Lai & Ninh Bui.
+
+
+
+# useradd -s /sbin/nologin -M -c "nginx Server" nginx
+# mkdir -p /etc/nginx/conf.d /data/log/svr/nginx /data/log/web/redmine
+
+$ cat /etc/nginx/nginx.conf
+
+#user  nobody;
+worker_processes  4;
+
+error_log  /data/log/svr/nginx/error.log;
+#error_log  logs/error.log  notice;
+#error_log  logs/error.log  info;
+
+pid        /var/run/nginx.pid;
+
+
+events {
+    use epoll;
+    worker_connections  65535;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    server_tokens off;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /data/log/svr/nginx/access.log  main;
+
+    sendfile        on;
+    tcp_nopush     on;
+    tcp_nodelay on;
+    keepalive_timeout  65;
+
+
+    server_names_hash_bucket_size 128;
+    client_header_buffer_size 32k;
+    large_client_header_buffers 4 32k;
+    client_body_temp_path /tmp;
+    client_max_body_size 500m;
+
+
+    fastcgi_connect_timeout 600;
+    fastcgi_send_timeout 300;
+    fastcgi_read_timeout 3600;
+    fastcgi_buffer_size 400k;
+    fastcgi_buffers 16 1m;
+    fastcgi_busy_buffers_size 10m;
+    fastcgi_temp_file_write_size 20m;
+    fastcgi_intercept_errors on;
+
+    gzip  on;
+    gzip_min_length  1k;
+    gzip_buffers     4 16k;
+    gzip_http_version 1.0;
+    gzip_comp_level 2;
+    gzip_disable        "MSIE [1-6].";
+    gzip_types  text/plain application/x-javascript text/css text/javascript application/x-httpd-php image/jpeg image/gif image/png;
+    gzip_vary on;
+    
+    passenger_root /usr/local/rvm/gems/ruby-2.2.0/gems/passenger-4.0.59;
+    passenger_ruby /usr/local/rvm/gems/ruby-2.2.0/wrappers/ruby;
+
+    # Load config files from the /etc/nginx/conf.d directory
+    # The default server is in conf.d/default.conf
+    include conf.d/*.conf;
+
+}
+
+
+$ cat /etc/nginx/conf.d/redmine.conf    
+#
+# redmine
+#
+server {
+    listen       x.x.x.x:80;
+    server_name  redmine.xxx.com;
+    root   /data/website/redmine-3.0.0/public;
+    passenger_enabled on;
+
+    access_log  /data/log/web/redmine/access.log  main;
+}

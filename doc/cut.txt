@@ -1,0 +1,47 @@
+ 使用cut命令选定字段:
+
+    cut命令是用来剪下文本文件里的数据，文本文件可以是字段类型或是字符类型。下面给出应用实例：
+    /> cat /etc/passwd
+    root:x:0:0:root:/root:/bin/bash
+    bin:x:1:1:bin:/bin:/sbin/nologin
+    daemon:x:2:2:daemon:/sbin:/sbin/nologin
+    adm:x:3:4:adm:/var/adm:/sbin/nologin
+    ... ...
+    /> cut -d : -f 1,5 /etc/passwd     #-d后面的冒号表示字段之间的分隔符，-f表示取分割后的哪些字段
+    root:root                                 #这里取出的是第一个和第五个字段。
+    bin:bin
+    daemon:daemon
+    adm:adm
+    ... ...
+    />cut -d: -f 3- /etc/passwd       #从第三个字段开始显示，直到最后一个字段。
+    0:0:root:/root:/bin/bash
+    1:1:bin:/bin:/sbin/nologin
+    2:2:daemon:/sbin:/sbin/nologin
+    3:4:adm:/var/adm:/sbin/nologin
+    4:7:lp:/var/spool/lpd:/sbin/nologin
+    ... ...    
+    这里需要进一步说明的是，使用cut命令还可以剪切以字符数量为标量的部分字符，该功能通过-c选项实现，其不能与-d选项共存。
+    /> cut -c 1-4 /etc/passwd          #取每行的前1-4个字符。
+    /> cut -c-4 /etc/passwd            #取每行的前4个字符。
+    root
+    bin:
+    daem
+    adm:
+    ... ...
+    /> cut -c4- /etc/passwd            #取每行的第4个到最后字符。
+    t:x:0:0:root:/root:/bin/bash
+    :x:1:1:bin:/bin:/sbin/nologin
+    mon:x:2:2:daemon:/sbin:/sbin/nologin
+    :x:3:4:adm:/var/adm:/sbin/nologin
+    ... ...
+    /> cut -c1,4 /etc/passwd           #取每行的第一个和第四个字符。
+    rt
+    b:
+    dm
+    a:
+    ... ...
+    /> cut -c1-4,5 /etc/passwd        #取每行的1-4和第5个字符。
+    root:
+    bin:x
+    daemo
+    adm:x

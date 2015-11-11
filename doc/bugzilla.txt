@@ -1,0 +1,62 @@
+配置bugzilla服务
+
+
+操作内容：
+一、基础环境
+1、使用cobbler安装一个vm来测试。
+2、网络：
+eth0：host-only（用于虚拟内网，手动固定IP，这样从宿主机可以直接连接到这个vm）
+eth1：NAT（用于上外网，动态IP）
+[root@tvm-bugzilla ~]# cd /etc/sysconfig/network-scripts/
+[root@tvm-bugzilla network-scripts]# cat ifcfg-eth0
+DEVICE=eth0
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=192.168.56.249
+PREFIX=24
+GATEWAY=192.168.56.1
+DNS1=192.168.56.254
+
+[root@tvm-mysql network-scripts]# cat ifcfg-eth1
+DEVICE=eth1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+
+
+二、配置bugzilla环境
+1、bugzilla和httpd
+[root@tvm-bugzilla ~]# yum install bugzilla httpd
+配置bugzilla：
+[root@tvm-bugzilla ~]# rpm -ql bugzilla |grep checksetup
+/usr/share/bugzilla/checksetup.pl
+[root@tvm-bugzilla ~]# cd /usr/share/bugzilla/
+[root@tvm-bugzilla bugzilla]# yum install perl-DBD-MySQL perl-GD perl-GDGraph perl-GDTextUtil perl-Image-Base perl-Image* perl-HTML-Scrubber
+[root@tvm-bugzilla bugzilla]# ./checksetup.pl
+按照提示安装
+
+调整数据库相关的配置：
+[root@tvm-bugzilla bugzilla]# vim /etc/bugzilla/localconfig 
+
+2. 数据库
+[root@tvm-mysql ~]# mysql -S /tmp/mysql.3306.sock -uroot -p
+Enter password: 
+mysql> create database bugzilla character set utf8 collate utf8_bin;
+mysql> grant all privileges on bugzilla.* to 'bugzilla'@'192.168.56.%' identified by 'bugzilla';
+mysql> flush privileges;
+
+3. 启动http
+[root@tvm-bugzilla ~]# service httpd start
+调整防火墙，放行80端口。
+访问web：
+http://192.168.56.249/bugzilla/
+
+加入开机启动：
+[root@tvm-bugzilla bugzilla]# chkconfig httpd on
+
+ZYXW、参考
+1、官网doc
+https://bugzilla.readthedocs.org/en/latest/installing/linux.html

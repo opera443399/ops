@@ -1,0 +1,177 @@
+django初识-再次使用urls和views
+
+一、新建项目
+1、新建一个virtual项目
+[root@tvm-test ~]# mkproject dj-test
+New python executable in dj-test/bin/python
+Installing setuptools, pip, wheel...done.
+Creating /root/.pyprojects/dj-test
+Setting project for dj-test to /root/.pyprojects/dj-test
+
+2、安装django
+(dj-test)[root@tvm-test dj-test]# pip install django==1.6.0
+
+3、新建project和app
+(dj-test)[root@tvm-test dj-test]# django-admin.py startproject sports
+(dj-test)[root@tvm-test dj-test]# tree sports/
+sports/
+├── manage.py
+└── sports
+    ├── __init__.py
+    ├── settings.py
+    ├── urls.py
+    └── wsgi.py
+
+1 directory, 5 files
+(dj-test)[root@tvm-test dj-test]# cd sports/
+(dj-test)[root@tvm-test sports]# python manage.py startapp basketball
+(dj-test)[root@tvm-test sports]# ls
+basketball  manage.py  sports
+(dj-test)[root@tvm-test sports]# tree
+.
+├── basketball
+│   ├── admin.py
+│   ├── __init__.py
+│   ├── models.py
+│   ├── tests.py
+│   └── views.py
+├── manage.py
+└── sports
+    ├── __init__.py
+    ├── __init__.pyc
+    ├── settings.py
+    ├── settings.pyc
+    ├── urls.py
+    └── wsgi.py
+
+2 directories, 12 files
+
+
+
+二、配置
+1、传统的GET方式请求数据
+1）首先，定义一个函数来做a+b的操作，a和b是request.GET获取的参数和值。
+(dj-test)[root@tvm-test sports]# cat basketball/views.py                        
+#coding: utf-8
+from django.shortcuts import render
+
+# Create your views here.
+from django.http import HttpResponse
+
+def add(request):
+    a = request.GET['a']
+    b = request.GET['b']
+    c = int(a) + int(b)
+    msg = u"我的球衣号码是：{0}".format(str(c))
+    return HttpResponse(msg)
+    
+2）其次，我们定义一个url
+(dj-test)[root@tvm-test sports]# cat sports/urls.py                        
+from django.conf.urls import patterns, include, url
+
+from django.contrib import admin
+admin.autodiscover()
+
+urlpatterns = patterns('',
+    # Examples:
+    # url(r'^$', 'sports.views.home', name='home'),
+    # url(r'^blog/', include('blog.urls')),
+    url(r'^basketball/add/$', 'basketball.views.add', name='add'), ## newline added here
+
+    url(r'^admin/', include(admin.site.urls)),
+)
+
+3）最后，我们看看效果：
+(dj-test)[root@tvm-test sports]# python manage.py runserver 0.0.0.0:8000
+
+在chrome测试，抓包看：
+Request URL:http://192.168.56.251:8000/basketball/add/?a=3&b=10
+Request Method:GET
+Status Code:200 OK
+
+此处提出一个问题：curl怎么抓去django的页面呢？测试发现，
+[root@tvm-test ~]# curl -d "a=3&b=10" http://127.0.0.1:8000/basketball/add/
+默认使用的是POST方法，由于csrf保护的原因，服务端将拒绝请求：
+[17/Aug/2015 06:06:10] "POST /basketball/add/ HTTP/1.1" 403 2282
+
+首先，需要了解csrf的作用，此处略过。
+解决方法：
+强制使用-G参数来使用GET方法请求。
+[root@tvm-test ~]# curl -G -d "a=3&b=10" http://127.0.0.1:8000/basketball/add/
+我的球衣号码是：13
+
+
+
+
+2、改进GET方式请求数据，url使用正则匹配
+1）调整views，增加一个plus函数，其中定义了2个参数来接收urls.py中正则匹配到的值。
+(dj-test)[root@tvm-test sports]# cat basketball/views.py
+#coding: utf-8
+from django.shortcuts import render
+
+# Create your views here.
+from django.http import HttpResponse
+
+def add(request):
+    a = request.GET['a']
+    b = request.GET['b']
+    c = int(a) + int(b)
+    msg = u"我的球衣号码是：{0}".format(str(c))
+    return HttpResponse(msg)
+
+def plus(request, a, b):
+    c = int(a) + int(b)
+    msg = u"我的球衣号码是：{0}".format(str(c))
+    return HttpResponse(msg)
+
+2）增加一个url：r'^basketball/plus/(\d+)/(\d+)$'
+(dj-test)[root@tvm-test sports]# cat sports/urls.py
+from django.conf.urls import patterns, include, url
+
+from django.contrib import admin
+admin.autodiscover()
+
+urlpatterns = patterns('',
+    # Examples:
+    # url(r'^$', 'sports.views.home', name='home'),
+    # url(r'^blog/', include('blog.urls')),
+    url(r'^basketball/add/$', 'basketball.views.add', name='add'),
+    url(r'^basketball/plus/(\d+)/(\d+)$', 'basketball.views.plus', name='plus'), ## newline added here
+
+    url(r'^admin/', include(admin.site.urls)),
+)
+
+3）运行服务后查看结果
+[root@tvm-test ~]# curl http://127.0.0.1:8000/basketball/plus/20/44
+我的球衣号码是：64
+其实，这种情况下，即使像刚才那样传递参数也没用，不信可以试试：
+[root@tvm-test ~]# curl -G -d "a=3&b=10" http://127.0.0.1:8000/basketball/plus/20/44
+我的球衣号码是：64
+
+因为我们的参数a和b并非是从request.GET中获取的，可以对比看下区别。
+
+
+三、小结
+【Q】：url.py中，name='plus'是啥意思？
+A：URL是可变的，如果我们在后续工作中，根据需求要变更这个URL：
+/basketball/plus/20/44
+为：
+/test/plus/20/44
+则，在网页模版中硬编码了这个URL的页面都会收到影响，推荐的做法是：
+<a href="{% url 'plus' 20 44 %}">link</a>
+
+渲染出来的结果是：
+<a href="/basketball/plus/20/44">link</a>
+
+这个是怎么实现的呢？
+
+# python
+>>> from django.core.urlresolvers import reverse
+>>> reverse('plus', args=(20,44))
+'/basketball/plus/20/44'
+
+
+
+ZYXW、参考
+1、Django 基础教程
+http://www.ziqiangxuetang.com/django/django-tutorial.html

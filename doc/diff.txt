@@ -1,0 +1,214 @@
+	
+范例:
+1)、比较两文件的差异
+$diff a.txt b.txt
+2c2                        这两个文件在第2行有所不同
+< line 2 : differences    a.txt 第2行的内容
+----------------------
+> line 2                  b.txt 第2行的内容
+
+2)、比较两个文件的差异，只列出有无差异，并不显示详细信息
+$diff -q a.txt b.txt
+Files a.txt and b.txt differ    只指出两个文件有所不同
+
+3)、比较两个文件，将两个文件的全部内容分别显示在左右两侧
+$diff -y a.txt b.txt
+line 1                      line 1
+line 2 : differences      | line 2
+
+  a.txt的文件内容          b.txt的文件内容  
+  
+4)、比较两个文件，仅在左侧显示相同内容，在两侧显示不同内容
+$diff -y --left-column a.txt b.txt
+line1
+line2
+line3 : differences          |  line 3  
+
+5)、比较两个文件，只将不同的行显示在左右两侧
+$diff -y --suppress-common-line  a.txt b.txt
+line 2 :differences    | line 2
+
+6)、显两文件不同处，同时显示相异处前后内容
+$diff -c a.txt b.txt
+
+7)、比较a.txt与b.txt两个文件，显示相异处前后各两行的内容，并标出这两个文件的不同处
+$diff -c -2 a.txt b.txt
+
+8)、比较a.txt与b.txt两个文件，显示相异处前后部分的内容，并将结果以合并的方式列出
+$diff -u a.txt b.txt
+
+9)、比较a.txt与b.txt两个文件的不同，并显示相异处前后各行的内容，并将结果以合并的方式列出
+$diff -U 2 a.txt b.txt
+
+10)、比较dir1与dir2两个目录中文件的异同
+$diff dir1 dir2
+
+11)、忽略内容中大小写的差异
+$diff -is dir1 dir2
+
+12)、比较dir1与dir2目录中的文件时，若文件中包含有question字符串，则忽略不比较此行
+$diff -I question -s dir1 dir2
+
+13)、比较dir1与dir2目录中的文件，并以并列方式显示文件的相异之处
+$diff -y --suppress-common-lines dir1 dir2
+
+14)、比较dirA与dirB两个目录下文件的异同，比较时连同子目录下的文件一并比较
+$diff -r dirA dirB
+
+15)、比较dirA与dirB两个目录下文件的异同，比较时忽略名称为file1的文件
+$diff -x file1 dirA dirB
+
+16)、比较a.txt与b.txt两个文件的异同，但比较时不比较空格数目的不同
+$diff -b a.txt b.txt
+
+17)、比较a.txt与b.txt两个文件的异同，比较时忽略空行
+$diff -B a.txt b.txt
+
+18)、比较二进制文件
+$diff -a a.txt b.txt
+
+19)、a.c与b.c是C语言的程序代码文件，比较两者异同，不一样的地方，列出差异所在函数
+$diff -p a.c b.c
+
+20)、比较两个文件并忽略空白字符和空白行,且当文件相同时仅显示左侧文件内容
+$diff -bBy  --left-column   file1  file2
+ 
+ 
+ 
+两个文件：
+程序清单1 ：hello.c
+#include 
+int main(void)
+{
+char msg[] = "Hello world!";
+
+puts(msg);
+printf("Welcome to use diff commond.\n");
+
+return 0; 
+}
+程序清单2：hello_diff.c
+#include 
+#include 
+int main(void)
+{
+char msg[] = "Hello world,fome hello_diff.c";
+
+puts(msg);
+printf("hello_diff.c says,'Here you are,using diff.'\n");
+
+return 0; 
+}
+我们使用diff命令来查看这两个文件的不同之处，有一下几种方便的方法：
+1、普通格式输出：
+[root@localhost diff]# diff hello.c hello_diff.c 
+1a2
+> #include 
+5c6
+   char msg[] = "Hello world,fome hello_diff.c";
+8c9
+   printf("hello_diff.c says,'Here you are,using diff.'\n");
+[root@localhost diff]# 
+上面的“1a2”表示后面的一个文件"hello_diff.c"比前面的一个文件"hello.c"多了一行
+"5c6"表示第一个文件的第5行与第二个文件的第6行有区别
+2、并排格式输出
+[root@localhost diff]# diff hello.c hello_diff.c -y -W 130
+#include                                               #include 
+                                                             > #include 
+int main(void)                                                  int main(void)
+{                                                             {
+       char msg[] = "Hello world!";                          |       char msg[] = "Hello world,fome hello_diff.c";
+       puts(msg);                                                    puts(msg);
+       printf("Welcome to use diff commond.\n");          |       printf("hello_diff.c says,'Here you are,using diff.'\
+       return 0;                                                    return 0;
+}                                                             }
+[root@localhost diff]# 
+这种并排格式的对比一目了然，可以快速找到不同的地方。
+-W选择可以指定输出列的宽度，这里指定输出列宽为130
+3、上下文输出格式
+[root@localhost diff]# diff hello.c hello_diff.c -c
+*** hello.c     2007-09-25 17:54:51.000000000 +0800
+--- hello_diff.c        2007-09-25 17:56:00.000000000 +0800
+***************
+*** 1,11 ****
+   #include 
+  
+   int main(void)
+   {
+!    char msg[] = "Hello world!";
+  
+       puts(msg);
+!    printf("Welcome to use diff commond.\n");
+  
+       return 0;
+   }
+--- 1,12 ----
+   #include 
++ #include 
+  
+   int main(void)
+   {
+!    char msg[] = "Hello world,fome hello_diff.c";
+  
+       puts(msg);
+!    printf("hello_diff.c says,'Here you are,using diff.'\n");
+  
+       return 0;
+   }
+[root@localhost diff]# 
+这种方式在开头两行作了比较文件的说明，这里有三中特殊字符：
+＋        比较的文件的后者比前着多一行
+－        比较的文件的后者比前着少一行       
+！        比较的文件两者有差别的行
+4、统一输出格式
+[root@localhost diff]# diff hello.c hello_diff.c -u
+--- hello.c     2007-09-25 17:54:51.000000000 +0800
++++ hello_diff.c        2007-09-25 17:56:00.000000000 +0800
+@@ -1,11 +1,12 @@
+#include 
++#include 
+
+int main(void)
+{
+-    char msg[] = "Hello world!";
++    char msg[] = "Hello world,fome hello_diff.c";
+
+       puts(msg);
+-    printf("Welcome to use diff commond.\n");
++    printf("hello_diff.c says,'Here you are,using diff.'\n");
+
+       return 0;
+}
+[root@localhost diff]# 
+正如看到的那样，统一格式的输出更加紧凑，所以更易于理解，更易于修改。
+5、其他
+假如你想查看两个文件是否不同又不想显示差异之处的话，可以加上－q选项：
+[root@localhost diff]# diff hello.c hello_diff.c -q
+Files hello.c and hello_diff.c differ
+[root@localhost diff]# 忽略某中差别，可用 -I regexp
+[root@localhost diff]# diff hello.c hello_diff.c -c -I include
+*** hello.c     2007-09-25 17:54:51.000000000 +0800
+--- hello_diff.c        2007-09-25 17:56:00.000000000 +0800
+***************
+*** 2,11 ****
+  
+   int main(void)
+   {
+!    char msg[] = "Hello world!";
+  
+       puts(msg);
+!    printf("Welcome to use diff commond.\n");
+  
+       return 0;
+   }
+--- 3,12 ----
+  
+   int main(void)
+   {
+!    char msg[] = "Hello world,fome hello_diff.c";
+  
+       puts(msg);
+!    printf("hello_diff.c says,'Here you are,using diff.'\n");
+  
+       return 0;
+   }

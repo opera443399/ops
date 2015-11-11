@@ -1,0 +1,18 @@
+dell服务器硬盘的状态变成外来（foreign）
+
+一、dell服务器移除RAID5中1块硬盘后再插上去，硬盘的状态变成外来（foreign），如何恢复成就绪的状态？
+
+重启服务器，注意引导信息提示 RAID控制器 相关信息时，会发现这样提示：
+
+Foreign configuration(s) found on adapter
+Press any key continue or 'C' load the configuration utility, or 'F' to import Foreign configuration(s) and continue”
+
+
+按“C”进入配置工具或者按“F”直接导入 Foreign configuration(s) 然后继续引导。
+
+
+
+
+ZYXW、参考
+1、RAID阵列的迁移
+http://zh.community.dell.com/techcenter/systems-management/w/wiki/397.raid

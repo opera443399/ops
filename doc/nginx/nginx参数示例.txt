@@ -1,0 +1,82 @@
+$ cat /etc/nginx/nginx.conf
+
+#user  nobody;
+worker_processes  4;
+
+error_log  /data/log/svr/nginx/error.log;
+#error_log  logs/error.log  notice;
+#error_log  logs/error.log  info;
+
+pid        /var/run/nginx.pid;
+
+
+events {
+    use epoll;
+    worker_connections  65535;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    server_tokens off;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /data/log/svr/nginx/access.log  main;
+
+    sendfile        on;
+    tcp_nopush     on;
+    tcp_nodelay on;
+    keepalive_timeout  65;
+
+
+    server_names_hash_bucket_size 128;
+    client_header_buffer_size 32k;
+    large_client_header_buffers 4 32k;
+    client_body_temp_path /tmp;
+    client_max_body_size 500m;
+
+
+    fastcgi_connect_timeout 600;
+    fastcgi_send_timeout 300;
+    fastcgi_read_timeout 3600;
+    fastcgi_buffer_size 400k;
+    fastcgi_buffers 16 1m;
+    fastcgi_busy_buffers_size 10m;
+    fastcgi_temp_file_write_size 20m;
+    fastcgi_intercept_errors on;
+
+    gzip  on;
+    gzip_min_length  1k;
+    gzip_buffers     4 16k;
+    gzip_http_version 1.0;
+    gzip_comp_level 2;
+    gzip_disable        "MSIE [1-6].";
+    gzip_types  text/plain application/x-javascript text/css text/javascript application/x-httpd-php image/jpeg image/gif image/png;
+    gzip_vary on;
+    
+    passenger_root /usr/local/rvm/gems/ruby-2.2.0/gems/passenger-4.0.59;
+    passenger_ruby /usr/local/rvm/gems/ruby-2.2.0/wrappers/ruby;
+
+    # Load config files from the /etc/nginx/conf.d directory
+    # The default server is in conf.d/default.conf
+    include conf.d/*.conf;
+
+}
+
+
+$ cat /etc/nginx/conf.d/redmine.conf    
+#
+# redmine
+#
+server {
+    listen       10.221.221.118:80;
+    server_name  oa.workec.com redmine.workec.com;
+    root   /data/website/redmine-3.0.0/public;
+    passenger_enabled on;
+
+    access_log  /data/log/web/redmine/access.log  main;
+}

@@ -1,0 +1,126 @@
+yum标准化安装nginx最新版
+
+参考：http://nginx.org/en/linux_packages.html
+
+1）配置repo源
+$ cat /etc/yum.repos.d/nginx.repo
+[nginx]
+name=nginx repo
+baseurl=http://nginx.org/packages/centos/6/$basearch/
+gpgcheck=0
+enabled=1
+
+安装
+$ yum install nginx
+
+
+2）nginx配置文件：
+$ cat /etc/nginx/nginx.conf    
+
+#user  nobody;
+worker_processes  4;
+
+error_log  /home/log/nginx/error.log;
+#error_log  logs/error.log  notice;
+#error_log  logs/error.log  info;
+
+pid        /var/run/nginx.pid;
+
+
+events {
+    use epoll;
+    worker_connections  65535;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    server_tokens off;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /home/log/nginx/access.log  main;
+
+    sendfile        on;
+    tcp_nopush     on;
+    tcp_nodelay on;
+    keepalive_timeout  65;
+
+    server_names_hash_bucket_size 128;
+    client_header_buffer_size 32k;
+    large_client_header_buffers 4 32k;
+    client_body_temp_path /tmp;
+    client_max_body_size 500m;
+
+
+    fastcgi_connect_timeout 600;
+    fastcgi_send_timeout 300;
+    fastcgi_read_timeout 3600;
+    fastcgi_buffer_size 400k;
+    fastcgi_buffers 16 1m;
+    fastcgi_busy_buffers_size 10m;
+    fastcgi_temp_file_write_size 20m;
+    fastcgi_intercept_errors on;
+
+    gzip  on;
+    gzip_min_length  1k;
+    gzip_buffers     4 16k;
+    gzip_http_version 1.0;
+    gzip_comp_level 2;
+    gzip_disable        "MSIE [1-6].";
+    gzip_types  text/plain application/x-javascript text/css text/javascript application/x-httpd-php image/jpeg image/gif image/png;
+    gzip_vary on;
+
+    # Load config files from the /etc/nginx/conf.d directory
+    # The default server is in conf.d/default.conf
+    include conf.d/*.conf;
+
+}
+
+3）虚拟主机
+配置文件都在这个目录下：
+/etc/nginx/conf.d/
+
+ 
+$ cat /etc/nginx/conf.d/abc.xxx.com.conf    
+#
+# abc
+#
+server {
+    listen       x.x.x.x:80;
+    server_name  abc.xxx.com;
+    root   /data/website/abc.xxx.com;
+
+    access_log  /data/log/web/www/abc.xxx.com/access.log  main;
+}
+
+$ mkdir -p /data/log/web/www/abc.xxx.com/
+
+
+使用php需要的配置
+
+$ cat /etc/nginx/conf.d/blog.xxx.com.conf 
+server {
+    listen       x.x.x.x:7777;
+    server_name  blog.xxx.com;
+    root   /data/website/blog.xxx.com;
+    charset utf-8;
+
+    access_log  /data/log/web/www/blog.xxx.com/access.log  main;
+    location / {
+        index  index.php;
+     }
+
+    location ~ \.php$ {
+        fastcgi_pass   127.0.0.1:9000;
+        fastcgi_index  index.php;
+        fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+        include        fastcgi_params;
+    }
+
+}
+
+$ mkdir -p /data/log/web/www/blog.xxx.com

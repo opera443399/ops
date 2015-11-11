@@ -1,0 +1,11 @@
+scp -pr web root@192.168.1.230:/home/
+scp -pr web/config/ root@192.168.1.230:/home/web/
+
+
+scp -P 22 -r root@192.168.1.118:/home/web /home/web
+
+scp限速传输
+
+限速1M
+scp -l 1000 文件名  账号@远程机器IP
+此时的传输速率就是1M／8＝100K左右

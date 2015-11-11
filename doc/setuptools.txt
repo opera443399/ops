@@ -1,0 +1,14 @@
+easy_install安装
+
+
+# cd /home/download/
+# wget https://pypi.python.org/packages/source/s/setuptools/setuptools-0.7.4.tar.gz --no-check-certificate
+# tar zxvf setuptools-0.7.4.tar.gz -C /home/download/
+# cd /home/download/setuptools-0.7.4/
+# python setup.py install
+
+
+or：
+
+yum install python-pip
+

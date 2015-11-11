@@ -1,0 +1,38 @@
+安装配置zabbix-agent
+
+[root@test ~]# zabbix_agentd  -V
+Zabbix Agent (daemon) v2.4.1 (revision 49643) (8 October 2014)
+Compilation time: Oct 10 2014 21:34:08
+ 
+[root@test1 ~]# ls zabbix/bin/
+install_agent.sh  zabbix-agent
+[root@test1 ~]# ls zabbix/sbin/
+zabbix_agent  zabbix_agentd
+[root@test1 ~]# cat zabbix/bin/install_agent.sh 
+#!/bin/bash
+#
+# 2015/4/10
+ 
+cip=$(ip a s dev em1  |grep "global" |awk '{print $2}' |cut -d '/' -f1)
+sip='10.10.10.10'
+ 
+#cp ./zabbix-agent /etc/init.d/
+#cp ../sbin/zabbix* /usr/sbin/
+mkdir -p /etc/zabbix/zabbix_agentd.conf.d
+cat <<_CFG >>/etc/zabbix/zabbix_agentd.conf
+PidFile=/tmp/zabbix_agentd.pid
+LogFile=/tmp/zabbix_agentd.log
+SourceIP=$cip
+Server=$sip
+ListenIP=$cip
+ServerActive=$sip
+Hostname=$cip
+Timeout=30
+Include=/etc/zabbix/zabbix_agentd.conf.d/
+_CFG
+ 
+useradd -s /sbin/nologin -d /var/lib/zabbix -c "Zabbix Monitoring System" zabbix
+chmod +x /etc/init.d/zabbix-agent
+service zabbix-agent start
+chkconfig zabbix-agent on
+chkconfig --list |grep zabbix

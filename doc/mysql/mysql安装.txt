@@ -1,0 +1,196 @@
+一、客户端安装使用mysql来连接mysql server
+# yum install mysql
+
+
+二、服务端mysql安装
+1、注意关闭selinux
+2、编译安装server
+[root@tvm-mysql ~]# yum groupinstall "development tools"
+[root@tvm-mysql ~]# yum install cmake libaio-devel ncurses-devel
+[root@tvm-mysql ~]# cd /data/download
+[root@tvm-mysql download]# rsync -avzP 192.168.5.14::s14down/mariadb-5.5.33a.tar.gz .
+[root@tvm-mysql download]# useradd -r -s /sbin/nologin -d /var/lib/mysql -c "Mysql Server" mysql
+
+[root@tvm-mysql download]# tar zxvf mariadb-5.5.33a.tar.gz && cd mariadb-5.5.33a
+[root@tvm-mysql mariadb-5.5.33a]# cmake . -DCMAKE_INSTALL_PREFIX=/data/svr/mariadb-5.5.33a -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_FEDERATED_STORAGE_ENGINE=1  -DENABLED_LOCAL_INFILE=1 -DEXTRA_CHARSETS=all -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci   -DWITH_DEBUG=0 -DBUILD_CONFIG=mysql_release -DFEATURE_SET=community -DWITH_EMBEDDED_SERVER=OFF
+[root@tvm-mysql mariadb-5.5.33a]# make -j 8
+[root@tvm-mysql mariadb-5.5.33a]# make install
+[root@tvm-mysql mariadb-5.5.33a]# cd ..
+[root@tvm-mysql download]# chown -R mysql:mysql /data/svr/mariadb-5.5.33a
+
+
+3、安装后初始化db：
+
+[root@test230 download]# ./scripts/mysql_install_db --user=mysql --group=mysql --datadir=/data/mysql_data/3306  --basedir=/data/svr/mariadb-5.5.33a
+[root@test230 download]# service mysql start
+[root@test230 download]# mysqladmin -uroot password 'xxxxxx'
+
+通常的配置中，还可以修改和指定以下参数：
+port        = 
+socket      = 
+datadir     =
+slow_query_log_file=
+
+expire_logs_days=
+binlog_format=
+max-binlog-size=
+replicate-ignore-db=
+
+
+
+
+三、服务端利用mysqld_multi管理多个mysql实例
+1、安装
+[root@tvm-mysql ~]# yum install mysql mysql-server
+[root@tvm-mysql ~]# mysql_install_db --datadir=/data/mysql/3306 --user=mysql
+[root@tvm-mysql ~]# mysql_install_db --datadir=/data/mysql/3307 --user=mysql
+[root@tvm-mysql ~]# ll /data/
+total 24
+drwxr-xr-x  3 root root  4096 Jul 27 14:30 log
+drwx------. 2 root root 16384 Jul 14 03:56 lost+found
+drwxr-xr-x  4 root root  4096 Jul 27 15:08 mysql
+[root@tvm-mysql ~]# ll /data/mysql/
+total 8
+drwx------ 4 mysql root 4096 Jul 27 15:08 3306
+drwx------ 4 mysql root 4096 Jul 27 15:08 3307
+[root@tvm-mysql ~]# ll /data/mysql/330{6,7}
+/data/mysql/3306:
+total 8
+drwx------ 2 mysql root 4096 Jul 27 15:08 mysql
+drwx------ 2 mysql root 4096 Jul 27 15:08 test
+
+/data/mysql/3307:
+total 8
+drwx------ 2 mysql root 4096 Jul 27 15:08 mysql
+drwx------ 2 mysql root 4096 Jul 27 15:08 test
+
+
+2、配置mysqld_multi启动多个mysql实例
+[root@tvm-mysql ~]# mysqld_multi --example
+配置文件示例：
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+[root@tvm-mysql ~]# cat /etc/my.cnf
+[mysqld_multi]
+mysqld     = /usr/bin/mysqld_safe
+mysqladmin = /usr/bin/mysqladmin
+user       = multi_admin
+password   = multi321
+log        = /var/log/mysqld_multi.log 
+
+[mysqld3306]
+socket     = /tmp/mysql.3306.sock
+port       = 3306
+pid-file   = /tmp/mysql.3306.pid
+datadir    = /data/mysql/3306
+user       = mysql
+
+[mysqld3307]
+socket     = /tmp/mysql.3307.sock
+port       = 3307
+pid-file   = /tmp/mysql.3307.pid
+datadir    = /data/mysql/3307
+user       = mysql
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+[root@tvm-mysql ~]# mysqld_multi report
+Reporting MySQL servers
+MySQL server from group: mysqld3306 is not running
+MySQL server from group: mysqld3307 is not running
+
+[root@tvm-mysql ~]# mysqld_multi start
+[root@tvm-mysql ~]# mysqld_multi report
+Reporting MySQL servers
+MySQL server from group: mysqld3306 is running
+MySQL server from group: mysqld3307 is running
+[root@tvm-mysql ~]# ls /tmp/mysql*
+/tmp/mysql.3306.pid  /tmp/mysql.3306.sock  /tmp/mysql.3307.pid  /tmp/mysql.3307.sock
+
+
+3、配置管理帐号
+1）root密码：
+[root@tvm-mysql ~]# mysqladmin -u root -S /tmp/mysql.3306.sock password 'toortoor'
+【3307的操作类似，下述略过】
+
+2）mysql_multi的管理帐号
+注：在my.cnf中使用这个帐号来控制所有的实例，因此建议在每个实例中建立一个通用的帐号。
+
+[root@tvm-mysql ~]# mysql -u root -S /tmp/mysql.3306.sock -p
+Enter password: 
+mysql> GRANT SHUTDOWN ON *.* TO multi_admin@localhost IDENTIFIED BY 'multi321';
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> exit
+Bye
+
+测试：使用mysqladmin来关闭实例。
+[root@tvm-mysql ~]# mysqladmin -u multi_admin -S /tmp/mysql.3306.sock -p shutdown
+Enter password: 
+[root@tvm-mysql ~]# tail /data/mysql/3306/tvm-mysql.err -n 3
+150727 15:49:33 [Note] /usr/libexec/mysqld: Shutdown complete
+
+150727 15:49:33 mysqld_safe mysqld from pid file /tmp/mysql.3306.pid ended
+
+
+测试：使用mysqld_multi来关闭实例。
+[root@tvm-mysql ~]# mysqld_multi report
+Reporting MySQL servers
+MySQL server from group: mysqld3306 is not running
+MySQL server from group: mysqld3307 is running
+[root@tvm-mysql ~]# mysqld_multi stop
+[root@tvm-mysql ~]# mysqld_multi report
+Reporting MySQL servers
+MySQL server from group: mysqld3306 is not running
+MySQL server from group: mysqld3307 is not running
+
+3）启动和关闭单个实例：
+[root@tvm-mysql ~]# echo >/data/mysql/3306/tvm-mysql.err 
+[root@tvm-mysql ~]# mysqld_multi start 3306
+[root@tvm-mysql ~]# mysqld_multi report
+Reporting MySQL servers
+MySQL server from group: mysqld3306 is running
+MySQL server from group: mysqld3307 is not running
+
+[root@tvm-mysql ~]# mysqld_multi stop 3306
+[root@tvm-mysql ~]# mysqld_multi report   
+Reporting MySQL servers
+MySQL server from group: mysqld3306 is not running
+MySQL server from group: mysqld3307 is not running
+
+查看日志：
+[root@tvm-mysql ~]# cat /data/mysql/3306/tvm-mysql.err
+
+
+150727 15:59:54 mysqld_safe Starting mysqld daemon with databases from /data/mysql/3306
+150727 15:59:54  InnoDB: Initializing buffer pool, size = 8.0M
+150727 15:59:54  InnoDB: Completed initialization of buffer pool
+150727 15:59:54  InnoDB: Started; log sequence number 0 44233
+150727 15:59:54 [Note] Event Scheduler: Loaded 0 events
+150727 15:59:54 [Note] /usr/libexec/mysqld: ready for connections.
+Version: '5.1.73'  socket: '/tmp/mysql.3306.sock'  port: 3306  Source distribution
+150727 16:00:14 [Note] /usr/libexec/mysqld: Normal shutdown
+
+150727 16:00:14 [Note] Event Scheduler: Purging the queue. 0 events
+150727 16:00:14  InnoDB: Starting shutdown...
+150727 16:00:19  InnoDB: Shutdown completed; log sequence number 0 44233
+150727 16:00:19 [Note] /usr/libexec/mysqld: Shutdown complete
+
+150727 16:00:19 mysqld_safe mysqld from pid file /tmp/mysql.3306.pid ended
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

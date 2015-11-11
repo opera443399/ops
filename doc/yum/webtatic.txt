@@ -1,0 +1,16 @@
+https://webtatic.com/projects/yum-repository/
+
+Webtatic EL6 for CentOS/RHEL 6:
+
+rpm -Uvh http://mirror.webtatic.com/yum/el6/latest.rpm
+
+
+以安装php为例：
+
+# yum search php56 |grep php
+============================== N/S Matched: php56 ==============================
+php56w.x86_64 : PHP scripting language for creating dynamic web sites
+
+
+# yum install php56w 
+

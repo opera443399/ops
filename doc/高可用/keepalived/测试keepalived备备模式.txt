@@ -1,0 +1,124 @@
+需求：应用需要做HA，配置一个vip作为入口，心跳监测服务。使用backup/backup模式通过优先级和track脚本来控制主备
+
+一、配置服务
+# yum -y install ipvsadm keepalived
+
+1）分布
+主：10.0.200.88，状态：backup，优先级85
+备：10.0.200.89，状态：backup，优先级75
+vip：10.0.200.90
+
+
+2）配置文件举例【主】：
+[root@200-80 keepalived]# pwd
+/etc/keepalived
+[root@200-80 keepalived]# ls
+backup  bin  keepalived.conf  old
+[root@200-80 keepalived]# cat keepalived.conf 
+# Role: master
+! Configuration File for keepalived
+
+global_defs {
+ router_id LVS_200_88                             # LVS_RealIP第3位_RealIP第4位，备机也是同理
+}
+
+vrrp_script CHK_REDIS {
+  script "/etc/keepalived/bin/chk_redis.sh"
+  interval 3
+  weight -20
+}
+
+vrrp_instance VIP_REDIS_90 {                      # VIP_服务代号_vip的第4位
+  state BACKUP                                    # 备机用：BACKUP，或者主备都BACKUP，通过优先级控制
+  interface em2                                   # 指定网卡
+  virtual_router_id 90                            # id采用vip的第4位
+  priority 85                                     # 优先级，默认主=85，备=75
+  nopreempt                                       # 优先级高的那台设置，表明恢复后，不会和BACKUP抢
+  advert_int 1                                    # 通告vrrp的间隔时间
+
+  authentication {                                # 主备机的密码要一致
+    auth_type PASS
+    auth_pass 1111
+  }
+
+  virtual_ipaddress {                             # vip写到这里，可以每行一个
+    10.0.200.90
+  }
+
+  track_script {
+    CHK_REDIS
+  }
+
+}
+
+和备机的配置区别如下：
+[root@200-80 keepalived]# diff keepalived.conf backup/keepalived.conf 
+1c1
+< # Role: master
+---
+> # Role: backup
+5c5
+<  router_id LVS_200_88                             # LVS_RealIP第3位_RealIP第4位，备机也是同理
+---
+>  router_id LVS_200_89                             # LVS_RealIP第3位_RealIP第4位，备机也是同理
+18,19c18,19
+<   priority 85                                     # 优先级，默认主=85，备=75
+<   nopreempt                                       # 优先级高的那台设置，表明恢复后，不会和BACKUP抢
+---
+>   priority 75                                     # 优先级，默认主=85，备=75
+>   #nopreempt                                       # 在优先级高的那台设置，表明恢复后，不会和BACKUP抢
+
+
+
+3）监测服务的脚本，此处以redis服务为例：
+[root@200-80 keepalived]# cat bin/chk_redis.sh 
+#!/bin/bash
+# 
+
+c=$(ps -ef |grep 'redis-server \*:6379' |wc -l)
+
+echo "`date` ---Check HA: start---" >/tmp/test_redis_ha.log
+echo "redis_6379 process count: $c" >>/tmp/test_redis_ha.log
+
+if [ $c -gt 0 ]; then
+  retval=0
+else
+  retval=1
+fi
+echo "return: $retval" >>/tmp/test_redis_ha.log
+echo "`date` ---Check HA: end---" >>/tmp/test_redis_ha.log
+exit $retval
+
+
+
+
+
+注1：virtual_router_id是唯一的，使用前请在局域网抓包看看
+tcpdump -i em2 -nn vrrp
+注2：记得给脚本加上x权限喔，否则无法执行，则表示script执行失败，进而影响到优先级。
+
+
+
+二、防火墙放行vrrp协议
+因为iptables过滤了vrrp协议，它不属于任何端口，像icmp一样，需要单独放行。
+-A INPUT -p vrrp -j ACCEPT
+
+例如，在上面的配置文件中，增加到rc.firewall.txt中，icmp那条策略后
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -p vrrp -j ACCEPT   <-  这是增加的一条策略
+-A INPUT -i lo -j ACCEPT 
+
+【具体操作】在主备机器上都要操作。
+检查当前生效的策略：
+iptables -nL
+保存：
+iptables-save >rc.firewall.txt
+修改
+sed -i '/-A INPUT -p icmp -j ACCEPT /a\-A INPUT -p vrrp -j ACCEPT' rc.firewall.txt
+应用新策略：
+iptables-restore /root/rc.firewall.txt 
+检查当前生效的策略：
+iptables -nL
+确认无误后保存
+service iptables save
+

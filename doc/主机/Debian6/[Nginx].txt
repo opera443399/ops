@@ -1,0 +1,73 @@
+Debian 6 服务配置[Nginx]
+--------
+---增加Nginx
+1:增加源，支持php5-fpm
+vi /etc/apt/sources.list
+增加以下源
+deb http://packages.dotdeb.org stable all
+
+修改保存后
+#wget http://www.dotdeb.org/dotdeb.gpg
+#cat dotdeb.gpg | apt-key add -
+#rm dotdeb.gpg
+
+#apt-get update
+
+2:安装 MySQL 5（已安装，pass）
+
+#apt-get install mysql-server mysql-client
+
+在弹出的页面输入2次密码
+
+修改mysql配置文件，去掉innodb，这样可以节省不少内存
+vi /etc/mysql/my.cnf
+
+增加下面语句
+skip-innodb
+
+保存后，mysql重启一下就生效
+
+3：安装Nginx+php+php5-fpm+memcache
+# apt-get install php5-fpm php5-cli memcached nginx
+Reading package lists... Done
+Building dependency tree
+Reading state information... Done
+The following extra packages will be installed:
+  libapache2-mod-php5 libxslt1.1 nginx-common nginx-full php5-cgi php5-common
+  php5-gd php5-mcrypt php5-mysql php5-xmlrpc
+Suggested packages:
+  php-pear libcache-memcached-perl libmemcached
+The following NEW packages will be installed:
+  libxslt1.1 memcached nginx-common nginx-full php5-fpm
+The following packages will be upgraded:
+  libapache2-mod-php5 nginx php5-cgi php5-cli php5-common php5-gd php5-mcrypt
+  php5-mysql php5-xmlrpc
+9 upgraded, 5 newly installed, 0 to remove and 80 not upgraded.
+
+4. 修改配置
+# vim /etc/php5/cgi/php.ini
+----修改启用下面这句
+cgi.fix_pathinfo=1
+
+----修改nginx的配置文件
+# vim /etc/nginx/sites-available/default
+
+----修改端口
+port 9090
+
+----修改主页面
+root /var/www;
+
+ 
+----添加以下内容到server那一段，注意大括号的范围。：
+location ~ \.php$ {
+fastcgi_pass 127.0.0.1:9000;
+fastcgi_index index.php;
+fastcgi_param SCRIPT_FILENAME /var/www$fastcgi_script_name;
+include fastcgi_params;
+}
+
+
+----保存后，重启nginx
+/etc/init.d/nginx restart
+

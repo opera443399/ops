@@ -1,0 +1,398 @@
+
+|-----------------------------------------------------
+示例：
+*filter
+
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT 
+-A INPUT -p icmp -j ACCEPT 
+-A INPUT -i lo -j ACCEPT 
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT 
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 80 -j ACCEPT 
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 10050:10051 -j ACCEPT 
+-A INPUT -p udp -m state --state NEW -m udp --dport 10050:10051 -j ACCEPT 
+-A INPUT -j REJECT --reject-with icmp-host-prohibited 
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited 
+
+COMMIT
+
+----------|
+http://www.frozentux.net/iptables-tutorial/cn/iptables-tutorial-cn-1.1.19.html#RCFIREWALLTXT
+
+reading, 8.2
+
+
+[iptables]
+iptables [-t table] command [match] [target/jump]
+
+
+--------------------------------------------------------------------------------
+
+
+1）保存
+------------------
+service iptables save|start|stop|restart|status
+
+
+iptables-save [-c] [-t table]
+output format:  <chain-name> <chain-policy> [<packet-counter>:<byte-counter>]
+eg: 
+iptables-save > /home/iptables-save
+
+iptables-restore [-c] [-n]
+
+iptables-resotre < /home/iptables.txt
+
+修改后，别忘记保存噢！
+/etc/init.d/iptables save
+-----------------
+
+
+--------------------------------------------------------------------------------
+
+2）nat 表
+PREROUTING链：的作用是在包刚刚到达防火墙时改变它的目的地址，如果需要的话。
+OUTPUT链：改变本地产生的包的目的地址。
+POSTROUTING链：在包就要离开防火墙之前改变其源地址。
+
+此表仅用于NAT，也就是转换包的源或目标地址。注意，就象我们前面说过的，只有流的第一个 包会被这个链匹配，其后的包会自动被做相同的处理。实际的操作分为以下几类：
+
+DNAT, SNAT, MASQUERADE
+
+DNAT：主要用在这样一种情况，你有一个合法的IP地址，要把对防火墙的访问 重定向到其他的机子上（比如DMZ）。也就是说，我们改变的是目的地址，以使包能重路由到某台主机。
+
+SNAT：改变包的源地址，这在极大程度上可以隐藏你的本地网络或者DMZ等。一个 很好的例子是我们知道防火墙的外部地址，但必须用这个地址替换本地网络地址。有了这个操作，防火墙就 能自动地对包做SNAT和De-SNAT(就是反向的SNAT),以使LAN能连接到Internet。如果使用类似 192.168.0.0/24这样的地址，是不会从Internet得到任何回应的。
+
+MASQUERADE：对每个匹配的包，MASQUERADE都要查找可用的IP地址，而 不象SNAT用的IP地址是配置好的。当然，这也有好处，就是我们可以使用通过PPP、 PPPOE、SLIP等拨号得到的地址，这些地址可是由ISP的DHCP随机分配的。
+
+
+--------------------------------------------------------------------------------
+
+
+3）状态
+--state
+NEW, ESTABLISHED, RELATED, INVALID
+
+
+--------------------------------------------------------------------------------
+
+
+4）command
+默认是添加到filter表，当然，可以用-t指定表，如iptable -t nat|mangle
+iptables -A INPUT ...
+iptables -D INPUT 1
+iptables -R INPUT 1 -s 192.168.0.1 -j DROP
+iptables -I INPUT 1 --dport 80 -j ACCEPT（默认为1，即插入链的头部）
+iptables -I INPUT 1 -p tcp -m state --state NEW -m tcp -s 210.75.1.54 --dport 80 -j DROP
+iptables -L
+iptables -F
+iptables -Z
+iptables -P INPUT DROP
+
+清空iptables：
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -t nat -P PREROUTING ACCEPT
+iptables -t nat -P POSTROUTING ACCEPT
+iptables -t mangle -PPOSTROUTING ACCEPT
+iptables -t mangle -PPREROUTING ACCEPT
+iptables -t mangle -PFORWARD ACCEPT
+iptables -F
+iptables -t nat -F
+iptables -t mangle -F
+iptables -X
+iptables -t nat -X
+iptables -t mangle -X
+
+
+删除nat表：
+[root@s80 bin]# iptables -t nat -L -n
+Chain PREROUTING (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain POSTROUTING (policy ACCEPT)
+target     prot opt source               destination         
+SNAT       all  --  0.0.0.0/0            0.0.0.0/0           to:121.201.96.80 
+SNAT       all  --  0.0.0.0/0            0.0.0.0/0           to:122.13.147.80 
+SNAT       all  --  0.0.0.0/0            0.0.0.0/0           to:121.201.96.80 
+[root@s80 bin]# iptables -t nat -D POSTROUTING 3
+[root@s80 bin]# iptables -t nat -L -n
+Chain PREROUTING (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain POSTROUTING (policy ACCEPT)
+target     prot opt source               destination         
+SNAT       all  --  0.0.0.0/0            0.0.0.0/0           to:121.201.96.80 
+SNAT       all  --  0.0.0.0/0            0.0.0.0/0           to:122.13.147.80 
+--------------------------------------------------------------------------------
+
+
+5)match
+
+generic match通用匹配:
+协议：-p ALL|icmp|tcp|udp 或者数值：0|1|6|17 其中，ALL = tcp+udp+icmp，可以用“!”取反，如 -p ! tcp 表示非tcp，也就是udp和icmp。
+
+源地址：-s 192.168.1.1 或地址组： 192.168.1.1/24 或 192.168.1.1/255.255.255.0 或加“!"取反
+目的地址：-d 192.168.2.2
+
+进入接口：-i eth0 指定接口名称，如eth0，ppp0等，可以使用通配符“+”，如 -i +表示不指定接口的默认行为，eth+表示所有eth接口，或者"!"取反，如 -i ! eth0
+出去接口：-o eth1
+
+implicit match隐含匹配:
+tcp:
+--sport 22， --sport 22:80 端口范围：[22:80]， --sport :80 端口范围：[0:80]， --sport 22: 端口范围：[22:65535]
+--dport
+
+--tcp-flags SYN,FIN,ACK SYN， 表示匹配那些SYN标记被置1，而FIN和ACK没有的包。
+--tcp-flags ALL NONE， 表示匹配所有标记都未置1的包。
+--tcp-flags ! SYN,FIN,ACK SYN，表示匹配那些FIN和ACK标记被置1而SYN标记没有的包。
+
+
+udp:
+--sport 53
+--dport 53
+
+
+icmp:
+ --icmp-type 8
+可以用iptables -p icmp -h查看
+
+
+explicit match显式匹配:
+
+显式匹配必须用-m或--match装载
+
+-m limit
+iptables -A INPUT -m limit --limit 3/second /minute /hour /day  --limit-burst 5
+
+-m mac
+Example	iptables -A INPUT -m mac --mac-source 00:00:00:00:00:01
+
+-m multiport
+iptables -A INPUT -p tcp -m multiport --sport 22,53,80,110，源端口多端口匹配
+iptables -A INPUT -p tcp -m multiport --dport 22,53,80,110，目的端口多端口匹配
+iptables -A INPUT -p tcp -m multiport --port 22,53,80,110，同端口多端口匹配
+
+-m owner
+iptables -A OUTPUT -m owner --uid-owner 500
+iptables -A OUTPUT -m owner --gid-owner 0
+iptables -A OUTPUT -m owner --pid-owner 78
+iptables -A OUTPUT -m owner --sid-owner 100
+
+-m state
+iptables -A INPUT -m state --state RELATED,ESTABLISHED
+
+
+--------------------------------------------------------------------------------
+
+
+6)Targets/Jumps
+语法是--jump target或-j target。
+
+前面提到过用户自定义链要用到-N命令。
+在filter表中建一个名为tcp_packets的链：
+iptables -N tcp_packets
+然后再把它作为jump的目标：
+iptables -A INPUT -p tcp -j tcp_packets
+
+ACCEPT target
+这个target没有任何选项和参数，使用也很简单，指定-j ACCEPT即可。
+
+DNAT target
+这个target是用来做目的网络地址转换的，就是重写包的目的IP地址。
+目的地址也可以是一个范围，这样的话DNAT会为每一个流随机分配一个地址。
+注意，DANT target只能用在nat表的PREROUTING和OUTPUT链中，或者是被这两条链调用的链里。
+
+iptables -t nat -A PREROUTING -p tcp -d 12.34.56.7 --dport 80 -j DNAT --to-destination 192.168.1.1-192.168.1.10
+上面的例子就是把所有发往地址12.34.56.7的包都转发到一段LAN使用的私有地址中。
+
+我们还可以 在地址后指定一个或一个范围的端口。比如：--to-destination 192.168.1.1:80或 --to-destination 192.168.1.1:80-100。
+
+SNAT的语法和这个target的一样，只是目的不同。要注意，只有先用--protocol指定了TCP或UDP协议，才能使用端口。例如：
+iptables -t nat -A POSTROUTING -p tcp -d 12.34.56.7 --dport 80 -j SNAT --to-source 192.168.1.1
+
+
+
+DROP target
+丢弃，不返回任何信息。有时候可以考虑用REJECT target。
+
+LOG target
+--log-level
+iptables -A FORWARD -p tcp -j LOG --log-level debug
+--log-prefix
+iptables -A INPUT -p tcp -j LOG --log-prefix "INPUT packets"
+--log-tcp-sequence
+iptables -A INPUT -p tcp -j LOG --log-tcp-sequence
+--log-tcp-options
+iptables -A FORWARD -p tcp -j LOG --log-tcp-options
+--log-ip-options
+iptables -A FORWARD -p tcp -j LOG --log-ip-options
+
+
+
+MARK target
+设置mark值，这个值是一个无符号的整数。比如，我们对一个流或从某台机子发出的所有的包设置了mark值，就可以利用高级路由功能来对它们进行流量控制等操作了。
+--set-mark
+iptables -t mangle -A PREROUTING -p tcp --dport 22 -j MARK --set-mark 2
+
+
+
+MASQUERADE target
+这个target和SNAT target的作用是一样的，区别就是它不需要指定--to-source。MASQUERADE是被专门设计用于那些动态获取IP地址的连接的，比如，拨号上网、DHCP连接等。
+
+注意，MASQUERADE和SNAT一样，只能用于nat表的 POSTROUTING链。
+--to-ports
+iptables -t nat -A POSTROUTING -p TCP -j MASQUERADE --to-ports 1024-31000
+
+
+MIRROR target
+这个target的作用是颠倒IP头中的源目地址，然后再转发包。
+
+QUEUE target
+这个target为用户空间的程序或应用软件管理包队列
+
+REDIRECT target
+在防火墙所在的机子内部转发包或流到另一个端口。比如，我们可以把所有去往端口HTTP的包REDIRECT到HTTP proxy（例如squid），当然这都发生在我们自己的主机内部。
+注意，它只能用在nat表的PREROUTING、OUTPUT链和被它们调用的自定义链里。
+--to-ports
+iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 8080
+
+
+REJECT target
+REJECT和DROP基本一样，区别在于它除了阻塞包之外， 还向发送者返回错误信息。
+注意，它只能用在INPUT、FORWARD、OUTPUT和它们的子链里。
+--reject-with
+iptables -A FORWARD -p TCP --dport 22 -j REJECT --reject-with tcp-reset
+告诉REJECT target应向发送者返回什么样的信息。一旦包满足了设定的条件，就要发送相应的信息，然后再象DROP一 样无情地抛弃那些包。可用的信息类型有：
+icmp-net-unreachable，icmp-host-unreachable，icmp-port-unreachable，icmp-proto-unreachable，icmp-net-prohibited，icmp-host-prohibited 。其中缺省的是port-unreachable。
+
+
+RETURN target
+它使包返回上一层，顺序是：子链——>父链——>缺省的策略。
+
+
+SNAT target
+这个target是用来做源网络地址转换的，就是重写包的源IP地址
+--to-source
+iptables -t nat -A POSTROUTING -p tcp -o eth0 -j SNAT --to-source 194.236.50.155-194.236.50.160:1024-32000
+
+
+TOS target
+--set-tos
+iptables -t mangle -A PREROUTING -p TCP --dport 22 -j TOS --set-tos 0x10
+
+
+TTL target
+--ttl-set
+iptables -t mangle -A PREROUTING -i eth0 -j TTL --ttl-set 64
+
+--ttl-dec
+iptables -t mangle -A PREROUTING -i eth0 -j TTL --ttl-dec 1
+
+--ttl-inc
+iptables -t mangle -A PREROUTING -i eth0 -j TTL --ttl-inc 1
+
+
+
+ULOG target
+--ulog-nlgroup
+iptables -A INPUT -p TCP --dport 22 -j ULOG --ulog-nlgroup 2
+
+--ulog-prefix
+iptables -A INPUT -p TCP --dport 22 -j ULOG --ulog-prefix "SSH connection attempt: "
+
+--ulog-cprange
+iptables -A INPUT -p TCP --dport 22 -j ULOG --ulog-cprange 100
+
+--ulog-qthreshold
+iptables -A INPUT -p TCP --dport 22 -j ULOG --ulog-qthreshold 10
+
+
+--------------------------------------------------------------------------------
+
+
+
+--------------------------------------------------------------------------------
+
+
+INPUT:
+
+从外部网络，如Internet
+↓
+进入接口，如eth0
+↓
+mangle(PREROUTING)
+↓
+nat(PREROUTING)，DNAT
+↓
+路由判断包要发往INPUT还是FORWARD
+↓
+mangle(INPUT)
+↓
+filter(INPUT)，过滤
+↓
+Application
+
+
+
+FORWARD:
+
+从外部网络，如Internet
+↓
+进入接口，如eth0
+↓
+mangle(PREROUTING)
+↓
+nat(PREROUTING)，DNAT
+↓
+路由判断包要发往INPUT还是FORWARD
+↓
+mangle(FORWARD)
+↓
+filter(FORWARD)，过滤
+↓
+mangle(POSTROUTING)
+↓
+nat(POSTROUTING)，SNAT，包括MASQUERADE
+↓
+离开接口，如eth1
+↓
+来到外部网络，如LAN
+
+
+
+OUTPUT:
+
+Application
+↓
+路由判断外出接口、源地址等信息
+↓
+mangle(OUTPUT)
+↓
+nat(OUTPUT)，对防火墙自身发出的包DNAT
+↓
+filter(OUTPUT)，过滤
+↓
+mangle(POSTROUTING)
+↓
+nat(POSTROUTING)，在这里做SNAT
+↓
+离开接口，如eth1
+↓
+来到外部网络，如Internet

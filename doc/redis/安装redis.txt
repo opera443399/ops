@@ -1,0 +1,71 @@
+1. 安装redis服务
+[root@test1 ~]# cd /home/download
+[root@test1 download]# wget http://download.redis.io/releases/redis-2.8.19.tar.gz
+[root@test1 download]# tar zxvf redis-2.8.19.tar.gz && cd redis-2.8.19  && make
+
+Hint: It's a good idea to run 'make test' ;)
+
+make[1]: Leaving directory `/home/download/redis-2.8.19/src'
+
+[root@test1 redis-2.8.19]# make test
+cd src && make test
+make[1]: Entering directory `/home/download/redis-2.8.19/src'
+You need tcl 8.5 or newer in order to run the Redis test
+make[1]: *** [test] Error 1
+make[1]: Leaving directory `/home/download/redis-2.8.19/src'
+make: *** [test] Error 2
+
+[root@test1 redis-2.8.19]# yum install -y tcl
+[root@test1 redis-2.8.19]# make test
+
+
+\o/ All tests passed without errors!
+
+Cleanup: may take some time... OK
+make[1]: Leaving directory `/home/download/redis-2.8.19/src'
+
+[root@test1 redis-2.8.19]# make install
+cd src && make install
+make[1]: Entering directory `/home/download/redis-2.8.19/src'
+
+Hint: It's a good idea to run 'make test' ;)
+
+    INSTALL install
+    INSTALL install
+    INSTALL install
+    INSTALL install
+    INSTALL install
+make[1]: Leaving directory `/home/download/redis-2.8.19/src'
+[root@test1 redis-2.8.19]# whereis redis-cli
+redis-cli: /usr/local/bin/redis-cli
+
+
+2. 安装redis实例
+【实例6379】
+[root@test1 redis-2.8.19]# sh utils/install_server.sh 
+Welcome to the redis service installer
+This script will help you easily set up a running redis server
+
+Please select the redis port for this instance: [6379] 
+Selecting default: 6379
+Please select the redis config file name [/etc/redis/6379.conf]                     
+Selected default - /etc/redis/6379.conf
+Please select the redis log file name [/var/log/redis_6379.log] /home/log/redis/6379.log
+Please select the data directory for this instance [/var/lib/redis/6379] /home/data/redis/6379
+Please select the redis executable path [/usr/local/bin/redis-server] 
+Selected config:
+Port           : 6379
+Config file    : /etc/redis/6379.conf
+Log file       : /home/log/redis/6379.log
+Data dir       : /home/data/redis/6379
+Executable     : /usr/local/bin/redis-server
+Cli Executable : /usr/local/bin/redis-cli
+Is this ok? Then press ENTER to go on or Ctrl-C to abort.
+Copied /tmp/6379.conf => /etc/init.d/redis_6379
+Installing service...
+Successfully added to chkconfig!
+Successfully added to runlevels 345!
+Starting Redis server...
+Installation successful!
+
+

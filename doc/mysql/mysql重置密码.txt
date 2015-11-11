@@ -1,0 +1,28 @@
+正确重置MySQL密码
+谁都不想弄丢家门钥匙，但不管多么小心，时间长了，这样的事情总会发生几次。MySQL密码也是一样，把它写在文档上不太安全，记在脑子里又难免会忘记。
+如果你忘记了MySQL密码，如何重置它呢？
+下面是错误 答案：
+首先停止MySQL服务，然后使用skip-grant-tables参数启动它：
+shell> /etc/init.d/mysql stop
+shell> mysqld_safe --skip-grant-tables &
+此时无需授权就可以进入到MySQL命令行，使用SQL重置MySQL密码：
+mysql> UPDATE mysql.user SET Password=PASSWORD('xxx') WHERE user like 'root';
+
+UPDATE mysql.user SET Password=PASSWORD('...') WHERE User='...' AND Host= '...';
+FLUSH PRIVILEGES;
+为什么说它是错误答案？因为在单纯使用skip-grant-tables参数启动服务后，除非数据库服务器屏蔽了外网访问，否则除了自己，其它别有用心的人也可能访问数据库，尽管重置密码所需的时间很短，但俗话说不怕贼偷就怕贼惦记着，任何纰漏都可能酿成大祸。
+下面是正确 答案：
+关键点是：在使用skip-grant-tables参数的同时，还要加上skip-networking参数：
+shell> mysqld_safe --skip-grant-tables --skip-networking &
+接着使用SQL重置密码后，记得去掉skip-networking，以正常方式重启MySQL服务：
+shell> /etc/init.d/mysqld restart
+上面的方法需要重启两次服务，实际上还能更优雅一点，重启一次即可：
+首先需要把用到的SQL语句保存到一个文本文件里（/path/to/init/file）：
+UPDATE mysql.user SET Password=PASSWORD('...') WHERE User='...' AND Host= '...';
+FLUSH PRIVILEGES;
+接着使用init-file参数启动MySQL服务，
+shell> /etc/init.d/mysql stop
+shell> mysqld_safe --init-file=/path/to/init/file &
+此时，密码就已经重置了，最后别忘了删除文件内容，免得泄露密码。
+提示：本文用到的参数都是通过命令行mysqld_safe传递的，实际上也可以通过my.cnf。
+参考：关于重置密码，官方文档里有专门的描述：How to Reset the Root Password。

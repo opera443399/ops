@@ -1,0 +1,65 @@
+·）查看smart：
+# smartctl -i /dev/sda
+
+·）若：SMART support is: Disabled
+则：启用smart：
+# smartctl --smart=on --offlineauto=on --saveauto=on /dev/sda
+
+·）查看监控状态：
+# smartctl -H /dev/sda
+若为passed，则表示健康。
+SMART overall-health self-assessment test result: PASSED
+
+[root@test118 home]# smartctl -i /dev/sda
+smartctl 5.42 2011-10-20 r3458 [x86_64-linux-2.6.32-279.5.1.el6.x86_64] (local build)
+Copyright (C) 2002-11 by Bruce Allen, http://smartmontools.sourceforge.net
+
+=== START OF INFORMATION SECTION ===
+Device Model:     ST500DM002-1BD142
+Serial Number:    W2AC973L
+LU WWN Device Id: 5 000c50 049baf3b7
+Firmware Version: KC45
+User Capacity:    500,107,862,016 bytes [500 GB]
+Sector Sizes:     512 bytes logical, 4096 bytes physical
+Device is:        Not in smartctl database [for details use: -P showall]
+ATA Version is:   8
+ATA Standard is:  ATA-8-ACS revision 4
+Local Time is:    Thu May 15 18:18:17 2014 HKT
+SMART support is: Available - device has SMART capability.
+SMART support is: Disabled
+
+[root@test118 home]# smartctl --smart=on --offlineauto=on --saveauto=on /dev/sda
+smartctl 5.42 2011-10-20 r3458 [x86_64-linux-2.6.32-279.5.1.el6.x86_64] (local build)
+Copyright (C) 2002-11 by Bruce Allen, http://smartmontools.sourceforge.net
+
+=== START OF ENABLE/DISABLE COMMANDS SECTION ===
+SMART Enabled.
+SMART Attribute Autosave Enabled.
+SMART Automatic Offline Testing Enabled every four hours.
+
+[root@test118 home]# smartctl -i /dev/sda
+smartctl 5.42 2011-10-20 r3458 [x86_64-linux-2.6.32-279.5.1.el6.x86_64] (local build)
+Copyright (C) 2002-11 by Bruce Allen, http://smartmontools.sourceforge.net
+
+=== START OF INFORMATION SECTION ===
+Device Model:     ST500DM002-1BD142
+Serial Number:    W2AC973L
+LU WWN Device Id: 5 000c50 049baf3b7
+Firmware Version: KC45
+User Capacity:    500,107,862,016 bytes [500 GB]
+Sector Sizes:     512 bytes logical, 4096 bytes physical
+Device is:        Not in smartctl database [for details use: -P showall]
+ATA Version is:   8
+ATA Standard is:  ATA-8-ACS revision 4
+Local Time is:    Thu May 15 18:19:20 2014 HKT
+SMART support is: Available - device has SMART capability.
+SMART support is: Enabled
+
+
+[root@test118 home]# # smartctl -H /dev/sda
+[root@test118 home]# smartctl -H /dev/sda  
+smartctl 5.42 2011-10-20 r3458 [x86_64-linux-2.6.32-279.5.1.el6.x86_64] (local build)
+Copyright (C) 2002-11 by Bruce Allen, http://smartmontools.sourceforge.net
+
+=== START OF READ SMART DATA SECTION ===
+SMART overall-health self-assessment test result: PASSED

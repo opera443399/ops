@@ -1,0 +1,145 @@
+【时间】2014-06-30 ~ 2014-07-01
+【主机】IP: s78,s79
+【目的】外网DB服务器s78，s79上架
+【操作记录】
+1. 基本信息。
+类似去年12月份采购的配置（区别是电源换成冗余，iDRAC选择企业版）。具体如下：
+
+Dell R720
+2    至强E5-2630v2
+8    600GB，SAS，3.5，15k
+4    8GB 内存
+1    RAID控制器（支持RAID1，5，10）
+1    双个，热插拔，冗余电源
+1    网络子卡（4网口）
+1   iDRAC7 Enterprise
+1    不含安装到机架的导轨
+
+
+用途：数据库，分库分表项目
+
+2. 基础设置。以s78为例
+【文档】登记序列号，固定资产；s78.workec.com
+【系统BIOS】
+系统 bios 设定 -> 集成的设备 -> I/OAT DMA Engine：启用
+【iDRAC】IP=192.168.5.23  GATEWAY=192.168.5.80, 用户配置
+【RAID】
+系统设置 -> 高级硬件配置 -> 设备设定 -> 配置选项 -> 虚拟磁盘管理 -> 创建虚拟磁盘
+
+2SAS做RAID1，vdisk_os；
+条带：64K
+读取策略：自适应预读
+写策略：回写
+磁盘高速缓存：禁用
+
+6SAS做RAID10，vdisk_data；
+条带：64K
+读取策略：自适应预读
+写策略：回写
+磁盘高速缓存：禁用
+
+系统设置 -> 高级硬件配置 -> 设备设定-> -> 配置选项 -> 虚拟磁盘管理 -> 选择虚拟磁盘操作
+
+选择慢速初始化。等待初始化操作完毕。
+(配置的第2台服务器RAID后台初始化（BGI）过程非常慢，进度大约是2%每小时；经过多次测试发现，在建立RAID的虚拟磁盘后，选择慢速初始化则只需要2个小时即可完成；)
+
+
+
+【OS】安装系统，Oracle Linux 6.5 x86_64。
+【分区】
+硬盘容量规划。
+2SAS做RAID1，OS分区sda
+2 * 600G, RAID1, 可用空间550G, sda分区： 
+/		100G
+/usr	40G
+/var	40G
+swap	20G
+/home	350G
+
+6SAS做RAID10，data分区sdb
+6 * 600G, RAID10, 可用空间1.6T, sdb分区： 
+/data	1.6T
+
+
+【selinux】关闭selinux，重启生效
+[root@s78 ~]# vim /etc/selinux/config
+【hostname】s78.workec.com
+【IP】局域网em1（192.168.5.78），外网em2（121.201.96.78），检查Gateway，DNS设置
+[root@s78 ~]# cat /etc/sysconfig/network
+NETWORKING=yes
+HOSTNAME=s78.workec.com
+GATEWAY=192.168.5.80
+
+[root@s78 ~]# cat /etc/sysconfig/network-scripts/ifcfg-em1
+DEVICE=em1
+TYPE=Ethernet
+UUID=
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+HWADDR=
+IPADDR=192.168.5.78
+PREFIX=24
+GATEWAY=192.168.5.80
+DNS1=114.114.114.114
+DNS2=8.8.8.8
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=yes
+IPV6INIT=no
+NAME="System em1"
+
+
+[root@s78 ~]# yum -y install lrzsz
+
+【openssl】
+[root@s78 ~]# yum -y update openssl
+[root@s78 ~]# rpm -q --changelog openssl |head -n 10
+* Mon Jun 02 2014 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-16.14
+- fix CVE-2010-5298 - possible use of memory after free
+- fix CVE-2014-0195 - buffer overflow via invalid DTLS fragment
+- fix CVE-2014-0198 - possible NULL pointer dereference
+- fix CVE-2014-0221 - DoS from invalid DTLS handshake packet
+- fix CVE-2014-0224 - SSL/TLS MITM vulnerability
+- fix CVE-2014-3470 - client-side DoS when using anonymous ECDH
+
+* Mon Apr 07 2014 Tomáš Mráz <tmraz@redhat.com> 1.0.1e-16.7
+- fix CVE-2014-0160 - information disclosure in TLS heartbeat extension
+
+
+【建立基本目录】
+[root@s78 ~]# mkdir /data/{backup,download,ops,log}
+[root@s78 ~]# mkdir /data/ops/{bin,conf,info}
+
+【脚本设置系统】
+上传脚本，先增加ssh用户，再调整ssh，ntp等系统设置：
+basic_info.sh  
+create_user_with_sshkey.sh  
+setting_limits.sh  
+setting_datetime.sh 
+setting_profile.sh  
+setting_sshd.sh  
+setting_sysctl.sh
+
+
+
+3. 上架
+调整内外网ip设置为机房IP。
+
+
+4. 睿江机房在昨晚20140702 21:30上架，检查网络是否正常。
+s78无异常，测试内网网关的网络连通性，结果符合预期，启用外网网卡。
+s79异常，无法访问，联系机房接入iDRAC接口远程检查，内网网卡配置错误，内网和外网网卡接口接反，调整后问题解决。
+1）测试内网网关s80的网络连通性；设置时间同步，使用内网的时间服务器；
+2）配置防火墙允许内网服务的访问；
+3）调整ssh配置和root密码；
+4）安装mysql client相关组件，备份工具xtrabackup；
+5）安装coreseek相关环境；
+
+
+
+5.  增加到监控平台。
+使用zabbix_agent_deploy.tar.gz配置的脚本自动化安装
+
+
+
+

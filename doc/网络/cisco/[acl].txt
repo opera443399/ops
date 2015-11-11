@@ -1,0 +1,90 @@
+Access-List
+{
+
+1) Standard access list: 
+range: (1 to 99) 
+check: IP
+usage: 
+access-list access-list-number {permit|deny} source [wildcard-mask]
+
+
+Test conditions: Check all the address bits (match all)
+An IP host address,
+i.e. 
+192.168.20.33 0.0.0.0
+//相当于： 
+host 192.168.20.33
+
+0.0.0.0 -> check all bits
+
+Test conditions: Ignore all the address bits (match any)
+Any IP host address,
+i.e.  
+0.0.0.0 255.255.255.255
+//相当于：
+any
+
+255.255.255.255 -> ignore all bits
+
+#1 Permit my network only#
+access-list 1 permit 172.16.0.0  0.0.255.255
+
+(implicit deny all - not visible in the list)
+(access-list 1 deny 0.0.0.0   255.255.255.255)
+
+
+#2 Deny a specific host#
+access-list 1 deny 172.16.4.13 0.0.0.0  
+
+access-list 1 permit 0.0.0.0  255.255.255.255
+(implicit deny all)
+(access-list 1 deny 0.0.0.0   255.255.255.255)
+
+
+#3 Deny a specific subnet#
+access-list 1 deny 172.16.4.0  0.0.0.255
+
+access-list 1 permit any
+(implicit deny all)
+(access-list 1 deny 0.0.0.0   255.255.255.255)
+
+#VTY: allow remote 172.16.10.3 to use VTY 
+A(config)#access-list 50 permit 172.16.10.3
+A(config)#line vty 0 4
+A(config-if)#access-class 50 in
+
+2) Extend access list: 
+range: (100 to 199) 
+check:  TCP src_addr dest_addr & protocol & port
+usage: 
+access-list access-list-number  { permit | deny } protocol 
+        source source-wildcard [operator port] 
+        destination destination-wildcard [ operator port ]
+
+#4 Deny FTP from  subnet 172.16.4.0 to subnet 172.16.3.0 out of E0#
+access-list 101 deny tcp 172.16.4.0 0.0.0.255 172.16.3.0 0.0.0.255 eq 21
+
+access-list 101 deny tcp 172.16.4.0 0.0.0.255 172.16.3.0 0.0.0.255 eq 20
+access-list 101 permit ip any any
+(implicit deny all)
+(access-list 101 deny ip 0.0.0.0 255.255.255.255 0.0.0.0 255.255.255.255)
+
+
+
+#5 Deny only Telnet from subnet 172.16.4.0  out of E0#
+access-list 101 deny tcp 172.16.4.0  0.0.0.255  any eq 23
+
+access-list 101 permit ip any any
+(implicit deny all)
+
+
+3) Named ACL
+A(config)#ip access-list standard BlockSales
+
+A(config-std-nacl)#deny 172.16.40.0 0.0.0.255
+A(config-std-nacl)#permit any
+
+A(config)#int f0/0
+A(config-if)#ip access-group BlockSales out
+
+}

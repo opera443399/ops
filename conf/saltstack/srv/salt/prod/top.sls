@@ -1,0 +1,3 @@
+prod:
+  'tvm-cobbler':
+    - web

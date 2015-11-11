@@ -1,0 +1,5 @@
+Sersync实现触发式文件同步
+
+http://hi.baidu.com/616237138/item/8fd77f8c8773dae2e596e022
+http://dnuser.blog.51cto.com/4863891/1262903
+http://www.2cto.com/os/201109/103539.html

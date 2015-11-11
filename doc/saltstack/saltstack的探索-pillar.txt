@@ -1,0 +1,367 @@
+saltstack的探索-pillar
+
+pillar可以自定义key-value
+Pillar使用与State相似的SLS文件。Pillar文件放在master配置文件中pillar_roots定义的目录下。示例如下：
+
+pillar_roots:
+  base:
+    - /srv/pillar
+
+[root@server200-21 srv]# mkdir /srv/pillar
+[root@server200-21 srv]# cd /srv/pillar
+[root@server200-21 pillar]# ls
+data.sls  top.sls
+
+[root@server200-21 pillar]# cat top.sls 
+base:
+    '*':
+        - data
+
+
+[root@server200-21 pillar]# cat data.sls 
+a: 1
+b: 2
+c: 3
+d: A1
+   B2
+   C3
+   
+   
+ 
+
+[root@server200-21 pillar]# salt '*' pillar.data
+test230:
+    ----------
+    a:
+        1
+    b:
+        2
+    c:
+        3
+    d:
+        A1 B2 C3
+    master:
+        ----------
+        __role:
+            master
+        auth_mode:
+            1
+        auto_accept:
+            False
+        cachedir:
+            /var/cache/salt/master
+        cli_summary:
+            False
+        client_acl:
+            ----------
+        client_acl_blacklist:
+            ----------
+        cluster_masters:
+        cluster_mode:
+            paranoid
+        conf_file:
+            /etc/salt/master
+        config_dir:
+            /etc/salt
+        cython_enable:
+            False
+        daemon:
+            True
+        default_include:
+            master.d/*.conf
+        enable_gpu_grains:
+            False
+        enforce_mine_cache:
+            False
+        enumerate_proxy_minions:
+            False
+        environment:
+            None
+        ext_job_cache:
+            
+        ext_pillar:
+        extension_modules:
+            /var/cache/salt/extmods
+        external_auth:
+            ----------
+        failhard:
+            False
+        file_buffer_size:
+            1048576
+        file_client:
+            local
+        file_ignore_glob:
+            None
+        file_ignore_regex:
+            None
+        file_recv:
+            False
+        file_recv_max_size:
+            100
+        file_roots:
+            ----------
+            base:
+                - /srv/salt
+        fileserver_backend:
+            - roots
+        fileserver_followsymlinks:
+            True
+        fileserver_ignoresymlinks:
+            False
+        fileserver_limit_traversal:
+            False
+        gather_job_timeout:
+            5
+        gitfs_base:
+            master
+        gitfs_env_blacklist:
+        gitfs_env_whitelist:
+        gitfs_insecure_auth:
+            False
+        gitfs_mountpoint:
+            
+        gitfs_passphrase:
+            
+        gitfs_password:
+            
+        gitfs_privkey:
+            
+        gitfs_pubkey:
+            
+        gitfs_remotes:
+        gitfs_root:
+            
+        gitfs_user:
+            
+        hash_type:
+            md5
+        hgfs_base:
+            default
+        hgfs_branch_method:
+            branches
+        hgfs_env_blacklist:
+        hgfs_env_whitelist:
+        hgfs_mountpoint:
+            
+        hgfs_remotes:
+        hgfs_root:
+            
+        id:
+            test230
+        interface:
+            0.0.0.0
+        ioflo_console_logdir:
+            
+        ioflo_period:
+            0.01
+        ioflo_realtime:
+            True
+        ioflo_verbose:
+            0
+        ipv6:
+            False
+        jinja_lstrip_blocks:
+            False
+        jinja_trim_blocks:
+            False
+        job_cache:
+            True
+        keep_jobs:
+            24
+        key_logfile:
+            /var/log/salt/key
+        keysize:
+            4096
+        log_datefmt:
+            %H:%M:%S
+        log_datefmt_logfile:
+            %Y-%m-%d %H:%M:%S
+        log_file:
+            /var/log/salt/master
+        log_fmt_console:
+            [%(levelname)-8s] %(message)s
+        log_fmt_logfile:
+            %(asctime)s,%(msecs)03.0f [%(name)-17s][%(levelname)-8s] %(message)s
+        log_granular_levels:
+            ----------
+        log_level:
+            warning
+        loop_interval:
+            60
+        maintenance_floscript:
+            /usr/lib/python2.6/site-packages/salt/daemons/flo/maint.flo
+        master_floscript:
+            /usr/lib/python2.6/site-packages/salt/daemons/flo/master.flo
+        master_job_cache:
+            local_cache
+        master_pubkey_signature:
+            master_pubkey_signature
+        master_roots:
+            ----------
+            base:
+                - /srv/salt-master
+        master_sign_key_name:
+            master_sign
+        master_sign_pubkey:
+            False
+        master_tops:
+            ----------
+        master_use_pubkey_signature:
+            False
+        max_event_size:
+            1048576
+        max_minions:
+            0
+        max_open_files:
+            100000
+        minion_data_cache:
+            True
+        minionfs_blacklist:
+        minionfs_env:
+            base
+        minionfs_mountpoint:
+            
+        minionfs_whitelist:
+        nodegroups:
+            ----------
+        open_mode:
+            False
+        order_masters:
+            False
+        outputter_dirs:
+        peer:
+            ----------
+        permissive_pki_access:
+            False
+        pidfile:
+            /var/run/salt-master.pid
+        pillar_opts:
+            True
+        pillar_roots:
+            ----------
+            base:
+                - /srv/pillar
+        pillar_source_merging_strategy:
+            smart
+        pillar_version:
+            2
+        ping_on_rotate:
+            False
+        pki_dir:
+            /etc/salt/pki/master
+        preserve_minion_cache:
+            False
+        pub_hwm:
+            1000
+        publish_port:
+            4505
+        publish_session:
+            86400
+        queue_dirs:
+        raet_main:
+            True
+        raet_mutable:
+            False
+        raet_port:
+            4506
+        range_server:
+            range:80
+        reactor:
+        reactor_refresh_interval:
+            60
+        renderer:
+            yaml_jinja
+        rep_hwm:
+            50000
+        ret_port:
+            4506
+        root_dir:
+            /
+        rotate_aes_key:
+            True
+        runner_dirs:
+        saltversion:
+            2014.7.0
+        search:
+            
+        search_index_interval:
+            3600
+        serial:
+            msgpack
+        show_jid:
+            False
+        show_timeout:
+            False
+        sign_pub_messages:
+            False
+        sock_dir:
+            /var/run/salt/master
+        sqlite_queue_dir:
+            /var/cache/salt/master/queues
+        ssh_passwd:
+            
+        ssh_port:
+            22
+        ssh_sudo:
+            False
+        ssh_timeout:
+            60
+        ssh_user:
+            root
+        state_aggregate:
+            False
+        state_auto_order:
+            True
+        state_events:
+            False
+        state_output:
+            full
+        state_top:
+            salt://top.sls
+        state_verbose:
+            True
+        svnfs_branches:
+            branches
+        svnfs_env_blacklist:
+        svnfs_env_whitelist:
+        svnfs_mountpoint:
+            
+        svnfs_remotes:
+        svnfs_root:
+            
+        svnfs_tags:
+            tags
+        svnfs_trunk:
+            trunk
+        syndic_event_forward_timeout:
+            0.5
+        syndic_master:
+            
+        syndic_max_event_process_time:
+            0.5
+        syndic_wait:
+            5
+        timeout:
+            5
+        token_dir:
+            /var/cache/salt/master/tokens
+        token_expire:
+            43200
+        transport:
+            zeromq
+        user:
+            root
+        verify_env:
+            True
+        win_gitrepos:
+            - https://github.com/saltstack/salt-winrepo.git
+        win_repo:
+            /srv/salt/win/repo
+        win_repo_mastercachefile:
+            /srv/salt/win/repo/winrepo.p
+        worker_floscript:
+            /usr/lib/python2.6/site-packages/salt/daemons/flo/worker.flo
+        worker_threads:
+            5
+        zmq_filtering:
+            False

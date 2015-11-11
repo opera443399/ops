@@ -1,0 +1,13 @@
+[root@test240 ~]# fping -b 68 -c 6 -q -p 1000 202.96.134.134
+202.96.134.134 : xmt/rcv/%loss = 6/6/0%, min/avg/max = 2.08/2.87/3.64
+
+[root@test240 ~]# echo "202.96.134.134 : xmt/rcv/%loss = 6/6/0%, min/avg/max = 2.08/2.87/3.64" | awk '{print $5, $8}' |tr -d "%|,"
+6/6/0 2.08/2.87/3.64
+
+
+[root@test240 ~]# echo "202.96.134.134 : xmt/rcv/%loss = 6/6/0%, min/avg/max = 2.08/2.87/3.64" | awk '{print $5, $8}' |tr -d "%|," | tr -s " " "/" 
+6/6/0/2.08/2.87/3.64
+
+
+[root@test240 ~]# echo "202.96.134.134 : xmt/rcv/%loss = 6/6/0%, min/avg/max = 2.08/2.87/3.64" | awk '{print $5, $8}' |tr -d "%|," | tr -s " " "/" | awk -F"/" '{print $3, $4, $5, $6}'
+0 2.08 2.87 3.64

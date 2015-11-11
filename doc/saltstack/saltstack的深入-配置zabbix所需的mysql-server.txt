@@ -1,0 +1,354 @@
+saltstack的深入-配置zabbix所需的mysql-server
+
+
+操作内容：
+一、基础环境
+1、使用tvm-cobbler安装一个tvm-zabbix虚拟机来做实验。
+2、网络：
+eth0：host-only（用于虚拟内网，手动固定IP，这样从宿主机可以直接连接到这个vm）
+eth1：NAT（用于上外网，动态IP）
+[root@tvm-zabbix ~]# cd /etc/sysconfig/network-scripts/
+[root@tvm-zabbix network-scripts]# cat ifcfg-eth0
+DEVICE=eth0
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=192.168.56.200
+PREFIX=24
+GATEWAY=192.168.56.1
+DNS1=192.168.56.254
+
+[root@tvm-zabbix network-scripts]# cat ifcfg-eth1
+DEVICE=eth1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+DNS1=192.168.56.254
+
+[root@tvm-zabbix ~]# df -h
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda3        36G  1.8G   32G   6% /
+tmpfs           499M   12K  499M   1% /dev/shm
+/dev/sda1       194M   29M  155M  16% /boot
+/dev/sdb1        99G  188M   94G   1% /data
+
+
+使用域名：
+[root@tvm-yum ~]# cat /etc/dnsmasq.d/office.conf |grep zbx-m
+address=/zbx-m.office.test/192.168.56.200
+
+3、repo
+我们在自己的office这个repo中已经增加了几个rpm包：
+[root@tvm-zabbix data]# yum search --disablerepo=\* --enablerepo=office percona
+Loaded plugins: fastestmirror, security
+Loading mirror speeds from cached hostfile
+======================================================================================= N/S Matched: percona =======================================================================================
+Percona-Server-55-debuginfo.x86_64 : Debug information for package Percona-Server-55
+Percona-Server-client-55.x86_64 : Percona Server - Client
+Percona-Server-devel-55.x86_64 : Percona Server - Development header files and libraries
+Percona-Server-server-55.x86_64 : Percona Server: a very fast and reliable SQL database server
+Percona-Server-shared-55.x86_64 : Percona Server - Shared libraries
+Percona-Server-test-55.x86_64 : Percona Server - Test suite
+percona-zabbix-templates.noarch : Percona Monitoring Plugins for Zabbix
+
+  Name and summary matches only, use "search all" for everything.
+
+二、配置
+1、sls文件
+[root@tvm-saltmaster base]# cat mysql/server.sls    
+## 安装mysql-server，以及对应的zabbix监控相关文件。
+# 
+# via pc @ 2015/8/13
+
+Percona-Server:
+  pkg.installed:
+## for local-office.repo
+#
+    - fromrepo: office,base,repo
+    - name: zabbix-agent
+    - skip_verify: True
+    - refresh: True
+    - pkgs:
+## for percona-server
+#      
+      - Percona-Server-55-debuginfo
+      - Percona-Server-client-55
+      - Percona-Server-devel-55
+      - Percona-Server-server-55
+      - Percona-Server-shared-55
+      - Percona-Server-test-55
+      - percona-zabbix-templates
+## for zabbix
+# Scripts are installed to /var/lib/zabbix/percona/scripts
+# Templates are installed to /var/lib/zabbix/percona/templates
+#
+# /var/lib/zabbix/percona/scripts:
+# total 64
+# -rwxr-xr-x 1 root root  1251 Jul 21  2014 get_mysql_stats_wrapper.sh
+# -rwxr-xr-x 1 root root 58226 Jul 21  2014 ss_get_mysql_stats.php
+#
+# /var/lib/zabbix/percona/templates:
+# total 284
+# -rw-r--r-- 1 root root  18866 Jul 21  2014 userparameter_percona_mysql.conf
+# -rw-r--r-- 1 root root 269258 Jul 21  2014 zabbix_agent_template_percona_mysql_server_ht_2.0.9-sver1.1.4.xml
+# 
+      - php
+      - php-mysql
+
+percona-mysql-cnf:
+  file.managed:
+    - name: /etc/my.cnf
+    - source: salt://conf.d/mysql/my.cnf
+    - mode: 644
+    - require:
+      - pkg: Percona-Server
+
+percona-mysql-data:
+  file.directory:
+    - name: /data/mysql
+    - user: mysql
+    - group: mysql
+    - mode: 755
+    - makedirs: True
+    - require:
+      - pkg: Percona-Server
+
+percona-mysql-init-and-run:
+## Installing MySQL system tables
+# PLEASE REMEMBER TO SET A PASSWORD FOR THE MySQL root USER !
+# /usr/bin/mysqladmin -u root password 'new-password'
+  cmd.run:
+    - name: /usr/bin/mysql_install_db
+    - onlyif:
+      - d_mysql=$(grep 'datadir' /etc/my.cnf |cut -d'=' -f2);
+        d_mysql_install="${d_mysql}/mysql";
+        test ! -d ${d_mysql_install}
+  service.running:
+    - name: mysql
+    - enable: True
+    - require:
+      - pkg: Percona-Server
+
+## for zabbix
+percona-mysql-zabbix-php:
+  file.managed:
+    - name: /etc/php.ini
+    - source: salt://conf.d/mysql/percona_zabbix_php.ini
+    - mode: 755
+    - require:
+      - pkg: Percona-Server
+
+      
+      
+      
+2、conf文件
+[root@tvm-saltmaster base]# tree conf.d/mysql/
+conf.d/mysql/
+├── my.cnf
+├── percona_zabbix_php.ini
+└── ss_get_mysql_stats.php
+
+0 directories, 3 files
+
+[root@tvm-saltmaster base]# cat conf.d/mysql/my.cnf 
+[mysqld]
+# GENERAL
+datadir=/data/mysql
+socket=/data/mysql/mysql.sock
+pid_file=/data/mysql/mysqld.pid
+user=mysql
+port=3306
+#enforce_storage_engine=InnoDB
+default-storage-engine=InnoDB
+character_set_server=utf8
+
+# InnoDB
+innodb_buffer_pool_size=2G
+innodb_flush_method=O_DIRECT
+innodb_file_per_table=1
+innodb_open_files=500
+innodb_log_buffer_size=128M
+innodb_log_file_size=256M
+innodb_stats_on_metadata=OFF
+innodb_support_xa=OFF
+innodb_thread_concurrency=0
+innodb_io_capacity=200
+
+# MyISAM
+key_buffer_size=128M
+
+#BINLOG
+server_id=10
+log_bin=/data/mysql/mysql-bin
+binlog_format=mixed
+#replicate-do-db=cdn
+#replicate-ignore-db=mysql
+#replicate-ignore-db=test
+#relay_log=/data/mysql/relay-log
+
+# LOGGING
+log_error=/data/mysql/mysql-error.log
+slow_query_log=ON
+long_query_time=2
+slow_query_log_file=/data/mysql/mysql-slow
+##These two variables are only for Percona
+max_slowlog_files=5
+max_slowlog_size=100M
+expire_logs_days=14
+
+# OTHER
+tmp_table_size=32M
+max_heap_table_size=32M
+open_files_limit=600000
+query_cache_type=0
+query_cache_size=0
+thread_cache_size=64
+table_definition_cache=500
+table_open_cache=1000
+max_allowed_packet=16M
+max_connections=800
+max_user_connections=400
+max_connect_errors=99999999
+skip_name_resolve
+
+[client]
+default_character_set=utf8
+socket=/data/mysql/mysql.sock
+
+其他2个文件，主要是timezone和mysql相关的配置要调整：
+
+[root@tvm-saltmaster base]# cat conf.d/mysql/percona_zabbix_php.ini |grep -E 'timezone|mysql.sock' |grep -v ';'
+date.timezone = Asia/Shanghai
+mysql.default_socket = /data/mysql/mysql.sock
+mysqli.default_socket = /data/mysql/mysql.sock
+
+
+三、执行
+[root@tvm-saltmaster base]# salt 'tvm-zabbix' state.sls mysql.server --output-file='/tmp/salt.log' 
+
+给mysql实例设置root密码：
+[root@tvm-zabbix ~]# /usr/bin/mysqladmin -u root password 'toortoor'
+创建zabbix库备用：
+[root@tvm-zabbix ~]# mysql -uroot -ptoortoor -e "create database zabbix character set utf8 collate utf8_bin;";
+[root@tvm-zabbix ~]# mysql -uroot -ptoortoor -e "grant all privileges on zabbix.* to zabbix@localhost identified by 'zabbix';"
+[root@tvm-zabbix ~]# mysql -uroot -ptoortoor -e "show databases;" 
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| test               |
+| zabbix             |
++--------------------+
+
+四、注意事项
+如果我们在另一个shell中，开启了salt-minion的debug日志，而同时，我们的salt-minion服务并未结束，此时有多个salt-minion：
+[root@tvm-zabbix ~]# salt-minion -l debug
+[root@tvm-zabbix ~]# ps -ef |grep salt
+root     31623     1  0 16:45 ?        00:00:01 /usr/bin/python2.6 /usr/bin/salt-minion -d
+root     31882  1205  0 17:04 pts/0    00:00:00 /usr/bin/python2.6 /usr/bin/salt-minion -l debug
+root     31885 31882  1 17:04 pts/0    00:00:00 /usr/bin/python2.6 /usr/bin/salt-minion -l debug
+root     32083 29908  0 17:05 pts/1    00:00:00 grep salt
+
+
+则，在salt-master上执行salt命令可能会出现如下的异常：
+
+[root@tvm-saltmaster base]# salt 'tvm-zabbix' state.sls mysql.server --output-file='/tmp/salt.log' 
+[root@tvm-saltmaster base]# cat /tmp/salt.log 
+tvm-zabbix:
+    Data failed to compile:
+----------
+    The function "state.sls" is running as PID 32031 and was started at 2015, Aug 12 17:04:42.900197 with jid 20150812170442900197
+
+因此，建议的做法是，先关闭monit和salt-minion服务，然后再手动启动debug模式的salt-minion服务：
+service monit stop
+service salt-minion stop
+salt-minion -l debug
+
+
+五、关于percona-zabbix-templates的使用说明
+1、创建文件：/var/lib/zabbix/percona/scripts/ss_get_mysql_stats.php.cnf
+[root@tvm-zabbix ~]# cat /var/lib/zabbix/percona/scripts/ss_get_mysql_stats.php.cnf
+<?php
+$mysql_user = 'root';
+$mysql_pass = 'toortoor';
+
+请注意，这里并没有php的结束标记！
+
+2、测试
+[root@tvm-zabbix ~]# /var/lib/zabbix/percona/scripts/get_mysql_stats_wrapper.sh gg
+12
+
+符合预期。
+
+3、配置shell执行mysql免密码登录的问题
+1）众所周知的.my.cnf文件
+[root@tvm-zabbix ~]# cat ~zabbix/.my.cnf
+[client]
+user = root
+password = toortoor
+
+4、测试
+1）sudo的-H参数，可以改变HOME变量为目标用户：
+[root@tvm-zabbix ~]# sudo -u zabbix -H mysql
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 127
+Server version: 5.5.38-35.2-log Percona Server (GPL), Release 35.2, Revision 674
+
+Copyright (c) 2009-2014 Percona LLC and/or its affiliates
+Copyright (c) 2000, 2014, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> 
+
+符合预期
+
+2）测试脚本
+[root@tvm-zabbix ~]# sudo -u zabbix -H /var/lib/zabbix/percona/scripts/get_mysql_stats_wrapper.sh running-slave
+0
+
+符合预期
+
+
+5、测试完后记得要删除CACHEFILE，这个文件是/var/lib/zabbix/percona/scripts/ss_get_mysql_stats.php执行时生成的。
+[root@tvm-zabbix ~]# ll /tmp/localhost-mysql_cacti_stats.txt 
+-rw-r--r-- 1 root root 1433 Aug 18 15:52 /tmp/localhost-mysql_cacti_stats.txt
+
+因为zabbix执行时，owner是zabbix，如果存在这个owner是root，则无法执行rm操作。
+
+6、设置文件权限，保护mysql相关的密码。
+[root@tvm-zabbix ~]# chown zabbix:zabbix /var/lib/zabbix \
+&& chmod 700 /var/lib/zabbix \
+&& ls -l /var/lib |grep zabbix                                                                          
+drwx------  3 zabbix  zabbix  4096 Aug 18 14:57 zabbix
+
+
+
+6、导入到zabbix中
+先下载模版：
+[root@tvm-zabbix ~]# sz /var/lib/zabbix/percona/templates/zabbix_agent_template_percona_mysql_server_ht_2.0.9-sver1.1.4.xml
+
+导入到zabbix-web中：  
+Configuration->Templates->Import  选择文件导入。
+
+
+
+
+
+
+
+ZYXW、参考
+1、老大提供的saltstack相关资料。
+2、zabbix doc
+https://www.zabbix.com/documentation/2.4/manual/appendix/install/db_scripts
+3、percona doc
+https://www.percona.com/doc/percona-monitoring-plugins/1.1/zabbix/index.html
+https://www.percona.com/doc/percona-monitoring-plugins/1.1/cacti/installing-templates.html#cacti-php-config-file

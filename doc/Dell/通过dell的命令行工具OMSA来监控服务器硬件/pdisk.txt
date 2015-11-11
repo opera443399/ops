@@ -1,0 +1,123 @@
+对应的zabbix配置：
+UserParameter=hardware_physics_health,awk -v hardware_physics_disk_number=`omreport storage pdisk controller=0|grep -c "^ID"` -v hardware_physics_disk=`omreport storage pdisk controller=0|awk '/^Status/{if($NF=="Ok") count+=1}END{print count}'` 'BEGIN{if(hardware_physics_disk_number==hardware_physics_disk) {print 1} else {print 0}}'
+
+
+涉及的命令：
+[root@local ~]# omreport storage pdisk controller=0
+
+List of Physical Disks on Controller PERC H710 Mini (Embedded)
+
+Controller PERC H710 Mini (Embedded)
+ID                              : 0:1:0
+Status                          : Ok
+Name                            : Physical Disk 0:1:0
+State                           : Online
+Power Status                    : Spun Up
+Bus Protocol                    : SATA
+Media                           : HDD
+Part of Cache Pool              : Not Applicable
+Remaining Rated Write Endurance : Not Applicable
+Failure Predicted               : No
+Revision                        : GA0A
+Driver Version                  : Not Applicable
+Model Number                    : Not Applicable
+T10 PI Capable                  : No
+Certified                       : Yes
+Encryption Capable              : No
+Encrypted                       : Not Applicable
+Progress                        : Not Applicable
+Mirror Set ID                   : Not Applicable
+Capacity                        : 1,862.50 GB (1999844147200 bytes)
+Used RAID Disk Space            : 1,862.50 GB (1999844147200 bytes)
+Available RAID Disk Space       : 0.00 GB (0 bytes)
+Hot Spare                       : No
+Vendor ID                       : DELL(tm)
+Product ID                      : ST2000NM0033-9ZM175
+Serial No.                      : Z1X2E6A5
+Part Number                     : Not Available
+Negotiated Speed                : 3.00 Gbps
+Capable Speed                   : 3.00 Gbps
+PCIe Maximum Link Width         : Not Applicable
+PCIe Negotiated Link Width      : Not Applicable
+Sector Size                     : 512B
+Device Write Cache              : Not Applicable
+Manufacture Day                 : Not Available
+Manufacture Week                : Not Available
+Manufacture Year                : Not Available
+SAS Address                     : 4433221104000000
+
+ID                              : 0:1:1
+Status                          : Ok
+Name                            : Physical Disk 0:1:1
+State                           : Online
+Power Status                    : Spun Up
+Bus Protocol                    : SATA
+Media                           : HDD
+Part of Cache Pool              : Not Applicable
+Remaining Rated Write Endurance : Not Applicable
+Failure Predicted               : No
+Revision                        : GA0A
+Driver Version                  : Not Applicable
+Model Number                    : Not Applicable
+T10 PI Capable                  : No
+Certified                       : Yes
+Encryption Capable              : No
+Encrypted                       : Not Applicable
+Progress                        : Not Applicable
+Mirror Set ID                   : Not Applicable
+Capacity                        : 1,862.50 GB (1999844147200 bytes)
+Used RAID Disk Space            : 1,862.50 GB (1999844147200 bytes)
+Available RAID Disk Space       : 0.00 GB (0 bytes)
+Hot Spare                       : No
+Vendor ID                       : DELL(tm)
+Product ID                      : ST2000NM0033-9ZM175
+Serial No.                      : Z1X2E9KJ
+Part Number                     : TH055FX52123344U03STA01
+Negotiated Speed                : 3.00 Gbps
+Capable Speed                   : 3.00 Gbps
+PCIe Maximum Link Width         : Not Applicable
+PCIe Negotiated Link Width      : Not Applicable
+Sector Size                     : 512B
+Device Write Cache              : Not Applicable
+Manufacture Day                 : Not Available
+Manufacture Week                : Not Available
+Manufacture Year                : Not Available
+SAS Address                     : 4433221105000000
+
+ID                              : 0:1:2
+Status                          : Ok
+Name                            : Physical Disk 0:1:2
+State                           : Online
+Power Status                    : Spun Up
+Bus Protocol                    : SATA
+Media                           : HDD
+Part of Cache Pool              : Not Applicable
+Remaining Rated Write Endurance : Not Applicable
+Failure Predicted               : No
+Revision                        : GA0A
+Driver Version                  : Not Applicable
+Model Number                    : Not Applicable
+T10 PI Capable                  : No
+Certified                       : Yes
+Encryption Capable              : No
+Encrypted                       : Not Applicable
+Progress                        : Not Applicable
+Mirror Set ID                   : Not Applicable
+Capacity                        : 1,862.50 GB (1999844147200 bytes)
+Used RAID Disk Space            : 1,862.50 GB (1999844147200 bytes)
+Available RAID Disk Space       : 0.00 GB (0 bytes)
+Hot Spare                       : No
+Vendor ID                       : DELL(tm)
+Product ID                      : ST2000NM0033-9ZM175
+Serial No.                      : Z1X2D7JF
+Part Number                     : Not Available
+Negotiated Speed                : 3.00 Gbps
+Capable Speed                   : 3.00 Gbps
+PCIe Maximum Link Width         : Not Applicable
+PCIe Negotiated Link Width      : Not Applicable
+Sector Size                     : 512B
+Device Write Cache              : Not Applicable
+Manufacture Day                 : Not Available
+Manufacture Week                : Not Available
+Manufacture Year                : Not Available
+SAS Address                     : 4433221106000000

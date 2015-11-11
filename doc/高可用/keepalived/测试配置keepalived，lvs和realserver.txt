@@ -1,0 +1,306 @@
+测试配置keepalived，lvs，realserver
+有2块地方要注意：
+1）keepalived的配置，分成global，vrrp，lvs
+2）realserver上启用vip的脚本
+
+
+一、需求
+配置1个vip对应4个real server
+vip: 10.0.205.100
+dip_master: 10.0.200.21
+dip_backup: 10.0.200.22
+rip: 10.0.205.2-5
+
+
+二、配置几个realserver的vip
+控制脚本：
+[root@svr200-21 salt]# cat lvs/bin/lvs-realsvr.sh 
+#!/bin/bash
+# 
+# 2015/2/28
+# lvs real server
+#
+# chkconfig:   - 85 15
+# description:  control vip on lvs realserver 
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# Source networking configuration.
+. /etc/sysconfig/network
+
+# Check that networking is up.
+[ "$NETWORKING" = "no" ] && exit 0
+
+lockfile="/var/lock/subsys/lvs-real"
+  
+s_vip='10.0.205.100'
+
+start() {
+  ifconfig lo:1 ${s_vip} netmask 255.255.255.255 broadcast ${s_vip}
+  echo 1 >/proc/sys/net/ipv4/conf/lo/arp_ignore
+  echo 2 >/proc/sys/net/ipv4/conf/lo/arp_announce
+  echo 1 >/proc/sys/net/ipv4/conf/all/arp_ignore
+  echo 2 >/proc/sys/net/ipv4/conf/all/arp_announce
+
+  retval=$?
+  echo
+  [ $retval -eq 0 ] && touch $lockfile
+  return $retval
+}
+
+stop() {
+  echo 0 >/proc/sys/net/ipv4/conf/lo/arp_ignore
+  echo 0 >/proc/sys/net/ipv4/conf/lo/arp_announce
+  echo 0 >/proc/sys/net/ipv4/conf/all/arp_ignore
+  echo 0 >/proc/sys/net/ipv4/conf/all/arp_announce
+  ifconfig lo:1 down
+
+  retval=$?
+  echo
+  [ $retval -eq 0 ] && rm -f $lockfile
+  return $retval
+}
+
+status() {
+  ip a |grep inet |grep -v inet6  
+}
+
+case $1 in  
+  start)
+    start
+    status
+    ;;
+  stop)
+    stop
+    status
+    ;;
+  status)
+    status
+    ;;
+  *)  
+    echo $"Usage: $0 {start|stop|status}"
+    exit 2 
+esac  
+
+在几个rip主机上start脚本，即可启用vip。
+
+
+
+三、配置keepalived服务
+【director-master】
+安装服务：
+[root@svr200-21 ~]# yum -y install ipvsadm keepalived
+
+[root@svr200-21 keepalived]# pwd
+/etc/keepalived
+[root@svr200-21 keepalived]# cp -a keepalived.conf  keepalived.conf.old
+
+配置文件：
+[root@svr200-21 keepalived]# cat keepalived.conf
+! Configuration File for keepalived
+
+global_defs {
+   notification_email {
+     root@localhost
+   }
+   notification_email_from root@localhost
+   smtp_server 127.0.0.1
+   smtp_connect_timeout 30
+   router_id LVS_200_21
+}
+
+vrrp_instance VIP_test1 {
+    state MASTER            # MASTER or BACKUP，大写
+    interface eth0          # 对外服务的端口
+    virtual_router_id 205   # 虚拟路由器id
+    priority 100            # 数值大则优先级高
+    advert_int 1            # 同步时间间隔
+    authentication {
+      auth_type PASS
+      auth_pass 654321
+    }
+    virtual_ipaddress {
+      10.0.205.100
+    }
+}
+
+virtual_server 10.0.205.100 80 {
+    delay_loop 6              # 健康检查时间间隔
+    lb_algo wrr                # 调度算法：rr | wrr | lc | wlc | lblc | sh | dh
+    lb_kind DR                # 转发规则：NAT | DR | TUN
+    #persistence_timeout 50   # 会话保持时间
+    protocol TCP
+
+    # genhash -s rip -p port -u url
+    # genhash -s 10.0.205.2 -p 80 -u /index.html
+
+    real_server 10.0.205.2 80 {
+      weight 1
+
+      HTTP_GET {                  # HTTP_GET | SSL_GET | TCP_CHECK | SMTP_CHECK | MISC_CHECK
+        url {
+          path /index.html
+          digest e93e7f6cfbc7c343707f21e2f681dd31
+        }
+        connect_timeout 3         # 连接超时时间，秒
+        nb_get_retry 3            # 失败重试次数，超过后移除
+        delay_before_retry 3      # 失败重试间隔，秒
+      }
+    }
+
+    real_server 10.0.205.3 80 {
+      weight 1
+
+      HTTP_GET {                  # HTTP_GET | SSL_GET | TCP_CHECK | SMTP_CHECK | MISC_CHECK
+        url {
+          path /index.html
+          digest b8682521d6c7a01d370ebad57ad6981f 
+        }
+        connect_timeout 3         # 连接超时时间，秒
+        nb_get_retry 3            # 失败重试次数，超过后移除
+        delay_before_retry 3      # 失败重试间隔，秒
+      }
+    }
+
+    real_server 10.0.205.4 80 {
+      weight 1
+
+      HTTP_GET {                  # HTTP_GET | SSL_GET | TCP_CHECK | SMTP_CHECK | MISC_CHECK
+        url {
+          path /index.html
+          digest 93c5e661950fabd0bfda085a513cdb7a
+        }
+        connect_timeout 3         # 连接超时时间，秒
+        nb_get_retry 3            # 失败重试次数，超过后移除
+        delay_before_retry 3      # 失败重试间隔，秒
+      }
+    }
+
+    real_server 10.0.205.5 80 {
+      weight 1
+
+      HTTP_GET {                  # HTTP_GET | SSL_GET | TCP_CHECK | SMTP_CHECK | MISC_CHECK
+        url {
+          path /index.html
+          digest e63f0e81e7a2fddb2d32d83aacbe8472
+        }
+        connect_timeout 3         # 连接超时时间，秒
+        nb_get_retry 3            # 失败重试次数，超过后移除
+        delay_before_retry 3      # 失败重试间隔，秒
+      }
+    }
+
+}
+
+【director-backup】
+[root@svr200-21 keepalived]# diff keepalived.conf  backup/keepalived.conf 
+10c10
+<    router_id LVS_200_21
+---
+>    router_id LVS_200_22
+14c14
+<     state MASTER            # MASTER or BACKUP，大写
+---
+>     state BACKUP            # MASTER or BACKUP，大写
+17c17
+<     priority 100            # 数值大则优先级高
+---
+>     priority 50             # 数值大则优先级高
+
+
+
+四、启动服务
+[root@svr200-21 keepalived]# service keepalived start
+Starting keepalived:                                       [  OK  ]
+
+[root@svr200-21 keepalived]# tail -f /var/log/messages
+Feb 28 16:37:02 server200-21 Keepalived_healthcheckers[23679]: Activating healthchecker for service [10.0.205.2]:80
+Feb 28 16:37:02 server200-21 Keepalived_healthcheckers[23679]: Activating healthchecker for service [10.0.205.3]:80
+Feb 28 16:37:02 server200-21 Keepalived_healthcheckers[23679]: Activating healthchecker for service [10.0.205.4]:80
+Feb 28 16:37:02 server200-21 Keepalived_healthcheckers[23679]: Activating healthchecker for service [10.0.205.5]:80
+Feb 28 16:37:03 server200-21 Keepalived_vrrp[23680]: VRRP_Instance(VIP1) Transition to MASTER STATE
+Feb 28 16:37:04 server200-21 Keepalived_vrrp[23680]: VRRP_Instance(VIP1) Entering MASTER STATE
+Feb 28 16:37:04 server200-21 Keepalived_vrrp[23680]: VRRP_Instance(VIP1) setting protocol VIPs.
+Feb 28 16:37:04 server200-21 Keepalived_vrrp[23680]: VRRP_Instance(VIP1) Sending gratuitous ARPs on eth0 for 10.0.205.100
+Feb 28 16:37:04 server200-21 Keepalived_healthcheckers[23679]: Netlink reflector reports IP 10.0.205.100 added
+Feb 28 16:37:09 server200-21 Keepalived_vrrp[23680]: VRRP_Instance(VIP1) Sending gratuitous ARPs on eth0 for 10.0.205.100
+   
+查看lvs：
+[root@svr200-21 keepalived]# ipvsadm -Ln               
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  10.0.205.100:80 wrr
+  -> 10.0.205.2:80                Route   1      3          0         
+  -> 10.0.205.3:80                Route   1      1          0         
+  -> 10.0.205.4:80                Route   1      2          0         
+  -> 10.0.205.5:80                Route   1      2          0    
+
+
+访问网站：
+http://10.0.205.100
+得到：
+--------------------------
+HOST: svr205-5 
+
+
+lo: 127.0.0.1 
+eth0: 10.0.205.5 
+--------------------------
+
+
+   
+停止了svr205-5 上的的nginx服务后：
+[root@svr200-21 keepalived]# tail -f /var/log/messages
+Feb 28 16:41:26 server200-21 Keepalived_healthcheckers[23679]: Error connecting server [10.0.205.5]:80.
+Feb 28 16:41:26 server200-21 Keepalived_healthcheckers[23679]: Removing service [10.0.205.5]:80 from VS [10.0.205.100]:80
+Feb 28 16:41:26 server200-21 Keepalived_healthcheckers[23679]: Remote SMTP server [127.0.0.1]:25 connected.
+Feb 28 16:41:26 server200-21 Keepalived_healthcheckers[23679]: SMTP alert successfully sent.
+
+
+访问网站：
+http://10.0.205.100
+得到：
+--------------------------
+HOST: svr205-4 
+
+
+lo: 127.0.0.1 
+eth0: 10.0.205.4 
+--------------------------
+
+查看lvs：
+[root@svr200-21 keepalived]# ipvsadm -Ln
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  10.0.205.100:80 wrr
+  -> 10.0.205.2:80                Route   1      0          0         
+  -> 10.0.205.3:80                Route   1      2          0         
+  -> 10.0.205.4:80                Route   1      3          0  
+  
+  
+  
+再次启动svr205-5 上的的nginx服务
+[root@svr200-21 keepalived]# tail -f /var/log/messages
+Feb 28 16:42:50 server200-21 Keepalived_healthcheckers[23679]: MD5 digest success to [10.0.205.5]:80 url(1).
+Feb 28 16:42:56 server200-21 Keepalived_healthcheckers[23679]: Remote Web server [10.0.205.5]:80 succeed on service.
+Feb 28 16:42:56 server200-21 Keepalived_healthcheckers[23679]: Adding service [10.0.205.5]:80 to VS [10.0.205.100]:80
+Feb 28 16:42:56 server200-21 Keepalived_healthcheckers[23679]: Remote SMTP server [127.0.0.1]:25 connected.
+Feb 28 16:42:56 server200-21 Keepalived_healthcheckers[23679]: SMTP alert successfully sent.
+
+查看lvs：  
+[root@svr200-21 keepalived]# ipvsadm -Ln
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  10.0.205.100:80 wrr
+  -> 10.0.205.2:80                Route   1      0          0         
+  -> 10.0.205.3:80                Route   1      2          0         
+  -> 10.0.205.4:80                Route   1      3          0         
+  -> 10.0.205.5:80                Route   1      3          0 
+  
+  
+  
+  

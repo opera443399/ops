@@ -1,0 +1,456 @@
+﻿日期：2015/7/15 - 2015/7/15
+主机：tvm-rpm
+目的：测试使用fpm将python3的源码打包成rpm来安装
+操作内容：
+一、基础环境
+1、在tvm-base-centos66的基础上，复制一个镜像为tvm-rpm来测试。
+2、网络：
+eth0：host-only（用于虚拟内网，手动固定IP，这样从宿主机可以直接连接到这个vm）
+eth1：NAT（用于上外网，动态IP）
+[root@tvm-rpm ~]# cd /etc/sysconfig/network-scripts/
+[root@tvm-rpm network-scripts]# cat ifcfg-eth0
+DEVICE=eth0
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=192.168.56.253
+PREFIX=24
+GATEWAY=192.168.56.1
+DNS1=192.168.56.254
+
+[root@tvm-rpm network-scripts]# cat ifcfg-eth1
+DEVICE=eth1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+DNS1=192.168.56.254
+
+
+二、配置fpm环境
+1、安装ruby和fpm
+[root@tvm-rpm ~]# yum install ruby rubygems ruby-devel
+
+更换gem的源：
+[root@tvm-rpm ~]# gem sources --remove http://rubygems.org/ 
+[root@tvm-rpm ~]# gem sources -a http://mirrors.aliyun.com/rubygems/
+[root@tvm-rpm ~]# gem sources -a https://ruby.taobao.org/
+[root@tvm-rpm ~]# gem sources -l
+*** CURRENT SOURCES ***
+
+http://mirrors.aliyun.com/rubygems/
+https://ruby.taobao.org/
+
+
+[root@tvm-rpm ~]# gem -v
+1.3.7
+[root@tvm-rpm ~]# ruby -v
+ruby 1.8.7 (2013-06-27 patchlevel 374) [x86_64-linux]
+
+安装fpm
+[root@tvm-rpm ~]# gem install fpm -V
+[root@tvm-rpm ~]# fpm --version
+1.3.3
+
+2、fpm的参数
+参考：https://github.com/jordansissel/fpm/wiki
+% fpm -s <source type> -t <target type> [options]
+-s                          源格式
+-t                          目标格式
+-n                          包名
+-v                          version值，实际版本号
+--iteration                 release值，发布序列号
+--epoch                     epoch值
+--vendor                    厂商
+--maintainer                维护者
+--description               描述
+--url                       软件主页
+--workdir                   fpm工作目录
+-d                          依赖的软件包
+--directories               递归指定的目录标记为属于这个包
+-C                          切换到指定的目录
+-p                          输出到指定的路径
+--force                     强制覆盖文件
+
+--after-install FILE        包安装后执行的脚本
+--before-install FILE       包安装前执行的脚本
+--after-remove FILE         包移除后执行的脚本
+--before-remove FILE        包移除前执行的脚本
+--after-upgrade FILE        包升级后执行的脚本
+--before-upgrade FILE       包升级前执行的脚本
+
+-e                          building前编辑spec文件
+
+
+三、将python3的源码打包成rpm来安装
+1、配置编译python环境所需的包
+[root@tvm-rpm ~]# mkdir /data/{download,rpms}
+使用局域网的epel源：
+[root@tvm-rpm ~]# mv /etc/yum.repos.d/*.repo /tmp/ \
+&& wget http://mirrors.office.test/local-office.repo -O /etc/yum.repos.d/local-office.repo \
+&& yum clean all \
+&& yum makecache
+
+注：如果要使用公网的epel源，可以这样操作：
+# rpm -Uvh http://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+
+[root@tvm-rpm ~]# yum -y groupinstall "Development tools"
+[root@tvm-rpm ~]# yum -y install openssl-devel readline-devel bzip2-devel sqlite-devel zlib-devel ncurses-devel db4-devel expat-devel
+
+下载最新的python源码包：
+[root@tvm-rpm ~]# wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tgz -O /data/download/Python-3.4.3.tgz
+[root@tvm-rpm ~]# cd /data/download/
+[root@tvm-rpm download]# tar xf Python-3.4.3.tgz 
+[root@tvm-rpm download]# cd Python-3.4.3
+[root@tvm-rpm Python-3.4.3]# 
+[root@tvm-rpm Python-3.4.3]# export DIR_PY_SRC_INSTALL=/data/rpms/Python-3.4.3
+[root@tvm-rpm Python-3.4.3]# export DIR_PY_RPM_INSTALL=/usr/local
+
+[root@tvm-rpm Python-3.4.3]# export LDFLAGS="-Wl,-rpath=${DIR_PY_RPM_INSTALL}/lib ${LDFLAGS}"
+[root@tvm-rpm Python-3.4.3]# ./configure --prefix=${DIR_PY_RPM_INSTALL}
+[root@tvm-rpm Python-3.4.3]# make
+[root@tvm-rpm Python-3.4.3]# make install DESTDIR=${DIR_PY_SRC_INSTALL}
+[root@tvm-rpm Python-3.4.3]# cd ..
+
+我们来看一下，生成了那些目录和文件：
+[root@tvm-rpm Python-3.4.3]# cd /data/rpms
+[root@tvm-rpm Python-3.4.3]# ls Python-3.4.3/usr/local/
+bin  include  lib  share
+
+
+2、开始打包
+[root@tvm-rpm Python-3.4.3]# fpm -s dir -t rpm \
+    -n python3 \
+    -v '3.4.3' \
+    --iteration '1.el6' \
+    --epoch '0' \
+    --vendor ' Python Software Foundation' \
+    --maintainer 'PC' \
+    --description 'use fpm to make a pkg for python-3.4.3' \
+    --url 'https://www.python.org/downloads/release/python-343/' \
+    --workdir /data/rpms \
+    -p /data/rpms/pkgs/ \
+    -C ${DIR_PY_SRC_INSTALL} \
+    --directories=${DIR_PY_RPM_INSTALL}/lib \
+    --directories=${DIR_PY_RPM_INSTALL}/include \
+    -d 'openssl' \
+    -d 'bzip2' \
+    -d 'zlib' \
+    -d 'expat' \
+    -d 'db4' \
+    -d 'sqlite' \
+    -d 'ncurses' \
+    -d 'readline' \
+Created package {:path=>"/data/rpms/pkgs/python3-3.4.3-1.el6.x86_64.rpm"}
+
+我们来看看包的内容：
+[root@tvm-rpm rpms]# rpm -qpi pkgs/python3-3.4.3-1.el6.x86_64.rpm 
+Name        : python3                      Relocations: / 
+Version     : 3.4.3                             Vendor: Python Software Foundation
+Release     : 1.el6                         Build Date: Wed 15 Jul 2015 04:55:17 PM CST
+Install Date: (not installed)               Build Host: tvm-rpm
+Group       : default                       Source RPM: python3-3.4.3-1.el6.src.rpm
+Size        : 126285890                        License: unknown
+Signature   : (none)
+Packager    : PC
+URL         : https://www.python.org/downloads/release/python-343/
+Summary     : use fpm to make a pkg for python-3.4.3
+Description :
+use fpm to make a pkg for python-3.4.3
+
+
+3、安装测试
+1）安装前：
+[root@tvm-rpm rpms]# ls /usr/local/{bin,include,lib,share/man}
+/usr/local/bin:
+
+/usr/local/include:
+
+/usr/local/lib:
+
+/usr/local/share/man/man1:
+
+2）开始安装：
+[root@tvm-rpm rpms]# rpm -ivh pkgs/python3-3.4.3-1.el6.x86_64.rpm 
+Preparing...                ########################################### [100%]
+   1:python3                ########################################### [100%]
+[root@tvm-rpm rpms]# rpm -qa |grep python3
+python3-3.4.3-1.el6.x86_64
+
+3）安装后：
+[root@tvm-rpm rpms]# ls /usr/local/{bin,include,lib,share/man/man1}
+/usr/local/bin:
+2to3  2to3-3.4  easy_install-3.4  idle3  idle3.4  pip3  pip3.4  pydoc3  pydoc3.4  python3  python3.4  python3.4-config  python3.4m  python3.4m-config  python3-config  pyvenv  pyvenv-3.4
+
+/usr/local/include:
+python3.4m
+
+/usr/local/lib:
+libpython3.4m.a  pkgconfig  python3.4
+
+/usr/local/share/man/man1:
+python3.1  python3.4.1
+
+执行python命令，查看版本：
+[root@tvm-rpm rpms]# python3 -c "import sys; print(sys.version)"
+3.4.3 (default, Jul 15 2015, 14:40:59) 
+[GCC 4.4.7 20120313 (Red Hat 4.4.7-11)]
+
+4）卸载：
+[root@tvm-rpm rpms]# rpm -e python3-3.4.3-1.el6.x86_64           
+[root@tvm-rpm rpms]# ls /usr/local/{bin,include,lib,share/man/man1}
+/usr/local/bin:
+
+/usr/local/include:
+
+/usr/local/lib:
+
+/usr/local/share/man/man1:
+
+
+符合预期。
+
+
+四、TODO
+1、打包几个其他的东西，例如yum源的配置文件。
+[root@tvm-rpm pkgs]# cd /data/rpms/pkgs/
+[root@tvm-rpm pkgs]# fpm -s dir -t rpm \
+    -a 'x86_64' \
+    -n 'office-repo-latest' \
+    -v '6' \
+    --iteration '1.el6' \
+    --epoch '0' \
+    --vendor 'pc@office' \
+    --maintainer 'PC' \
+    --description 'provide file: [local-office.repo] for local users. include: centos-base, eple, user-define rpms' \
+    /etc/yum.repos.d/local-office.repo 
+    
+Created package {:path=>"office-repo-latest-6-1.el6.noarch.rpm"}
+
+[root@tvm-rpm pkgs]# rpm -qpl office-repo-latest-6-1.el6.x86_64.rpm 
+/etc/yum.repos.d/local-office.repo
+[root@tvm-rpm pkgs]# rpm -qpi office-repo-latest-6-1.el6.x86_64.rpm  
+Name        : office-repo-latest           Relocations: / 
+Version     : 6                                 Vendor: pc@office
+Release     : 1.el6                         Build Date: Thu 06 Aug 2015 04:53:26 PM CST
+Install Date: (not installed)               Build Host: tvm-rpm
+Group       : default                       Source RPM: office-repo-latest-6-1.el6.src.rpm
+Size        : 2392                             License: unknown
+Signature   : (none)
+Packager    : PC
+URL         : http://example.com/no-uri-given
+Summary     : provide file: [local-office.repo] for local users. include: centos-base, eple, user-define rpms
+Description :
+provide file: [local-office.repo] for local users. include: centos-base, eple, user-define rpms
+
+测试1：将打包的文件拷贝到其他主机上
+[root@tvm-test ~]# mv /etc/yum.repos.d/local-office.repo /tmp/
+安装：
+[root@tvm-test ~]# rpm -ivh office-repo-latest-6-1.el6.x86_64.rpm 
+Preparing...                ########################################### [100%]
+   1:office-repo-latest     ########################################### [100%]
+[root@tvm-test ~]# diff /etc/yum.repos.d/local-office.repo /tmp/local-office.repo 
+
+
+测试2：将打包的文件拷贝到本地的yum源来提供安装。
+[root@tvm-yum ~]# mv office-repo-latest-6-1.el6.x86_64.rpm /data/yum/repo/
+先移除之前测试1安装的包：
+[root@tvm-test ~]# rpm -qa |grep office
+office-repo-latest-6-1.el6.x86_64
+[root@tvm-test ~]# rpm -e office-repo-latest-6-1.el6.x86_64
+安装：
+[root@tvm-test ~]# rpm -ivh http://mirrors.office.test/office-repo-latest-6-1.el6.x86_64.rpm
+Retrieving http://mirrors.office.test/office-repo-latest-6-1.el6.x86_64.rpm
+Preparing...                ########################################### [100%]
+   1:office-repo-latest     ########################################### [100%]
+[root@tvm-test ~]# diff /etc/yum.repos.d/local-office.repo /tmp/local-office.repo    
+
+
+2、打包最新版的monit
+1）从官网下载最新的binary
+[root@tvm-pkgs rpms]# mkdir monit && cd monit
+[root@tvm-pkgs monit]# wget https://mmonit.com/monit/dist/binary/5.14/monit-5.14-linux-x64.tar.gz
+[root@tvm-pkgs monit]# tar zxvf monit-5.14-linux-x64.tar.gz 
+monit-5.14/
+monit-5.14/bin/
+monit-5.14/bin/monit
+monit-5.14/COPYING
+monit-5.14/conf/
+monit-5.14/conf/monitrc
+monit-5.14/man/
+monit-5.14/man/man1/
+monit-5.14/man/man1/monit.1
+[root@tvm-pkgs monit]# cd monit-5.14
+[root@tvm-pkgs monit-5.14]# ll bin/ conf/ man/man1/
+bin/:
+total 2688
+-rwxr-xr-x 1 root root 2752045 Jun  9 18:18 monit
+
+conf/:
+total 12
+-rw------- 1 root root 11220 Jun  9 18:18 monitrc
+
+man/man1/:
+total 132
+-rw-r--r-- 1 root root 131280 Jun  9 18:18 monit.1
+
+拷贝到合适的位置：
+[root@tvm-pkgs monit-5.14]# cp -a bin/monit /usr/bin/  
+[root@tvm-pkgs monit-5.14]# cp -a conf/monitrc /etc/
+[root@tvm-pkgs monit-5.14]# cp -a man/man1/monit.1 /usr/share/man/man1/
+
+增加一个控制脚本：
+[root@tvm-pkgs monit-5.14]# ll init.d/
+total 4
+-rwxr-xr-x 1 root root 1272 Jun  5  2014 monit
+[root@tvm-pkgs monit-5.14]# cp -a init.d/monit /etc/init.d/
+
+创建目录：
+[root@tvm-pkgs monit-5.14]# mkdir /etc/monit.d
+调整配置文件：
+[root@tvm-pkgs monit-5.14]# grep ^[^#] /etc/monitrc
+set daemon  120
+   with start delay 240 
+set logfile /var/log/monit
+include /etc/monit.d/*
+
+2）打包
+[root@tvm-rpm monit-5.14]# cd /data/rpms/pkgs/
+[root@tvm-pkgs pkgs]# fpm -s dir -t rpm \
+    -a 'x86_64' \
+    -n 'monit' \
+    -v '5.14' \
+    --iteration '1.el6' \
+    --epoch '0' \
+    --vendor 'pc@office' \
+    --maintainer 'PC' \
+    --description 'monit-5.14 for local users' \
+    /usr/bin/monit \
+    /etc/monitrc \
+    /etc/monit.d \
+    /usr/share/man/man1/monit.1 \
+    /etc/init.d/monit
+
+Created package {:path=>"monit-5.14-1.el6.x86_64.rpm"}
+
+[root@tvm-pkgs pkgs]# rpm -qpl monit-5.14-1.el6.x86_64.rpm 
+/etc/init.d/monit
+/etc/monit.d
+/etc/monitrc
+/usr/bin/monit
+/usr/share/man/man1/monit.1
+[root@tvm-pkgs pkgs]# rpm -qpi monit-5.14-1.el6.x86_64.rpm  
+Name        : monit                        Relocations: / 
+Version     : 5.14                              Vendor: pc@office
+Release     : 1.el6                         Build Date: Fri 28 Aug 2015 06:00:57 PM CST
+Install Date: (not installed)               Build Host: tvm-pkgs
+Group       : default                       Source RPM: monit-5.14-1.el6.src.rpm
+Size        : 2895915                          License: unknown
+Signature   : (none)
+Packager    : PC
+URL         : http://example.com/no-uri-given
+Summary     : monit-5.14 for local users
+Description :
+monit-5.14 for local users
+
+测试1：将打包的文件拷贝到其他主机上
+[root@tvm-test ~]# rpm -Uvh monit-5.14-1.el6.x86_64.rpm 
+Preparing...                ########################################### [100%]
+   1:monit                  ########################################### [100%]
+
+[root@tvm-test ~]# service monit start
+Starting monit: Starting Monit 5.14 daemon
+Monit start delay set -- pause for 240s
+                                                           [  OK  ]
+[root@tvm-test ~]# chkconfig monit on
+
+
+卸载：
+[root@tvm-test ~]# rpm -e monit-5.14-1.el6.x86_64
+[root@tvm-test ~]# ls /usr/bin/monit /etc/monitrc 
+ls: cannot access /usr/bin/monit: No such file or directory
+ls: cannot access /etc/monitrc: No such file or directory
+
+可以发现，已经被删除。
+
+测试2：更新到本地的yum源后安装
+[root@tvm-yum x86_64]# pwd
+/data/yum/repo/office/6/x86_64
+上传rpm包，重建repo：
+[root@tvm-yum x86_64]# createrepo .
+Spawning worker 0 with 30 pkgs
+Workers Finished
+Gathering worker results
+
+Saving Primary metadata
+Saving file lists metadata
+Saving other metadata
+Generating sqlite DBs
+Sqlite DBs complete
+
+安装：
+[root@tvm-test ~]# yum makecache
+[root@tvm-test ~]# yum install monit
+Loaded plugins: fastestmirror, security
+Loading mirror speeds from cached hostfile
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package monit.x86_64 0:5.14-1.el6 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+===============================================================================================================================
+ Package                     Arch                         Version                           Repository                    Size
+===============================================================================================================================
+Installing:
+ monit                       x86_64                       5.14-1.el6                        office                       1.2 M
+
+Transaction Summary
+===============================================================================================================================
+Install       1 Package(s)
+
+Total download size: 1.2 M
+Installed size: 2.8 M
+Is this ok [y/N]: y
+Downloading Packages:
+monit-5.14-1.el6.x86_64.rpm                                                                             | 1.2 MB     00:00     
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+  Installing : monit-5.14-1.el6.x86_64                                                                                     1/1 
+  Verifying  : monit-5.14-1.el6.x86_64                                                                                     1/1 
+
+Installed:
+  monit.x86_64 0:5.14-1.el6                                                                                                    
+
+Complete!
+
+
+
+ZYXW、参考
+1、fpm/wiki
+https://github.com/jordansissel/fpm/wiki
+2、使用 FPM 创建 Python 的 RPM 包
+http://theo.im/blog/2014/05/16/use-fpm-to-create-python-rpm-packages/
+3、使用FPM快速生成RPM包
+https://linux.cn/article-3184-1.html
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

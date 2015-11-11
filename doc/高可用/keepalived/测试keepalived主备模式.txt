@@ -1,0 +1,260 @@
+测试keepalived主备模式
+目的：观察VIP在主备服务器上的切换过程
+
+http://www.rootop.org/pages/2348.html
+
+一、安装
+yum -y install ipvsadm keepalived
+
+二、服务配置
+【keepalived  主】
+[root@LVS_201-1 ~]# cat /etc/keepalived/keepalived.conf 
+! Configuration File for keepalived
+
+global_defs {
+   router_id LVS_201-1
+}
+
+vrrp_instance VIP_test_1 {
+    state MASTER
+    interface em1
+    virtual_router_id 150
+    priority 100
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        10.0.201.100
+    }
+}
+[root@LVS_201-1 ~]# service keepalived start
+
+【keepalived  备】
+[root@LVS_201-2 ~]# cat /etc/keepalived/keepalived.conf 
+! Configuration File for keepalived
+
+global_defs {
+   router_id LVS_201-2
+}
+
+vrrp_instance VIP_test_1 {
+    state BACKUP
+    interface em1
+    virtual_router_id 150
+    priority 50
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        10.0.201.100
+    }
+}
+[root@LVS_LVS_201-2 ~]# service keepalived start
+
+
+三、刚启动时
+【keepalived  主】
+Mar 31 17:44:23 LVS_201-1 Keepalived[39251]: Starting Keepalived v1.2.13 (10/15,2014)
+Mar 31 17:44:23 LVS_201-1 Keepalived[39252]: Starting Healthcheck child process, pid=39253
+Mar 31 17:44:23 LVS_201-1 Keepalived[39252]: Starting VRRP child process, pid=39254
+Mar 31 17:44:23 LVS_201-1 Keepalived_vrrp[39254]: Netlink reflector reports IP 10.0.201.1 added
+Mar 31 17:44:23 LVS_201-1 Keepalived_vrrp[39254]: Netlink reflector reports IP fe80::569f:35ff:fe0f:e098 added
+Mar 31 17:44:23 LVS_201-1 Keepalived_vrrp[39254]: Registering Kernel netlink reflector
+Mar 31 17:44:23 LVS_201-1 Keepalived_vrrp[39254]: Registering Kernel netlink command channel
+Mar 31 17:44:23 LVS_201-1 Keepalived_vrrp[39254]: Registering gratuitous ARP shared channel
+Mar 31 17:44:23 LVS_201-1 Keepalived_healthcheckers[39253]: Netlink reflector reports IP 10.0.201.1 added
+Mar 31 17:44:23 LVS_201-1 Keepalived_healthcheckers[39253]: Netlink reflector reports IP fe80::569f:35ff:fe0f:e098 added
+Mar 31 17:44:23 LVS_201-1 Keepalived_healthcheckers[39253]: Registering Kernel netlink reflector
+Mar 31 17:44:23 LVS_201-1 Keepalived_healthcheckers[39253]: Registering Kernel netlink command channel
+Mar 31 17:44:23 LVS_201-1 Keepalived_vrrp[39254]: Opening file '/etc/keepalived/keepalived.conf'.
+Mar 31 17:44:23 LVS_201-1 Keepalived_vrrp[39254]: Configuration is using : 61953 Bytes
+Mar 31 17:44:23 LVS_201-1 Keepalived_vrrp[39254]: Using LinkWatch kernel netlink reflector...
+Mar 31 17:44:23 LVS_201-1 Keepalived_vrrp[39254]: VRRP sockpool: [ifindex(2), proto(112), unicast(0), fd(10,11)]
+Mar 31 17:44:23 LVS_201-1 Keepalived_healthcheckers[39253]: Opening file '/etc/keepalived/keepalived.conf'.
+Mar 31 17:44:23 LVS_201-1 Keepalived_healthcheckers[39253]: Configuration is using : 6491 Bytes
+Mar 31 17:44:23 LVS_201-1 Keepalived_healthcheckers[39253]: Using LinkWatch kernel netlink reflector...
+Mar 31 17:44:24 LVS_201-1 Keepalived_vrrp[39254]: VRRP_Instance(VIP_test_1) Transition to MASTER STATE
+Mar 31 17:44:25 LVS_201-1 Keepalived_vrrp[39254]: VRRP_Instance(VIP_test_1) Entering MASTER STATE
+Mar 31 17:44:25 LVS_201-1 Keepalived_vrrp[39254]: VRRP_Instance(VIP_test_1) setting protocol VIPs.
+Mar 31 17:44:25 LVS_201-1 Keepalived_vrrp[39254]: VRRP_Instance(VIP_test_1) Sending gratuitous ARPs on em1 for 10.0.201.100
+Mar 31 17:44:25 LVS_201-1 Keepalived_healthcheckers[39253]: Netlink reflector reports IP 10.0.201.100 added
+Mar 31 17:44:30 LVS_201-1 Keepalived_vrrp[39254]: VRRP_Instance(VIP_test_1) Sending gratuitous ARPs on em1 for 10.0.201.100
+
+[root@LVS_201-1 ~]# ip a s dev em1
+2: em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP qlen 1000
+    link/ether 54:9f:35:0f:e0:98 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.201.1/8 brd 10.255.255.255 scope global em1
+    inet 10.0.201.100/32 scope global em1
+    inet6 fe80::569f:35ff:fe0f:e098/64 scope link 
+       valid_lft forever preferred_lft forever
+
+【keepalived  备】
+Mar 31 17:44:56 LVS_201-2 Keepalived[39000]: Starting Keepalived v1.2.13 (10/15,2014)
+Mar 31 17:44:56 LVS_201-2 Keepalived[39001]: Starting Healthcheck child process, pid=39002
+Mar 31 17:44:56 LVS_201-2 Keepalived[39001]: Starting VRRP child process, pid=39003
+Mar 31 17:44:56 LVS_201-2 Keepalived_vrrp[39003]: Netlink reflector reports IP 10.0.201.2 added
+Mar 31 17:44:56 LVS_201-2 Keepalived_vrrp[39003]: Netlink reflector reports IP fe80::46a8:42ff:fe0b:f805 added
+Mar 31 17:44:56 LVS_201-2 Keepalived_vrrp[39003]: Registering Kernel netlink reflector
+Mar 31 17:44:56 LVS_201-2 Keepalived_vrrp[39003]: Registering Kernel netlink command channel
+Mar 31 17:44:56 LVS_201-2 Keepalived_vrrp[39003]: Registering gratuitous ARP shared channel
+Mar 31 17:44:56 LVS_201-2 Keepalived_healthcheckers[39002]: Netlink reflector reports IP 10.0.201.2 added
+Mar 31 17:44:56 LVS_201-2 Keepalived_healthcheckers[39002]: Netlink reflector reports IP fe80::46a8:42ff:fe0b:f805 added
+Mar 31 17:44:56 LVS_201-2 Keepalived_healthcheckers[39002]: Registering Kernel netlink reflector
+Mar 31 17:44:56 LVS_201-2 Keepalived_healthcheckers[39002]: Registering Kernel netlink command channel
+Mar 31 17:44:56 LVS_201-2 Keepalived_vrrp[39003]: Opening file '/etc/keepalived/keepalived.conf'.
+Mar 31 17:44:56 LVS_201-2 Keepalived_vrrp[39003]: Configuration is using : 61951 Bytes
+Mar 31 17:44:56 LVS_201-2 Keepalived_vrrp[39003]: Using LinkWatch kernel netlink reflector...
+Mar 31 17:44:56 LVS_201-2 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) Entering BACKUP STATE
+Mar 31 17:44:56 LVS_201-2 Keepalived_vrrp[39003]: VRRP sockpool: [ifindex(2), proto(112), unicast(0), fd(10,11)]
+Mar 31 17:44:56 LVS_201-2 Keepalived_healthcheckers[39002]: Opening file '/etc/keepalived/keepalived.conf'.
+Mar 31 17:44:56 LVS_201-2 Keepalived_healthcheckers[39002]: Configuration is using : 6489 Bytes
+Mar 31 17:44:56 LVS_201-2 Keepalived_healthcheckers[39002]: Using LinkWatch kernel netlink reflector...
+
+[root@LVS_201-2 ~]# ip a s dev em1
+2: em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP qlen 1000
+    link/ether 44:a8:42:0b:f8:05 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.201.2/8 brd 10.255.255.255 scope global em1
+    inet6 fe80::46a8:42ff:fe0b:f805/64 scope link 
+       valid_lft forever preferred_lft forever
+
+
+四、停止主
+【keepalived  主】
+Mar 31 17:45:47 LVS_201-1 Keepalived[39252]: Stopping Keepalived v1.2.13 (10/15,2014)
+Mar 31 17:45:47 LVS_201-1 Keepalived_vrrp[39254]: VRRP_Instance(VIP_test_1) sending 0 priority
+Mar 31 17:45:47 LVS_201-1 Keepalived_vrrp[39254]: VRRP_Instance(VIP_test_1) removing protocol VIPs.
+
+[root@LVS_201-1 ~]# ip a s dev em1         
+2: em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP qlen 1000
+    link/ether 54:9f:35:0f:e0:98 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.201.1/8 brd 10.255.255.255 scope global em1
+    inet6 fe80::569f:35ff:fe0f:e098/64 scope link 
+       valid_lft forever preferred_lft forever
+       
+
+【keepalived  备】
+Mar 31 17:46:16 LVS_201-2 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) Transition to MASTER STATE
+Mar 31 17:46:17 LVS_201-2 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) Entering MASTER STATE
+Mar 31 17:46:17 LVS_201-2 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) setting protocol VIPs.
+Mar 31 17:46:17 LVS_201-2 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) Sending gratuitous ARPs on em1 for 10.0.201.100
+Mar 31 17:46:17 LVS_201-2 Keepalived_healthcheckers[39002]: Netlink reflector reports IP 10.0.201.100 added
+Mar 31 17:46:22 LVS_201-2 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) Sending gratuitous ARPs on em1 for 10.0.201.100
+
+[root@LVS_201-2 ~]# ip a s dev em1
+2: em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP qlen 1000
+    link/ether 44:a8:42:0b:f8:05 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.201.2/8 brd 10.255.255.255 scope global em1
+    inet 10.0.201.100/32 scope global em1
+    inet6 fe80::46a8:42ff:fe0b:f805/64 scope link 
+       valid_lft forever preferred_lft forever
+
+
+
+五、再次启动主
+【keepalived  主】
+Mar 31 17:46:18 LVS_201-1 Keepalived[39282]: Starting Keepalived v1.2.13 (10/15,2014)
+Mar 31 17:46:18 LVS_201-1 Keepalived[39283]: Starting Healthcheck child process, pid=39284
+Mar 31 17:46:18 LVS_201-1 Keepalived[39283]: Starting VRRP child process, pid=39285
+Mar 31 17:46:18 LVS_201-1 Keepalived_healthcheckers[39284]: Netlink reflector reports IP 10.0.201.1 added
+Mar 31 17:46:18 LVS_201-1 Keepalived_healthcheckers[39284]: Netlink reflector reports IP fe80::569f:35ff:fe0f:e098 added
+Mar 31 17:46:18 LVS_201-1 Keepalived_healthcheckers[39284]: Registering Kernel netlink reflector
+Mar 31 17:46:18 LVS_201-1 Keepalived_vrrp[39285]: Netlink reflector reports IP 10.0.201.1 added
+Mar 31 17:46:18 LVS_201-1 Keepalived_vrrp[39285]: Netlink reflector reports IP fe80::569f:35ff:fe0f:e098 added
+Mar 31 17:46:18 LVS_201-1 Keepalived_healthcheckers[39284]: Registering Kernel netlink command channel
+Mar 31 17:46:18 LVS_201-1 Keepalived_vrrp[39285]: Registering Kernel netlink reflector
+Mar 31 17:46:18 LVS_201-1 Keepalived_vrrp[39285]: Registering Kernel netlink command channel
+Mar 31 17:46:18 LVS_201-1 Keepalived_vrrp[39285]: Registering gratuitous ARP shared channel
+Mar 31 17:46:18 LVS_201-1 Keepalived_healthcheckers[39284]: Opening file '/etc/keepalived/keepalived.conf'.
+Mar 31 17:46:18 LVS_201-1 Keepalived_vrrp[39285]: Opening file '/etc/keepalived/keepalived.conf'.
+Mar 31 17:46:18 LVS_201-1 Keepalived_healthcheckers[39284]: Configuration is using : 6491 Bytes
+Mar 31 17:46:18 LVS_201-1 Keepalived_vrrp[39285]: Configuration is using : 61953 Bytes
+Mar 31 17:46:18 LVS_201-1 Keepalived_vrrp[39285]: Using LinkWatch kernel netlink reflector...
+Mar 31 17:46:18 LVS_201-1 Keepalived_vrrp[39285]: VRRP sockpool: [ifindex(2), proto(112), unicast(0), fd(10,11)]
+Mar 31 17:46:18 LVS_201-1 Keepalived_healthcheckers[39284]: Using LinkWatch kernel netlink reflector...
+Mar 31 17:46:19 LVS_201-1 Keepalived_vrrp[39285]: VRRP_Instance(VIP_test_1) Transition to MASTER STATE
+Mar 31 17:46:19 LVS_201-1 Keepalived_vrrp[39285]: VRRP_Instance(VIP_test_1) Received lower prio advert, forcing new election
+Mar 31 17:46:20 LVS_201-1 Keepalived_vrrp[39285]: VRRP_Instance(VIP_test_1) Entering MASTER STATE
+Mar 31 17:46:20 LVS_201-1 Keepalived_vrrp[39285]: VRRP_Instance(VIP_test_1) setting protocol VIPs.
+Mar 31 17:46:20 LVS_201-1 Keepalived_vrrp[39285]: VRRP_Instance(VIP_test_1) Sending gratuitous ARPs on em1 for 10.0.201.100
+Mar 31 17:46:20 LVS_201-1 Keepalived_healthcheckers[39284]: Netlink reflector reports IP 10.0.201.100 added
+
+【keepalived  备】
+Mar 31 17:46:47 LVS_201-2 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) Received higher prio advert
+Mar 31 17:46:47 LVS_201-2 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) Entering BACKUP STATE
+Mar 31 17:46:47 LVS_201-2 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) removing protocol VIPs.
+Mar 31 17:46:47 LVS_201-2 Keepalived_healthcheckers[39002]: Netlink reflector reports IP 10.0.201.100 removed
+
+
+
+注意：严格的防火墙会阻塞vrrp实例之间的通信，从而导致master和backup不能互相识别，从而backup也升级为master角色。
+例如，在backup上有个防火墙策略：
+[root@LVS_201-2 ~]# iptables-save >/root/rc.firewall.txt 
+[root@LVS_201-2 ~]# cat /root/rc.firewall.txt 
+# Generated by iptables-save v1.4.7 on Wed Apr 15 11:41:15 2015
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [352:25516]
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT 
+-A INPUT -p icmp -j ACCEPT 
+-A INPUT -i lo -j ACCEPT 
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT 
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 80 -j ACCEPT 
+-A INPUT -j REJECT --reject-with icmp-host-prohibited 
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited 
+COMMIT
+# Completed on Wed Apr 15 11:41:15 2015
+
+如果打开防火墙（service iptables start），则会从backup转换成master状态：
+Mar 31 17:50:42 LVS_201-22 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) Transition to MASTER STATE
+Mar 31 17:50:42 LVS_201-22 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) Entering MASTER STATE
+Mar 31 17:50:43 LVS_201-22 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) setting protocol VIPs.
+Mar 31 17:50:44 LVS_201-22 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) Sending gratuitous ARPs on eth0 for 10.0.201.100
+Mar 31 17:50:45 LVS_201-22 Keepalived_healthcheckers[39003]: Netlink reflector reports IP 10.0.201.100 added
+Mar 31 17:50:45 LVS_201-22 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) Sending gratuitous ARPs on eth0 for 10.0.201.100
+
+
+因为iptables过滤了vrrp协议，它不属于任何端口，像icmp一样，需要单独放行。
+-A INPUT -p vrrp -j ACCEPT
+
+例如，在上面的配置文件中，增加到rc.firewall.txt中，icmp那条策略后
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -p vrrp -j ACCEPT   <-  这是增加的一条策略
+-A INPUT -i lo -j ACCEPT 
+
+【具体操作】
+检查当前生效的策略：
+iptables -nL
+保存：
+iptables-save >rc.firewall.txt
+修改（vim新增一条策略或者用sed处理）
+sed -i '/-A INPUT -i lo -j ACCEPT /i\-A INPUT -p vrrp -j ACCEPT' rc.firewall.txt
+应用新策略：
+iptables-restore /root/rc.firewall.txt 
+检查当前生效的策略：
+iptables -nL
+确认无误后保存
+service iptables save
+
+
+Mar 31 17:55:32 LVS_201-22 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) Received higher prio advert
+Mar 31 17:55:32 LVS_201-22 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) Entering BACKUP STATE
+Mar 31 17:55:32 LVS_201-22 Keepalived_vrrp[39003]: VRRP_Instance(VIP_test_1) removing protocol VIPs.
+Mar 31 17:55:32 LVS_201-22 Keepalived_healthcheckers[39003]: Netlink reflector reports IP 10.0.201.100 removed
+
+
+确认无误，记得保存防火墙：
+[root@LVS_201-2 ~]# service iptables save
+
+
+同样的防火墙操作，记得在master上也更新一下。
+
+
+
+
+
+

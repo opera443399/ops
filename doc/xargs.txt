@@ -1,0 +1,37 @@
+xargs用法示例
+
+实例文件内容：
+----------------------------
+# cat 1.log
+ oraclelinux-release.x86_64 6:6Server-6.0.2                                                                               redhat-release-server.x86_64 1:6Server-6.6.0.2.0.1.el6                                                                              
+  DeviceKit-power.x86_64 0:014-3.el6                               NetworkManager.x86_64 1:0.8.1-75.el6                          NetworkManager-gnome.x86_64 1:0.8.1-75.el6                   VirtualBox-4.3.x86_64 0:4.3.28_100309_el6-1                    
+  acpid.x86_64 0:1.0.10-2.1.el6                                    aic94xx-firmware.noarch 0:30-2.el6                            akonadi.x86_64 0:1.2.1-3.el6                                 alsa-plugins-pulseaudio.x86_64 0:1.0.21-3.el6                  
+  authconfig-gtk.x86_64 0:6.1.12-19.el6                            autofs.x86_64 1:5.0.5-109.0.1.el6_6.1                         b43-openfwwf.noarch 0:5.2-4.el6                              bfa-firmware.noarch 0:3.2.23.0-2.el6                           
+  biosdevname.x86_64 0:0.5.1-1.el6                                 bluez.x86_64 0:4.66-1.el6                                     brasero-nautilus.x86_64 0:2.28.3-6.el6                       certmonger.x86_64 0:0.75.13-1.el6                              
+  cifs-utils.x86_64 0:4.8.1-19.el6                                 compiz.x86_64 0:0.8.2-24.el6                                  compiz-gnome.x86_64 0:0.8.2-24.el6                           control-center.x86_64 1:2.28.1-39.el6                          
+  control-center-extra.x86_64 1:2.28.1-39.el6                      cpuspeed.x86_64 1:1.5-20.0.1.el6_4                            crda.x86_64 0:1.1.3_2014.06.13-1.el6                         cronie.x86_64 0:1.4.4-12.el6                                   
+  cronie-anacron.x86_64 0:1.4.4-12.el6                             crontabs.noarch 0:1.10-33.el6                                 cryptsetup-luks.x86_64 0:1.2.0-11.el6                        cryptsetup-luks-libs.x86_64 0:1.2.0-11.el6                     
+  cups.x86_64 1:1.4.2-67.el6                                       cyrus-sasl.x86_64 0:2.1.23-15.el6_6.2                         desktop-effects.x86_64 0:0.8.4-7.el6                         device-mapper.x86_64 0:1.02.90-2.el6_6.1                       
+  device-mapper-event.x86_64 0:1.02.90-2.el6_6.1                   device-mapper-event-libs.x86_64 0:1.02.90-2.el6_6.1           device-mapper-libs.x86_64 0:1.02.90-2.el6_6.1                dhclient.x86_64 12:4.1.1-43.P1.0.1.el6_6.1                     
+  dmraid.x86_64 0:1.0.0.rc16-11.el6                                dmraid-events.x86_64 0:1.0.0.rc16-11.el6                      dnsmasq.x86_64 0:2.48-14.el6                                 docker-io.x86_64 0:1.5.0-1.el6                                 
+  dracut.noarch 0:004-356.0.2.el6_6.2                              dracut-kernel.noarch 0:004-356.0.2.el6_6.2                    eog.x86_64 0:2.28.2-4.el6                                    evince.x86_64 0:2.28.2-14.el6_0.1                              
+  file-roller.x86_64 0:2.28.2-7.el6                                foomatic.x86_64 0:4.0.4-3.el6                                 foomatic-db.noarch 0:4.0-7.20091126.el6                      foomatic-db-ppds.noarch 0:4.0-7.20091126.el6                   
+  fuse.x86_64 0:2.8.3-4.0.2.el6                                    gcalctool.x86_64 0:5.28.2-3.el6                               gdm.x86_64 1:2.30.4-64.0.1.el6                               gdm-plugin-fingerprint.x86_64 1:2.30.4-64.0.1.el6              
+  gdm-user-switch-applet.x86_64 1:2.30.4-64.0.1.el6                gedit.x86_64 1:2.28.4-3.el6                                   git.x86_64 0:1.7.1-3.el6_4.1                                 glx-utils.x86_64 0:10.1.2-2.el6                                
+  gnome-applets.x86_64 1:2.28.0-7.el6                              gnome-bluetooth.x86_64 0:2.28.6-8.el6                         gnome-disk-utility.x86_64 0:2.30.1-2.el6                     gnome-disk-utility-libs.x86_64 0:2.30.1-2.el6                  
+  gnome-disk-utility-ui-libs.x86_64 0:2.30.1-2.el6                 gnome-packagekit.x86_64 0:2.28.3-9.el6                        gnome-panel.x86_64 0:2.30.2-15.el6                           gnome-power-manager.x86_64 0:2.28.3-7.el6_4                   
+  
+----------------------------  
+  
+目的：提取每个包的名字，然后给yum安装。
+
+一气呵成：
+for i in $(cat 1.log |xargs -n 2 |awk '{print $1}');do yum -y install $i;done
+
+
+傻瓜点儿的办法：
+cat 1.log |awk -F' ' '{print $1}' >2.log
+cat 1.log |awk -F' ' '{print $3}' >>2.log
+cat 1.log |awk -F' ' '{print $5}' >>2.log
+cat 1.log |awk -F' ' '{print $7}' >>2.log
+cat 2.log |xargs -i yum -y install {}

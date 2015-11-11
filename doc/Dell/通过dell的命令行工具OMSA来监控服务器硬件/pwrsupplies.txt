@@ -1,0 +1,23 @@
+对应的zabbix配置：
+UserParameter=hardware_power_health,awk -v hardware_power_number=`omreport chassis pwrsupplies|grep -c "Index"` -v hardware_power=`omreport chassis pwrsupplies|awk '/^Status/{if($NF=="Ok") count+=1}END{print count}'` 'BEGIN{if(hardware_power_number==hardware_power) {print 1} else {print 0}}'
+
+
+涉及的命令：
+[root@local ~]# omreport chassis pwrsupplies
+Power Supplies Information
+
+--------------------------------------
+Main System Chassis Power Supplies: Ok
+--------------------------------------
+
+Individual Power Supply Elements
+
+Index                    : 0
+Status                   : Ok
+Location                 : PS1 Status
+Type                     : AC
+Rated Input Wattage      : 900 W
+Maximum Output Wattage   : 750 W
+Firmware Version         : 07.2B.7D
+Online Status            : Presence Detected
+Power Monitoring Capable : Yes

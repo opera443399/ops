@@ -1,0 +1,96 @@
+STP
+{
+STP 802.1d
+--------------
+sh mac address-table 
+
+sh int vlan 1
+sh spanning-tree
+
+
+STATE: Blocking, Listening, Learning, Forwarding, Disabled
+
+
+Switch(config)#int f0/1
+
+Switch(config-if)#switchport port-security mac-address sticky  //进入该端口的前两个地址为静态地址
+Switch(config-if)#switchport port-security mac-address maximum 2  //只能用2个MAC
+Switch(config-if)#switchport port-security violation shutdown //违规关闭
+
+
+Switch(config)#spanning-tree vlan 1 priority 4096  //设置root bridge
+Switch(config)#spanning-tree vlan 1 root primary  //直接设置为root bridge
+
+
+//用range设定一个范围，同时配置多个端口为PortFast
+Switch(config)#int range fastEthernet 0/1 - 12
+Switch(config-if-range)#spanning-tree portfast
+
+
+
+
+RSTP 802.1w
+--------------
+EtherChannel: PAgP(Port Aggregation Protocol), LACP(Link Aggregation Control Protocol, 802.3ad)
+
+#port security
+S1#conf t
+
+S1(config)#int range f0/3-4
+S1(config-if-range)#switchport port-security maximum 1
+S1(config-if-range)#switchport port-security mac-address sticky
+S1(config-if-range)#switchport port-security violation shutdown
+
+
+
+#PortFast
+S1(config)#int range f0/3-4
+
+S1(config-if-range)#spanning-tree portfast
+
+
+
+#BPDUGuard, BPDUFilter
+S1(config-if-range)#spanning-tree bpduguard enbale
+
+S1(config-if-range)#spanning-tree bpdufilter enable
+
+
+#UplinkFast
+S1(config)#spanning-tree uplinkfast
+
+S1#sh spanning-tree uplinkfast
+
+
+#BackboneFast
+S1(config)#spanning-tree backbonefast
+
+S1#sh spanning-tree backbonefast
+
+
+#RSTP
+Core(config)#spanning-tree mode rapid-pvst
+
+Core(config)#do sh spanning-tree
+
+
+
+#EtherChannel
+PAgP:
+S1(config)#int port-channel 1
+
+S1(config-if)#int range f0/1-2
+S1(config-if-range)#switchport mode trunk
+S1(config-if-range)#switchport nonegotiate    组织交换机自动检测链路类型以及自动设置中继类型
+S1(config-if-range)#channel-group 1 mode desirable
+S1(config-if-range)#do sh int fa0/1 etherchannel
+
+S2(config)#int port-channel 1
+S2(config-if)#int range f0/7-8
+S2(config-if-range)#switchport trunk encap dot1q
+S2(config-if-range)#switchport mode trunk
+S2(config-if-range)#switchport nonegotiate
+S2(config-if-range)#channel-group 1 mode desirable
+S1(config-if-range)#do sh int port-channel 1
+
+}

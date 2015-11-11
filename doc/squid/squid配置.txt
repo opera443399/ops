@@ -1,0 +1,73 @@
+【时间】2014-12-19 ~ 2014-12-19
+【主机】IP:test230
+【目的】在内网test230上配置一个代理上网的测试环境。
+【操作记录】
+1. 安装
+[root@test230 ~]# yum install squid
+
+
+2. 配置
+squid配置文件
+[root@test230 ~]# vim /etc/squid/squid.conf
+
+增加：
+##############################
+###       基础信息
+##############################
+visible_hostname Proxy_test230
+cache_mgr PC@ec.office
+
+
+##############################
+###       日志
+##############################
+emulate_httpd_log on
+# regular
+#logformat combined [%tl] %6tr %>a %Ss/%>Hs %<st %rm %ru %un %Sh/%<A %mt
+# apache
+logformat combined %>a %ui %un [%tl] "%rm %ru HTTP/%rv" %>Hs %<st "%{Referer}>h" "%{User-Agent}>h" %Ss:%Sh %{host}>h
+
+access_log /var/log/squid/access.log combined
+
+logfile_rotate 3
+
+
+##############################
+###      用户验证
+##############################
+# password file 
+# htpasswd -c /etc/squid/squid.passwd ecuser 
+#
+auth_param basic program /usr/lib64/squid/ncsa_auth /etc/squid/squid.passwd
+auth_param basic realm "[Proxy Server] hello!"
+auth_param basic credentialsttl 12 hours
+auth_param basic children 5
+
+
+修改：
+# CONNECT 仅允许 SSL_ports列出的端口
+#acl SSL_ports port 443
+acl SSL_ports port 443 80 1863 8080
+
+
+#
+# INSERT YOUR OWN RULE(S) HERE TO ALLOW ACCESS FROM YOUR CLIENTS
+#
+# 取消以下2行的注释，使用auth功能
+#acl need_auth proxy_auth REQUIRED
+#http_access allow need_auth
+
+
+3. 启动
+[root@test230 ~]# squid -k parse
+2014/12/19 17:42:40| Processing Configuration File: /etc/squid/squid.conf (depth 0)
+2014/12/19 17:42:40| Initializing https proxy context
+
+[root@test230 ~]# service squid start
+Starting squid: .                                          [  OK  ]
+
+
+4. 测试
+代理ip端口: 192.168.1.230:3128
+
+?注意CONNECT方法非常特殊。它是用于通过HTTP代理来封装某种请求的方法。上述配置中，客户端仅能通过CONNECT方法连接远程服务器的443,80,1863,8080端口

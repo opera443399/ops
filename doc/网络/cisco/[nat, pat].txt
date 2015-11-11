@@ -1,0 +1,35 @@
+NAT
+{
+A(config)#ip nat pool GlobalNet 171.16.10.50 171.16.10.55 netmask 255.255.255.0
+
+A(config)#access-list 1 permit 192.168.20.0 0.0.0.255
+A(config)#access-list 1 permit 192.168.30.0 0.0.0.255
+A(config)#ip nat inside source list 1 pool GlobalNet
+
+A(config)#int s0/0
+A(config-if)#ip nat inside
+A(config)#int s0/1
+A(config-if)#ip nat outside
+
+A#sh ip nat translations
+
+
+#PAT:
+A#clear ip nat translation *
+
+A(config)#no ip nat pool GlobalNet 171.16.10.50 171.16.10.55 netmask 255.255.255.0
+A(config)#access-list 1 permit 192.168.20.0 0.0.0.255
+A(config)#access-list 1 permit 192.168.30.0 0.0.0.255
+A(config)#no ip nat inside source list 1 pool GlobalNet
+
+A(config)#ip nat pool PCNK 171.16.10.100 171.16.10.100 netmask 255.255.255.0
+A(config)#access-list 2 permit 192.168.20.0 0.0.0.255
+A(config)#access-list 2 permit 192.168.30.0 0.0.0.255
+A(config)#ip nat inside source list 2 pool PCNK overload
+
+A(config)#int s0/0
+A(config-if)#ip nat inside
+A(config)#int s0/1
+A(config-if)#ip nat outside
+
+}

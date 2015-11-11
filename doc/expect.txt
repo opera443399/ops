@@ -1,0 +1,340 @@
+expect的用法
+转自：http://www.cnblogs.com/iloveyoucc/archive/2012/05/11/2496433.html
+
+1. ［#!/usr/bin/expect］ 
+
+这一行告诉操作系统脚本里的代码使用那一个shell来执行。这里的expect其实和linux下的bash、windows下的cmd是一类东西。 
+
+注意：这一行需要在脚本的第一行。 
+
+2. ［set timeout 30］ 
+
+基本上认识英文的都知道这是设置超时时间的，现在你只要记住他的计时单位是：秒   。timeout -1 为永不超时
+
+3. ［spawn ssh -l username 192.168.1.1］ 
+
+spawn是进入expect环境后才可以执行的expect内部命令，如果没有装expect或者直接在默认的SHELL下执行是找不到spawn命令的。所以不要用 “which spawn“之类的命令去找spawn命令。好比windows里的dir就是一个内部命令，这个命令由shell自带，你无法找到一个dir.com 或 dir.exe 的可执行文件。 
+
+它主要的功能是给ssh运行进程加个壳，用来传递交互指令。 
+
+4. ［expect "password:"］ 
+
+这里的expect也是expect的一个内部命令，有点晕吧，expect的shell命令和内部命令是一样的，但不是一个功能，习惯就好了。这个命令的意思是判断上次输出结果里是否包含“password:”的字符串，如果有则立即返回，否则就等待一段时间后返回，这里等待时长就是前面设置的30秒 
+
+5. ［send "ispass\r"］ 
+
+这里就是执行交互动作，与手工输入密码的动作等效。 
+
+温馨提示： 命令字符串结尾别忘记加上“\r”，如果出现异常等待的状态可以核查一下。 
+
+6. ［interact］ 
+
+执行完成后保持交互状态，把控制权交给控制台，这个时候就可以手工操作了。如果没有这一句登录完成后会退出，而不是留在远程终端上。如果你只是登录过去执行 
+
+7.$argv 参数数组
+
+expect脚本可以接受从bash传递过来的参数.可以使用[lindex $argv n]获得，n从0开始，分别表示第一个,第二个,第三个....参数
+
+ 
+
+下面的expect脚本的例子
+
+执行这个文件./launch.exp 1 2 3
+
+屏幕上就会分别打印出参数
+
+send_user用来发送内容给用户。
+
+ 
+
+参数运用方面还有很多技巧
+
+比如$argc 存储了参数个数，args被结构化成一个列表存在argv。$argv0 被初始化为脚本名字。
+
+除此之外，如果你在第一行(#!那行)使用-d (debug参数)，可以在运行的时候输出一些很有用的信息
+
+比如你会看见
+
+ 
+
+argv[0] = /usr/bin/expect argv[1] = -d argv[2] = ./launch.exp argv[3] = 1 argv[4] = 2 argv[5] = 3
+
+使用这些也可以完成参数传递
+
+8.
+
+expect的命令行参数参考了c语言的，与bash shell有点不一样。其中，$argc为命令行参数的个数，$argv0为脚本名字本身，$argv为命令行参数。[lrange $argv 0 0]表示第1个参数，[lrange $argv 0 4]为第一个到第五个参数。与c语言不一样的地方在于，$argv不包含脚本名字本身。
+
+ 
+
+9.
+
+exp_continue的用法
+
+#!/usr/bin/expect -f
+
+set ipaddr "localhost"
+
+set passwd "iforgot"
+
+spawn ssh root@$ipaddr              #spawn   意思是执行命令，expect内命令，shell中不存在
+
+expect {
+
+"yes/no" { send "yes\r"; exp_continue}
+
+"password:" { send "$passwd\r" }
+
+}
+
+expect "]# "
+
+send "touch a.txt\r"                       #意思为发送命令
+
+send "exit\r"
+
+expect eof
+
+exit
+
+ 
+
+exp_continue可以继续执行下面的匹配，简单了许多。还有一点，让我认识到匹配不见得要匹配最后几个字符。
+
+ 
+
+10.拿来小例子   
+
+设置变量     set PASSWD   abcd123
+
+#!/usr/bin/expect -f
+
+# Expect script to supply root/admin password for remote ssh server
+
+# and execute command.
+
+# This script needs three argument to(s) connect to remote server:
+
+# password = Password of remote UNIX server, for root user.
+
+# ipaddr = IP Addreess of remote UNIX server, no hostname
+
+# scriptname = Path to remote script which will execute on remote server
+
+# If you username and passwd has not pass the rsa trust, your login will fail.
+
+# Usage For example:
+
+#  ./sshlogin.exp password 192.168.1.11 who
+
+# ------------------------------------------------------------------------
+
+# Copyright (c) 2004 nixCraft project <http://cyberciti.biz/fb/>
+
+# This script is licensed under GNU GPL version 2.0 or above
+
+# -------------------------------------------------------------------------
+
+# This script is part of nixCraft shell script collection (NSSC)
+
+# Visit http://bash.cyberciti.biz/ for more information.
+
+# ----------------------------------------------------------------------
+
+# set Variables
+
+set password [lrange $argv 0 0]
+
+set ipaddr [lrange $argv 1 1]
+
+set scriptname [lrange $argv 2 2]
+
+set arg1 [lrange $argv 3 3]
+
+set timeout -1
+
+# now connect to remote UNIX box (ipaddr) with given script to execute
+
+spawn ssh yourusername@$ipaddr $scriptname $arg1
+
+match_max 100000
+
+# Look for passwod prompt
+
+expect "*?assword:*"
+
+# Send password aka $password
+
+send -- "$password\r"
+
+# send blank line (\r) to make sure we get back to gui
+
+send -- "\r"
+
+expect eof
+
+ 
+
+==============================================================================
+
+ 
+
+#!/usr/bin/expect 
+
+ 
+
+ # 设置超时时间为 60 秒
+
+ set timeout  60                                         
+
+ # 设置要登录的主机 IP 地址
+
+ set host 192.168.1.46
+
+ # 设置以什么名字的用户登录
+
+ set name root 
+
+ # 设置用户名的登录密码
+
+ set password 123456 
+
+ 
+
+ #spawn 一个 ssh 登录进程
+
+ spawn  ssh $host -l $name 
+
+ # 等待响应，第一次登录往往会提示是否永久保存 RSA 到本机的 know hosts 列表中；等到回答后，在提示输出密码；之后就直接提示输入密码
+
+ expect { 
+
+    "(yes/no)?" { 
+
+        send "yes\n"
+
+        expect "assword:"
+
+        send "$pasword\n"
+
+    } 
+
+        "assword:" { 
+
+        send "$password\n"
+
+    } 
+
+ } 
+
+ expect "#"
+
+ # 下面测试是否登录到 $host 
+
+ send "uname\n"
+
+ expect "Linux"
+
+ send_user  "Now you can do some operation on this terminal\n"
+
+ # 这里使用了 interact 命令，使执行完程序后，用户可以在 $host 终端进行交互操作。
+
+ Interact 
+
+ 
+
+ 
+
+==============================================================================
+
+用expect实现ssh自动登录对服务器进行批量管理
+
+ 
+
+1.实现ssh自动登录完成任务的expect脚本
+
+#!/usr/bin/expect -f
+
+set ipaddress [lindex $argv 0]
+
+set passwd [lindex $argv 1]
+
+set timeout 30
+
+spawn ssh shellqun@$ipaddress
+
+expect {
+
+"yes/no" { send "yes\r";exp_continue }
+
+"password:" { send "$passwd\r" }
+
+}
+
+expect "*from*"
+
+send "mkdir -p ./tmp/testfile\r"
+
+#send "exit\r"
+
+expect "#"  命令运行完, 你要期待一个结果, 结果就是返回shell提示符了(是# 或者$)
+
+#最后一句第13行的解释：
+
+ 
+
+其实写成 interact 的最大好处是登录后不会退出，而会一直保持会话连接，可以后续手动处理其它任务，请根据实际情况自行选择了。
+
+ 
+
+2.调用login.exp完成批量管理
+
+#!/bin/bash
+
+for i in `awk '{print $1}' passwd.txt`
+
+do
+
+j=`awk -v I="$i" '{if(I==$1)print $2}' passwd.txt`
+
+expect /root/shell/login.exp $i $j
+
+done
+
+ 
+
+3.passwd.txt
+
+192.168.0.2  password2
+
+192.168.0.3  password3
+
+ 
+
+ 13.
+
+ 
+
+expect {
+
+"?assword:" {                    
+
+ 
+
+ #此大括号内是逐条执行，不存在if关系
+
+ 
+
+ 
+
+ 
+
+ 
+
+send "$PASSWORD\r"     
+
+exp_continue
+
+}
+
+}

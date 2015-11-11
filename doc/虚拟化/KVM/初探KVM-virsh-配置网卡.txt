@@ -1,0 +1,68 @@
+初探KVM-virsh-配置网卡
+
+如果是常规的kvm环境，通过如下方式关闭virbr0
+virsh net-autostart default --disable
+virsh net-destroy default
+virsh net-undefine default
+
+
+如果是ovirt管理的KVM环境，则需要验证，使用saslpasswd2配置一个帐号即可。
+实例：
+[root@n72 network-scripts]# saslpasswd2 -a libvirt
+
+This product includes software developed by Computing Services
+at Carnegie Mellon University (http://www.cmu.edu/computing/).
+
+saslpasswd2: usage: saslpasswd2 [-v] [-c [-p] [-n]] [-d] [-a appname] [-f sasldb] [-u DOM] userid
+        -p      pipe mode -- no prompt, password read on stdin
+        -c      create -- ask mechs to create the account
+        -d      disable -- ask mechs to disable/delete the account
+        -n      no userPassword -- don't set plaintext userPassword property
+                                   (only set mechanism-specific secrets)
+        -f sasldb       use given file as sasldb
+        -a appname      use appname as application name
+        -u DOM  use DOM for user domain
+        -v      print version numbers and exit
+[root@n72 network-scripts]# saslpasswd2 -a libvirt test01
+Password: 
+Again (for verification): 
+
+
+列出网卡：
+[root@n72 network-scripts]# virsh net-list
+Please enter your authentication name: test01
+Please enter your password: 
+Name                 State      Autostart     Persistent
+--------------------------------------------------
+;vdsmdummy;          active     no            no
+default              active     no            yes
+vdsm-br1             active     yes           yes
+vdsm-ovirtmgmt       active     yes           yes
+vdsm-virbr0          active     yes           yes
+
+
+销毁：
+[root@n72 network-scripts]# virsh net-destroy vdsm-virbr0
+Please enter your authentication name: test01
+Please enter your password: 
+Network vdsm-virbr0 destroyed
+
+去掉定义：
+[root@n72 network-scripts]# virsh net-undefine vdsm-virbr0
+Please enter your authentication name: test01
+Please enter your password: 
+Network vdsm-virbr0 has been undefined
+
+再次列出：
+[root@n72 network-scripts]# virsh net-list
+Please enter your authentication name: test01
+Please enter your password: 
+Name                 State      Autostart     Persistent
+--------------------------------------------------
+;vdsmdummy;          active     no            no
+default              active     no            yes
+vdsm-br1             active     yes           yes
+vdsm-ovirtmgmt       active     yes           yes
+
+删除完毕。
+

@@ -1,0 +1,43 @@
+﻿vmware [配置常见问题]
+
+1.主机WinXp 与VMVare中Linux虚拟一个局域网
+------------------------
+(a).设置WinXp上网络连接的VMnet1的IP地址。
+例如改成192.168.111.1
+(b).设置VMVare中Linux的网卡的连接方式为Host-Only
+也就是使用的虚拟网卡为VMnet1
+(c).在Linux下setup网络地址为192.168.111.2,一路回车,重启
+(d).重启完后,ping一下主机。可以ping通就ok了
+
+2. load vmware-tools
+用root登陆，点菜单中的Install VMware Tools....，然后输入下面的命令加载cdrom 
+
+# mount /dev/cdrom /mnt/cdrom 
+# cp /cdrom/vmware-freebsd-tools.tar.gz /tmp
+# umount /cdrom
+# cd /tmp
+# tar zxf vmware-freebsd-tools.tar.gz
+# cd vmware-tools-distrib
+# ./vmware-install.pl
+
+
+3. 主机用无线上网，VM中的虚拟机如何bridge上网？
+Edit->Virtual NetworkEditor
+----
+VMnet Information
+--Bridged to : your wireless network adapter
+
+4. cpu没有开启INTEL VT-X
+进入bios，找到cpu设置，开启VT-X
+
+5. vm虚拟机启动后，eth0没有启动，ifup eth0 却提示：
+device eth0 does not seem to be present, delaying initialization
+原因：MAC地址被绑定。
+方法：
+a）修改或删除ifcfg-eth0中保存的以前的MAC地址。
+vi /etc/sysconfig/network-scripts/ifcfg-eth0
+
+
+b）删除或修改这个文件，绑定了网卡和mac地址，所以换了网卡以后MAC地址变了，所以不能正常启动：
+rm /etc/udev/rules.d/70-persistent-net.rules
+重启机器

@@ -1,0 +1,88 @@
+建议采取配置文件包含的方式来组合virtual_server配置文件。
+例如：
+[root@test1 ~]# cat /etc/keepalived/keepalived.conf 
+#
+! Configuration File for keepalived
+
+global_defs {
+    router_id LVS_1
+}
+
+# vrrp for WAN
+vrrp_instance VI_1 {
+    state MASTER
+    interface eth0
+
+    mcast_src_ip 1.2.3.4
+    virtual_router_id 101
+    priority 100
+    advert_int 1
+    garp_master_delay 1
+    notify_master "your script here"
+    notify_backup "your script here"
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        1.2.3.101/24 dev eth0 label eth0:101
+    }
+}
+
+# vrrp fro LAN
+vrrp_instance VI_2 {
+    state BACKUP
+    interface eth1
+
+    mcast_src_ip 10.0.200.101
+    virtual_router_id 102
+    priority 50
+    advert_int 1
+    garp_master_delay 1
+    notify_master "your script here"
+    notify_backup "your script here"
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        10.0.200.201/24 dev eth1 label eth1:201
+        10.0.200.202/24 dev eth1 label eth1:202
+    }
+}
+
+# include virtual_server config
+include /etc/keepalived/conf.d/*.conf
+
+
+virtual_server配置示例：
+[root@test1 ~]# cat /etc/keepalived/conf.d/vm201.conf 
+# 
+virtual_server 10.0.200.201 80 {
+    delay_loop 6
+    lb_algo rr
+    lb_kind DR
+    #persistence_timeout 60
+    protocol TCP
+
+    real_server 10.0.200.181 80 {
+        weight 1
+        notify_up "your script here"
+        notify_down "your script here"
+        MISC_CHECK {
+
+            misc_path "your script here"
+            misc_timeout 5
+        }
+    }
+    real_server 10.0.200.182 80 {
+        weight 1
+        notify_up "your script here"
+        notify_down "your script here"
+        MISC_CHECK {
+
+            misc_path "your script here"
+            misc_timeout 5
+        }
+    }
+}

@@ -1,0 +1,259 @@
+﻿文档编辑--sort
+
+功能说明： 将文本文件内容加以排序。
+
+语　　法： sort [-bcdfimMnr][-o<输出文件>][-t<分隔字符>][+<起始栏位>-<结束栏位>][--help][--verison][文件]
+
+补充说明： sort可针对文本文件的内容，以行为单位来排序。 
+
+参　　数： 
+   -b    忽略每行前面开始出的空格字符。
+   -c    检查文件是否已经按照顺序排序。
+   -d    排序时，处理英文字母、数字及空格字符外，忽略其他的字符。
+   -f    排序时，将小写字母视为大写字母。
+   -i    排序时，除了040至176之间的ASCII字符外，忽略其他的字符。
+   -m    将几个排序好的文件进行合并。
+   -M    将前面3个字母依照月份的缩写进行排序。
+   -n    依照数值的大小排序。
+   -o<输出文件>    将排序后的结果存入指定的文件。
+   -r    以相反的顺序来排序。
+   -t<分隔字符>    指定排序时所用的栏位分隔字符。
+   +<起始栏位>-<结束栏位>    以指定的栏位来排序，范围由起始栏位到结束栏位的前一栏位。
+   --help    显示帮助。
+   --version    显示版本信息。
+
+应用实例
+要在 LC_ALL、LC_COLLATE 或 LANG 环境变量设置为 En_US 的情况下排序 fruits 文件 ，请输入：
+LANG=En_US sort fruits此命令序列显示以升序词典顺序排序的 fruits 文件的内容。每一列的字符，包括空格、数字和特殊字符都经一一比较。 例如，如果 fruits 文件包含文本：bananaorangePersimmonapple%%bananaappleORANGEsort 命令显示:%%bananaORANGEPersimmonappleapplebananaorange在 ASCII 整理序列中，%（百分号）在大写字母前，大写字母在小写字母前。如果您当前的语言环境指定 ASCII 之外的字符集，结果可能不同。
+要以字典顺序排序，请输入：
+sort -d fruits此命令序列排序和显示 fruits 文件的内容，并且只比较字母、数字和空格。如果 fruits 文件与示例 1 相同，那么 sort 命令显示： ORANGEPersimmonappleapple%%bananabananaorange-d 标志忽略 %（百分号）字符，因为它不是个字母、数字或空格。（即 %%banana 被 banana 取代）。
+要将包含大写字母和具有类似小写行的特殊字符行分组，请输入：
+sort -d -f fruits
+-d 标志忽略特殊字符，-f 标志忽略大小写差异。将 LC_ALL、LC_COLLATE 或 LANG 环境变量设置为 C 的情况下，fruits 文件的输出结果变为： appleapple%%bananabananaORANGEorangePersimmon
+要除去重复行排序，请输入：
+sort -d -f -u fruits
+-u 标志告诉 sort 命令除去重复的行，使文件中的每一行唯一。此命令序列显示： apple%%bananaORANGEPersimmon不仅除去重复的 apple，而且也除去了 banana 和 ORANGE。除去这些是因为 -d 标志忽略 %% 这个特殊字符，-f 标志忽略大小写差异。
+要如上面那样排序，除去重复的实例（除非是大写字母或标点不同），请输入：
+sort -u +0 -d -f +0 fruits输入 +0 -d -f 完成的排序与示例 3 中 -d -f 的排序类型相同，+0 进行另一项比较以区分不一样的行。这防止 -u 标志将它们除去。 示例 1 所示的 fruits 文件中，添加的 +0 将 %%banana 与 banana 及 ORANGE 与 orange 区分开来。然而，apple 的两个实例是相同的，所以其中之一被删除。apple%%bananabananaORANGEorangePersimmon
+要指定分隔字段的字符，请输入：
+sort -t: +1 vegetables
+此命令序列排序 vegetables 文件，对每一行上第一个冒号后的文本进行比较。+1 告诉 sort 命令忽略第一字段，从第二字段的开始到该行的结束进行比较。-t: 标志告诉 sort 命令冒号分隔字段。
+ 
+如果 vegetables 包含：
+ 
+yams:104turnips:8potatoes:15carrots:104green beans:32radishes:5lettuce:15那么，将 LC_ALL、LC_COLLATE 或 LANG 环境变量设置为 C 的情况下，sort 命令将显示：carrots:104yams:104lettuce:15potatoes:15green beans:32radishes:5turnips:8注意数字没有按照数字排序。当用字典式分类从左至右比较每一个字符时出现这种情况。换句话说，3 在 5 之前，所以 32 在 5 之前。
+要排序数字，请输入：
+sort -t: +1 -n vegetables
+此命令序列按照第二个字段对 vegetables 文件进行数字排序。如果 vegetables 文件与示例 6 中的相同，那么 sort 命令将显示： radishes:5turnips:8lettuce:15potatoes:15green beans:32carrots:104yams:104
+要对多个字段排序，请输入：
+sort -t: +1 -2 -n +0 -1 -r vegetables或 sort -t: -k2,2 n -k1,1 r vegetables
+此命令序列对第二字段（+1 -2 -n）进行数字排序。在这个顺序中，它以逆字母顺序（+0 -1 -r）对第一字段排序。将 LC_ALL、LC_COLLATE 或 LANG 环境变量设置为 C 的情况下，输出将类似于： radishes:5turnips:8potatoes:15lettuce:15green beans:32yams:104carrots:104
+此命令按数字顺序对行排序。当两行数字相同时，它们以逆字母顺序出现。
+ 
+要使用排序的文本替换原始文件，请输入：
+sort -o vegetables vegetables此命令序列将排序输出存入 vegetables 文件（ -o vegetables）。
+ 
+ 
+ 
+正文开始] 
+有时候学习脚本，你会发现sort命令后面跟了一堆类似-k1,2，或者-k1.2 -k3.4的东东，有些匪夷所思。今天，我们就来搞定它—-k选项！
+
+1 准备素材
+
+$ cat facebook.txt
+google 110 5000
+baidu 100 5000
+guge 50 3000
+sohu 100 4500
+
+ 
+
+第一个域是公司名称，第二个域是公司人数，第三个域是员工平均工资。（除了公司名称，其他的别信，都瞎写的^_^）
+
+2 我想让这个文件按公司的字母顺序排序，也就是按第一个域进行排序：（这个facebook.txt文件有三个域）
+
+$ sort -t ‘ ‘ -k 1 facebook.txt
+baidu 100 5000
+google 110 5000
+guge 50 3000
+sohu 100 4500
+
+看到了吧，就直接用-k 1设定就可以了。（其实此处并不严格，稍后你就会知道）
+
+3 我想让facebook.txt按照公司人数排序
+
+$ sort -n -t ‘ ‘ -k 2 facebook.txt
+guge 50 3000
+baidu 100 5000
+sohu 100 4500
+google 110 5000
+
+不用解释，我相信你能懂。
+
+但是，此处出现了问题，那就是baidu和sohu的公司人数相同，都是100人，这个时候怎么办呢？按照默认规矩，是从第一个域开始进行升序排序，因此baidu排在了sohu前面。
+
+4  我想让facebook.txt按照公司人数排序 ，人数相同的按照员工平均工资升序排序：
+
+$ sort -n -t ‘ ‘ -k 2 -k 3 facebook.txt
+guge 50 3000
+sohu 100 4500
+baidu 100 5000
+google 110 5000
+
+看，我们加了一个-k2 -k3就解决了问题。对滴，sort支持这种设定，就是说设定域排序的优先级，先以第2个域进行排序，如果相同，再以第3个域进行排序。（如果你愿意，可以一直这么写下去，设定很多个排序优先级）
+
+5 我想让facebook.txt按照员工工资降序排序，如果员工人数相同的，则按照公司人数升序排序：（这个有点难度喽）
+
+$ sort -n -t ‘ ‘ -k 3r -k 2 facebook.txt
+baidu 100 5000
+google 110 5000
+sohu 100 4500
+guge 50 3000
+
+此处有使用了一些小技巧，你仔细看看，在-k 3后面偷偷加上了一个小写字母r。你想想，再结合我们上一篇文章 ，能得到答案么？揭晓：r和-r选项的作用是一样的，就是表示逆序。因为sort默认是按照升序排序的，所以此处需要加上r表示第三个域（员工平均工资）是按照降序排序。此处你还可以加上n，就表示对这个域进行排序时，要按照数值大小进行排序，举个例子吧：
+
+$ sort -t ‘ ‘ -k 3nr -k 2n facebook.txt
+baidu 100 5000
+google 110 5000
+sohu 100 4500
+guge 50 3000
+
+看，我们去掉了最前面的-n选项，而是将它加入到了每一个-k选项中了。
+
+6 -k选项的具体语法格式
+
+要继续往下深入的话，就不得不来点理论知识。你需要了解-k选项的语法格式，如下：
+
+[ FStart [ .CStart ] ] [ Modifier ] [ , [ FEnd [ .CEnd ] ][ Modifier ] ]
+
+这个语法格式可以被其中的逗号（“，”）分为两大部分，Start部分和End部分。
+
+先给你灌输一个思想，那就是“如果不设定End部分，那么就认为End被设定为行尾”。这个概念很重要的，但往往你不会重视它。
+
+Start部分也由三部分组成，其中的Modifier部分就是我们之前说过的类似n和r的选项部分。我们重点说说Start部分的FStart和C.Start。
+
+C.Start也是可以省略的，省略的话就表示从本域的开头部分开始。之前例子中的-k 2和-k 3就是省略了C.Start的例子喽。
+
+FStart.CStart，其中FStart就是表示使用的域，而CStart则表示在FStart域中从第几个字符开始算“排序首字符”。
+
+同理，在End部分中，你可以设定FEnd.CEnd，如果你省略.CEnd，则表示结尾到“域尾”，即本域的最后一个字符。或者，如果你将CEnd设定为0(零)，也是表示结尾到“域尾”。
+
+7 突发奇想，从公司英文名称的第二个字母开始进行排序：
+
+$ sort -t ‘ ‘ -k 1.2 facebook.txt
+baidu 100 5000
+sohu 100 4500
+google 110 5000
+guge 50 3000
+
+看，我们使用了-k 1.2，这就表示对第一个域的第二个字符开始到本域的最后一个字符为止的字符串进行排序。你会发现baidu因为第二个字母是a而名列榜首。sohu和 google第二个字符都是o，但sohu的h在google的o前面，所以两者分别排在第二和第三。guge只能屈居第四了。
+
+8 又突发奇想，，只针对公司英文名称的第二个字母进行排序，如果相同的按照员工工资进行降序排序：
+
+$ sort -t ‘ ‘ -k 1.2,1.2 -k 3,3nr facebook.txt
+baidu 100 5000
+google 110 5000
+sohu 100 4500
+guge 50 3000
+
+由于只对第二个字母进行排序，所以我们使用了-k 1.2,1.2的表示方式，表示我们“只”对第二个字母进行排序。（如果你问“我使用-k 1.2怎么不行？”，当然不行，因为你省略了End部分，这就意味着你将对从第二个字母起到本域最后一个字符为止的字符串进行排序）。对于员工工资进行排 序，我们也使用了-k 3,3，这是最准确的表述，表示我们“只”对本域进行排序，因为如果你省略了后面的3，就变成了我们“对第3个域开始到最后一个域位置的内容进行排序” 了。
+
+9 在modifier部分还可以用到哪些选项？
+
+可以用到b、d、f、i、n 或 r。
+
+其中n和r你肯定已经很熟悉了。
+
+b表示忽略本域的签到空白符号。
+
+d表示对本域按照字典顺序排序（即，只考虑空白和字母）。
+
+f表示对本域忽略大小写进行排序。
+
+i表示忽略“不可打印字符”，只针对可打印字符进行排序。（有些ASCII就是不可打印字符，比如\a是报警，\b是退格，\n是换行，\r是回车等等）
+
+10 思考思考关于-k和-u联合使用的例子：
+
+$ cat facebook.txt
+google 110 5000
+baidu 100 5000
+guge 50 3000
+sohu 100 4500
+
+这是最原始的facebook.txt文件。
+
+$ sort -n -k 2 facebook.txt
+guge 50 3000
+baidu 100 5000
+sohu 100 4500
+google 110 5000
+
+$ sort -n -k 2 -u facebook.txt
+guge 50 3000
+baidu 100 5000
+google 110 5000
+
+当设定以公司员工域进行数值排序，然后加-u后，sohu一行就被删除了！原来-u只识别用-k设定的域，发现相同，就将后续相同的行都删除。
+
+$ sort  -k 1 -u facebook.txt
+baidu 100 5000
+google 110 5000
+guge 50 3000
+sohu 100 4500
+
+$ sort  -k 1.1,1.1 -u facebook.txt
+baidu 100 5000
+google 110 5000
+sohu 100 4500
+
+这个例子也同理，开头字符是g的guge就没有幸免于难。
+
+$ sort -n -k 2 -k 3 -u facebook.txt
+guge 50 3000
+sohu 100 4500
+baidu 100 5000
+google 110 5000
+
+咦！这里设置了两层排序优先级的情况下，使用-u就没有删除任何行。原来-u是会权衡所有-k选项，将都相同的才会删除，只要其中有一级不同都不会轻易删除的:)（不信，你可以自己加一行sina 100 4500试试看）
+
+11 最诡异的排序：
+
+$ sort -n -k 2.2,3.1 facebook.txt
+guge 50 3000
+baidu 100 5000
+sohu 100 4500
+google 110 5000
+
+以第二个域的第二个字符开始到第三个域的第一个字符结束的部分进行排序。
+
+第一行，会提取0 3，第二行提取00 5，第三行提取00 4，第四行提取10 5。
+
+又因为sort认为0小于00小于000小于0000….
+
+因此0 3肯定是在第一个。10 5肯定是在最后一个。但为什么00 5却在00 4前面呢？（你可以自己做实验思考一下。）
+
+答案揭晓：原来“跨域的设定是个假象”，sort只会比较第二个域的第二个字符到第二个域的最后一个字符的部分，而不会把第三个域的开头字符纳入比较范围。当发现00和00相同时，sort就会自动比较第一个域去了。当然baidu在sohu前面了。用一个范例即可证实：
+
+$ sort -n -k 2.2,3.1 -k 1,1r facebook.txt
+guge 50 3000
+sohu 100 4500
+baidu 100 5000
+google 110 5000
+
+12 有时候在sort命令后会看到+1 -2这些符号，这是什么东东？
+
+关于这种语法，最新的sort是这么进行解释的：
+
+On older systems, `sort’ supports an obsolete origin-zero syntax `+POS1 [-POS2]‘ for specifying sort keys.  POSIX 1003.1-2001 (*note Standards conformance::) does not allow this; use `-k’ instead.
+
+原来，这种古老的表示方式已经被淘汰了，以后可以理直气壮的鄙视使用这种表示方法的脚本喽！
+
+（为了防止古老脚本的存在，在这再说一下这种表示方法，加号表示Start部分，减号表示End部分。最最重要的一点是，这种方式方法是从0开始计数的，以前所说的第一个域，在此被表示为第0个域。以前的第2个字符，在此表示为第1个字符。明白？）
+
+结束语：
+
+本文是互联网上仅有的比较全的关于sort的k选项的论述文章，如需转载请务必注明“转自Linux大棚-Linux主题博客”，谢谢各位:)
+
+sort的-k选项基本就是这堆内容了，如果大家有什么补充，就留言吧:) 欢迎交流！
+
+over～

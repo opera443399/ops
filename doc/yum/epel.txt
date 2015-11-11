@@ -1,0 +1,33 @@
+yum使用epel源。
+
+参考：
+http://mirrors.fedoraproject.org/publiclist/EPEL/6/ppc64/#CN
+http://mirrors.ustc.edu.cn/
+https://lug.ustc.edu.cn/wiki/mirrors/help/epel
+
+
+wget https://lug.ustc.edu.cn/wiki/_export/code/mirrors/help/epel?codeblock=0 -O /etc/yum.repos.d/epel.repo
+wget http://mirrors.ustc.edu.cn/epel/RPM-GPG-KEY-EPEL-6 -O /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
+yum makecache
+
+yum clean all
+
+
+
+
+排错：
+
+[root@s71 yum.repos.d]# yum makecache
+Loaded plugins: dellsysid, fastestmirror, security
+Loading mirror speeds from cached hostfile
+http://mirrors.ustc.edu.cn/epel/6/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 7 - "couldn't connect to host"
+Trying other mirror.
+Error: Cannot retrieve repository metadata (repomd.xml) for repository: epel. Please verify its path and try again
+
+
+可能原因是：配置了代理
+查看配置文件：
+/etc/yum.conf
+
+果然发现代理配置：
+proxy=1.2.3.4

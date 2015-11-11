@@ -1,0 +1,83 @@
+curl的用法记录
+
+hostname=www.qq.com
+
+1）得到http status
+[root@svr200-22 ~]# curl -o /dev/null -s -w %{http_code} ${hostname}
+200
+
+
+2）得到详细的 http headers 信息
+[root@svr200-22 ~]# curl -o /dev/null -v http://${hostname}
+* About to connect() to www.qq.com port 80 (#0)
+*   Trying 14.17.32.211... connected
+* Connected to www.qq.com (14.17.32.211) port 80 (#0)
+> GET / HTTP/1.1
+> User-Agent: curl/7.19.7 (x86_64-redhat-linux-gnu) libcurl/7.19.7 NSS/3.14.0.0 zlib/1.2.3 libidn/1.18 libssh2/1.4.2
+> Host: www.qq.com
+> Accept: */*
+> 
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0< HTTP/1.1 200 OK
+< Server: squid/3.4.1
+< Date: Wed, 15 Apr 2015 05:54:51 GMT
+< Content-Type: text/html; charset=GB2312
+< Transfer-Encoding: chunked
+< Connection: keep-alive
+< Vary: Accept-Encoding
+< Expires: Wed, 15 Apr 2015 05:55:51 GMT
+< Cache-Control: max-age=60
+< Vary: Accept-Encoding
+< X-Cache: HIT from shenzhen.qq.com
+< 
+{ [data not shown]
+100  582k    0  582k    0     0  5573k      0 --:--:-- --:--:-- --:--:-- 6544k* Connection #0 to host www.qq.com left intact
+
+* Closing connection #0
+
+
+
+ 
+3）指定一个目标主机IP（此处以从dns中得到的一个解析结果为例），得到 http headers 信息：
+[root@svr200-22 ~]# nslookup ${hostname} |grep Address |grep -v "#53$" |cut -d " " -f2 |head -n 1 |xargs -i curl -I -H "Host:${hostname}" http://{}/ 
+HTTP/1.1 200 OK
+Server: squid/3.4.1
+Date: Wed, 15 Apr 2015 05:53:16 GMT
+Content-Type: text/html; charset=GB2312
+Connection: keep-alive
+Vary: Accept-Encoding
+Expires: Wed, 15 Apr 2015 05:54:16 GMT
+Cache-Control: max-age=60
+Vary: Accept-Encoding
+X-Cache: HIT from shenzhen.qq.com
+
+
+4）指定一个目标主机IP（此处以从dns中得到的一个解析结果为例），得到详细的 http headers 信息：
+[root@svr200-22 ~]# nslookup ${hostname} |grep Address |grep -v "#53$" |cut -d " " -f2 |head -n 1 |xargs -i curl -o /dev/null -v -H "Host:${hostname}" http://{}/
+* About to connect() to 14.17.32.211 port 80 (#0)
+*   Trying 14.17.32.211... connected
+* Connected to 14.17.32.211 (14.17.32.211) port 80 (#0)
+> GET / HTTP/1.1
+> User-Agent: curl/7.19.7 (x86_64-redhat-linux-gnu) libcurl/7.19.7 NSS/3.14.0.0 zlib/1.2.3 libidn/1.18 libssh2/1.4.2
+> Accept: */*
+> Host:www.qq.com
+> 
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0< HTTP/1.1 200 OK
+< Server: squid/3.4.1
+< Date: Wed, 15 Apr 2015 05:53:46 GMT
+< Content-Type: text/html; charset=GB2312
+< Transfer-Encoding: chunked
+< Connection: keep-alive
+< Vary: Accept-Encoding
+< Expires: Wed, 15 Apr 2015 05:54:46 GMT
+< Cache-Control: max-age=60
+< Vary: Accept-Encoding
+< X-Cache: MISS from shenzhen.qq.com
+< 
+{ [data not shown]
+100  582k    0  582k    0     0  5349k      0 --:--:-- --:--:-- --:--:-- 5546k* Connection #0 to host 14.17.32.211 left intact
+
+* Closing connection #0

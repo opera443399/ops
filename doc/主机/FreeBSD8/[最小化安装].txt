@@ -1,0 +1,78 @@
+﻿1. freebsd帐户
+------------------
+root 123456
+----添加用户：nosmo 123456 wheel组成员
+
+2. ports安装程序
+--------------------
+如果要安装vim
+$whereis vim
+---
+vim: /usr/ports/editors/vim
+---
+$cd /usr/ports/editors/vim
+$make install clean
+
+3. packages安装程序
+--------------------------
+如果您没有本地package的安装盘， 可以执行 pkg_add命令并加上 -r 选项。 这将迫使程序自动决定目标文件的正确格式和版本，然后自动从一个 FTP 站点寻找和安装 package。
+
+$pkg_add -r compat6x-i386
+
+4. 一些基本位置
+--------------------
+/usr/local/etc： 很多程序都将配置文件放入这里
+/etc/rc.conf： 配置服务的启动
+/etc/rc.d： 目录下的文件是用来管理基础服务的， 它们可以通过 start、 stop， 以及 restart 选项来控制。如$etc/rc.d/sshd restart
+/var/log目录： 日志
+/var/run目录：运行的程序
+/etc/inetd.conf：网络服务 vim /etc/rc.conf, 添加：inetd_enable=enable, 启动服务：inetd -wW -C 60  调整配置后重启该服务：kill -HUP `cat /var/run/inetd.pid`
+/etc/hosts： 修改host文件
+/etc/login.access：设置限制登录
+
+5. 基本命令
+---------------
+开关
+----重启：reboot
+----关机：halt -p
+文件目录
+----磁盘：df -H
+----目录：mkdir [-p] / mv / rmdir / rm -r
+----文件：touch / cp / rm
+----改变拥有者: 改变用户或组，chown[chgrp] [-R] username target 或 一起改变，chown [-R] username:username target 
+----改变权限：chmod 755 file : -rwxr-xr-x。ls输出结果的第一个位置表示类别，例如 “d” 表示目录， “c” 表示该文件为字符设备文件， “b” 表示为块设备文件， “l” 表示为一个符号连接。
+----读取ISO：mount -t cd9660 /dev/`mdconfig -f cdimage.iso` /mnt
+用户
+----增删：pw useradd[userdel] username 和 pw groupadd[groupdel] groupname 或编辑/etc/group
+----切换：su [-l] username
+----修改口令： passwd 
+----用户信息： id
+----登录用户：users 或 who
+SHELL
+----用户默认shell： echo $SHELL
+----改变shell： vipw 或 chsh [username] 例如chsh , 修改其中的Shell: /bin/csh 为 /usr/local/bin/bash
+----环境变量： Csh[ # setenv CSVROOT /data/csvroot] 或 Bash[ # CVSROOT=/data/cvsroot $ export CVSROOT]
+目录文件系统
+----/etc目录：用于保存系统的配置文件，包括passwd,rc等非常重要的文件，也被放置到根文件系统中。例如rc.xxx启动脚本, rc.conf用于大部分系统参数的设置，rc.network用于网络设置，rc.firewall用于设置防火墙，以及rc.local用于管理员对本机特定的启动设置
+----/usr目录：用于保存系统正常运行时使用的多种文件，其中/usr/bin放置系统执行文件，/usr/sbin 放置系统维护程序，/usr/local放置非标准的应用程序，/usr/share放置系统中的文档和其他数 据文件，/usr/src中放置系统的源代码，/usr/X11R6放置X Window系统、应用程序和数据文件
+----/var目录：用于保存系统运行时产生和使用的数据文件，例如/var/log目录用于放置系统日志，/var/db/pkg目录用于放置系统软件包的安装记录。很多应用程序也使用它来放置数据文件，如news服务器等。
+
+
+0. 最小化安装后的操作
+--------------------------
+没有perl：pkg_add -r perl
+没有ports： sysinstall -> Configure -> Distributions -> ports
+没有vim： ports安装vim
+没有bash：ports安装 bash3
+---修改默认shell：chsh, Shell: /bin/csh 改为 /usr/local/bin/bash
+---建立vim配置文件：~/.vimrc
+---bash显示颜色：ls -G -F 可以在环境变量中设置：~/.profile中添加 alias ls="ls -G -F"
+没有samba：ports安装samba 
+---配置文件：/usr/local/etc/smb.conf
+------改动的地方：workgroup = HOME, security = share （新增以下内容）
+------[ftp]
+------ path = /home/ftp
+------ public = yes
+------ writable = yes
+---编辑/etc/rc.conf，添加：nmbd_enable="YES" , smbd_enable="YES"
+---启动/usr/local/etc/rc.d/samba start

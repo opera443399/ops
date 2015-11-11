@@ -1,0 +1,155 @@
+nginx配置LB来代理upstream
+
+一、规划
+入口：
+tvm-test：192.168.56.251
+
+upstream：
+tvm-web1：192.168.56.248
+tvm-web2：192.168.56.250
+
+所有服务器安装nginx，防火墙放行80端口。
+[root@tvm-test ~]# yum -y install nginx
+
+
+二、配置
+【tvm-test】
+[root@tvm-test ~]# cat /etc/nginx/conf.d/upstream.conf    
+upstream backend {
+    server 192.168.56.248:80;
+    server 192.168.56.250:80;
+}
+[root@tvm-test ~]# cp -v /etc/nginx/conf.d/default.conf{,.bak}
+[root@tvm-test ~]# cat /etc/nginx/conf.d/default.conf
+#
+# The default server
+#
+server {
+    listen       80 default_server;
+    server_name  _;
+
+    location / {
+        proxy_pass   http://backend;
+    }
+}
+
+[root@tvm-test ~]# service nginx start
+Starting nginx:                                            [  OK  ]
+
+
+
+【其他后端服务器的nginx配置】
+# echo $(ip a s eth0 |grep global) >/usr/share/nginx/html/index.html 
+
+[root@tvm-web1 ~]# curl -L http://192.168.56.248/
+inet 192.168.56.248/24 brd 192.168.56.255 scope global eth0
+[root@tvm-web2 ~]# curl -L http://192.168.56.250/
+inet 192.168.56.250/24 brd 192.168.56.255 scope global eth0
+
+
+
+三、测试
+1、默认的负载均衡策略：round-robin，典型的轮询。
+访问：http://192.168.56.251/ 试试：
+
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.250/24 brd 192.168.56.255 scope global eth0
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.248/24 brd 192.168.56.255 scope global eth0
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.250/24 brd 192.168.56.255 scope global eth0
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.248/24 brd 192.168.56.255 scope global eth0
+
+
+2、加权轮询。
+当然啦，我们可以加一个weight来调整权重，默认不指明的话，weight=1，我们来调整下配置：
+[root@tvm-test ~]# cat /etc/nginx/conf.d/upstream.conf    
+upstream backend {
+    server 192.168.56.248:80 weight=2;
+    server 192.168.56.250:80;
+}
+[root@tvm-test ~]# service nginx reload                
+Reloading nginx:                                           [  OK  ]
+
+访问：http://192.168.56.251/ 试试：
+
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.248/24 brd 192.168.56.255 scope global eth0
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.248/24 brd 192.168.56.255 scope global eth0
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.250/24 brd 192.168.56.255 scope global eth0
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.248/24 brd 192.168.56.255 scope global eth0
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.248/24 brd 192.168.56.255 scope global eth0
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.250/24 brd 192.168.56.255 scope global eth0
+
+
+看到没，每3次请求，有2次访问的是248，然后才是250，如此循环。
+
+3、session保持之类的话题
+nginx 提供了 ip_hash 这个功能；
+[root@tvm-test ~]# cat /etc/nginx/conf.d/upstream.conf    
+upstream backend {
+    ip_hash;
+    server 192.168.56.248:80;
+    server 192.168.56.250:80;
+}
+[root@tvm-test ~]# service nginx reload                
+Reloading nginx:                                           [  OK  ]
+
+访问：http://192.168.56.251/ 试试：            
+
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.250/24 brd 192.168.56.255 scope global eth0
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.250/24 brd 192.168.56.255 scope global eth0
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.250/24 brd 192.168.56.255 scope global eth0
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.250/24 brd 192.168.56.255 scope global eth0
+[root@tvm-client ~]# curl -L http://192.168.56.251/
+inet 192.168.56.250/24 brd 192.168.56.255 scope global eth0
+
+我连续5次请求访问到的都是250，而不是248
+
+4、其他更多功能，请参考官网，这里只是作为入门指引。
+
+5、问个问题
+Q：请问如何在backend查看用户的真实IP呢？
+A：调整tvm-test的配置：
+[root@tvm-test ~]# cat /etc/nginx/conf.d/default.conf
+#
+# The default server
+#
+server {
+    listen       80 default_server;
+    server_name  _;
+
+    location / {
+        proxy_pass   http://backend;
+        proxy_set_header    X-Forwarded-For $remote_addr;
+    }
+}
+让变量“X-Forwarded-For” 记录的是当前主机（proxy）记录的“remote_addr”（即客户端IP），然后传递到后端的真实主机（web1，web2）
+[root@tvm-test ~]# service nginx reload              
+Reloading nginx:                                           [  OK  ]
+
+
+我们看看后端：
+[root@tvm-web1 ~]# tail /var/log/nginx/access.log -n 2 
+192.168.56.251 - - [30/Jul/2015:17:04:58 +0800] "GET / HTTP/1.0" 200 60 "-" "curl/7.19.7 (x86_64-redhat-linux-gnu) libcurl/7.19.7 NSS/3.16.2.3 Basic ECC zlib/1.2.3 libidn/1.18 libssh2/1.4.2" "192.168.56.253"
+192.168.56.251 - - [30/Jul/2015:17:04:59 +0800] "GET / HTTP/1.0" 200 60 "-" "curl/7.19.7 (x86_64-redhat-linux-gnu) libcurl/7.19.7 NSS/3.16.2.3 Basic ECC zlib/1.2.3 libidn/1.18 libssh2/1.4.2" "192.168.56.253"
+
+
+
+
+ZYXW、参考
+1、官网doc
+http://nginx.org/en/docs/http/load_balancing.html
+
+
+

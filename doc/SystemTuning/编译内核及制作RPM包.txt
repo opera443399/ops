@@ -1,0 +1,81 @@
+编译内核及制作RPM包
+
+http://blog.liuts.com/post/180/
+
+
+一、前言
+       由于目前部分平台所使用的Linux发行版版本比较低，自带的内核版本远低于主流内核，无法使用到一些优秀的新内核特征，包括对我们比较有用的per-task storage I/O、改善在SMP系统中I/O的吞吐量、Ext4文件格式、虚拟化支持等。因此决定采用目前最新稳定版内核Linux-2.6.32.6(更新于2010-01-25)进行重新编译，生成一个更加小巧、稳定、安全、高效率的新内核。
+
+二、编译步骤
+第一步：
+引用
+
+# cd /home
+# wget http://www.kernel.org/pub/linux/kernel/v2.6/linux-2.6.32.5.tar.gz
+# tar -zxvf linux-2.6.32.5.tar.gz -C /usr/src
+# cd /usr/src
+# ln -s linux-2.6.32.5 linux
+# cd linux
+
+第二步：
+引用
+
+# make mrproper (初次编译内核这步也可以省略，方便第二次编译初始用。)
+# make menuconfig
+# make bzImage && make modules && make modules_install(需30~40分钟，具体看服务器配置)
+# make install
+
+如需制作RPM内核安装包，运行以下命令，相当于第二步的操作，但不编译本机内核。
+# make rpm
+生成位置：
+/usr/src/redhat/RPMS/x86_64/kernel-2.6.32.6-2.x86_64.rpm
+/usr/src/redhat/SRPMS/kernel-2.6.32.6-2.src.rpm
+
+三、安装步骤
+1、二进制rpm包安装步骤
+# rpm -ivh  kernel-2.6.32.6-1.x86_64.rpm
+# vi /boot/grub/menu.lst添加以下并修改default项。
+引用
+
+    title CentOS (2.6.32.6)
+    root (hd0,0)
+    kernel /vmlinuz-2.6.32.6 ro root=LABEL=/
+    initrd /initrd-2.6.32.6.img
+
+# cd /lib/modules && mkinitrd /boot/initrd-2.6.32.6.img 2.6.32.6/
+2、RPM源码包安装步骤，好处便是在原有基础上再进行编译，更灵活。
+引用
+
+# rpm -Uvh kernel-2.6.32.6-2.src.rpm
+# rpmbuild -bp --target=$(arch) /usr/src/redhat/SPECS/kernel-2.6.32.6-2.spec 
+# cd /usr/src/redhat/BUILD/kernel-2.6.32.6-2
+# vi Makefile <-- Change "EXTRAVERSION" to avoid kernel overwriting 
+# cp /lib/modules/2.6.32.6/build/.config . 
+# make menuconfig
+# 重复第二步
+
+四、ChangeLog
+引用
+
+2.1、裁减了51M内核模块，目前大小为46M。
+2.2、No Forced Preemption(Server)适合服务器环境的禁止内核抢占。
+2.3、High Memory Support->64GB。
+2.4、Default I/O scheduer(Deadline)使用Deadline作硬盘存取排程器，非常适合IO较大的数   据库服务器。
+2.5、添加Ext4 FileSystem。
+2.6、删除Dell laptop support、Toshiba Laptop support。
+2.7、开启Netfilter支持。
+2.8、Export task/process statistics through netlink(sys task相关选项)。
+2.9、Enable extended accounting over taskstats(sys task相关选项)。
+2.10、Enable per-task storage I/O accounting(sys task相关选项)。
+2.11、Support for Large Block Devices (LBD) - 支持超过 2TB 大小的储存设备。
+2.12、Support for Large Single Files (LSF) - 支持处理超过 2TB 大小的文件
+2.13、裁减sound card support。
+2.14、裁减Bluetooth subsystem support。
+2.15、裁减Wireless。
+2.16、裁减Kernel hacking 。
+
+如需编译后的RPM包请联系我(文件太大，不好传)。
+kernel-2.6.32.6-2.x86_64.rpm(17M)
+kernel-2.6.32.6-2.src.rpm(84M)
+
+如大家有什么疑问或感兴趣的话题可以通过weibo与我交流：http://t.qq.com/yorkoliu

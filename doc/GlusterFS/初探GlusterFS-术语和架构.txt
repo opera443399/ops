@@ -1,0 +1,190 @@
+初探GlusterFS-术语和架构
+
+
+操作内容：
+一、术语
+Access Control Lists
+Access Control Lists (ACLs) allows you to assign different permissions for different users or groups even though they do not correspond to the original owner or the owning group.
+访问控制
+
+Brick
+Brick is the basic unit of storage, represented by an export directory on a server in the trusted storage pool.
+最基本的存储单元，表示为trusted storage pool中输出的目录，供客户端挂载用
+
+Cluster
+A cluster is a group of linked computers, working together closely thus in many respects forming a single computer.
+集群
+
+Distributed File System
+A file system that allows multiple clients to concurrently access data over a computer network
+分布式文件系统
+
+FUSE(Filesystem in Userspace) 
+Filesystem in Userspace (FUSE) is a loadable kernel module for Unix-like computer operating systems that lets non-privileged users create their own file systems without editing kernel code. This is achieved by running file system code in user space while the FUSE module provides only a "bridge" to the actual kernel interfaces.
+Unix-like OS上的可动态加载的模块，允许用户不用修改内核即可创建自己的文件系统
+
+glusterd
+Gluster management daemon that needs to run on all servers in the trusted storage pool.
+Gluster management daemon，要在trusted storage pool中所有的服务器上运行
+
+Geo-Replication
+Geo-replication provides a continuous, asynchronous, and incremental replication service from site to another over Local Area Networks (LANs), Wide Area Network (WANs), and across the Internet.
+在整个内外网中提供不间断，异步和增量的复制服务
+
+Metadata
+Metadata is defined as data providing information about one or more other pieces of data.There is no special metadata storage concept in GlusterFS. The metadata is stored with the file data itself.
+元数据保存一个或多个其他数据的信息，在GlusterFS中没这个概念。
+
+Namespace
+Namespace is an abstract container or environment created to hold a logical grouping of unique identifiers or symbols. Each Gluster volume exposes a single namespace as a POSIX mount point that contains every file in the cluster.
+这是一个抽象的环境，包括了一堆独立的逻辑上的组或者标志。每个Gluster卷都有一个单独的POSIX标准的mount point作为namespace，包含了集群中的每个文件
+
+POSIX
+Portable Operating System Interface [for Unix] is the name of a family of related standards specified by the IEEE to define the application programming interface (API), along with shell and utilities interfaces for software compatible with variants of the Unix operating system. Gluster exports a fully POSIX compliant file system.
+一个标准，Gluster表示兼容。
+
+RAID
+Redundant Array of Inexpensive Disks”, is a technology that provides increased storage reliability through redundancy, combining multiple low-cost, less-reliable disk drives components into a logical unit where all drives in the array are interdependent.
+这个大家都知道，阵列
+
+RRDNS
+Round Robin Domain Name Service (RRDNS) is a method to distribute load across application servers. It is implemented by creating multiple A records with the same name and different IP addresses in the zone file of a DNS server.
+轮询DNS。一个域名对应多个IP，轮流提供服务。
+
+Trusted Storage Pool
+A storage pool is a trusted network of storage servers. When you start the first server, the storage pool consists of that server alone.
+当首次启动一个服务器A时，storage pool只由A自己构成，，在A上面通过命令把存储服务器B，C，D等加入到这个pool，则这个pool是一个值得信赖的网络，我们称为a trusted network of storage servers
+
+Userspace
+Applications running in user space don’t directly interact with hardware, instead using the kernel to moderate access. Userspace applications are generally more portable than applications in kernel space. Gluster is a user space application.
+Gluster是用户空间级别的服务，可移植性高。
+
+Volume
+A volume is a logical collection of bricks. Most of the gluster management operations happen on the volume.
+一个卷在逻辑上由N个bricks组成，例如我们创建一个卷gv0，里面可以包括A-E这5个服务器上的/brick1-/brick5
+
+Vol file
+.vol files are configuration files used by glusterfs process. Volfiles will be usually located at /var/lib/glusterd/vols/volume-name/. Eg:vol-name-fuse.vol,export-brick-name.vol,etc.. Sub-volumes in the .vol files are present in the bottom-up approach and then after tracing forms a tree structure, where in the hierarchy last comes the client volumes.
+glusterfs这个进程会用到“.vol”文件作为配置文件，通常是在这个位置：/var/lib/glusterd/vols/volume-name/.
+
+Client
+The machine which mounts the volume (this may also be a server).
+客户端，挂载服务端的存储
+
+Server
+The machine which hosts the actual file system in which the data will be stored.
+存储节点服务器，存储数据的位置
+
+Replicate
+Replicate is generally done to make a redundancy of the storage for data availability.
+复制模式，类似RAID1，提供冗余镜像。
+
+
+二、卷的类型（Types of Volumes）
+1、分散【Distribute】
+类似RAID0，文件分散，但数据没有条带化分散。可以方便的给存储扩容，数据的可靠性，只能依赖更底层的保护。
+默认采取这种类型，且使用TCP传输数据。
+命令：
+gluster volume create NEW-VOLNAME [transport [tcp | rdma | tcp,rdma]] NEW-BRICK...
+
+创建一个卷，有4个存储节点，试试：
+# gluster volume create test-volume server1:/exp1 server2:/exp2 server3:/exp3 server4:/exp4
+Creation of test-volume has been successful
+Please start the volume to access data
+
+查看卷信息：
+# gluster volume info
+Volume Name: test-volume
+Type: Distribute
+Status: Created
+Number of Bricks: 4
+Transport-type: tcp
+Bricks:
+Brick1: server1:/exp1
+Brick2: server2:/exp2
+Brick3: server3:/exp3
+Brick4: server4:/exp4
+
+
+2、镜像卷【Replicate】
+类似RAID1，数据有N个副本，丢了1个，短时间内没关系，只要还有1个副本可用。
+命令：
+gluster volume create NEW-VOLNAME [replica COUNT] [transport [tcp | rdma | tcp,rdma]] NEW-BRICK...
+
+创建一个卷，有2个副本，试试：
+# gluster volume create test-volume replica 2 transport tcp server1:/exp1 server2:/exp2
+Creation of test-volume has been successful
+Please start the volume to access data
+
+N个副本，则需要N个对应的存储节点。
+
+
+3、分散镜像卷【Distributed Replicate】
+类似RAID10，结合了1和2的特点。
+文件被分散存放在多个镜像卷（由bricks组成）中
+如果我们有8个bricks，要求2个副本，则，8个中，每2个组成一个镜像，此时有4个数据卷，意味着是4（数据块）x2（副本）的模式
+类似的，我们要求有4个副本，则，8个中，每4个组成一个镜像，此时有2个数据卷，意味着是2（数据块）x4（副本）的模式
+
+命令：
+gluster volume create NEW-VOLNAME [replica COUNT] [transport [tcp | rdma | tcp,rdma]] NEW-BRICK...
+
+创建一个卷，有4个存储节点，其中，副本数量为2个，试试：
+# gluster volume create test-volume replica 2 transport tcp server1:/exp1 server2:/exp2 server3:/exp3 server4:/exp4
+Creation of test-volume has been successful
+Please start the volume to access data
+
+节点1和2组成一个镜像卷v1
+节点3和4组成一个镜像卷v2
+然后文件被分散存放在v1和v2上
+
+4、条带卷【Stripe】
+和1类似，但数据条带化。
+试想一下，一个电影文件2G，存放在一个brick中被多个客户端频繁且同时的访问，这样一个场景。负载肯定不低。
+通过将这个2G的文件，条带化分割成数据块（分成N份，N=1个卷中的brick数量）后，存放在不同的brick中，可以分散负载，文件的存取也可以更快速，但，没有冗余镜像。
+
+命令：
+gluster volume create NEW-VOLNAME [stripe COUNT] [transport [tcp | dma | tcp,rdma]] NEW-BRICK...
+
+创建一个卷，条带化分成2个数据块：
+# gluster volume create test-volume stripe 2 transport tcp server1:/exp1 server2:/exp2
+Creation of test-volume has been successful
+Please start the volume to access data
+
+
+
+5、分散条带卷【Distributed Stripe】
+和4类似，但条带化的数据分散在更多的bricks中。 
+bricks的数量是条带化数据块的数量N的2倍（2N），因此，扩容时，需要2倍数量的bricks
+
+命令：
+gluster volume create NEW-VOLNAME [stripe COUNT] [transport [tcp | rdma | tcp,rdma]] NEW-BRICK...
+
+创建一个卷，条带化4个数据块，分布在8个存储节点
+# gluster volume create test-volume stripe 4 transport tcp
+ server1:/exp1 server2:/exp2 server3:/exp3 server4:/exp4 server5:/exp5 server6:/exp6 server7:/exp7 server8:/exp8
+Creation of test-volume has been successful
+Please start the volume to access data.
+
+当然，还有其他的组合方式：
+6、条带镜像卷【Striped Replicate】
+7、分散条带镜像卷【Distributed Striped Replicate】
+
+
+
+三、架构
+待翻译，建议先看原文（附件doc：GlusterFS-Architecture.docx）
+
+
+
+
+
+
+
+
+
+
+ZYXW、参考
+1、官网 doc
+http://gluster.readthedocs.org/en/latest/Quick-Start-Guide/Quickstart/
+http://gluster.readthedocs.org/en/latest/Quick-Start-Guide/Terminologies/
+http://gluster.readthedocs.org/en/latest/Quick-Start-Guide/Architecture/

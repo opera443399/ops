@@ -1,0 +1,553 @@
+
+coreseek服务的控制脚本和配置示例
+
+一、索引服务的目录：
+[root@test101 coreseek]# pwd
+/data/coreseek
+[root@test101 coreseek]# ls
+bin  conf  data  log  var
+[root@test101 coreseek]# ls bin/
+coreseek_ctl.sh  indexer_rotate.sh
+[root@test101 coreseek]# ls conf/
+bak  conf.d  main.conf
+[root@test101 coreseek]# ls conf/bak/
+searchd.conf
+[root@test101 coreseek]# ls conf/conf.d/
+IndexName111.conf  IndexName222.conf
+注：配置文件通过"索引名.conf"来分类管理，后续将通过控制脚本，将conf文件整合到一个"main.conf"中供服务来调用。
+
+二、脚本
+
+1）索引服务的控制脚本：
+[root@test101 coreseek]# cat bin/coreseek_ctl.sh 
+#!/bin/bash
+#
+# 2015/5/5
+
+d_base='/home/coreseek'
+d_base_conf="${d_base}/conf"
+f_main_conf="${d_base_conf}/main.conf"
+f_tmp_conf="${d_base_conf}/bak/tmp.conf"
+searchd_bin='/usr/local/coreseek/bin/searchd'
+
+#############################init
+#
+init() {
+  echo "[+] 添加到计划任务中/var/spool/cron/$(whoami)"
+
+  cat <<_CORESEEK >>/var/spool/cron/$(whoami)
+
+# [coreseek]
+#
+#0 5 * * *  ${d_base}/bin/indexer_rotate.sh main >/dev/null 2>&1 &
+#0 7 * * * ${d_base}/bin/indexer_rotate.sh day >/dev/null 2>&1 &
+#*/2 * * * * ${d_base}/bin/indexer_rotate.sh merge >/dev/null 2>&1 &
+
+_CORESEEK
+
+  echo '[-] 操作完成！'
+  echo '[-] 注：启用时，取消被注释的任务项目即可。'
+  echo 
+  echo "#################"
+  echo '[-] crontab的内容变成：'
+  crontab -l
+
+
+  echo "#################"
+  echo "[+] 创建目录：data,log,var"
+
+  mkdir -p ${d_base}/{data,log,var}
+  mkdir -p ${d_base}/data/{bak,conf.d}
+  chmod 770 ${d_base}
+}
+
+#############################更新配置文件，将各模块的配置文件整合到main.conf中
+#
+update() {
+  echo "[+] 更新配置文件，将各模块的配置文件整合到main.conf中"
+  echo "# 配置文件更新时间：[`date`]" >${f_tmp_conf}
+  for f in `ls ${d_base_conf}/conf.d/*.conf`; do
+     cat $f >>${f_tmp_conf}
+  done
+  cat ${d_base_conf}/bak/searchd.conf >>${f_tmp_conf}
+  mv ${f_main_conf} ${d_base_conf}/bak/main.conf.`date +%F` >/dev/null 2>&1
+  mv ${f_tmp_conf} ${f_main_conf}
+
+  echo "[-] 操作完成！"
+}
+
+
+#############################备份到： var/xxx.tar.gz
+#
+backup() {
+  echo "[+] 备份到： var/xxx.tar.gz"
+  cd ${d_base}
+  local f_backup="${d_base}/var/coreseek_ctl_$(date +%F).tar.gz"
+  tar zcvf ${f_backup} bin/ conf/
+  chmod o-r ${f_backup} && ls -lh ${f_backup}
+}
+
+
+#############################start|stop|restart|status|debug
+#
+stop() {
+  echo "[+] 停止服务："
+  ${searchd_bin} --config ${f_main_conf} --stop
+}
+
+start() {
+  echo "[+] 启动服务："
+  ${searchd_bin} --config ${f_main_conf}
+}
+
+restart() {
+  echo "[+] 重启服务："
+  stop
+  sleep 2s
+  start
+}
+
+debug() {
+  echo "[+] 以debug模式启动服务："
+  ${searchd_bin} --config ${f_main_conf} --logdebug
+}
+
+status() {
+  echo "[+] 查看进程状态："
+  ps -ef |grep -v grep |grep searchd --color
+}
+
+case $1 in
+  init|update|backup|start|stop|restart|status|debug)
+    $1
+    ;;
+  *)
+    cat <<_EOF
+
+Usage: $0 [init|update|backup|start|stop|restart|status|debug]"
+
+init:     初始化crontab和文件夹
+update:   将conf/conf.d/*.conf所有模块的配置文件整合到main.conf
+backup:   压缩备份bin和conf目录到var目录下
+
+
+_EOF
+    ;;
+esac
+
+
+2）索引数据文件的控制脚本：
+[root@test101 coreseek]# cat bin/indexer_rotate.sh 
+#!/bin/bash
+#
+# 2015/4/29
+
+d_base='/home/coreseek'
+d_data="${d_base}/data"
+d_var="${d_base}/var"
+d_log="${d_base}/log"
+f_main_conf="${d_base}/conf/main.conf"
+indexer_bin='/usr/local/coreseek/bin/indexer'
+
+
+# 此处是重点。延迟执行
+function wait_rotate(){
+    local idx=$1
+    echo '##############################################################'
+    echo '## 等待 索引数据文件 的滚动'
+    echo '##############################################################'
+
+    while [ 1 ]
+    do
+        sleep .1
+        ls ${d_data}/${idx}.new* >/dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            break
+        fi
+    done
+}
+
+function start_rotate() {
+    local idx=$1
+    echo '##############################################################'
+    echo '## 开始滚动数据'
+    echo '##############################################################'
+    
+    echo "[-] 开始滚动main索引： ${idx}"
+    ${indexer_bin} --config ${f_main_conf} ${idx} --rotate
+}
+
+function start_merge() {
+    local idx_day=$1
+    local idx_delta=$2
+
+    f_proc="${idx_delta}"
+    f_lock="${d_var}/${f_proc}.lock"
+
+    echo '##############################################################'
+    echo '## 开始合并迁移数据'
+    echo '##############################################################'
+
+    # 检查脚本是否已经运行，避免因为searchd服务进程退出而crontab仍然在执行，从而陷入死循环
+    if [ -f ${f_lock} ]; then
+        echo "[+] 错误，存在锁: ${f_lock} ！可能存在异常。"
+        exit 1
+    fi
+
+    touch ${f_lock}
+    echo "[+] `date` 正在操作中，加锁。"
+
+    #重建增量索引
+    echo "[+] `date` 开始滚动delta索引 ${idx_delta}"
+    ${indexer_bin} --config ${f_main_conf} ${idx_delta} --rotate
+
+    echo "[-] `date` 等待delta索引 ${idx_delta}"
+    wait_rotate ${idx_delta}
+
+    #合并增量索引到当天索引
+    echo "[-] `date` 合并delta到day索引： ${idx_day}"
+    ${indexer_bin} --config ${f_main_conf} --merge ${idx_day} ${idx_delta} --rotate --merge-dst-range deleted 0 0
+
+    echo "[-] `date` 等待day索引 ${idx_day}"
+    wait_rotate ${idx_day}
+
+    rm ${f_lock} && echo "[-] `date` 操作完成，释放锁。" || echo "[-] `date` 锁 ${f_lock} 未释放。"
+
+}
+
+# 控制main, day, merge操作
+function goto_main() {
+    echo "`date` 建立数据文件main：$1"
+    start_rotate idx_main_$1 >${d_log}/main.$1.log 2>&1 &
+    echo "`date` 完成。"
+}
+
+function goto_day() {
+    echo "`date` 建立数据文件day：$1"
+    start_rotate idx_day_$1 >${d_log}/day.$1.log 2>&1 &
+    echo "`date` 操作完成。"
+}
+
+function goto_merge() {
+    echo "`date` 建立数据文件delta：$1"
+    start_merge idx_day_$1 idx_delta_$1 >${d_log}/merge.$1.log 2>&1 &
+    echo "`date` 操作完成"
+}
+
+function do_job() {
+    echo "[+] `date` 建立数据文件："
+    goto_$1 corpdetail_0
+    goto_$1 corpdetail_1
+    goto_$1 crmdetail_0
+    goto_$1 crmdetail_1
+    goto_$1 feedback
+    goto_$1 userblog
+    echo "[-] `date` 全部操作完成。"
+}
+
+function do_all() {
+    echo '##############################################################'
+    echo '## 重建全部的索引数据'
+    echo '##############################################################'
+
+    [ -d ${d_data} ] || mkdir -p ${d_data}
+    ${indexer_bin} --config ${f_main_conf} --all --rotate
+}
+
+function do_idx() {
+    echo '##############################################################'
+    echo '## 建立指定索引名的数据'
+    echo '##############################################################'
+
+    echo "[+] `date` 建立数据文件，根据指定的索引名：$1"
+    start_rotate idx_main_$1 >${d_log}/main.$1.log 2>&1 &
+    start_rotate idx_day_$1 >${d_log}/day.$1.log 2>&1 &
+    echo "[-] `date` 操作完成。"
+}
+
+
+function usage() {
+    cat <<_USAGE
+
+usage: $0 [all|idx|main|day|merge]
+
+all：   重建数据
+idx：   根据指定的index名来重建数据
+main：  主索引
+day：   日索引
+merge： 增量索引
+
+_USAGE
+}
+
+case $1 in
+    main|day|merge)
+        do_job $1
+        ;;
+    all|idx)
+        do_$1 $2
+        ;;
+    *)
+        usage
+        ;;
+esac
+
+
+三、配置示例
+
+示例索引：IndexName111
+1）/data/coreseek/conf/conf.d/IndexName111.conf 
+################################################################################################
+############################       IndexName111  start
+################################################################################################
+#
+#######################################source IndexName111.conf 
+#用户日志主索引，每天重建
+source main_IndexName111
+{
+        type                    = mysql
+        sql_host                = 192.168.1.123
+        sql_user                = dbuser
+        sql_pass                = dbpass
+        sql_db                  = d_IndexName111
+        sql_port                = 3306
+        sql_query_info_pre      = SET NAMES latin1
+        sql_query_pre           = SET NAMES latin1
+        sql_query_pre           = SET SESSION query_cache_type=OFF
+        sql_query_pre           = SQL 语句
+        sql_query               = SQL 语句
+                             
+        sql_attr_uint           = 字段1 
+        sql_attr_string         = 字段2
+        sql_attr_timestamp      = 字段3
+}
+ 
+#用户日志当天范围内索引，每天重建
+source day_IndexName111
+{
+        type                    = mysql
+        sql_host                = 192.168.1.123
+        sql_user                = dbuser
+        sql_pass                = dbpass
+        sql_db                  = d_IndexName111
+        sql_port                = 3306
+        sql_query_info_pre      = SET NAMES latin1
+        sql_query_pre           = SET NAMES latin1
+        sql_query_pre           = SET SESSION query_cache_type=OFF
+        sql_query_info_pre      = SET NAMES latin1
+        sql_query_pre           = SET NAMES latin1
+        sql_query_pre           = SET SESSION query_cache_type=OFF
+        sql_query_pre           = SQL 语句
+        sql_query               = SQL 语句
+                             
+        sql_attr_uint           = 字段1 
+        sql_attr_string         = 字段2
+        sql_attr_timestamp      = 字段3
+}
+ 
+#用户日志当天范围内增量索引
+source delta_IndexName111 : day_IndexName111
+{
+        sql_query_pre           = SET NAMES latin1
+        sql_query_pre           = SET SESSION query_cache_type=OFF
+        sql_query               = SQL 语句
+         
+        sql_query_post_index    = SQL 语句
+}
+ 
+#######################################index IndexName111
+#用户日志主索引，每天重建
+index idx_main_IndexName111
+{
+        source                  = main_IndexName111
+        path                    = /data/coreseek/data/idx_main_IndexName111
+        docinfo                 = extern
+        mlock                   = 0
+        morphology              = none
+        min_word_len            = 1
+        min_infix_len           = 1
+        html_strip              = 0
+     
+        charset_dictpath        = /usr/local/mmseg3/etc/
+        charset_type            = zh_cn.utf-8
+        ngram_len               = 0
+}
+ 
+#用户日志当天范围内索引，每天重建
+index idx_day_IndexName111
+{
+        source                  = day_IndexName111
+        path                    = /data/coreseek/data/idx_day_IndexName111
+        docinfo                 = extern
+        mlock                   = 0
+        morphology              = none
+        min_word_len            = 1
+        min_infix_len           = 1
+        html_strip              = 0
+ 
+        charset_dictpath        = /usr/local/mmseg3/etc/
+        charset_type            = zh_cn.utf-8
+        ngram_len               = 0
+}
+ 
+#用户日志当天范围内增量索引
+index idx_delta_IndexName111 : idx_day_IndexName111
+{
+        source                  = delta_IndexName111
+        path                    = /data/coreseek/data/idx_delta_IndexName111
+}
+################################################################################################
+############################       IndexName111  end
+################################################################################################
+
+
+
+
+示例索引：IndexName222
+2）/data/coreseek/conf/conf.d/IndexName222.conf 
+################################################################################################
+############################       IndexName222  start
+################################################################################################
+#
+#######################################source IndexName222.conf 
+#用户日志主索引，每天重建
+source main_IndexName222
+{
+        type                    = mysql
+        sql_host                = 192.168.1.123
+        sql_user                = dbuser
+        sql_pass                = dbpass
+        sql_db                  = d_IndexName222
+        sql_port                = 3306
+        sql_query_info_pre      = SET NAMES latin1
+        sql_query_pre           = SET NAMES latin1
+        sql_query_pre           = SET SESSION query_cache_type=OFF
+        sql_query_pre           = SQL 语句
+        sql_query               = SQL 语句
+                             
+        sql_attr_uint           = 字段1 
+        sql_attr_string         = 字段2
+        sql_attr_timestamp      = 字段3
+}
+ 
+#用户日志当天范围内索引，每天重建
+source day_IndexName222
+{
+        type                    = mysql
+        sql_host                = 192.168.1.123
+        sql_user                = dbuser
+        sql_pass                = dbpass
+        sql_db                  = d_IndexName222
+        sql_port                = 3306
+        sql_query_info_pre      = SET NAMES latin1
+        sql_query_pre           = SET NAMES latin1
+        sql_query_pre           = SET SESSION query_cache_type=OFF
+        sql_query_info_pre      = SET NAMES latin1
+        sql_query_pre           = SET NAMES latin1
+        sql_query_pre           = SET SESSION query_cache_type=OFF
+        sql_query_pre           = SQL 语句
+        sql_query               = SQL 语句
+                             
+        sql_attr_uint           = 字段1 
+        sql_attr_string         = 字段2
+        sql_attr_timestamp      = 字段3
+}
+ 
+#用户日志当天范围内增量索引
+source delta_IndexName222 : day_IndexName222
+{
+        sql_query_pre           = SET NAMES latin1
+        sql_query_pre           = SET SESSION query_cache_type=OFF
+        sql_query               = SQL 语句
+         
+        sql_query_post_index    = SQL 语句
+}
+ 
+#######################################index IndexName222
+#用户日志主索引，每天重建
+index idx_main_IndexName222
+{
+        source                  = main_IndexName222
+        path                    = /data/coreseek/data/idx_main_IndexName222
+        docinfo                 = extern
+        mlock                   = 0
+        morphology              = none
+        min_word_len            = 1
+        min_infix_len           = 1
+        html_strip              = 0
+     
+        charset_dictpath        = /usr/local/mmseg3/etc/
+        charset_type            = zh_cn.utf-8
+        ngram_len               = 0
+}
+ 
+#用户日志当天范围内索引，每天重建
+index idx_day_IndexName222
+{
+        source                  = day_IndexName222
+        path                    = /data/coreseek/data/idx_day_IndexName222
+        docinfo                 = extern
+        mlock                   = 0
+        morphology              = none
+        min_word_len            = 1
+        min_infix_len           = 1
+        html_strip              = 0
+ 
+        charset_dictpath        = /usr/local/mmseg3/etc/
+        charset_type            = zh_cn.utf-8
+        ngram_len               = 0
+}
+ 
+#用户日志当天范围内增量索引
+index idx_delta_IndexName222 : idx_day_IndexName222
+{
+        source                  = delta_IndexName222
+        path                    = /data/coreseek/data/idx_delta_IndexName222
+}
+################################################################################################
+############################       IndexName222  end
+################################################################################################
+
+
+
+示例服务配置：indexer, searchd
+3）/data/coreseek/conf/bak/searchd.conf
+
+#############################################################################
+## indexer settings
+#############################################################################
+
+indexer
+{
+        mem_limit               = 1024M
+}
+
+
+#############################################################################
+## searchd settings
+#############################################################################
+
+searchd
+{
+        listen                  = 9312
+        log                     = /data/coreseek/log/searchd.log
+        query_log               = /data/coreseek/log/query.log
+        binlog_path             =                                # empty to close binlog.
+        read_timeout            = 5
+        client_timeout          = 300
+        max_children            = 30
+        pid_file                = /data/coreseek/var/searchd.pid
+        max_matches             = 5000
+        compat_sphinxql_magics  = 0
+        seamless_rotate         = 1
+        preopen_indexes         = 1
+        unlink_old              = 1
+        mva_updates_pool        = 1M
+        max_packet_size         = 8M
+        max_filters             = 256
+        max_filter_values       = 4096
+        max_batch_queries       = 32
+        workers                 = threads                        # use threads for RT to work
+}
+# --eof--
+

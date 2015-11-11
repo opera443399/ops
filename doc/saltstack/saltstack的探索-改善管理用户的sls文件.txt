@@ -1,0 +1,121 @@
+saltstack的探索-改善管理用户的sls文件
+
+一、目录
+[root@test200 user]# pwd
+/srv/salt/user
+[root@test200 user]# ls
+group  script
+
+二、脚本
+[root@test200 user]# ls script/
+ops  users.conf.d
+
+其中，/srv/salt/user/script/users.conf.d是个空目录，用于同步到客户端，将用户管理的脚本整理到这个目录中。
+目前还不知道是否可以这样：
+定义一个路径：/dir1/dir2/file1
+一个参数指定要这个路径的文件，若上级目录不存在，则自动会创建对应的目录。
+
+因而，采取了上述的做法。
+
+
+[root@test200 user]# ls script/ops/
+root_append.sh  root_update.sh
+
+脚本-更新root用户：
+[root@test200 user]# cat script/ops/root_update.sh 
+#!/bin/bash
+# $ ssh-keygen -t rsa -b 2048 -C you_comment_here -f filename
+
+username='root'
+id ${username}
+
+d_root='/root/.ssh'
+[ -d ${d_root} ] || mkdir ${d_root}
+
+cat <<_PUBKEY > /${d_root}/authorized_keys
+key1
+key2
+_PUBKEY
+
+chmod 700 ${d_root}
+chmod 600 ${d_root}/authorized_keys
+
+cat ${d_root}/authorized_keys
+
+脚本-追加到root用户：
+[root@test200 user]# cat script/ops/root_append.sh          
+#!/bin/bash
+# $ ssh-keygen -t rsa -b 2048 -C you_comment_here -f filename
+
+id root
+d_root='/root/.ssh'
+
+cat <<_PUBKEY >> /${d_root}/authorized_keys
+key3
+_PUBKEY
+
+chmod 700 ${d_root}
+chmod 600 ${d_root}/authorized_keys
+
+cat ${d_root}/authorized_keys
+
+
+三、sls文件
+
+sls-更新root用户： 
+
+[root@test200 user]# cat group/ops/root/update.sls 
+users.conf.d:
+  file.recurse:
+    - name: /home/ops/bin/users.conf.d
+    - source: salt://user/script/users.conf.d
+    - include_empty: True
+    - mkdirs: True
+    - dir_mode: 755
+    - file_mode: 644
+
+user-script:
+  file.managed:
+    - name: /home/ops/bin/users.conf.d/root_update.sh
+    - source: salt://user/script/ops/root_update.sh
+    - mode: 644
+
+user-script-run:
+  cmd.run:
+    - name: /bin/bash /home/ops/bin/users.conf.d/root_update.sh
+
+
+
+sls-追加到root用户：    
+[root@test200 user]# cat group/ops/root/append.sls 
+users.conf.d:
+  file.recurse:
+    - name: /home/ops/bin/users.conf.d
+    - source: salt://user/script/users.conf.d
+    - include_empty: True
+    - mkdirs: True
+    - dir_mode: 755
+    - file_mode: 644
+
+user-script:
+  file.managed:
+    - name: /home/ops/bin/users.conf.d/root_append.sh
+    - source: salt://user/script/ops/root_append.sh
+    - mode: 644
+
+user-script-run:
+  cmd.run:
+    - name: /bin/bash /home/ops/bin/users.conf.d/root_append.sh
+
+    
+运行：
+salt 'test10[1-5].company.com' state.sls user.group.ops.root.update
+    
+符合预期。
+查看结果：
+salt 'test10[1-5].company.com' cmd.run 'cat /root/.ssh/authorized_keys'
+
+
+
+
+

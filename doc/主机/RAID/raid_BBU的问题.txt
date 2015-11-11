@@ -1,0 +1,231 @@
+http://www.cnblogs.com/ylqmf/archive/2013/02/28/2936895.html
+
+背景
+最近遇到有些带MegaSAS RAID卡的服务器，在业务高峰时突然IO负载飚升得很高，IO性能急剧下降，查了日志及各种设置最后才发现是RAID卡的Cache写策略由WriteBack变成WriteThrough了。更深入的原因是BBU进入了Learn Cycle周期，自动把Cache策略改为WriteThrough.
+
+WriteBack和WriteThrough
+
+在开始之前，我需要提到两个词: WriteBack, WriteThrough
+
+WriteBack：进行写操作时，将数据写入RAID卡缓存，并直接返回，RAID卡控制器将在系统负载低或者Cache满了的情况下把数据写入硬盘。该设置会大大提升RAID卡写性能，绝大多数的情况下会降低系统IO负载。 数据的可靠性由RAID卡的BBU(Battery Backup Unit)进行保证。
+WriteThrough: 数据写操作不使用缓存，数据直接写入磁盘。RAID卡写性能下降，在大多数情况下该设置会造成系统IO负载上升。
+MegaSAS RAID卡的Cache策略
+对于LSI的MegaSAS RAID卡, 默认的Cache策略是: WriteBack, ReadAheadNone, Direct, No Write Cache if Bad BBU
+
+如何查看RAID卡Cache策略
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+root@hostname:~ # ./MegaCli -LDInfo -Lall -aALL
+Adapter 0 -- Virtual Drive Information:
+Virtual Drive: 0 (Target Id: 0)
+Name                :
+RAID Level          : Primary-1, Secondary-0, RAID Level Qualifier-0
+Size                : 557.861 GB
+Mirror Data         : 557.861 GB
+State               : Optimal
+Strip Size          : 128 KB
+Number Of Drives    : 2
+Span Depth          : 1
+Default Cache Policy: WriteBack, ReadAheadNone, Direct, No Write Cache if Bad BBU
+Current Cache Policy: WriteBack, ReadAheadNone, Direct, No Write Cache if Bad BBU
+Default Access Policy: Read/Write
+Current Access Policy: Read/Write
+Disk Cache Policy   : Disabled
+Encryption Type     : None
+Is VD Cached: No
+ 
+Exit Code: 0x00
+Default Cache Policy: 默认的缓存策略，针对每个RAID可以有不同的设置.
+Current Cache Policy: 当前生效的缓存策略.
+策略说明
+
+第一段: WriteBack, WriteThrough
+第二段: ReadAheadNone, ReadAdaptive, ReadAhead.
+ReadAheadNone: 不开启预读。这是默认的设置
+ReadAhead: 在读操作时，预先把后面顺序的数据加载入Cache，在顺序读取时，能提高性能，相反会降低随机读的性能。
+ReadAdaptive: 自适应预读，当Cache memory和IO空闲时，采取顺序预读，平衡了连续读性能及随机读的性能，需要消耗一定的计算能力。
+第三段: Direct, Cached.
+Direct: Direct IO模式，读操作不缓存到cache memory中，数据将同时传输到cache中和应用，如果接下来要读取相同的数据块，则直接从Cache memory中获取. 这是默认的设置
+Cached: Cached IO模式，所有读操作都会缓存到cache memory中。
+第四段: Write Cache OK if Bad BBU, No Write Cache if Bad BBU
+No Write Cache if Bad BBU: 如果BBU出问题，则关闭Write Cache。由WriteBack自动切换到WriteThrough模式。如果没有特殊要求，强烈建议采用该设置，以确保数据的安全。
+Write Cache OK if Bad BBU: 如果BBU出问题，依然启用Write Cache. 这是不推荐的设置，BBU出问题将无法保证断电情况下数据的正常，如果此时依然采用WriteBack模式，遇到断电将发生数据丢失。除非有UPS作额外保证，不然不推荐采用这个设置。
+策略自动切换的问题
+
+由于MegaSAS RAID卡默认采用No Write Cache if Bad BBU的设置，将可能发生Write Cache策略变更的情况(由WriteBack变成WriteThrough)，导致写性能下降，如果该自动变更发生在业务高峰且系统Io负载高的时候，可能会引发不可预测的问题，如卡机。以下原因将造成Write Cache策略的变更.
+
+RAID卡进入BBU Learn Cycle: 详细介绍见下面
+检测到某些电池故障，如电池容量过低等，一般是电池老化带来的影响，IBM建议一年更换一次RAID卡电池
+没有安装电池, 部分服务器购买时不带电池，导致被自动设置为WriteThrough
+在BBU出问题时，如何临时强制启用Write Cache?
+
+1
+2
+3
+4
+./MegaCli -LDSetProp CachedBadBBU -Lall -aALL
+./MegaCli -LDSetProp WB -Lall -aALL
+#以下命令可以把设置修改回去
+./MegaCli -LDSetProp NOCachedBadBBU -Lall -aALL
+BBU Learn Cycle
+BBU由锂离子电池和电子控制电路组成。 锂离子电池的寿命取决于其老化程度，从出厂之后，无论它是否被充电及它的充放电次数多与少，锂离子电池的容量将慢慢的减少。这意味着一个老电池无法像新电池那么持久。 也就决定了BBU的相对充电状态(Relative State of Charge)不会等于绝对充电状态(Absolute State of Charge)。
+为了记录电池的放电曲线，以便控制器了解电池的状态，例如最大和最小电压等，同时为了延长电池的寿命，默认会启用自动校准模式(AutoLearn Mode). 在learn cycle期间, raid卡控制器不会启用BBU直到它完成校准。整个过程可能需要高达12小时。这个过程中，会禁用WriteBack模式，以保证数据完整性，同时会造成性能的降低. 整个Learn Cycle分为三个步骤:
+
+控制器把BBU电池充满电(该步骤可能是放电后充电或直接充电，如果电池刚好满电，则直接进入第二阶段)
+开始校准, 对BBU电池执行放电
+放电完成后，完成校准，并重新开始充电， 直接达到最大电量， 整个Learn Cycle才算完成
+注意: 如果第二或第三阶段被中断，重新校准的任务会停止，而不会重新执行
+
+IBM的服务器默认设置是30天执行一次Learn Cycle, 而DELL是90天。不推荐关闭Auto Learn模式，通过这个校准，能延长电池寿命，不作电池校准的Raid卡，电池寿命将从正常的2年降为8个月
+
+查看当前的BBU Learn设置
+
+1
+2
+3
+4
+5
+6
+7
+root@hostname:~ # ./MegaCli -AdpBbuCmd -GetBbuProperties -aALL
+BBU Properties for Adapter: 0
+ 
+Auto Learn Period: 2592000 Sec
+Next Learn time: 394618008 Sec
+Learn Delay Interval:0 Hours
+Auto-Learn Mode: Enabled
+Auto Learn Period: 自动校准间隔, 单位秒，IBM的服务器默认设置是30天执行一次Learn Cycle, 而DELL是90天。 该设置无法修改。
+Next Learn time: 下一次自动校准的时间，从2000年1月1日算起的秒数，这个设置无法修改，根据上一次自动校准的完成时间加上自动校准间隔计算得来。该时间转化为实际时间时，需要加上RAID卡时间的误差，部分RAID卡时间转成GMT时间后，依然是错误的。
+实际时间计算方法,伪代码如下
+
+1
+2
+RealTime = Next Learn time + ( 系统时间的Unixtime - RAID卡时间的Unixtime )
+date -d 'UTC 2000-01-01 + $RealTime secs'
+Learn Delay Interval: 自动校准启动后的延迟时间，单位小时，最大设置为7天。该设置只针对下次Learn Cycle，下次Learn Cycle完成后，该值将自动归零。
+Auto-Learn Mode: 是否打开自动校准模式
+查看当前BBU的状态
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+root@hostname:~ # MegaCli -AdpBbuCmd -GetBbuStatus -aALL
+BBU status for Adapter: 0
+ 
+BatteryType: iBBU
+Voltage: 3837 mV
+Current: -152 mA
+Temperature: 23 C
+ 
+Battery State     : Operational
+ 
+BBU Firmware Status:
+ 
+  Charging Status              : Discharging
+  Voltage                                 : OK
+  Temperature                             : OK
+  Learn Cycle Requested                   : Yes
+  Learn Cycle Active                      : Yes
+  Learn Cycle Status                      : OK
+  Learn Cycle Timeout                     : No
+  I2c Errors Detected                     : No
+  Battery Pack Missing                    : No
+  Battery Replacement required            : No
+  Remaining Capacity Low                  : No
+  Periodic Learn Required                 : No
+  Transparent Learn                       : No
+  No space to cache offload               : No
+  Pack is about to fail & should be replaced : No
+  Cache Offload premium feature required  : No
+  Module microcode update required        : No
+...下略...
+Charging Status: 当前电池处于什么状态，有Charging, Discharging, None等值，分别代表电池充电，放电，及没有充放电操作的状态
+Learn Cycle Requested: Learn Cycle请求，当为Yes时，并且下面的Learn Cycle Active为No, 说明已经开始了Learn Cycle的第一阶段, 此时策略开始变为WriteThrough, 电池将经历一个放电后充电或者充电的过程
+Learn Cycle Active： 是否处于Learn Cycle的校准阶段，如果为Yes, 则进入了Learn Cycle的第二阶段，控制器开始校准电池.
+Battery Replacement required: 电池是否需要维修，如果为Yes, 请尽快更换电池
+Remaining Capacity Low: 剩余电容量低， 如果为Yes, 需要更换电池
+如何强制启动Learn Cycle操作
+
+强制执行自动校准的命令, 执行该命令后，会延迟几秒才会生效，策略会自动变为WriteThrough
+
+1
+root@hostname:~ # MegaCli -AdpBbuCmd -BbuLearn -aALL
+通过该命令可以粗略的调整自动校准的下次执行时间，但无法100%准确：
+
+本次Learn Cycle的完成时间无法精确计算，这取决于电池的放电及充电速度.
+下次Battery的relearn任务可能会因为某些原因而推迟执行，例如当时电池正在充电，整个Relearn操作将推迟到充电完后之后。
+如何查看当前的Cache策略是否发生变动
+
+对比Default Cache Policy和Current Cache Policy是否不同，不同则是策略发生变动
+
+1
+root@hostname:~ # MegaCli -LDInfo -Lall -aALL
+如何把Learn模式改为手动?
+
+1
+2
+3
+4
+5
+echo 'autoLearnMode=1' >/tmp/megaraid.conf
+MegaCli -AdpBbuCmd -SetBbuProperties -f /tmp/megaraid.conf -aAll
+#1为Disable, 0为Enable, 从Disable切换到Enable时，Relearn操作会立刻执行
+#确认是否生效
+MegaCli -AdpBbuCmd -GetBbuProperties -aALL
+建议
+推荐的Cache策略: 使用No Write Cache if Bad BBU，在BBU出问题的情况下，牺牲性能来确保数据的安全性。
+
+WriteBack, ReadAheadNone, Direct, No Write Cache if Bad BBU
+以下有几种可选的方法
+
+在非业务高峰对BBU强制启动Learn Cycle，但下次自动的Learn Cycle会向后延迟5-6小时(视整个Learn Cycle所需时间而定)。每一次Learn Cycle执行完，下次Learn Cycle的执行时间会发生向后偏移的情况，推移时间由上一次整个Learn Cycle的耗时决定，一般下一次执行时间都会向后推移大约5小时(一次Learn Cycle的时间)。建议可以根据实际推迟效果定期在非业务高峰做一次手动Learn Cycle(一般是02:00~05:00)
+切换为手动模式，由crontab或者其他手动定期触发Learn Cycle，采用该方式需要根据不同硬件来决定Learn Cycle的间隔，采取错误的间隔将损耗电池的寿命。IBM的30天, DELL的机器为90天。
+检测下次Learn Cycle的时间，在即将进入Learn Cycle前，设置为Write Cached OK if Bad BBU, 使得Write Cache策略在Learn Cycle期间不发生变动，Learn Cycle过后，切换会原配置，这种方式在Learn Cycle期间(大约5小时左右)数据将不保险，如果遇到断电的情况，将发生数据丢失。
+检测下次Learn Cycle的时间，提前1~2天，在非业务高峰期提前触发learn cycle. 这种方法效果最好，也最方便，需要专门的脚本进行下次Learn Cycle时间的计算
+推荐做法: 在保留Auto Learn模式的同时，定期通过Crontab对Raid卡执行强制Relearn的操作，检测下次Learn Cycle的时间，提前1~2天，在非业务高峰期提前触发learn cycle(一般是02:00~05:00)。

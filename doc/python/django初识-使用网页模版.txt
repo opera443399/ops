@@ -1,0 +1,264 @@
+django初识-使用网页模版
+一、开始使用模版
+1、沿用virtual项目dj-test中的项目sports和应用basketball
+2、注册到项目【settings.py】
+我们找到INSTALLED_APPS，注册我们的应用“basketball”
+(dj-test)[root@tvm-test sports]# vim sports/settings.py
+# Application definition
+
+INSTALLED_APPS = (
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+
+    'basketball',
+)
+
+在这里注册后，django可以根据app的名称来找对应的模版和静态文件。
+
+3、更新项目【urls.py】
+(dj-test)[root@tvm-test sports]# cat sports/urls.py
+from django.conf.urls import patterns, include, url
+
+from django.contrib import admin
+admin.autodiscover()
+
+urlpatterns = patterns('',
+    # Examples:
+    # url(r'^$', 'sports.views.home', name='home'),
+    # url(r'^blog/', include('blog.urls')),
+    url(r'^basketball/add/$', 'basketball.views.add', name='add'),
+    url(r'^basketball/plus/(\d+)/(\d+)$', 'basketball.views.plus', name='plus'),
+    url(r'^$', 'basketball.views.index', name='index'), ## newline added here
+
+    url(r'^admin/', include(admin.site.urls)),
+)
+
+4、更新应用【views.py】
+增加一个index函数，响应请求后，返回一个渲染后的模版，而不是直接HttpResponse
+(dj-test)[root@tvm-test sports]# cat basketball/views.py
+#coding: utf-8
+from django.shortcuts import render
+
+# Create your views here.
+from django.http import HttpResponse
+
+def add(request):
+    a = request.GET['a']
+    b = request.GET['b']
+    c = int(a) + int(b)
+    msg = u"我的球衣号码是：{0}".format(str(c))
+    return HttpResponse(msg)
+
+def plus(request, a, b):
+    c = int(a) + int(b)
+    msg = u"我的球衣号码是：{0}".format(str(c))
+    return HttpResponse(msg)
+
+def index(request):
+    return render(request, 'index.html')
+    
+    
+5、增加应用的模版
+(dj-test)[root@tvm-test sports]# mkdir basketball/templates
+增加一个页面：index.html
+(dj-test)[root@tvm-test sports]# cat basketball/templates/index.html 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>basketball index</title>
+</head>
+<body>
+app name: basketball
+</body>
+</html>
+
+
+6、查看结果
+我们的服务器还在运行中呢，直接查看结果：
+(dj-test)[root@tvm-test sports]# curl -I http://127.0.0.1:8000/
+HTTP/1.0 200 OK
+Date: Mon, 24 Aug 2015 09:15:02 GMT
+Server: WSGIServer/0.1 Python/2.6.6
+X-Frame-Options: SAMEORIGIN
+Content-Type: text/html; charset=utf-8
+
+(dj-test)[root@tvm-test sports]# curl http://127.0.0.1:8000/
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>basketball index</title>
+</head>
+<body>
+app name: basketball
+</body>
+</html>
+
+
+二、使用更多功能
+1、include
+我们把页面简单的分成3块：
+(dj-test)[root@tvm-test sports]# tree basketball/templates/
+basketball/templates/
+├── footer.html
+├── header.html
+└── index.html
+
+0 directories, 3 files
+
+首页index.html中，包含了其他2个页面：
+(dj-test)[root@tvm-test sports]# cat basketball/templates/index.html 
+{% include 'header.html' %}
+
+app name: basketball
+
+{% include 'footer.html' %}
+
+header.html头部：
+(dj-test)[root@tvm-test sports]# cat basketball/templates/header.html 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>index</title>
+</head>
+<body>
+
+footer.html尾部：
+(dj-test)[root@tvm-test sports]# cat basketball/templates/footer.html 
+    <div>
+        <a href="http://www.miitbeian.gov.cn/">xxICP备xxxxx号</a>
+    </div>
+</body>
+</html>
+
+
+验证结果：
+（略）
+
+2、extend和block
+(dj-test)[root@tvm-test sports]# tree basketball/templates/
+basketball/templates/
+├── footer.html
+├── header_extends.html
+├── header.html
+└── index.html
+
+0 directories, 4 files
+
+设置block，调整一下header.html，使<title>中的内容可变：
+(dj-test)[root@tvm-test sports]# cat basketball/templates/header.html 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>{% block title %}index{% endblock%}</title>
+</head>
+<body>
+
+设置extends，在header.html基础上更新一点内容：
+(dj-test)[root@tvm-test sports]# cat basketball/templates/header_extends.html 
+{% extends 'header.html' %}
+{% block title %}rewrite title, extend from 'header.html'{% endblock%}
+
+调整index.html，包含新的页面：header_extends.html
+(dj-test)[root@tvm-test sports]# cat basketball/templates/index.html 
+{% include 'header_extends.html' %}
+
+app name: basketball
+
+{% include 'footer.html' %}
+
+验证结果：
+（略）
+
+
+3、模版引用变量
+(dj-test)[root@tvm-test sports]# vim basketball/views.py
+def index(request):
+    msg1 = u"我的球衣号码是：23"
+    list1 = ['a', 'b', 'c', 'd', 'e']
+    list2 = ['x1', 'y1', 'z1', 'x2', 'y2', 'z2']
+    dict1 = {'k1': 'v1', 'k2': 'v2', 'k3': 'v3', 'k4': 'v4'}
+    n1 = 23
+    return render(request, 'index.html',
+        {'msg1': msg1,
+         'list1': list1,
+         'list2': list2,
+         'dict1': dict1,
+         n1 : n1
+        })
+    
+在index.html中再包含一个页面msg.html来做测试：
+(dj-test)[root@tvm-test sports]# vim basketball/templates/index.html 
+{% include 'msg.html' %}
+
+(dj-test)[root@tvm-test sports]# cat basketball/templates/msg.html
+<br />
+1、输出变量 <br />
+msg1: {{ msg1 }} <br />
+
+<br />
+2、list示例 <br />
+--使用for循环来输出list中的内容： <br />
+list1: 
+{% for i in list1 %}
+    {{ i }}
+{% endfor %}
+<br />
+<br />
+--利用if和forloop来判断是否为循环中的某个位置： <br />
+list2:
+{% for j in list2 %}
+    {{ j }}{% if not forloop.last %},{% endif %}
+{% endfor %}
+<br />
+<br />
+
+3、使用for循环来输出dict中的k/v： <br />
+{% for k,v in dict1.items %}
+    {{ k }}={{ v }} <br />
+{% endfor %}
+<br />
+
+4、使用url： <br />
+<a href="{% url 'plus' 20 44 %}">link to 'plus'</a> <br />
+<br />
+<br />
+
+
+验证结果：
+（略）
+
+
+
+三、小结
+条件判断：{% 条件名 %}
+变量：{{ 变量名 }}
+
+
+
+
+
+
+ZYXW、参考
+1、Django 基础教程
+http://www.ziqiangxuetang.com/django/django-tutorial.html
+
+
+
+
+
+
+
+
+
+
+
+
+

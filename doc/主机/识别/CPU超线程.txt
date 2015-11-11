@@ -1,0 +1,34 @@
+在判断当前是否开启了超线程之前，需要先判断另外几个数据：
+1，物理CPU个数：
+
+[root@localhost ~]# cat /proc/cpuinfo | grep "physical id" | sort | uniq 
+physical id : 0 
+physical id : 1
+可以看到物理CPU个数为2，物理CPU也就是机器外面就能看到的一个个CPU，每个物理CPU还带有单独的风扇。
+2，每个物理CPU的逻辑核数：
+
+[root@localhost ~]# cat /proc/cpuinfo | grep "cores" | uniq 
+cpu cores   : 6
+3，系统整个cpu线程数：
+
+[root@localhost ~]# cat /proc/cpuinfo | grep "processor" | wc -l 
+24
+有了三面几个数据，就可以判断当前是否开启了超线程了，没开启超线程的情况下，系统的cpu线程数=物理CPU个数*每个物理CPU的逻辑核数*1，因为每个逻辑核只跑了1个cpu线程，如果开启了超线程，那么cpu线程数=物理CPU个数*每个物理CPU的逻辑核数*2，因为每个逻辑核跑了2个cpu线程。所以，上面的24=2*6*2，可以判断当前开启了超线程。
+
+[root@localhost ~]# cat /proc/cpuinfo | grep "model name" | uniq 
+model name  : Intel(R) Xeon(R) CPU           X5670  @ 2.93GHz 
+[root@localhost ~]#
+这是一台X5670机器，从Intel的cpuX5670规格页面（http://ark.intel.com/products/47920/Intel-Xeon-Processor-X5670-%2812M-Cache-2_93-GHz-6_40-GTs-Intel-QPI%29）可以看到，其的确支持Intel® Hyper-Threading Technology。再看另外一个：
+
+[root@localhost ~]# cat /proc/cpuinfo | grep "physical id" | sort | uniq 
+physical id : 0 
+physical id : 1 
+[root@localhost ~]# cat /proc/cpuinfo | grep "cores" | uniq 
+cpu cores   : 4 
+[root@localhost ~]# cat /proc/cpuinfo | grep "processor" | wc -l 
+8 
+[root@localhost ~]# cat /proc/cpuinfo | grep "model name" | uniq 
+model name  : Intel(R) Xeon(R) CPU           E5504  @ 2.00GHz 
+[root@localhost ~]#
+8=2*4，没有开启超线程，从Intel的cpuE5504规格页面（http://ark.intel.com/products/40711/Intel-Xeon-Processor-E5504-%284M-Cache-2_00-GHz-4_80-GTs-Intel-QPI%29）可以看到，其不支持Intel® Hyper-Threading Technology，想开启都没法。
+另外，根据physical id信息可以判断哪些逻辑核在同一个物理核上，因为同一物理核上的逻辑核的physical id相等；而根据core id信息又可以判断哪两个cpu线程跑在同一个逻辑核上，因为跑在同一逻辑核上的cpu线程的core id相等，但是，由于不同物理核上的逻辑核core id可以相等，所以在进行第二个判断（即哪两个cpu线程跑在同一个逻辑核上）前需要先进行第一个判断（即哪些逻辑核在同一个物理核上）。

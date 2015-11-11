@@ -1,0 +1,38 @@
+如何管理iptables的一个示例
+
+
+
+保存iptables配置到文件：
+# iptables-save >rc.firewall.txt
+
+编辑：
+# vim rc.firewall.txt
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT 
+-A INPUT -p icmp -j ACCEPT 
+-A INPUT -i lo -j ACCEPT 
+-A INPUT -s 192.168.100.0/24 -i em1 -j ACCEPT 
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT 
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 80 -j ACCEPT 
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 10050:10051 -j ACCEPT 
+-A INPUT -p udp -m state --state NEW -m udp --dport 10050:10051 -j ACCEPT
+
+
+（增加自己的INPUT策略到这条之前）
+-A INPUT -j REJECT --reject-with icmp-host-prohibited 
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited 
+COMMIT
+
+恢复：
+# iptables-restore rc.firewall.txt
+
+查看恢复后的iptables的状态：
+# iptables -nL
+或者：
+# service iptables status
+
+检查服务，是否符合预期，确认无误后，保存：
+# service iptables save

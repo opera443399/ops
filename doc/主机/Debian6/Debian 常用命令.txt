@@ -1,0 +1,164 @@
+﻿debian 系统管理常用指令
+----------------------------------------------------------------------
+
+cat /etc/issue : 查看系统版本
+cat /proc/cpuinfo or meminfo :  查看cpu, memory信息
+df -h : 查看硬盘剩余空间
+du -hs  目录名 : 查看目录占用空间
+fdisk -l : 查看硬盘的分区
+free -l : 查看内存信息
+hdparm -I /dev/sda : 查看sata硬盘信息
+kill {pid} : 结束pid对应的进程
+lsmod :  查看内核加载的模块
+lspci : 查看PCI设备
+lsusb : 查看USB 设备
+ps -A : 查看当前进程
+top ： 查看当前进程的实时状况
+uname -a : 查看内核
+vmstat: 查看系统状态
+
+ 
+查看进程打开的文件
+lsof -p
+ 
+配置 ADSL
+sudo pppoeconf
+ 
+ADSL 手工拨号
+sudo pon dsl-provider
+ 
+激活 ADSL
+sudo /etc/ppp/pppoe_on_boot
+ 
+断开ADSL
+sudo poff
+ 
+查看拨号日志
+sudo plog
+ 
+根据IP查看网卡地址
+atping IP地址
+ 
+查看当前IP地址
+sudo ifconfig eth0 |awk '/inet addr/{split($2,x,":");print x[2]}'
+ 
+查看当前外网的IP地址
+w3m -no-cookie -dump ip.loveroot.com |grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}'
+ 
+查看当前监听80端口的程序
+lsof -i :80
+ 
+--------------------------------------------------------------------------------
+查看当前网卡的物理地址 
+sudo arp -a | awk '{print $4}'
+sudo ifconfig eth0 | head -1 | awk '{print $5}'
+ 
+立即让网络支持nat 
+sudo echo 1 >/proc/sys/net/ipv4/ip_forward
+sudo iptables -t nat -I POSTROUTING - j MASQUERADE
+ 
+查看路由信息
+netstat -rn 
+sudo route -n
+ 
+手工增加删除一条路由
+sudo route add -net 192.168.0.0
+netmask 255.255.255.0 gw 172.16.0.1
+sudo route del -net 192.168.0.0
+netmask 255.255.255.0 gw 172.16.0.1
+ 
+修改网卡MAC地址的方法
+sudo ifconfig eth0 down #关闭网卡
+sudo ifconfig eth0 hw ether 00:AA:BB:CC:DD:EE #然后改地址
+sudo ifconfig eth0 up #然后启动网卡 
+ 
+--------------------------------------------------------------------------------
+添加一个服务
+sudo update-rc.d 服务名 defaults 99 
+ 
+删除一个服务
+sudo update-rc.d 服务名 remove
+ 
+临时重启一个服务
+/etc/init.d/服务名 restart
+ 
+临时关闭一个服务
+/etc/init.d/服务名 stop
+ 
+配置默认Java使用哪个
+sudo update-alternatives --config java 
+ 
+修改用户资料
+sudo chfn userid
+ 
+给apt设置代理
+export 
+http_proxy=http://xx.xx.xx.xx:xxx 
+ 
+修改系统登录信息
+sudo vim /etc/motd
+ 
+转换文件名由GBK为UTF8
+sudo apt-get install convmv
+convmv -r -f cp936 -t utf8 --notest --nosmart * 
+ 
+快速查找某个文件
+whereis filename
+find 目录 -name 文件名
+ 
+查看文件类型
+file filename
+ 
+显示xxx文件倒数6行的内容
+tail -n 6 xxx 
+ 
+ 
+ 
+查看软件xxx安装内容
+dpkg -L xxx 
+ 
+查找软件 
+apt-cache search 正则表达式 
+ 
+查找文件属于哪个包
+dpkg -S filename           apt-file search filename
+ 
+查询软件xxx依赖哪些包
+apt-cache depends xxx
+
+查询软件xxx被哪些包依赖
+apt-cache rdepends xxx
+ 
+增加一个光盘源
+sudo apt-cdrom add
+ 
+系统升级
+sudo apt-get update       sudo apt-get upgrade       sudo apt-get dist-upgrade 
+ 
+--------------------------------------------------------------------------------
+编译时缺少h文件的自动处理
+sudo auto-apt run ./configure 
+ 
+查看安装软件时下载包的临时存放目录 
+ls /var/cache/apt/archives 
+ 
+备份当前系统安装的所有包的列表 
+dpkg --get-selections | grep -v  deinstall > ~/somefile 
+ 
+从上面备份的安装包的列表文件恢复所有包
+
+dpkg --set-selections < ~/somefilesudo dselect
+
+
+清理旧版本的软件缓存
+sudo apt-get autoclean
+ 
+清理所有软件缓存
+
+sudo apt-get clean
+
+ 
+
+删除系统不再使用的孤立软件
+
+sudo apt-get autoremove 

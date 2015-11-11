@@ -1,0 +1,89 @@
+几个查看系统状态的工具简介
+
+linux性能分析博大精深，各工具的详情请查看man和参考网络文章。
+
+一、查看主机流量
+
+1）iftop
+iftop –n –f “port 80” 了解当前服务端口的流量情况。
+
+iftop –i eth0 –nN 了解指定网卡的流量情况。
+
+2）iptraf
+图像界面
+
+3）netstat
+netstat -ant
+显示对应的进程：
+netstat -antp
+[root@test79 ~]# netstat -antp |grep ':80'
+tcp        1      0 10.0.200.10:39670           23.62.109.17:80             CLOSE_WAIT  3348/clock-applet   
+tcp        1      0 10.0.200.10:48423           23.62.109.73:80             CLOSE_WAIT  3082/clock-applet   
+tcp        0      0 :::80                       :::*                        LISTEN      23616/docker-proxy  
+
+4）ss
+查看tcp连接
+ss -ant
+ss -ant src :80 
+ss -ant dst 10.0.200.21:80
+
+加上-p参数也是查看对应的进程
+[root@test79 ~]# ss -antp src :80
+State      Recv-Q Send-Q                                Local Address:Port                                  Peer Address:Port 
+LISTEN     0      128                                              :::80                                              :::*      users:(("docker",23616,4))
+
+
+5）lsof
+查看使用80端口的进程
+
+[root@test79 ~]# lsof -i :80   
+COMMAND     PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+clock-app  3082 root   15u  IPv4 733274      0t0  TCP 10.0.200.10:48423->a23-62-109-73.deploy.static.akamaitechnologies.com:http (CLOSE_WAIT)
+clock-app  3348 root   15u  IPv4 733273      0t0  TCP 10.0.200.10:39670->a23-62-109-17.deploy.static.akamaitechnologies.com:http (CLOSE_WAIT)
+docker    23616 root    4u  IPv6 319706      0t0  TCP *:http (LISTEN)
+
+
+
+
+二、查看系统
+1）sar
+例如：查看硬盘状态，1秒间隔
+[root@test79 ~]# sar -d -p 1
+Linux 3.8.13-16.2.1.el6uek.x86_64 (test79.company.com)      06/08/2015      _x86_64_        (24 CPU)
+
+04:39:00 PM       DEV       tps  rd_sec/s  wr_sec/s  avgrq-sz  avgqu-sz     await     svctm     %util
+04:39:01 PM       sdb   1264.58  29166.67  18333.33     37.56     16.59     14.08      0.83    104.38
+04:39:01 PM       sda      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+
+
+2）iostat
+例如：查看硬盘状态，1秒间隔
+[root@test79 ~]# iostat -d -k -x 1   
+Linux 3.8.13-16.2.1.el6uek.x86_64 (test79.company.com)      06/08/2015      _x86_64_        (24 CPU)
+
+Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %util
+sdb               0.00    18.54  202.34  121.90  7422.97  4829.88    75.58     0.06    0.20   0.45  14.52
+sda               0.10     1.40    1.67    3.39   197.00   577.35   306.03     0.05    9.50   0.62   0.31
+
+
+3）vmstat
+[root@test79 ~]# vmstat 1
+procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 1  3  75916 1871204 251592 16264876    0    0   321   228    0    0  3  3 92  2  0
+ 5  8  75916 1871096 251592 16265388    0    0 13712  4304 21781 50339 12  3 70 15  0
+ 1  9  75916 1870600 251592 16265660    0    0 12304  7904 19914 38188 10  3 71 16  0
+ 3  4  75916 1870448 251592 16265952    0    0 11808  5868 15572 32363  7  2 75 15  0
+ 3  0  75916 1870232 251592 16266236    0    0  5264  4516 16314 34406  7  3 82  9  0
+ 6  2  75916 1869892 251592 16266740    0    0  5632  3832 18121 48512  7  3 84  5  0
+
+
+4）iotop
+Total DISK READ: 11.67 M/s | Total DISK WRITE: 7.81 M/s
+  TID  PRIO  USER     DISK READ  DISK WRITE  SWAPIN     IO>    COMMAND
+25359 be/4 mysql    1043.11 K/s  857.35 K/s  0.00 % 99.99 % mysqld --defaults-file=
+
+q：退出
+r：反向排序
+左右方向键：按某列排序

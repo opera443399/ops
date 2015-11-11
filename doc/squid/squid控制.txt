@@ -1,0 +1,62 @@
+一、注意：
+
+http://blog.csdn.net/gengoo/article/details/5158238
+1）关于CONNECT的用法
+
+method
+
+method ACL指HTTP请求方法,如:acl Uploads method PUT POST.
+
+Squid知道下列标准HTTP方法：GET, POST, PUT, HEAD, CONNECT, TRACE, OPTIONS和DELETE。另外，来自WEBDAV规范，RFC 2518的方法：PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK。还有非标准的WEBDAV方法: BMOVE, BDELETE, BPROPFIND。最后，你可以在extension_methods指令里配置squid去理解其他的请求方法。
+
+注意CONNECT方法非常特殊。它是用于通过HTTP代理来封装某种请求的方法。在处理CONNECT方法和远程服务器的端口号时应特别谨慎。如你不希望squid连接到某些远程服务。你该限制CONNECT方法仅仅能连接到HTTPS/SSL或NNTPS端口（443和563）。默认的squid.conf这样做：
+
+        acl CONNECT method CONNECT
+        acl SSL_ports 443 563
+        http_access allow CONNECT SSL_ports
+        http_access deny CONNECT
+在该配置里，squid仅仅允许加密请求到端口443（HTTPS/SSL）和563（NNTPS）。CONNECT方法对其他端口的请求都被拒绝。
+
+PURGE是另一个特殊的请求方法。它是Squid的专有方法，它让管理员能强制删除缓存对象。
+
+
+
+二、服务控制：
+
+1). 在开启squid之前，你应该验证其配置文件是否正确。运行如下命令即可：
+
+# squid -k parse
+
+假如你看不到输出，配置文件有效，你能继续后面的步骤。然而，如果配置文件包含错误，squid会告诉你：
+
+2). 初始化cache目录.即建立缓存目录的存储格式
+
+只需在第一次启动squid服务之前执行(在初次运行squid之前，或者无论何时你增加了新的cache_dir，你必须初始化cache目录。)
+
+# squid -z 
+
+cache目录初始化可能花费一些时间，依赖于cache目录的大小和数量，以及磁盘驱动器的速度。假如你想观察这个过程，请使用-X选项：
+
+# squid -zX
+
+3). 启动squid服务
+
+# service squid start
+
+假定squid安装在/usr/local/squid目录下,也可以
+
+# /usr/local/squid/sbin/squid -sD
+
+4). 停止squid
+
+最安全的停止squid的方法是使用squid -k shutdown命令：
+
+# squid -k shutdown
+
+5). 重配置运行中的squid进程
+
+在你了解了更多关于squid的知识后，你会发现对squid.conf文件做了许多改动。为了让新设置生效，你可以关闭和重启squid,或者在squid运行时，重配置它。
+
+重配置运行中的squid最好的方法是使用squid -k reconfigure命令：
+
+# squid -k reconfigure

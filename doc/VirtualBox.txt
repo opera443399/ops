@@ -1,0 +1,84 @@
+﻿用virtuabox配置一个基础的os环境，后续PC机器上的小测试用其他的虚拟机可以直接复用
+
+
+
+一、基础环境
+1、利用virtualbox配置几个虚拟机做实验。
+virtualbox不用我来说吧，，入口：
+https://www.virtualbox.org/wiki/Downloads
+
+
+2、安装一个基础linux环境“tvm-base”，添加2个硬盘，2个网卡；
+OS：CentOS-6.5-x86_64
+分区如下：
+sda1 200M    /boot
+sda2 4G      /swap
+sda3 others  /
+sdb1 all     /data
+
+禁用selinux
+[root@localhost ~]# setenforce 0 && sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+
+时间同步
+# [daily]
+*/20 * * * * /usr/sbin/ntpdate stdtime.gov.hk >/dev/null 2>&1 &
+
+
+3、网络：
+eth0：host-only（用于虚拟内网，当前网段为192.168.56.0/24，手动固定IP，这样从宿主机可以直接连接到这个vm）
+eth1：NAT（用于上外网，动态IP）
+
+[root@localhost ~]# cd /etc/sysconfig/network-scripts/
+[root@localhost network-scripts]# cat ifcfg-eth0
+DEVICE=eth0
+TYPE=Ethernet
+ONBOOT=no
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=192.168.56.99
+PREFIX=24
+GATEWAY=192.168.56.1
+DNS1=192.168.56.254
+
+[root@localhost network-scripts]# cat ifcfg-eth1
+DEVICE=eth1
+TYPE=Ethernet
+ONBOOT=no
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+
+二、做个系统快照备用。
+
+三、FAQ
+Q：上网异常。
+A：复制一个新的虚拟机后，可能遇到网卡启动异常，解决办法：
+1）检查网卡配置，删掉mac地址和uuid的信息
+2）检查udev的配置，可以清空
+# echo> /etc/udev/rules.d/70-persistent-net.rules 
+3）重启
+# reboot
+
+
+Q：为何打开virtualbox只能选择32位的系统，不能选择64位的？
+A：主机要开启VT功能，有的主板默认是开启VT的，技嘉之类的都挺好找，这次遇到HP的机器，，奇葩，藏在system security的选项中。
+
+
+四、制作一个centos-6.6的版本
+注：在后续咱们配置了一个本地的配置了dns服务和yum源（192.168.56.254 mirrors.office.test），因此此时的状态，已经更新了repo中epel相关的源信息，网卡eth0的配置，dns服务器的配置。
+
+[root@localhost ~]# mv /etc/yum.repos.d/*.repo /tmp/ \
+&& wget http://mirrors.office.test/local-office.repo -O /etc/yum.repos.d/local-office.repo \
+&& yum clean all \
+&& yum makecache
+[root@localhost ~]# yum update
+[root@localhost ~]# reboot
+[root@localhost ~]# mv /etc/yum.repos.d/CentOS-* /tmp/ -f
+[root@localhost ~]# init 0
+
+
+帐号密码：
+root:TestVM
+
+
+
+

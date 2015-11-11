@@ -1,0 +1,31 @@
+http://blog.csdn.net/alonesword/article/details/18521449
+
+squid： /etc/squid/squid.conf
+
+1）默认的格式：
+%ts.%03tu %6tr %>a %Ss/%>Hs %<st %rm %ru %un %Sh/%<A %mt
+
+结果：
+1418970195.738      0 192.168.1.158 TCP_DENIED/403 3548 CONNECT pub.idqqimg.com:80 - NONE/- text/html
+1418970201.976  10368 192.168.1.158 TCP_MISS/200 22102 CONNECT 119.147.32.229:443 - DIRECT/119.147.32.229 -
+
+
+
+2）更改时间格式：
+[%tl] %6tr %>a %Ss/%>Hs %<st %rm %ru %un %Sh/%<A %mt
+
+结果：
+[19/Dec/2014:15:06:34 +0800]     60 192.168.1.57 TCP_MISS/200 398 GET http://suggestion.baidu.com/su? - DIRECT/180.97.33.72 text/javascript
+[19/Dec/2014:15:06:42 +0800]  15670 192.168.1.57 TCP_MISS/200 669 POST http://plugin.browser.qq.com/plugin - DIRECT/14.17.19.90 application/json
+
+
+
+
+3）类似apache的格式：
+logformat combined %>a %ui %un [%tl] "%rm %ru HTTP/%rv" %>Hs %<st "%{Referer}>h" "%{User-Agent}>h" %Ss:%Sh %{host}>h
+access_log /var/log/squid/access.log combined
+
+结果：
+192.168.1.57 - - [19/Dec/2014:14:29:34 +0800] "GET http://ps.browser.qq.com/accept? HTTP/1.1" 0 0 "-" "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1) QQBrowser/6.0" TCP_MISS:DIRECT ps.browser.qq.com
+192.168.1.58 - - [19/Dec/2014:14:29:41 +0800] "CONNECT 119.147.32.229:443 HTTP/1.1" 200 252505 "-" "-" TCP_MISS:DIRECT 119.147.32.229:443
+192.168.1.57 - - [19/Dec/2014:14:51:42 +0800] "POST http://masterconn.qq.com/q.cgi HTTP/1.1" 200 292 "-" "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0)" TCP_MISS:DIRECT masterconn.qq.com

@@ -1,0 +1,106 @@
+生产环境上架规范
+
+一、沟通
+1）和机房沟通寄送服务器的最新地址，确认是否有变化。联系物流（例如顺风），准备货物寄送到机房；或者，采购时，直接选择送到机房。
+2）和机房沟通能提供的技术支持，例如服务器的硬件维护，系统重做等服务是否机房技术可以协助处理。
+
+
+
+二、配置
+1、硬件
+RAID：确定级别（无，0, 1, 5, 10)，确认缓存参数，默认是：
+条带：64K
+读取策略：自适应预读
+写策略：回写
+磁盘高速缓存：禁用
+
+2、安装系统系统
+【OS】
+Oracle Linux 6.5 x64  或 CentOS Linux 6.6 x64
+
+【hostname】
+例如取内网IP最后一位
+hostname=s85.workec.com
+
+【网卡】约定em1和em2哪个接内网，哪个接外网
+外网：em1，ip=x.x.x.x
+内网：em2，ip=x.x.x.x
+
+【分区】
+10G /
+10G /usr
+16G /swap
+剩余 /data
+
+
+----约定
+/data分区的使用：
+/data/backup                        备份
+/data/download                      下载的安装包
+/data/ops                     运维用的工具和配置
+/data/log                           日志
+/data/server                        ec servr组用，子目录请自行定义
+/data/web                           ec web组用，子目录请自行定义
+/data/apps/服务名                   子目录存放开源服务的数据和配置
+
+例如，个别主机上：
+/data/apps/mysql/3306               mysql数据
+/data/apps/mysql/conf               mysql配置
+/data/apps/redis/6379               redis数据
+/data/apps/redis/conf               redis配置
+----
+
+
+3、安装系统上线后初始化配置
+
+【禁用selinux】
+
+【DB主机要禁用numa】
+编辑：/boot/grub/grub.conf
+增加：numa=off 到kernel的末尾
+
+以上配置要重启服务器。
+
+【检查网卡配置】
+# cat /etc/sysconfig/network-scripts/ifcfg-em2
+
+【建立目录】
+# mkdir -p /data/ops/bin && chmod 700 /data/ops && cd /data/ops/bin
+【上传脚本】
+# yum -y install lrzsz
+# rz -be
+init_datetime.sh  init_once.sh  init_sshd.sh  root_update.sh  saltstack-install-minion.sh
+
+【更新root密码和ssh key】
+# passwd
+# sh root_update.sh
+
+【调整sshd，防火墙的配置（端口，禁用password方式登录，改用publickey方式登录）】
+# sh init_sshd.sh 
+检查配置，确认无误后：
+# service iptables save && service sshd reload
+
+【配置时间同步】
+# sh init_datetime.sh c 192.168.5.80
+
+【安装基础软件包，禁用selinux，设置utf8，limits，profile】
+# sh init_once.sh
+
+【加入配置管理平台saltstack（saltstack要从epel源安装，因此，建议在init_one.sh执行后再操作这个）】
+# sh saltstack-install-minion.sh
+# salt -E 's(4[7-9]|50|8[7-9]).workec.com' test.ping
+
+增加用户（以pengchao为例）：
+# salt 'you-hostname' state.sls user/group/ops/pengchao
+
+【加入监控平台zabbix】
+安装和启动agent：
+# salt 'you-hostname' state.sls zabbix.agent
+更新防火墙，运行10050端口：
+# salt 'you-hostname' state.sls firewall 
+# salt 'you-hostname' cmd.run 'service iptables save'
+
+
+
+
+

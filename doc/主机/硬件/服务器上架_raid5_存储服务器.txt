@@ -1,0 +1,197 @@
+【时间】2014-05-20 ~ 2014-05-21
+【主机】IP: s80
+【目的】外网大容量文件服务器s80上架
+【操作记录】
+1. 基本信息。
+配置：
+品牌：Dell R720
+类型：机架式
+高度： 2U
+处理器： 2颗，E5-2603v2
+硬盘： 6块，4TB，3.5，7.2k
+内存： 2条，8GB
+RAID： RAID 5
+网卡： 1个
+电源： 2个
+
+用途：大容量文件存储服务器（存放电话宝录音语音文件，日志，备份等）
+
+2. 基础设置。
+
+【iDRAC】IP: 192.168.5.22，通过http方式访问，可考虑内网ssh转发80和443端口到本地。
+企业版，可远程控制开关机，配置RAID，安装OS等操作。
+
+【raid】5块盘配置raid5，1块盘做热备。
+条带：128K
+预读：默认
+回写：默认
+【bios】
+system bios setting -> integrated devices -> I/OAT DMA Engine：启用
+
+【OS】安装系统，Oracle Linux 6.5 x86_64。
+【hostname】s80.workec.com
+【管理员】设置root密码
+【IP】局域网em1（192.168.5.80），外网em2（121.201.96.80），检查Gateway，DNS设置
+【分区】
+/     20G
+/usr  20G
+/var  20G
+swap  16G
+/data 14T
+
+[root@s80 ~]# df -h
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda3        20G  506M   18G   3% /
+tmpfs           7.9G     0  7.9G   0% /dev/shm
+/dev/sda5        15T  9.5M   14T   1% /data
+/dev/sda1        20G  2.2G   17G  12% /usr
+/dev/sda2        20G  112M   19G   1% /var
+
+
+【selinux】/etc/selinux/config,关闭selinux，重启生效
+【基础目录】
+[root@s80 ~]# mkdir /data/{backup,download,ops,log}
+[root@s80 ~]# mkdir /data/ops/{bin,conf,info}
+上传脚本，增加ssh用户，调整ssh，ntp等系统设置：
+basic_info.sh  
+create_user_with_sshkey.sh  
+setting_limits.sh  
+setting_ntp.sh  
+setting_profile.sh  
+setting_sshd.sh  
+setting_sysctl.sh
+
+
+3. 配置NFS服务
+[root@s80 pengchao]# groupadd -g 503 ec
+[root@s80 pengchao]# useradd -u 503 -g ec ec
+[root@s80 pengchao]# mkdir -p /data/nfsroot/phonerecord
+[root@s80 pengchao]# chown -R ec:ec /data/nfsroot/phonerecord
+[root@s80 pengchao]# chmod 777 /data/nfsroot/phonerecord 
+
+
+[root@s80 pengchao]# service rpcbind start
+[root@s80 pengchao]# service nfs start
+[root@s80 pengchao]# service nfslock on
+
+[root@s80 pengchao]# chkconfig rpcbind on
+[root@s80 pengchao]# chkconfig nfs on
+[root@s80 pengchao]# chkconfig nfslock on
+
+测试，配置一个nfs目录：
+/data/nfsroot/phonerecord  192.168.1.0/24(rw,anonuid=503,anongid=503)
+
+在测试机挂载即可测试。
+
+
+4. 调整内外网ip设置为机房IP。
+
+5. 上架
+20140520 
+11:40 已收货，配置服务器。
+17:00 准备运输到机房上架。
+
+20140521
+09:00 联系物流方面，准备寄送到广州信息港机房，和机房客服人员沟通确认收货信息：
+广州市天河区科韵路16号广州信息港C座国际电子商务中心4楼
+柳发勇 13632397489
+
+16:00 圆通，9295765419
+
+预计今晚发快递到机房，顺利的话，明天中午到货上架，下午可以配置。
+计划：
+1）明天下午服务器上线后，检查网络，openssl，ssh等设置。
+2）将语音文件的存储转移到s80上
+
+20140522
+14:00  和机房沟通，对方已经收到，发工单准备上架。
+16:00  上架成功，继续配置，检查网络，openssl，ssh等设置。
+
+[root@s80 ~]# cat /etc/sysconfig/network
+NETWORKING=yes
+HOSTNAME=s80.workec.com
+GATEWAY=121.201.96.1
+
+[root@s80 ~]# cat /etc/sysconfig/network-scripts/ifcfg-em1
+DEVICE=em1
+TYPE=Ethernet
+UUID=30b3c410-a507-4cb1-8bb3-5c2638e572c9
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+HWADDR=C8:1F:66:F0:BD:E7
+IPADDR=192.168.5.80
+PREFIX=24
+GATEWAY=192.168.5.1
+DNS1=114.114.114.114
+DNS2=8.8.8.8
+IPV4_FAILURE_FATAL=yes
+IPV6INIT=no
+NAME="System em1"
+
+[root@s80 ~]# cat /etc/sysconfig/network-scripts/ifcfg-em2 
+DEVICE=em2
+HWADDR=C8:1F:66:F0:BD:E8
+TYPE=Ethernet
+UUID=b5f036f6-95ed-46a4-936d-58d067d20509
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=121.201.96.80
+PREFIX=25
+GATEWAY=121.201.96.1
+DNS1=114.114.114.114
+DNS2=8.8.8.8
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=yes
+IPV6INIT=no
+NAME="System em2"
+启动外网网卡em2：
+[root@s80 ~]# ifup em2
+
+更新openssl：
+[root@s80 ~]# yum -y update openssl
+[root@s80 fileroot]# rpm -q --changelog openssl |head -n 3
+* Mon Apr 07 2014 Tomá? Mráz <tmraz@redhat.com> 1.0.1e-16.7
+- fix CVE-2014-0160 - information disclosure in TLS heartbeat extension
+
+调整ssh的root和password设置：
+[root@s80 ~]# vim /etc/ssh/sshd_config
+PermitRootLogin no
+PasswordAuthentication no
+
+
+6. 安装zabbix agent
+[root@s80 ~]# cd /data/download/
+[root@s80 download]# tar zxvf zabbix.tar.gz 
+[root@s80 download]# mv zabbix/bin/* /usr/bin/
+[root@s80 download]# mv zabbix/sbin/* /usr/sbin/
+[root@s80 download]# mkdir -p /etc/zabbix/zabbix_agentd.conf.d
+[root@s80 download]# cat /etc/zabbix_agentd.conf
+PidFile=/tmp/zabbix_agentd.pid
+LogFile=/tmp/zabbix_agentd.log
+SourceIP=192.168.5.80
+Server=192.168.5.91
+ListenIP=192.168.5.80
+ServerActive=192.168.5.91
+Hostname=192.168.5.80
+Timeout=30
+Include=/etc/zabbix/zabbix_agentd.conf.d/
+
+[root@s80 download]# useradd -s /sbin/nologin -d /var/lib/zabbix -c "Zabbix Monitoring System" zabbix
+
+[root@s80 download]# mv zabbix-agent /etc/init.d/
+[root@s80 download]# chmod +x /etc/init.d/zabbix-agent 
+[root@s80 download]# service zabbix-agent start
+
+
+
+
+
+
+
+
+
+
+
+

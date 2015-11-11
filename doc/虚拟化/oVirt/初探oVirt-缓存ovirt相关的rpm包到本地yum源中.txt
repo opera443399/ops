@@ -1,0 +1,133 @@
+日期：2015/9/17 - 2015/11/10 time 16:54
+主机：tvm-yum
+目的：初探oVirt-缓存ovirt相关的rpm包到本地yum源中
+操作内容：
+一、基础
+1、在已有base和eple包的基础上，根据ovirt的repo文件来下载rpm包到本地yum源中。
+2、根据安装vdsm时候的log报错的内容来找到对应的rpm包
+【后记：关于升级ovirt版本】
+20151110
+缓存了3.6的rpm包后发现，诸如vdsm这类包，还是在3.5的版本中提供，因此，建议以3.5的作为基础版本，加上3.6的源，组合在一起提供服务。后续官方可能会将旧版本的rpm包整合到新版，待关注。
+下述脚本中替换掉对应的版本号即可。
+
+
+
+二、根据repo文件下载rpm包
+1、从镜像中找一个url下载，整合成脚本执行
+[root@tvm-yum ovirt]# pwd
+/var/www/html/ovirt
+[root@tvm-yum ovirt]# cat wget_rpms.sh 
+#!/bin/bash
+# 2015/11/6
+# cache rpms from ovirt to localhost
+# from: yum install http://resources.ovirt.org/pub/yum-repo/ovirt-release36.rpm
+# for:
+#   - ovirt-3.6.repo
+#   - ovirt-3.6-dependencies.repo
+
+function validate_wget() {
+    cd $1
+    for f_rpm in `ls .`; do 
+        echo "[validate] ${f_rpm}"
+        wget -c $2/"${f_rpm}"
+    done
+}
+
+function update_repo() {
+    d_dest='/var/www/html/ovirt/ovirt-3.6/rpm'
+    mkdir ${d_dest}/el6/{noarch,x86_64} -p
+    mkdir ${d_dest}/dependencies/{jpackage,gluster,patternfly,others} -p
+
+
+############################ ovirt ###############################
+    cd ${d_dest}/el6/noarch
+    wget --execute robots=off -nc -nd -r -l1 -A'*.rpm' http://resources.ovirt.org/pub/ovirt-3.6/rpm/el6/noarch
+    validate_wget ${d_dest}/el6/noarch http://resources.ovirt.org/pub/ovirt-3.6/rpm/el6/noarch
+
+    cd ${d_dest}/el6/x86_64
+    wget --execute robots=off -nc -nd -r -l1 -A'*.rpm' http://resources.ovirt.org/pub/ovirt-3.6/rpm/el6/x86_64
+    validate_wget ${d_dest}/el6/x86_64 http://resources.ovirt.org/pub/ovirt-3.6/rpm/el6/x86_64
+
+############################ ovirt-deps ###############################
+## [jpackage]
+    tmp_jpackage="dom4j,isorelax,jaxen,jdom,msv,msv-xsdlib,relaxngDatatype,servicemix-specs,tomcat5-servlet-2.4-api,ws-jaxme,xalan-j2,xml-commons,xml-commons-jaxp-1.2-apis,xml-commons-resolver11,xom,xpp2,xpp3,antlr3,stringtemplate"
+    list_jpackage=`echo ${tmp_jpackage} |sed 's/,/\-\*.rpm,/g' |awk '{print $0"-*.rpm"}'`
+
+    cd ${d_dest}/dependencies/jpackage
+    wget --execute robots=off -nc -nd -r -l1 -A ${list_jpackage} http://mirrors.dotsrc.org/jpackage/6.0/generic/free/RPMS
+
+## [gluster]
+    cd ${d_dest}/dependencies/gluster
+    wget --execute robots=off -nc -nd -r -l1 -A'*.rpm' http://download.gluster.org/pub/gluster/glusterfs/LATEST/EPEL.repo/epel-6/x86_64
+    wget --execute robots=off -nc -nd -r -l1 -A'*.rpm' http://download.gluster.org/pub/gluster/glusterfs/LATEST/EPEL.repo/epel-6/noarch
+
+## [patternfly]
+    cd ${d_dest}/dependencies/patternfly
+    wget --execute robots=off -nc -nd -r -l2 -A'*.rpm' http://copr-be.cloud.fedoraproject.org/results/patternfly/patternfly1/epel-6-x86_64
+
+## [others]
+    cd ${d_dest}/dependencies/others
+    wget --execute robots=off -nc -nd -r -l1 -A'policycoreutils-*.rpm,libnl3-*.rpm,selinux-policy-*.rpm' http://mirrors.aliyun.com/centos/6/os/x86_64/Packages
+    wget --execute robots=off -nc -nd -r -l1 -A'*.rpm' http://fedorapeople.org/groups/virt/virtio-win/repo/stable
+
+############################ createrepo ###############################
+    cd /var/www/html/ovirt/ovirt-3.6/rpm/el6/
+    /usr/bin/createrepo .
+    cd /var/www/html/ovirt/ovirt-3.6/rpm/dependencies/
+    /usr/bin/createrepo .
+
+    exit 0
+}
+
+
+############################ ovirt-3.5.repo ###############################
+function file_repo() {
+    cat <<'_EOF' >ovirt-3.6.repo
+[ovirt-3.6]
+name=Latest oVirt 3.6 Release
+baseurl=http://mirrors.office.test/ovirt/ovirt-3.6/rpm/el$releasever/
+enabled=1
+skip_if_unavailable=1
+gpgcheck=0
+
+[ovirt-3.6-others]
+name=others
+baseurl=http://mirrors.office.test/ovirt/ovirt-3.6/rpm/dependencies/
+enabled=1
+skip_if_unavailable=1
+gpgcheck=0
+_EOF
+
+}
+
+function usage() {
+    echo "$0 file|update"
+    exit 0
+}
+
+case $1 in
+    file|update)
+        $1_repo
+        ;;
+    *)
+        usage
+        ;;
+esac
+
+
+2、下载rpm包
+sh wget_rpms.sh update
+
+3、生成repo文件
+sh wget_rpms.sh file
+
+
+三、调整目标主机的repo文件
+将上一步生成的文件：ovirt-3.6.repo，拷贝到目标主机的目录中：
+[root@node86 yum.repos.d]# pwd
+/etc/yum.repos.d
+
+四、物理节点使用本地yum源来安装vdsm服务
+[root@node86 yum.repos.d]# yum clean all && yum makecache
+[root@node86 yum.repos.d]# yum install vdsm
+

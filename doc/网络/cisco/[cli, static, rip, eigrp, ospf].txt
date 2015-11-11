@@ -1,0 +1,182 @@
+3. CLI
+{
+1)设定密码、接口IP地址
+router>
+
+router>enable
+router#
+router#configure terminal
+router(config)#hostname A
+A(config)#enable secret APwd
+A(config)#interface fastEthernet 0/1
+A(config-if)#ip address 10.1.1.1 255.255.255.0
+A(config-if)#description Your Desc
+A(config-if)#no shutdown
+A(config-if)#line console 0
+A(config-line)#password ConsolePwd
+A(config-line)#login
+A(config-line)#logging synchronous
+A(config-line)#exec-timeout 0 0 
+A(config-line)#line aux 0
+A(config-line)#password AuxPwd
+A(config-line)#login
+A(config-line)#exit
+A(config)#line vty 0 ?
+<1-4> Last line number
+<cr>
+A(config)#line vty 0 4
+A(config-line)#password TelnetPwd
+A(config-line)#login
+A(config-line)#exit
+A(config)#no ip domain-lookup
+A(config)#banner motd # This is my router #
+A(config)#end
+A#copy run start
+A#
+
+
+
+2）验证命令
+sh run | begin interface
+
+sh ip route
+sh ip protocols
+debug ip rip
+sh ip route eigrp
+sh ip eigrp neighbors
+sh ip eigrp topology
+debug eigrp packet
+debug ip eigrp notification
+sh ip ospf database
+sh ip ospf interface
+sh ip ospf neighbor
+debug ip ospf packet
+debug ip ospf hello
+debug ip ospf adjacency 
+
+
+
+3)静态路由
+R1(config)#ip route 172.16.3.0 255.255.255.0 192.168.2.4
+
+R1(config)#ip route 172.16.3.0 255.255.255.0 192.168.2.4 150  //管理距离AD=150
+R1(config)#ip route 172.16.3.0 255.255.255.0 s0/0  //用借口代替Next hop 地址
+R1(config)#ip route 0.0.0.0 0.0.0.0 10.1.11.1 //静态路由
+R1(config)#ip route 0.0.0.0 0.0.0.0 vlan1
+R1(config)#ip route 0.0.0.0 0.0.0.0 s0/0
+R1(config)#ip default-network 10.1.11.1
+
+
+4)动态路由
+AD(Administrative Distance)
+
+-----------------
+interface  0
+Static  1
+EIGRP  90
+IGRP  100
+OSPF  110
+RIP   120
+EEIGRP  170
+UNKNOWN 255
+
+
+5) RIP
+A#conf t
+
+A(config)#router rip
+A(config-router)#network 10.0.0.0
+
+A(config-router)#version 2 //使用RIPv2
+A(config-router)#passive-interface s0/0    //阻止RIP更新广播从该接口发出。
+
+
+6)EIGRP
+A#conf t
+
+A(config)#router eigrp 10
+A(config-router)#network 10.0.0.0
+
+A(config-router)#maximum-paths ?   //默认支持4条链路的不等代价的负载均衡
+<1-6> Number of paths
+A(config-router)#maximum-hops ?    //默认最大跳计数值是100，通常不用修改
+<1-255> hop count
+
+//再发布
+A(config)#router eigrp 10
+A(config-router)#redistribute rip metric 10000000 20000 255 1 1500
+
+B(config)#router rip
+B(config-router)#redistribute eigrp 10 metric 1
+
+//不连续网络
+A(config)#router eigrp 100
+A(config-router)#network 172.16.0.0
+A(config-router)#network 10.0.0.0
+A(config-router)#no auto-summary
+
+B(config)#router eigrp 100
+B(config-router)#network 172.16.0.0
+B(config-router)#network 10.0.0.0
+B(config-router)#no auto-summary
+
+
+7)OSPF
+A(config)#router ospf 1
+
+A(config-router)#network 10.0.0.0 0.255.255.255 area 0    // = 10.0.0.0/8
+A(config-router)#network 192.168.10.64 0.0.0.15 area 0    // = 192.168.10.64/28
+A(config-router)#network 192.168.10.80 0.0.0.15 area 0    // = 192.168.10.80/28
+A(config-router)#network 192.168.10.96 0.0.0.15 area 0    // = 192.168.10.96/28
+A(config-router)#network 192.168.10.8 0.0.0.3 area 0        // = 192.168.10.8/30
+
+
+
+#OSPF RID Loopback
+A#sh ip ospf
+
+Routing Process "ospf 10" with ID 10.1.1.1
+[output cut]
+A(config)#int loopback 0
+A(config-if)#ip address 172.16.8.1 255.255.255.255
+[reboot]
+A#sh ip ospf
+Routing Process "ospf 10" with ID 172.16.8.1
+[output cut]
+
+A(config)#router ospf 10
+A#(config-router)router-id 172.16.8.1
+A#(config-router)do clear ip ospf process
+A#(config-router)do sh ospf 10
+Routing Process "ospf 10" with ID 172.16.8.1
+[output cut]
+
+
+
+#OSPF priority
+A(config)#int f0/0
+
+A(config-if)#ip ospf prority 2
+
+
+#配置EIGRP和OSPF汇总路由
+EIGRP:
+Core(config)#router eigrp 10
+
+Core(config-router)#network 192.168.10.0
+Core(config-router)#network 10.0.0.0
+Core(config-router)#no auto-summary
+Core(config-router)#interface ethernet 0
+Core(config-if)#ip summary-address eigrp 10 192.168.10.64 255.255.255.224
+
+
+OSPF:
+Core(config)#router ospf 1
+
+Core(config-router)#network 192.168.10.64 0.0.0.3 area 1
+Core(config-router)#network 192.168.10.68 0.0.0.3 area 1
+Core(config-router)#network 10.10.10.0 0.0.0.255 area 0
+Core(config-router)#area 1 range 192.168.10.64 255.255.255. 224
+
+
+}

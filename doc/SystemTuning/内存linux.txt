@@ -1,0 +1,37 @@
+【资料整理】对linux内存的理解
+
+$ free -m
+             total       used       free     shared    buffers     cached
+Mem:         32127      24572       7555          0        478      16258
+-/+ buffers/cache:       7835      24292
+Swap:        20479         97      20382
+
+
+注意第2行：
+实际被程序占用的内存：
+-buffers/cache=7835
+(used-buffers-cached)  24572-478-16258=7836
+
+实际可用内存总数：
++buffers/cache=24292
+(free+buffers+cached)  7555+478+16258=24291
+
+
+再来一例：
+?$ free -m
+             total       used       free     shared    buffers     cached
+Mem:         64186        619      63567          0         16         93
+-/+ buffers/cache:        509      63677
+Swap:        32159          0      32159
+
+
+实际被程序占用的内存：
+-buffers/cache=509
+
+(used-buffers-cached)  619-16-93=510
+
+
+实际可用内存总数：
++buffers/cache=63677
+
+(free+buffers+cached)  63567+16+93=63676

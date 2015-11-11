@@ -1,0 +1,36 @@
+
+##查看DNS解析出的CDN节点的状态：
+nslookup my.workec.com |grep Address |grep -v "#53$" |cut -d " " -f2 |xargs -i curl -o /dev/null -v -H "Host:my.workec.com" http://{}/
+
+##查看第一条：
+nslookup my.workec.com |grep Address |grep -v "#53$" |cut -d " " -f2 |head -n1 |xargs -i curl curl -o /dev/null -v -H "Host:my.workec.com" http://{}/
+
+##仅获取头部：
+nslookup my.workec.com |grep Address |grep -v "#53$" |cut -d " " -f2 |xargs -i curl -I -H "Host:my.workec.com" http://{}/ 
+
+
+##抓包查看head中是否有age=1的信息，表明CDN是否有缓存。
+
+curl -vosa http://www.abc.com/setup.exe
+
+* About to connect() to www.abc.com port 80 (#0)
+*   Trying 1.1.1.1... connected
+* Connected to www.abc.com (1.1.1.1) port 80 (#0)
+> GET /setup.exe HTTP/1.1
+> User-Agent: curl/7.19.7 (x86_64-redhat-linux-gnu) libcurl/7.19.7 NSS/3.14.0.0 zlib/1.2.3 libidn/1.18 libssh2/1.4.2
+> Host: www.abc.com
+> Accept: */*
+> 
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0< HTTP/1.1 200 OK
+< Date: Fri, 22 Nov 2013 04:40:41 GMT
+< Server: nginx
+< Content-Type: application/octet-stream
+< Content-Length: 31810120
+< Last-Modified: Fri, 22 Nov 2013 04:16:20 GMT
+< Accept-Ranges: bytes
+< Age: 1
+< X-Via: 1.1 xxx:8080 (Cdn Cache Server V2.0), 1.1 xxx:9123 (Cdn Cache Server V2.0)
+< Connection: keep-alive
+

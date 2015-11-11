@@ -1,0 +1,19 @@
+
+================================ mysqldump ========================================
+
+# mysqldump -h 127.0.0.1 -P 3306 -u root -p -R -E -B mysql --triggers=true > mysql.sql 
+# mysqldump -h 127.0.0.1 -u root -p redmine >redmine.sql  （没有create db的语句）
+# mysqldump -h 127.0.0.1 -u root -p -B mysqlmtop >mysqlmtop.sql
+
+# mysqldump -h 127.0.0.1 -P 3307 -u root -p d_abc  t1 >d_abc.t1.sql
+# mysqldump -h 127.0.0.1 -P 3306 -u root --password=xxx -R -E --triggers=true -B mysql > mysql.sql
+
+# mysqldump -h 127.0.0.1 -P 3306 -u root --password=xxx -B db_name > db_name.sql
+
+不同的mysql版本，要导入导出mysql库，修改sql，注释掉event和proc表的创建
+
+
+针对字符集为Latin1的：
+# mysqldump -h 127.0.0.1 -P ${s_port} -u root --password=${s_password} --hex-blob -R -E -e -q --triggers --default-character-set=latin1 ${s_db} ${s_table}
+
+

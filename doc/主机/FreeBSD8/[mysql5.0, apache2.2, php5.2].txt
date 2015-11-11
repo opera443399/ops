@@ -1,0 +1,163 @@
+﻿在 FreeBSD 8 系统部署 MySQL+Apache+PHP 5 
+
+一、安装 MySQL Server5.0
+
+
+cd /usr/ports/databases/mysql50-server 
+make install clean 
+
+配置 MySQL 安装完成后，需要编辑/etc/rc.conf 文件，添加下面内容到/etc/rc.conf： 
+
+mysql_enable="YES" 
+
+
+复制文件： 
+
+cp /usr/local/share/mysql/my-medium.cnf /etc/my.conf 
+
+
+启动 MySQL 服务： 
+
+/usr/local/etc/rc.d/mysql-server start 
+
+
+
+新装的 mysql 是没有密码的,使用 mysqladmin 命令更改 MySQL 密码： 
+
+
+
+/usr/local/bin/mysqladmin -uroot password '你的密码' 
+---例如：
+/usr/local/bin/mysqladmin -uroot password 12345678 
+
+---增加mysql用户
+# mysql -u root -p
+-----
+PASSWORD:
+mysql > grant SELECT, LOCK TABLES on *.* to backupadmin@localhost identifed by 'backupadmin';
+
+
+
+二、安装 Apache2.2 
+
+
+
+cd /usr/ports/www/apache22 
+make install clean 
+
+◆去掉 IPV6 
+◆添加 MySQL 安装完成后，需要编辑/etc/rc.conf 文件，添加下面内容到/etc/rc.conf：
+ 
+
+apache22_enable="YES" 
+
+
+
+配置 Apache 2.2 
+安装完成后，备份/usr/local/etc/apache22/httpd.conf 文件： 
+
+cp /usr/local/etc/apache22/httpd.conf /usr/local/etc/apache22/httpd.conf.bak 
+
+
+编辑/usr/local/etc/apache22/httpd.conf 文件，以使 Apache22 Server 支持 PHP： 
+
+vim /usr/local/etc/apache22/httpd.conf 
+
+
+
+1.大约 216 行 添加'index.php' 到'DirectoryIndex' 主目录索引： 
+DirectoryIndex index.php index.html 
+
+2.大约 359 行 在 AddType application/x-gzip .gz .tgz 下面添加以下内容：
+ AddType application/x-httpd-php .php 
+AddType application/x-httpd-php-source .phps 
+
+可查找一下关键字，修改
+DocumentRoot #存放 web 的路径,根据自己需求更改 
+Directory  #存放 web 的路径,这个根据自己需求更改
+
+
+ 
+
+三、安装 PHP 5.2 
+
+
+
+cd /usr/ports/lang/php52 
+make install clean 
+
+选择如下安装选项： 
+◆去掉 IPV6 
+◆添加 CLI、CGI、APACHE、SUHOSION、FASTCGI、PATHINFO 
+
+四、安装 PHP 5.2-extensions 扩展 
+
+
+cd /usr/ports/lang/php52-extensions 
+make config 
+make install clean 
+
+make config 安装添加选项如下： 添加 BZ2、 CALENDAR、CTYPE、 GD、 GETTEXT、 ICONV、 MBSTRING、 MCRYPT、 MHASH、 MYSQL、 MYSQLI、OPENSSL、PCRE、POSIX、SESSION、SOCKETS、TOKENIZER、ZIP、ZLIB。 
+复制/usr/local/etc/php.ini-dist 为/usr/local/etc/php.ini： 
+
+cp /usr/local/etc/php.ini-dist /usr/local/etc/php.ini 
+
+
+
+五、安装 ZendOptimizer 
+
+
+cd /usr/ports/devel/ZendOptimizer 
+make install clean 
+
+安装完成提示如下： 
+*********************************************************************
+
+
+You have installed the ZendOptimizer package. Edit /usr/local/etc/php.ini and add: 
+[zend]
+zend_optimizer.optimization_level=15
+zend_extension_manager.optimizer="/usr/local/lib/php/20060613/Optimizer"
+zend_extension_manager.optimizer_ts="/usr/local/lib/php/20060613/Optimizer_TS"
+zend_extension="/usr/local/lib/php/20060613/ZendExtensionManager.so"
+zend_extension_ts="/usr/local/lib/php/20060613/ZendExtensionManager_TS.so" 
+
+********************************************************************* 
+编辑 php.ini,复制以上[Zend]内容到文本末尾：
+vim /usr/local/etc/php.ini 
+
+
+
+重新启动你的 Web Server
+
+/usr/local/etc/rc.d/apache22 restart 
+
+
+测试 Apche Server 对 PHP 和 ZendOptimizer 支持，在/home/www 里面建立一个 index.php， 输入以下内容： 
+
+
+<? 
+phpinfo(); 
+?> 
+
+
+
+
+六、安装 PHPmyadmin 
+
+1.安装 
+cd /usr/ports/databases/phpmyadmin 
+make fetch #只下载，不安装 PHPmyadmin 解压以后直接使用了： 
+cp /usr/ports/distfiles/phpMyAdmin-3.3.2-all-languages.tar.bz2 /home/www   #/home/www 为 apache 指定路径 
+tar zxvf phpMyAdmin-3.3.2-all-languages.tar.bz2 
+mv phpMyAdmin-3.3.2-all-languages phpmyadmin #phpmyadmin 文件名就为外部地址路径 http://xxx.xxx.xxx.xxx/phpmyadmin 
+2.配置 
+cd /home/www/phpmyadmin 
+cp config.sample.inc.php config.inc.php # ee config.inc.php 
+
+3.修改 
+cfg['blowfish_secret']= 'host' ; #随便输入，这个一定要设置不要留空  
+cfg['Servers'][$i]['auth_type']='cookie' #设置认证方式，默认即可 
+
+4.设置权限 
+chmod 755 config.inc.php 

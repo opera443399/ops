@@ -1,0 +1,256 @@
+安装分布式日志系统scribe
+
+1. 安装boost。
+_______________________________________________________________________________________________________
+yum install automake gcc-c++ libevent-devel openssl openssl-devel boost boost-devel bzip2-devel python-devel
+
+
+
+注：
+1）客户端仅安装boost,thrift即可）
+2）yum install boost boost-devel  其他像libevent  openssl之类通常可能已经安装；
+
+
+==============thrift
+wget http://archive.apache.org/dist/thrift/0.9.0/thrift-0.9.0.tar.gz 
+
+[root@test230 download]# tar zxvf thrift-0.9.0.tar.gz  && cd thrift-0.9.0
+[root@test230 thrift-0.9.0]# ./configure --without-python --without-ruby
+[root@test230 thrift-0.9.0]# make && make intall
+[root@test230 thrift-0.9.0]# vim /usr/local/include/thrift/Thrift.h
+头部添加：
+#define HAVE_CONFIG_H
+
+
+[root@test230 thrift-0.9.0]# cd contrib/fb303
+[root@test230 thrift-0.9.0]# ./bootstrap.sh
+[root@test230 thrift-0.9.0]# make && make install
+[root@test230 download]# cd ../../..
+
+[root@test230 download]# echo '/usr/local/lib' >> /etc/ld.so.conf
+[root@test230 download]# ldconfig
+
+
+==============scribe（服务器端安装）
+wget https://github.com/facebookarchive/scribe/archive/master.zip -O scribe-master.zip
+
+[root@test230 download]# unzip scribe-master.zip && cd scribe-master
+[root@test230 scribe-master]# ./bootstrap.sh
+checking whether the Boost::Filesystem library is available... yes
+configure: error: Could not link against  !
+[root@test230 scribe-master]# ./bootstrap.sh --with-boost-filesystem=boost_filesystem
+
+[root@test230 scribe-master]# make && make install
+
+
+配置测试：
+[root@test230 scribe-master]# mkdir -p /home/scribe/{bin,conf,log,var}
+[root@test230 scribe-master]# cp examples/example1.conf /home/scribe/conf/scribe.conf
+[root@test230 scribe-master]# vim /home/scribe/conf/scribe.conf
+[root@test230 scribe-master]# mkdir /home/scribe/log/scribetest
+启动
+/usr/local/bin/scribe -c /home/scribe.conf  >>/home/scribe/var/running.log 2>&1 &
+
+
+配置文件默认端口号:1463
+默认日志文件目录:/home/scribe/log/scribetest
+
+测试生成日志，查看/home/scribe/log/scribetest下的日志是否生成
+[root@test230 scribe-master]# echo “test0001” |  ./examples/scribe_cat test
+若遇到错误：
+No module named thrift.Thrift
+
+在thrift源码目录lib/py下执行语句,安装python库
+[root@test230 scribe-master]# cd /home/download/thrift-0.9.0/lib/py
+[root@test230 py]# python setup.py install
+[root@test230 py]# cd -
+
+[root@test230 scribe-master]# ./examples/scribe_ctrl status
+ALIVE
+[root@test230 scribe-master]# cp -a examples/scribe_* /home/scribe/bin
+
+
+++--------------------------------------------------------------------------++
+
+2. 编写脚本控制scribe运行。
+[root@test230 ~]# cd /data/server/scribe/
+[root@test230 scribe]# ls
+bin  conf  log
+[root@test230 scribe]# cat scribe_ctl.sh 
+#!/bin/bash
+#
+# 2014/11/28
+
+d_scribe_base='/data/server/scribe'
+[ -d ${d_scribe_base}/log ] || mkdir ${d_scribe_base}/log
+[ -d ${d_scribe_base}/var ] || mkdir ${d_scribe_base}/var
+f_scribed_bin='/usr/local/bin/scribed'
+
+f_conf="${d_scribe_base}/conf/scribe.conf"
+f_log="${d_scribe_base}/var/running.log"
+f_pid="${d_scribe_base}/var/scribed.pid"
+
+
+status() {
+    echo "UID        PID  PPID  C STIME TTY          TIME CMD"
+    ps -ef |grep -v grep |grep scribed --color
+    echo ""
+}
+
+stop() {
+    pid=$(cat ${f_pid})
+    if [ -z $pid ]; then
+        echo "[+] check if scribed is running?"
+    else
+        echo "[+] stopping...(PID: $pid)"
+        kill $pid
+        echo "[-] stopped!"
+    fi
+    echo ""
+}
+
+start() {
+    echo "[+] start scribed with config: ${f_conf}"
+    ${f_scribed_bin} -c ${f_conf} >>${f_log} 2>&1 &
+    pid=$(ps -ef |grep scribed |grep -v grep |awk '{print $2}')
+    if [ ! -z $pid ]; then
+        echo $pid >${f_pid}
+        echo "[-] done!"
+    else
+        echo '[-] start scribed failed! '
+        exit 2
+    fi
+    echo ""
+}
+
+check() {
+    pid=$(ps -ef |grep scribed |grep -v grep |awk '{print $2}')
+    if [ -z $pid ]; then
+        echo "[-] `date` scribed died, try to start it again." >>${f_log}
+        start
+        status
+    fi
+}
+
+backup() {
+    cd ${d_scribe_base}
+    local f_backup="${d_scribe_base}/var/scribe_ctl_$(date +%F).tar.gz"
+    echo "[+] backup:"
+    tar zcvf ${f_backup} bin/ conf/
+    chmod o-r ${f_backup} && ls -lh ${f_backup}
+    echo "[-] done!"
+    echo ""
+}
+
+clean() {
+    cd ${d_scribe_base}/log
+    echo "[+] ready to compress this files:"
+    find primary/* -type f -name "*_[0-9]*[0-9]" -mtime +6 -print |sort
+    find primary/* -type f -name "*_[0-9]*[0-9]" -mtime +6 -print |sort |xargs -i gzip {}
+
+    echo "[+] ready to compress this files:"
+    find primary/* -type f -name "*_[0-9]*[0-9]" -mtime +6 -print |sort
+    find primary/* -type f -name "*_[0-9]*[0-9]" -mtime +6 -print |xargs -i gzip {}
+
+    echo "[-] done!"
+}
+
+init_crontab() {
+    echo "[+] append coreseek control scripts to /var/spool/cron/$(whoami)"
+
+    cat <<_REM >>/var/spool/cron/$(whoami)
+
+# [scribe]
+#
+#*/1 * * * * /data/server/scribe/bin/scribe_ctl.sh check >/dev/null 2>&1 &
+#2 0 * * 6 /data/server/scribe/bin/scribe_ctl.sh clean >/dev/null 2>&1 &
+
+_REM
+
+echo '[-] finished!'
+echo '[-] please uncomment related tasks.'
+echo ''
+echo "#################"
+echo '[crontab]'
+crontab -l |grep scribe
+}
+
+
+case $1 in
+    start)
+        start
+        status
+        ;;
+    stop)
+        stop
+        status
+        ;;
+    restart)
+        stop
+        sleep 1
+        start
+        status
+        ;;
+    status)
+        status
+        ;;
+    check)
+        check
+        ;;
+    backup)
+        backup
+        ;;
+    clean)
+        clean
+        ;;
+    init)
+        init_crontab
+        ;;
+    *)
+        echo "Usage: $0 [start|stop|restart|status|check|backup|clean|init]"
+        ;;
+esac
+
+
+++--------------------------------------------------------------------------++
+
+配置文件示例：
+
+port=1463
+max_msg_per_second=2000000
+check_interval=3
+
+# DEFAULT
+<store>
+category=default
+type=buffer
+
+target_write_size=20480
+max_write_interval=1
+buffer_send_rate=2
+retry_interval=30
+retry_interval_range=10
+
+<primary>
+type=file
+fs_type=std
+file_path=/data/server/scribe/log/primary
+base_filename=thisisoverwritten
+#500,000,000 bytes
+max_size=500000000
+add_newlines=1
+rotate_period=daily
+rotate_hour=0
+rotate_minute=10
+create_symlink=no
+</primary>
+
+<secondary>
+type=file
+fs_type=std
+file_path=/data/server/scribe/log/secondary
+base_filename=thisisoverwritten
+#500,000,000 bytes
+max_size=500000000
+</secondary>
+</store>

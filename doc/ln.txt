@@ -1,0 +1,23 @@
+参数 -v的用法
+
+硬链接：
+
+[root@A home]# ln -v /home/kk/ss.sh /home    #加上参数v后，
+
+create hard link `/home/ss.sh' to `/home/kk/ss.sh' #会用文字显示源文件到目标的链接
+
+[root@A home]# ls
+
+apache  kk  oldboy  ss.sh
+
+[root@A home]# ln -vs /home/kk/ss.sh /home  #创建名字相同的软链接
+
+create symbolic link `/home/ss.sh' to `/home/kk/ss.sh' #会用文字显示源文件到目标的链接
+
+ln: creating symbolic link `/home/ss.sh' to `/home/kk/ss.sh': File exists  #同时也出现了己存在提示
+
+软链接
+
+[root@A home]# ln -vs /home/kk/ss.sh /home/dd  #加上参数v后的软链接
+
+create symbolic link `/home/dd' to `/home/kk/ss.sh' #会用文字显示源文件到目标的链接

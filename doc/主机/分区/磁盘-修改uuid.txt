@@ -1,0 +1,60 @@
+如何修改linux磁盘的uuid
+
+删除数据盘并再度分区和格式化后，重启会报错，此时如何解决问题？
+
+1）得到uuid 
+ 
+# blkid /dev/sdb1
+/dev/sdb1: UUID="294c8a0c-86e1-441f-8e5a-df5a4fc4585a" TYPE="ext4" 
+ 
+或
+# ls -l /dev/disk/by-uuid/ |grep sdb
+lrwxrwxrwx 1 root root 10 Jul 29 10:26 294c8a0c-86e1-441f-8e5a-df5a4fc4585a -> ../../sdb1
+
+
+2）更新原来的uuid
+# mount –o remount,rw /
+# vim /etc/fstab
+
+将：
+UUID=8fc1e2f4-a6b4-4c5c-99d9-c6ae545a6d63 /data                   ext4    defaults        1 2
+修改为：
+UUID=294c8a0c-86e1-441f-8e5a-df5a4fc4585a /data                   ext4    defaults        1 2
+
+或者可以这样：
+echo "UUID=$(blkid /dev/sdb1 |cut -d'"' -f2) /data                 ext4    defaults        1 2" >>/etc/fstab
+
+
+重启系统：
+reboot
+
+
+
+fstab中的内容解释请参考man中的内容。
+The first field, (fs_spec), describes the block special device or remote filesystem
+       to be mounted.
+       指定被挂载的设备
+The second field, (fs_file), describes the mount point  for  the  filesystem.   For
+       swap partitions, this field should be specified as ‘none’. If the name of the mount
+       point contains spaces these can be escaped as ‘\040’.
+       指定挂载点
+The third field, (fs_vfstype), describes the type of the  filesystem. 
+       指定fs格式
+The fourth  field,  (fs_mntops),  describes  the mount options associated with the
+       filesystem.     
+       指定挂载选项
+The fifth field, (fs_freq), is used for these filesystems by the dump(8) command to
+       determine  which filesystems need to be dumped.  If the fifth field is not present,
+       a value of zero is returned and dump will assume that the filesystem does not  need
+       to be dumped.
+       供dump用
+The sixth field, (fs_passno), is used by the fsck(8) program to determine the order
+       in which filesystem checks are done at reboot time.  The root filesystem should  be
+       specified  with  a fs_passno of 1, and other filesystems should have a fs_passno of
+       2.  Filesystems within a drive will be checked  sequentially,  but  filesystems  on
+       different  drives will be checked at the same time to utilize parallelism available
+       in the hardware.  If the sixth field is not present or zero, a  value  of  zero  is
+       returned and fsck will assume that the filesystem does not need to be checked.
+       供fsck用，root是1，其他的fs是2
+       
+       

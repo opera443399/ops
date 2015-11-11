@@ -1,0 +1,176 @@
+编译安装php5.6.2
+
+
+1. 前期准备工作
+# mkdir /home/download && cd /home/download
+# yum install gcc pcre pcre-devel gcc-c++ autoconf libxml2 libxml2-devel zlib zlib-devel glibc libjpeg libjpeg-devel libpng libpng-devel glibc-devel glib2 glib2-devel ncurses ncurses-devel curl curl-devel e2fsprogs e2fsprogs-devel openssl openssl-devel openldap openldap-devel openldap-clients openldap-servers  freetype freetype-devel mhash-devel libmcrypt-devel
+
+
+【libiconv】
+下载LIBICONV 1.14 并安装
+Libiconv URL: http://ftp.gnu.org/pub/gnu/libiconv/
+
+# wget http://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.14.tar.gz && tar zxvf libiconv-1.14.tar.gz && cd libiconv-1.14 && ./configure --prefix=/usr/local && make && make install
+# ln -s /usr/local/lib/libiconv.* /usr/lib/
+# ldconfig
+# cd ..
+
+
+2. 编译安装php
+# wget http://php.net/get/php-5.6.2.tar.gz/from/this/mirror -O php-5.6.2.tar.gz && tar zxvf php-5.6.2.tar.gz && cd php-5.6.2
+
+# ./configure --prefix=/usr/local/php \
+--with-config-file-path=/usr/local/php/etc \
+--with-pdo-sqlite \
+--with-mysql=mysqlnd \
+--with-mysqli=mysqlnd \
+--with-pdo-mysql=mysqlnd \
+--with-mysql-sock \
+--with-mcrypt \
+--with-mhash \
+--with-iconv-dir=/usr/local \
+--with-gd \
+--with-gettext \
+--with-freetype-dir \
+--with-jpeg-dir \
+--with-png-dir \
+--with-libxml-dir=/usr \
+--with-curl \
+--with-xmlrpc \
+--with-zlib \
+--with-pear \
+--with-openssl \
+--with-libdir \
+--with-kerberos \
+--enable-cgi \
+--enable-fpm \
+--enable-pdo \
+--enable-opcache \
+--enable-mbstring \
+--enable-gd-native-ttf \
+--enable-xml \
+--enable-exif \
+--enable-zip \
+--enable-soap \
+--enable-sockets \
+--enable-sysvmsg \
+--enable-sysvsem \
+--enable-sysvshm \
+--enable-shmop \
+--enable-json \
+--enable-bcmath \
+--enable-calendar \
+--enable-ftp \
+--enable-inline-optimization \
+--enable-pcntl \
+--enable-mbregex \
+--disable-rpath
+
+
+# cp -a ext/phar/phar.php ext/phar/phar.phar 
+# make ZEND_EXTRA_LIBS='-liconv'
+# make install
+
+# cp sapi/fpm/init.d.php-fpm /etc/init.d/php-fpm
+# chmod +x /etc/init.d/php-fpm
+# chkconfig php-fpm on        
+# ln -s /usr/local/php/bin/* /usr/bin/ 
+# ln -s /usr/local/php/etc/php.ini /etc/
+
+# php -v
+PHP 5.6.2 (cli) (built: Apr  7 2015 10:53:08) 
+Copyright (c) 1997-2014 The PHP Group
+Zend Engine v2.6.0, Copyright (c) 1998-2014 Zend Technologies
+
+# cp /usr/local/php/etc/php-fpm.conf.default /usr/local/php/etc/php-fpm.conf
+# cp php.ini-production /usr/local/php/etc/php.ini
+# cd .. 
+
+
+
+3. php模块和对应的服务的安装
+增加php模块：
+memcache:   libmemcached-devel
+imagick:    ImageMagick-devel
+gearman:    libgearman-devel
+sphinx:     libsphinxclient-devel
+redis:      hiredis-devel
+
+1）使用pecl安装模块：
+【memcache】
+# yum install libmemcached-devel
+# pecl install memcache
+ 
+【imagick】
+# yum install ImageMagick-devel
+# pecl install imagick
+ 
+【gearman】
+# yum install libgearman-devel
+# pecl install gearman
+ 
+【sphinx】
+# yum install libsphinxclient-devel
+# pecl install sphinx 
+ 
+【redis】
+# yum install hiredis-devel
+# pecl install redis
+ 
+2）服务安装和启动：
+# yum install memcached
+# memcached -d -m 512 -l localhost -u root
+# yum install gearmand
+# gearmand -L 127.0.0.1 -d
+
+
+
+
+4. 配置文件
+【php.ini】
+# vim /usr/local/php/etc/php.ini 
+expose_php = Off
+max_execution_time = 300
+max_input_time = 600
+post_max_size = 100M
+date.timezone = Asia/Shanghai
+
+增加到文件末尾：
+extension_dir = "/usr/local/php/lib/php/extensions/no-debug-non-zts-20131226/" 
+extension = "memcache.so"
+extension = "imagick.so" 
+extension = "gearman.so" 
+extension = "sphinx.so" 
+extension = "redis.so" 
+
+
+zend_extension = "/usr/local/php/lib/php/extensions/no-debug-non-zts-20131226/opcache.so" 
+opcache.enable=1
+opcache.enable_cli=1
+opcache.memory_consumption=128
+opcache.interned_strings_buffer=8
+opcache.max_accelerated_files=4000
+opcache.save_comments=0
+opcache.fast_shutdown=1
+
+更新配置文件后要reload一下
+# service php-fpm reload
+
+
+【php-fpm.conf】
+# vim /usr/local/php/etc/php-fpm.conf
+user = www
+group = www
+
+# service php-fpm start
+
+
+
+
+
+
+
+
+
+
+

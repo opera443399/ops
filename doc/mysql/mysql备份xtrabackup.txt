@@ -1,0 +1,130 @@
+
+================================= xtrabackup ===================================
+安装数据库备份工具percona-xtrabackup
+# yum -y install perl-DBD-MySQL perl-Time-HiRes
+# wget -c http://www.percona.com/downloads/XtraBackup/XtraBackup-2.2.6/binary/redhat/6/x86_64/percona-xtrabackup-2.2.6-5042.el6.x86_64.rpm
+# rpm -ivh percona-xtrabackup-2.2.6-5042.el6.x86_64.rpm 
+
+
+【slave】
+innobackupex --defaults-file=${f_my_cnf} --host=127.0.0.1 --port=${s_port} --user=root --password=${s_password} --slave-info ${d_bak_tmp}
+innobackupex --incremental --defaults-file=${f_my_cnf} --host=127.0.0.1 --port=${s_port} --user=root --password=${s_password} --slave-info --safe-slave-backup ${d_bak_tmp}
+
+【master】
+innobackupex --defaults-file=${f_my_cnf} --host=127.0.0.1 --port=${s_port} --user=root --password=${s_password} ${d_bak_tmp}
+innobackupex --incremental --defaults-file=${f_my_cnf} --host=127.0.0.1 --port=${s_port} --user=root --password=${s_password} ${d_bak_tmp}
+
+
+
+测试恢复
+【完整备份full】
+innobackupex --apply-log /path/to/BACKUP-DIR
+
+
+【增量备份incr】（--incremental-dir=全路径，否则会找不到文件而报错）
+innobackupex --apply-log --redo-only /path/to/BASE-DIR
+innobackupex --apply-log --redo-only /path/to/BASE-DIR --incremental-dir=/path/to/INCREMENTAL-DIR-1
+innobackupex --apply-log --redo-only /path/to/BASE-DIR --incremental-dir=/path/to/INCREMENTAL-DIR-2
+innobackupex --apply-log --redo-only /path/to/BASE-DIR --incremental-dir=/path/to/INCREMENTAL-DIR-N
+innobackupex --apply-log /path/to/BASE-DIR --incremental-dir=/path/to/INCREMENTAL-DIR-lastone
+innobackupex --apply-log /path/to/BASE-DIR
+
+
+
+【实例】
+全备：
+xtrabackup: Transaction log of lsn (43508598110) to (43508607243) was copied.
+
+innobackupex: Backup created in directory '/home/backup/mysql/13306/tmp/2014-11-12_12-13-41'
+innobackupex: MySQL binlog position: filename 'mysql-bin.000020', position 8843546, GTID of the last change '0-228-28647310'
+innobackupex: MySQL slave binlog position: master host '192.168.1.222', gtid_slave_pos 0-1-28647308
+
+
+增量1：
+xtrabackup: Transaction log of lsn (43509563347) to (43509693292) was copied.
+
+innobackupex: Backup created in directory '/home/backup/mysql/13306/tmp/2014-11-12_13-55-48'
+innobackupex: MySQL binlog position: filename 'mysql-bin.000020', position 8878002, GTID of the last change '0-228-28648212'
+innobackupex: MySQL slave binlog position: master host '192.168.1.222', gtid_slave_pos 0-1-28648210
+
+
+增量2：
+xtrabackup: Transaction log of lsn (43510107705) to (43510312989) was copied.
+
+innobackupex: Backup created in directory '/home/backup/mysql/13306/tmp/2014-11-12_14-09-09'
+innobackupex: MySQL binlog position: filename 'mysql-bin.000020', position 8883984, GTID of the last change '0-1-28648832'
+innobackupex: MySQL slave binlog position: master host '192.168.1.222', gtid_slave_pos 0-1-28648832
+
+
+
++----------------------------------------+
+[root@test228 tmp]# more 2014-11-12_12-13-41/xtrabackup_checkpoints 
+backup_type = full-backuped
+from_lsn = 0
+to_lsn = 43508607243
+last_lsn = 43508607243
+compact = 0
+[root@test228 tmp]# more 2014-11-12_13-55-48/xtrabackup_checkpoints 
+backup_type = incremental
+from_lsn = 43508607243
+to_lsn = 43509693292
+last_lsn = 43509693292
+compact = 0
+[root@test228 tmp]# more 2014-11-12_14-09-09/xtrabackup_checkpoints 
+backup_type = incremental
+from_lsn = 43509693292
+to_lsn = 43510311166
+last_lsn = 43510312989
+compact = 0
++----------------------------------------+
+
++----------------------------------------+第1步，恢复full备份：
+# innobackupex --apply-log --redo-only /home/backup/mysql/13306/tmp/2014-11-12_12-13-41/
+xtrabackup: starting shutdown with innodb_fast_shutdown = 1
+InnoDB: Starting shutdown...
+InnoDB: Shutdown completed; log sequence number 43508607243
+141112 14:25:24  innobackupex: completed OK!
+
+
++----------------------------------------+第2步，恢复incr备份1：
+# innobackupex --apply-log --redo-only /home/backup/mysql/13306/tmp/2014-11-12_12-13-41/ --incremental-dir=/home/backup/mysql/13306/tmp/2014-11-12_13-55-48/
+
+
++----------------------------------------+第3步，恢复incr备份2：
+# innobackupex --apply-log /home/backup/mysql/13306/tmp/2014-11-12_12-13-41/ --incremental-dir=/home/backup/mysql/13306/tmp/2014-11-12_14-09-09/
+
+#########################################
+注意： --redo-only 在合并除了最后一个之外的所有incrementals时要添加这个参数，上述第3步是最后一个，因此不用这个参数。即时最后一步用了这个参数，数据也是完整的，只是server端会执行rollback阶段。
+
+此时查看xtrabackup_checkpoints：
+[root@test228 tmp]# more 2014-11-12_12-13-41/xtrabackup_checkpoints 
+backup_type = full-prepared
+from_lsn = 0
+to_lsn = 43510311166
+last_lsn = 43510312989
+compact = 0
+#########################################
+
+
++----------------------------------------+第4步，合并所有增量到全备后，准备执行rollback阶段。
+# innobackupex --apply-log /home/backup/mysql/13306/tmp/2014-11-12_12-13-41/
+
+
+InnoDB: Last MySQL binlog file position 0 8883984, file name ./mysql-bin.000020
+
+xtrabackup: starting shutdown with innodb_fast_shutdown = 1
+InnoDB: FTS optimize thread exiting.
+InnoDB: Starting shutdown...
+InnoDB: Shutdown completed; log sequence number 43510321607
+141112 14:47:25  innobackupex: completed OK!
+
+
+
+【结论】
+符合预期。
+全部恢复后：
+InnoDB: Last MySQL binlog file position 0 8883984, file name ./mysql-bin.000020
+
+对比增量2备份完成时：
+innobackupex: MySQL binlog position: filename 'mysql-bin.000020', position 8883984, GTID of the last change '0-1-28648832'
+

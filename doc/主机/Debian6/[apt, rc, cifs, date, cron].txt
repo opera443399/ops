@@ -1,0 +1,169 @@
+11. apt
+---------
+apt-get update
+apt-get install packagename
+apt-get remove packagename  卸载（保留配置文件）
+apt-get –purge remove packagename  卸载（删除配置文件）
+apt-get autoclean apt
+apt-get clean
+apt-get upgrade
+apt-get dist-upgrade
+
+aptitude  详细查看已安装或可用的软件包
+
+apt-cache search string
+apt-cache showpkg pkgs
+apt-cache dumpavail  打印可用软件包列表
+apt-cache show pkgs 
+apt-cache pkgnames
+
+dpkg –force-all –purge packagename  有些软件很难卸载
+dpkg -l package-name-pattern —— 列出匹配的软件包
+dpkg -S file 
+dpkg -L package 
+
+
+
+
+
+12. update-rc.d管理开机启动的服务
+--------------
+update-rc.d命令，是用来自动的升级System V类型初始化脚本，简单的讲就是，哪些东西是你想要系统在引导初始化
+
+的时候运行的，哪些是希望在关机或重启时停止的，可以用它来帮你设置。
+这些脚本的链接位于：/etc/rc?.d/L?script-name,对应脚本位于/etc/init.d/script-name.
+
+---设置指定启动顺序、指定运行级别的启动项：
+update-rc.d ＜service＞ start ＜order＞ ＜runlevels＞
+
+---设置在指定运行级中，按指定顺序停止：
+update-rc.d ＜service＞ stop ＜order＞ ＜runlevels＞
+
+---从所有的运行级别中删除指定的启动项：
+update-rc.d -f ＜script-name＞ remove
+
+
+
+---例如要删除apahce2服务
+# update-rc.d -f apache2 remove
+
+---如果想让服务开机自启动
+# update-rc.d apache2 defaults
+
+---当然也可以设定得更详细一些，明确start和kill的优先级别
+# update-rc.d apache2 defaults 20
+
+# update-rc.d apache2 defaults 20 80
+
+# update-rc.d apache2 start 20 2 3 4 5 . stop 80 0 1 6 .
+
+其中0-6为运行级别；
+在 /etc/rc[0-6].d 中。K开头表示：kill , S开头表示：start , 数字顺序代表启动的顺序（优先级别）。
+# /etc/init.d executes the S and K scripts upon change of runlevel.
+#
+# Runlevel 0 is halt.
+# Runlevel 1 is single-user.
+# Runlevels 2-5 are multi-user.
+# Runlevel 6 is reboot.
+
+
+
+13. sysv-rc-conf管理开机启动的服务
+---------------
+管理系统服务的工具之一
+---安装
+# apt-get install sysv-rc-conf
+
+---运行
+#  sysv-rc-conf
+
+Use the arrow keys or mouse to move around.
+ctrl+n: next pg
+ctrl+p: prev pg
+space: toggle service on / off
+q: quit
+
+
+(试着禁止samba, vsftpd这两个服务在level 2下的开机启动，重启测试...OK!!!)
+
+
+14. mount -t cifs要注意的事项
+--------------------
+CIFS(Common Internet File System) 这是微软自己的服务来实现主机之间的网络文件共享。
+之前在使用NFS功能时，已经提到过。
+
+---如果没有cifs，则需要安装：
+# apt-get install cifs-utils smbclient
+
+
+---挂载，例如username=user01, password=userpass01
+# mount -t cifs -o username=user01 //192.168.1.100/share  /mnt/win7share
+password:(输入：userpass01)
+或者：
+# mount -t cifs -o username=user01%userpass01 //192.168.1.100/share  /mnt/win7share
+
+
+---系统启动时，自动mount
+
+# vim /root/win7cred
+username=user01
+password=userpass01
+
+# chmod 400 /root/win7cred
+
+# vim /etc/fstab
+(...append)
+
+//192.168.1.100/share /mnt/win7share cifs defaults,credentials=/root/win7cred
+(Done)
+(试着reboot，重启测试...OK!!!)
+
+
+15. date
+-----------
+
+---修改时区
+# vim /etc/timezone
+Asia/Shanghai
+
+---安装ntpdate，同步时间
+
+# apt-get install ntpdate
+# ntpdate asia.pool.ntp.org
+
+
+---同步硬件时间：
+# hwclock --systohc
+
+
+16. crontab
+-----------
+
+---举例：添加备份计划
+# crontab -e
+30 * * * * echo "mysqlbackup START `date`" >> /var/log/cron.log; /home/backup/cron/mysqlbackup >> /var/log/cron.log 2>&1; echo "Done!" >> /var/log/cron.log
+
+---重启服务
+# /etc/init.d/cron restart
+
+---查看
+# crontab -l
+
+
+17. wtmp
+--------
+---查看登录用户记录
+# who /var/log/wtmp
+
+
+18. ssh
+--------
+---更改ssh服务的端口
+#vim /etc/ssh/sshd_config
+Port 8023 #(default: 22)
+#/etc/inti.d/ssh restart
+
+19. dpkg
+--------
+---dpkg 的操作被中断了, 您必须手动执行 'sudo dpkg --configure -a' 以修复这个问题。
+# dpkg --configure -a

@@ -1,0 +1,28 @@
+看看有什么严重的 漏洞没有，包括：
+LINUX/PHP/NGINX/SQUID 以及无线安全等等
+
+
+
+https://cassandra.cerias.purdue.edu/CVE_changes/CVE.2012.05.html
+http://www.cnvd.org.cn/publish/main/index.html
+http://www.nsfocus.net/index.php?act=sec_bug
+http://www.wooyun.org/bugs/ 
+http://www.linuxsecurity.com/
+
+有空的话还可以看如下地址
+linux安全专家经常光顾的地方
+
+http://www.derkeiler.com/
+http://sourceforge.net/
+http://www.hbgary.com/
+http://www.immunitysec.com/
+http://www.foundstone.com/
+http://www.securiteam.com/
+http://packetstormsecurity.org/
+http://www.securityfocus.com/
+http://www.insecure.org/
+http://phrack.org/
+http://technet.microsoft.com/zh-cn/sysinternals
+http://project.honeynet.org/
+http://www.ietf.org/
+---

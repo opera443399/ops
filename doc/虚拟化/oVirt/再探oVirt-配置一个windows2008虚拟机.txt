@@ -1,0 +1,71 @@
+日期：2015/11/9 - 2015/11/9
+主机：engine, node01, node02
+目的：再探oVirt-配置一个windows2008虚拟机
+操作内容：
+一、新建vm
+【选择菜单：“数据中心-Default-虚拟机-新建虚拟机”】
+集群：host-only/GZ
+操作系统：Red Hat Enterprise Linux 6.x x84
+名称：vm4tpl-m2
+注释：windows2008r2x64-c4-m2to4g-d80g-if2
+
+网卡：2个，名称从nic变更为eth，以便和vm里面的名称对应。
+eth0：ovirtwan
+eth1：ovirtmgmt
+
+时区：GMT+0
+确定。
+
+配置虚拟磁盘
+大小：80
+描述：os
+
+激活：勾选
+可引导：勾选
+确定。
+
+[root@engine ~]# yum -y install virtio-win-drivers ovirt-guest-tools-iso
+[root@engine ~]# ls /usr/share/artifacts/virtio-win-drivers/
+Balloon  guest-agent  NetKVM  pvpanic  qemupciserial  qxl  qxldod  viorng  vioscsi  vioserial  viostor  virtio-win-0.1.105_amd64.vfd  virtio-win-0.1.105_x86.vfd  virtio-win_license.txt
+[root@engine ~]# ls /usr/share/ovirt-guest-tools-iso/ -l
+total 233164
+-rw-r--r-- 1 root root 238753792 Oct 21 22:37 oVirt-toolsSetup_3.6.0_0.2_master.fc22.iso
+lrwxrwxrwx 1 root root        75 Nov  9 18:29 ovirt-tools-setup.iso -> /usr/share/ovirt-guest-tools-iso/oVirt-toolsSetup_3.6.0_0.2_master.fc22.iso
+
+
+拷贝 virtio-win-0.1.105_amd64.vfd 到 iso 域中。
+[root@engine ~]# cd /data/ovirt/iso/a0f12884-7840-42a9-b58b-280e3f4f6aba/
+dom_md/ images/ 
+[root@engine ~]# cd /data/ovirt/iso/a0f12884-7840-42a9-b58b-280e3f4f6aba/images/11111111-1111-1111-1111-111111111111/
+[root@engine 11111111-1111-1111-1111-111111111111]# cp -a /usr/share/artifacts/virtio-win-drivers/virtio-win-0.1.105_amd64.vfd .
+[root@engine 11111111-1111-1111-1111-111111111111]# cp -a /usr/share/ovirt-guest-tools-iso/oVirt-toolsSetup_3.6.0_0.2_master.fc22.iso .
+
+【选择菜单：“数据中心-Default-虚拟机-只运行一次”】
+【引导选项】
+附加软盘：勾选 virtio-win-0.1.105_amd64.vfd
+附加CD：勾选之前上传的iso文件
+调整引导序列，从CD-ROM引导。
+【系统】
+自定义仿真机：pc
+确定。
+
+
+【使用 VirtIO 接口的磁盘】
+加载 VirtIO 驱动
+1）启动控制台，按照常规的步骤安装windows系统，到系统分区的窗口时，无法发现硬盘。
+2）此时，加载驱动程序，浏览软驱目录，找到“A:\amd64\win2008r2\viostor.inf”，点击确定后可以识别到一块100G的硬盘。
+3）选择硬盘，新建分区，剩下的步骤按照常规方式安装
+
+
+【系统安装后的操作】
+通过ovirt页面的菜单“更换CD”来挂载ovirt-guest-tools-iso 然后在vm中运行“ovirt-guest-tools-setup.exe”安装。
+
+
+
+
+
+
+
+
+
+

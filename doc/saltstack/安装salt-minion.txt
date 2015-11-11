@@ -1,0 +1,30 @@
+安装salt-minion
+
+新增minion：
+【svr205-2】
+[root@svr205-2 ~]# yum install salt-minion -y
+[root@svr205-2 ~]# vim /etc/salt/minion
+master: 10.0.200.21
+id: svr205-2
+
+或则，使用脚本来更改配置：
+
+[root@svr205-2 ~]# cat saltstack-install-minion.sh 
+#!/bin/bash
+#
+# 2015/4/21
+
+salt_m=salt-m.office.test
+yum install salt-minion -y
+
+cp -a /etc/salt/minion /etc/salt/minion.bak
+cat <<_EOF >/etc/salt/minion
+master: ${salt_m}
+id: $(hostname)
+
+_EOF
+
+service salt-minion start
+cat /etc/salt/minion
+
+

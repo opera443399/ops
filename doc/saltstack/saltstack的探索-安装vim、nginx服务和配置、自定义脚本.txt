@@ -1,0 +1,295 @@
+安装vim、nginx服务和配置、自定义脚本
+
+1. 配置minion
+首先，移除原来的测试minion
+[root@svr200-21 bin]# salt-key -d test230
+The following keys are going to be deleted:
+Accepted Keys:
+test230
+Proceed? [N/y] y
+Key for minion test230 deleted.
+
+新增minion：
+【svr205-2】
+[root@svr205-2 ~]# yum install salt-minion -y
+[root@svr205-2 ~]# vim /etc/salt/minion
+master: 10.0.200.21
+id: svr205-2
+
+或则，使用脚本来更改配置：
+[root@svr205-2 ~]# cp -a /etc/salt/minion /etc/salt/minion.bak && s_ip=10.0.200.21 && s_host=$(hostname) && sed -i -e "s/#master: salt/master: ${s_ip}/"  -e "s/#id:/id: ${s_host}/" /etc/salt/minion && cat /etc/salt/minion |grep ^[^#]
+master: 10.0.200.21
+id: svr205-2
+
+
+[root@svr205-2 ~]# service salt-minion start
+Starting salt-minion daemon:                               [  OK  ]
+
+【svr205-2, 3, 4, 5类似】同上
+
+2. 配置master和minion的key
+[root@svr200-21 bin]# salt-key -L
+Accepted Keys:
+Unaccepted Keys:
+svr205-2
+svr205-3
+svr205-4
+svr205-5
+Rejected Keys:
+
+[root@svr200-21 bin]# salt-key -a svr205*
+The following keys are going to be accepted:
+Unaccepted Keys:
+svr205-2
+svr205-3
+svr205-4
+svr205-5
+Proceed? [n/Y] y
+Key for minion svr205-2 accepted.
+Key for minion svr205-3 accepted.
+Key for minion svr205-4 accepted.
+Key for minion svr205-5 accepted.
+[root@svr200-21 bin]# salt-key -L
+Accepted Keys:
+svr205-2
+svr205-3
+svr205-4
+svr205-5
+Unaccepted Keys:
+Rejected Keys:
+
+测试：
+[root@svr200-21 salt]# salt 'svr205-*' test.ping
+svr205-3:
+    True
+svr205-2:
+    True
+svr205-5:
+    True
+svr205-4:
+    True
+
+3. 配置管理-同步vim配置
+[root@svr200-21 salt]# pwd
+/srv/salt
+[root@svr200-21 salt]# cat edit/vim.sls 
+vim-enhanced:
+    pkg.installed: []
+
+/root/.vimrc:
+    file.managed:
+        - source: salt://edit/conf/vimrc
+        - mode: 644
+        - uesr: root
+        - group: root
+[root@svr200-21 salt]# ls edit/conf/
+vimrc
+
+[root@svr200-21 salt]# salt 'svr205-*' state.sls edit.vim
+##########################################################################
+略
+##########################################################################
+
+4. 远程执行-在4台主机上执行脚本lvs-realsvr，并加入开机启动。
+启动脚本：
+[root@svr200-21 salt]# cat lvs/real/start.sls 
+/etc/rc.d/init.d/lvs-realsvr:
+  file.managed:
+    - source: salt://lvs/bin/lvs-realsvr.sh
+    - mode: 755
+
+lvs-realsvr:
+  cmd.run:
+    - require:
+      - file: /etc/rc.d/init.d/lvs-realsvr
+    - name: service lvs-realsvr start && chkconfig lvs-realsvr on
+
+
+关闭脚本：
+[root@svr200-21 salt]# cat lvs/real/stop.sls 
+/etc/rc.d/init.d/lvs-realsvr:
+  file.managed:
+    - source: salt://lvs/bin/lvs-realsvr.sh
+    - mode: 755
+
+lvs-realsvr:
+  cmd.run:
+    - require:
+      - file: /etc/rc.d/init.d/lvs-realsvr
+    - name: service lvs-realsvr stop && chkconfig lvs-realsvr off
+
+控制脚本：
+[root@svr200-21 salt]# cat lvs/bin/lvs-realsvr.sh 
+#!/bin/bash
+# 
+# 2015/2/28
+# lvs real server
+#
+# chkconfig:   - 85 15
+# description:  control vip on lvs realserver 
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# Source networking configuration.
+. /etc/sysconfig/network
+
+# Check that networking is up.
+[ "$NETWORKING" = "no" ] && exit 0
+
+lockfile="/var/lock/subsys/lvs-real"
+  
+s_vip='10.0.205.100'
+
+start() {
+  ifconfig lo:1 ${s_vip} netmask 255.255.255.255 broadcast ${s_vip}
+  echo 1 >/proc/sys/net/ipv4/conf/lo/arp_ignore
+  echo 2 >/proc/sys/net/ipv4/conf/lo/arp_announce
+  echo 1 >/proc/sys/net/ipv4/conf/all/arp_ignore
+  echo 2 >/proc/sys/net/ipv4/conf/all/arp_announce
+
+  retval=$?
+  echo
+  [ $retval -eq 0 ] && touch $lockfile
+  return $retval
+}
+
+stop() {
+  echo 0 >/proc/sys/net/ipv4/conf/lo/arp_ignore
+  echo 0 >/proc/sys/net/ipv4/conf/lo/arp_announce
+  echo 0 >/proc/sys/net/ipv4/conf/all/arp_ignore
+  echo 0 >/proc/sys/net/ipv4/conf/all/arp_announce
+  ifconfig lo:1 down
+
+  retval=$?
+  echo
+  [ $retval -eq 0 ] && rm -f $lockfile
+  return $retval
+}
+
+status() {
+  ip a |grep inet |grep -v inet6  
+}
+
+case $1 in  
+  start)
+    start
+    status
+    ;;
+  stop)
+    stop
+    status
+    ;;
+  status)
+    status
+    ;;
+  *)  
+    echo $"Usage: $0 {start|stop|status}"
+    exit 2 
+esac  
+   
+   
+执行：
+[root@svr200-21 salt]# salt 'svr205-*' state.sls lvs.real.start
+##########################################################################
+略
+##########################################################################
+查看minion的状态：
+【svr205-2】
+[root@svr205-2 ~]# ll /etc/init.d/lvs-realsvr 
+-rwxr-xr-x 1 root root 1252 Feb 28 05:31 /etc/init.d/lvs-realsvr
+[root@svr205-2 ~]# ip a |grep inet |grep -v inet6
+    inet 127.0.0.1/8 scope host lo
+    inet 10.0.205.100/32 brd 10.0.205.100 scope global lo:1
+    inet 10.0.205.2/8 brd 10.255.255.255 scope global eth0
+
+    
+[root@svr200-21 salt]# salt 'svr205-*' state.sls lvs.real.stop
+##########################################################################
+略
+##########################################################################
+查看minion的状态：
+【svr205-2】
+[root@svr205-2 ~]# ip a |grep inet |grep -v inet6
+    inet 127.0.0.1/8 scope host lo
+    inet 10.0.205.2/8 brd 10.255.255.255 scope global eth0
+   
+
+5. 配置管理-安装nginx服务，并加入开机启动。
+[root@svr200-21 salt]# cat nginx/init.sls 
+nginx:
+  pkg.installed: []
+  service.running:
+    - require:
+      - pkg: nginx
+  cmd.run:
+    - require:
+      - pkg: nginx
+    - name: chkconfig nginx on
+
+[root@svr200-21 salt]# salt 'svr205-*' state.sls nginx
+##########################################################################
+略
+##########################################################################
+
+
+深入一步，使用模版部署自定义的index.html，更新nginx首页，显示当前web主机的hostname和ip信息。
+[root@svr200-21 salt]# cat nginx/init.sls 
+nginx:
+  pkg.installed: []
+  service.running:
+    - watch:
+      - file: /usr/share/nginx/html/index.html
+    - require:
+      - pkg: nginx
+  cmd.run:
+    - require:
+      - pkg: nginx
+    - name: chkconfig nginx on
+
+/usr/share/nginx/html/index.html:
+  file.managed:
+    - source: salt://nginx/conf/index.html
+    - template: jinja
+
+[root@svr200-21 salt]# cat nginx/conf/index.html 
+<p>
+  HOST:   {{ grains['host'] }} <br />
+  <br /><br />
+{% for k,v in grains.get('ip4_interfaces').items() %}
+  {{ k }}: {{ v.pop() }} <br />
+{% endfor %}
+</p>
+
+
+[root@svr200-21 salt]# salt 'svr205-*' state.sls nginx
+##########################################################################
+略
+##########################################################################
+
+查看文件是否有改变：
+【svr205-2】
+[root@svr205-2 ~]# cat /usr/share/nginx/html/index.html 
+<p>
+  HOST:   svr205-2 <br />
+  <br /><br />
+
+  lo: 10.0.205.100 <br />
+
+  eth0: 10.0.205.2 <br />
+
+</p>
+
+如上，得到了该主机的hostname和ip信息，符合预期。
+
+
+   
+   
+   
+
+   
+   
+   
+   
+   
+

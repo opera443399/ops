@@ -1,1 +1,5 @@
 # ops
+
+## bin
+## conf
+## doc 

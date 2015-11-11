@@ -1,0 +1,9 @@
+beanstalkd安装配置
+
+
+[root@www download]# wget https://github.com/kr/beanstalkd/archive/v1.9.tar.gz -O beanstalkd-1.9.tar.gz
+[root@www download]# tar zxvf beanstalkd-1.9.tar.gz 
+[root@www download]# cd beanstalkd-1.9
+[root@www beanstalkd-1.9]# make
+[root@www beanstalkd-1.9]# make install
+[root@www download]# /usr/local/bin/beanstalkd -l 192.168.1.222 -p 11300 &

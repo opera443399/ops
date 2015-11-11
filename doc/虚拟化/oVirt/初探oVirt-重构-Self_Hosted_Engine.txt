@@ -1,0 +1,1074 @@
+日期：2015/9/25 - 2015/10/9 time 9:09
+主机：n72, n73, n86, n93, vm220
+目的：初探oVirt-重构-Self_Hosted_Engine
+操作内容：
+一、基础环境
+1、本次测试环境使用4台物理机来测试：n72, n73, n86, n93
+CPU：    Intel(R) Xeon(R) CPU E5-2603 v2 @ 1.80GHz
+内存：   32G    
+硬盘：   系统盘sda + 数据盘sdb
+
+
+ovirt-engine: n93
+ovirt-hosts: n72, n73, n86, n93
+ovirt-gluster: n72, n73, n86
+NFS: vm220
+DNS: vm220
+
+2、配置时间
+先更新一次：
+[root@n93 ~]# /usr/sbin/ntpdate stdtime.gov.hk
+启动ntpd服务：
+[root@n93 ~]# service ntpd start
+[root@n93 ~]# chkconfig ntpd on
+
+3、更新系统（可选）
+[root@n93 ~]# yum -y update
+
+4、使用ovirt的yum源。（略，此处使用办公网本地yum源，已缓存ovirt相关的rpm包）
+如果用ovirt官网的源，请这样配置：
+[root@n93 ~]# yum -y install http://plain.resources.ovirt.org/pub/yum-repo/ovirt-release35.rpm
+
+
+5、网络配置
+1）几台主机的网络划分：
+管理网段：10.0.200.0/24
+
+2）【DNS服务器】
+[root@vm220 ~]# yum -y install dnsmasq
+[root@220 ~]# cat /etc/hosts
+10.0.200.30 e01.test
+10.0.200.72 n72.test
+10.0.200.73 n73.test
+10.0.200.86 n86.test
+10.0.200.93 n93.test
+
+
+[root@vm220 ~]# cat /etc/resolv.conf 
+nameserver 10.0.200.93
+nameserver 223.5.5.5
+
+[root@vm220 ~]# service dnsmasq restart
+放行TCP和UDP的53端口。
+
+测试：
+[root@node93 ~]# nslookup e01.test                         
+Server:         10.0.200.220
+Address:        10.0.200.220#53
+
+Name:   e01.test
+Address: 10.0.200.30
+
+
+
+
+6、配置存储-NFS服务：vm220
+执行如下操作，配置1个NFS服务，提供iso和export域：
+[root@vm220 ~]# yum install nfs-utils -y
+chkconfig rpcbind on
+chkconfig nfs on
+service rpcbind start
+service nfs start
+mkdir -p /data/ovirt/{data,export,images,iso} \
+&& chown -R 36:36 /data/ovirt  \
+&& chmod -R 0755 /data/ovirt  \
+&& cat <<'_EOF' >>/etc/exports
+/data/ovirt/data  *(rw,sync,no_subtree_check,all_squash,anonuid=36,anongid=36)
+/data/ovirt/export  *(rw,sync,no_subtree_check,all_squash,anonuid=36,anongid=36)
+/data/ovirt/images  *(rw,sync,no_subtree_check,all_squash,anonuid=36,anongid=36)
+/data/ovirt/iso  *(rw,sync,no_subtree_check,all_squash,anonuid=36,anongid=36)
+_EOF
+exportfs -arv
+
+测试：
+[root@node93 ~]# showmount -e 10.0.200.220
+Export list for 10.0.200.220:
+/data/ovirt/iso    *
+/data/ovirt/images *
+/data/ovirt/export *
+/data/ovirt/data   *
+
+
+7、上传1个CentOS的系统盘ISO文件到主机n93上供后续安装vm使用。
+[root@node93 ~]# ll -h /data/ovirt/iso/CentOS-6.5-x86_64-bin-DVD1.iso 
+-rw-r--r-- 1 root root 4.2G Jul 24  2014 /data/ovirt/iso/CentOS-6.5-x86_64-bin-DVD1.iso
+
+
+二、安装oVirtEngine(Self_Hosted_Engine)。先在一台宿主机（n93.test）上安装
+1、【配置 ovirt-hosted-engine 】
+[root@n93 ~]# yum install ovirt-hosted-engine-setup screen
+[root@n93 ~]# screen
+[root@n93 ~]# ovirt-hosted-engine-setup 
+[ INFO  ] Stage: Initializing
+[ INFO  ] Generating a temporary VNC password.
+[ INFO  ] Stage: Environment setup
+          Continuing will configure this host for serving as hypervisor and create a VM where you have to install oVirt Engine afterwards.
+          Are you sure you want to continue? (Yes, No)[Yes]: 
+          Configuration files: []
+          Log file: /var/log/ovirt-hosted-engine-setup/ovirt-hosted-engine-setup-20150929065808-r269ad.log
+          Version: otopi-1.3.2 (otopi-1.3.2-1.el6)
+[ INFO  ] Hardware supports virtualization
+[ INFO  ] Bridge ovirtmgmt already created
+[ INFO  ] Stage: Environment packages setup
+[ INFO  ] Stage: Programs detection
+[ INFO  ] Stage: Environment setup
+[ INFO  ] Stage: Environment customization
+         
+          --== STORAGE CONFIGURATION ==--【存储配置】
+         
+          During customization use CTRL-D to abort.
+          Please specify the storage you would like to use (iscsi, nfs3, nfs4)[nfs3]: 【使用NFS服务提供存储，采用默认值：nfs3】
+          Please specify the full shared storage connection path to use (example: host:/path): 10.0.200.220:/data/ovirt/images
+[ INFO  ] Installing on first host
+          Please provide storage domain name. [hosted_storage]: 【这里配置的是数据域的名称，采用默认值：hosted_storage】
+          Local storage datacenter name is an internal name and currently will not be shown in engine's admin UI.
+          Please enter local datacenter name [hosted_datacenter]: 【这里配置的是数据中心的名称，采用默认值：hosted_datacenter】
+         
+          --== SYSTEM CONFIGURATION ==--
+         
+         
+          --== NETWORK CONFIGURATION ==--【网络配置】
+         
+          iptables was detected on your computer, do you wish setup to configure it? (Yes, No)[Yes]: 【让setup来配置防火墙】
+          Please indicate a pingable gateway IP address [10.0.200.1]: 【指定网关IP地址】
+         
+          --== VM CONFIGURATION ==--
+         
+          Please specify the device to boot the VM from (cdrom, disk, pxe) [cdrom]: 【指定引导方式，用于安装VM】
+          Please specify an alias for the Hosted Engine image [hosted_engine]: vm_e01.test【指定vm的别名】
+          The following CPU types are supported by this host:
+                 - model_SandyBridge: Intel SandyBridge Family
+                 - model_Westmere: Intel Westmere Family
+                 - model_Nehalem: Intel Nehalem Family
+                 - model_Penryn: Intel Penryn Family
+                 - model_Conroe: Intel Conroe Family
+          Please specify the CPU type to be used by the VM [model_SandyBridge]: 【指定CPU型号，采用默认值：model_SandyBridge】
+          Please specify path to installation media you would like to use [None]: /data/ovirt/iso/CentOS-6.5-x86_64-bin-DVD1.iso【指定安装系统的ISO文件路径】
+          Please specify the number of virtual CPUs for the VM [Defaults to minimum requirement: 2]: 4【分配给vm的 vcpu 的数量】
+          Please specify the disk size of the VM in GB [Defaults to minimum requirement: 25]: 40【分配给vm的磁盘的容量】
+          You may specify a unicast MAC address for the VM or accept a randomly generated default [00:16:3e:7f:32:d5]: 【分配给vm的网卡MAC地址】
+          Please specify the memory size of the VM in MB [Defaults to minimum requirement: 4096]: 8192【分配给vm的内存大小】
+          Please specify the console type you would like to use to connect to the VM (vnc, spice) [vnc]: 【连接vm的方式，采用默认值：vnc】
+         
+          --== HOSTED ENGINE CONFIGURATION ==--【宿主机配置】
+         
+          Enter the name which will be used to identify this host inside the Administrator Portal [hosted_engine_1]: n93.test【host的名称，将显示在ovirt的web“系统-主机”中】
+          Enter 'admin@internal' user password that will be used for accessing the Administrator Portal: 【登录ovirt的管理员密码】
+          Confirm 'admin@internal' user password: 
+          Please provide the FQDN for the engine you would like to use.
+          This needs to match the FQDN that you will use for the engine installation within the VM.
+          Note: This will be the FQDN of the VM you are now going to create,
+          it should not point to the base host or to any other existing machine.
+          Engine FQDN: e01.test【这里指定的FQDN要和安装 ovirt-engine 的这个vm的配置是一致的】
+          Please provide the name of the SMTP server through which we will send notifications [localhost]: 【略过，采用默认值】
+          Please provide the TCP port number of the SMTP server [25]: 
+          Please provide the email address from which notifications will be sent [root@localhost]: 
+          Please provide a comma-separated list of email addresses which will get notifications [root@localhost]: 
+[ INFO  ] Stage: Setup validation
+         
+          --== CONFIGURATION PREVIEW ==--
+         
+          Engine FQDN                        : e01.test
+          Bridge name                        : ovirtmgmt
+          SSH daemon port                    : 22
+          Firewall manager                   : iptables
+          Gateway address                    : 10.0.200.1
+          Host name for web application      : n93.test
+          Host ID                            : 1
+          Image alias                        : vm_e01.test
+          Image size GB                      : 40
+          Storage connection                 : 10.0.200.220:/data/ovirt/images
+          Console type                       : vnc
+          Memory size MB                     : 8192
+          MAC address                        : 00:16:3e:7f:32:d5
+          Boot type                          : cdrom
+          Number of CPUs                     : 4
+          ISO image (for cdrom boot)         : /data/ovirt/iso/CentOS-6.5-x86_64-bin-DVD1.iso
+          CPU Type                           : model_SandyBridge
+         
+          Please confirm installation settings (Yes, No)[Yes]: 
+[ INFO  ] Stage: Transaction setup
+[ INFO  ] Stage: Misc configuration
+[ INFO  ] Stage: Package installation
+[ INFO  ] Stage: Misc configuration
+[ INFO  ] Configuring libvirt
+[ INFO  ] Configuring VDSM
+[ INFO  ] Starting vdsmd
+[ INFO  ] Waiting for VDSM hardware info
+[ INFO  ] Waiting for VDSM hardware info
+[ INFO  ] Creating Storage Domain
+[ INFO  ] Creating Storage Pool
+[ INFO  ] Connecting Storage Pool
+[ INFO  ] Verifying sanlock lockspace initialization
+[ INFO  ] Creating VM Image
+[ INFO  ] Disconnecting Storage Pool
+[ INFO  ] Start monitoring domain
+[ INFO  ] Configuring VM
+[ INFO  ] Updating hosted-engine configuration
+[ INFO  ] Stage: Transaction commit
+[ INFO  ] Stage: Closing up
+[ INFO  ] Creating VM
+          You can now connect to the VM with the following command:
+                /usr/bin/remote-viewer vnc://localhost:5900【使用remote-viewer或者vnc-viewer登录，把localhost替换成宿主机的IP，此处是 vnc://10.0.200.93:5900】
+          Use temporary password "1315WrHn" to connect to vnc console.【使用vnc时的临时密码】
+          Please note that in order to use remote-viewer you need to be able to run graphical applications.
+          This means that if you are using ssh you have to supply the -Y flag (enables trusted X11 forwarding).
+          Otherwise you can run the command from a terminal in your preferred desktop environment.
+          If you cannot run graphical applications you can connect to the graphic console from another host or connect to the console using the following command:
+          virsh -c qemu+tls://n93.test/system console HostedEngine
+          If you need to reboot the VM you will need to start it manually using the command:
+          hosted-engine --vm-start【如果需要在vm中 reboot ，则之后需要手动启动这个vm】
+          You can then set a temporary password using the command:
+          hosted-engine --add-console-password【有需要时，可以这样配置一个临时的console密码】
+          The VM has been started.  Install the OS and shut down or reboot it.  To continue please make a selection:
+         
+          (1) Continue setup - VM installation is complete
+          (2) Reboot the VM and restart installation
+          (3) Abort setup
+          (4) Destroy VM and abort setup
+         
+          (1, 2, 3, 4)[1]: 【使用VNC连接到VM，安装完OS后，点击“reboot”，回到这里，按回车，采用默认值：1】
+          Waiting for VM to shut down...
+[ INFO  ] Creating VM
+          You can now connect to the VM with the following command:
+                /usr/bin/remote-viewer vnc://localhost:5900
+          Use temporary password "1315WrHn" to connect to vnc console.
+          Please note that in order to use remote-viewer you need to be able to run graphical applications.
+          This means that if you are using ssh you have to supply the -Y flag (enables trusted X11 forwarding).
+          Otherwise you can run the command from a terminal in your preferred desktop environment.
+          If you cannot run graphical applications you can connect to the graphic console from another host or connect to the console using the following command:
+          virsh -c qemu+tls://n93.test/system console HostedEngine
+          If you need to reboot the VM you will need to start it manually using the command:
+          hosted-engine --vm-start
+          You can then set a temporary password using the command:
+          hosted-engine --add-console-password
+          Please install and setup the engine in the VM.【VM又被启动了，现在需要通过VNC再次连接上去，开始安装 ovirt-engine 】
+          You may also be interested in installing ovirt-guest-agent-common package in the VM.【这里的包名有误，应该是：ovirt-guest-agent，yum安装加入开机启动并启动它。】
+          To continue make a selection from the options below:
+          (1) Continue setup - engine installation is complete
+          (2) Power off and restart the VM
+          (3) Abort setup
+          (4) Destroy VM and abort setup
+         
+          (1, 2, 3, 4)[1]: 【安装完 ovirt-engine 后，回到这里，按回车，采用默认值：1】
+[ INFO  ] Engine replied: DB Up!Welcome to Health Status!
+          Enter the name of the cluster to which you want to add the host (Default) [Default]: 【将host（主机）加入指定的cluster（集群）中，采用默认值：Default】
+[ INFO  ] Waiting for the host to become operational in the engine. This may take several minutes...
+[ INFO  ] The VDSM Host is now operational
+          Please shutdown the VM allowing the system to launch it as a monitored service.
+          The system will wait until the VM is down.
+[ INFO  ] Enabling and starting HA services
+          Hosted Engine successfully set up
+[ INFO  ] Stage: Clean up
+[ INFO  ] Generating answer file '/var/lib/ovirt-hosted-engine-setup/answers/answers-20150928234051.conf'
+[ INFO  ] Generating answer file '/etc/ovirt-hosted-engine/answers.conf'
+[ INFO  ] Stage: Pre-termination
+[ INFO  ] Stage: Termination
+
+
+2、【补上步骤】：“(1) Continue setup - VM installation is complete”
+##################连接到e01.test这台VM，安装ovirt-engine######################
+1）连接到 e01.test 这台vm
+[root@n93 ~]# ssh e01.test             
+The authenticity of host 'e01.test (10.0.200.30)' can't be established.
+RSA key fingerprint is cd:0d:5e:91:5a:f2:76:ac:9a:8a:d8:f7:37:65:e3:39.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'e01.test,10.0.200.30' (RSA) to the list of known hosts.
+root@e01.test's password: 
+[root@e01 ~]# 
+
+2）配置时间
+先更新一次：
+[root@e01 ~]# /usr/sbin/ntpdate stdtime.gov.hk
+启动ntpd服务：
+[root@e01 ~]# chkconfig ntpd start
+[root@e01 ~]# chkconfig ntpd on
+3）使用ovirt的yum源。（略，此处使用办公网本地yum源，已缓存ovirt相关的rpm包）
+
+4）配置ovirt-engine
+[root@engine1 ~]# yum -y install ovirt-engine
+[root@engine1 ~]# engine-setup
+（略）
+[ INFO  ] Stage: Setup validation
+[WARNING] Less than 16384MB of memory is available
+         
+          --== CONFIGURATION PREVIEW ==--
+         
+          Application mode                        : both
+          Firewall manager                        : iptables
+          Update Firewall                         : True
+          Host FQDN                               : e01.test
+          Engine database name                    : engine
+          Engine database secured connection      : False
+          Engine database host                    : localhost
+          Engine database user name               : engine
+          Engine database host name validation    : False
+          Engine database port                    : 5432
+          Engine installation                     : True
+          NFS setup                               : True
+          PKI organization                        : test
+          NFS mount point                         : /var/lib/exports/iso
+          NFS export ACL                          : e01.test(rw)
+          Configure local Engine database         : True
+          Set application as default page         : True
+          Configure Apache SSL                    : True
+          Configure WebSocket Proxy               : True
+          Engine Host FQDN                        : e01.test
+         
+          Please confirm installation settings (OK, Cancel) [OK]: 
+（略）
+[ INFO  ] Execution of setup completed successfully
+##################连接到engine1.test.org这台VM，安装ovirt-engine######################
+
+
+【注意】
+1）【FQDN要一致的问题】
+Remember to setup the same hostname you specified as FQDN while you're installing the OS on the VM.
+2）【维护模式的问题】
+If you want to install ovirt-engine-dwh and ovirt-engine-reports or update the engine after the deployment is completed , remember that you need to set the system in global maintenance using 
+# hosted-engine --set-maintenance=global
+because the engine service must be stopped during setup / upgrade operations.
+
+
+3、查看vm状态
+[root@n93 ~]# hosted-engine --vm-status
+
+
+--== Host 1 status ==--
+
+Status up-to-date                  : True
+Hostname                           : n93.test
+Host ID                            : 1
+Engine status                      : {"reason": "vm not running on this host", "health": "bad", "vm": "down", "detail": "unknown"}
+Score                              : 0
+Local maintenance                  : True
+Host timestamp                     : 262
+Extra metadata (valid at timestamp):
+        metadata_parse_version=1
+        metadata_feature_version=1
+        timestamp=262 (Tue Sep 29 17:34:30 2015)
+        host-id=1
+        score=0
+        maintenance=True
+        state=LocalMaintenance
+        
+4、启动vm
+[root@n93 ~]# hosted-engine --vm-start
+
+cabb2a5d-2f6a-4f8d-a43b-4c6866b2033a
+        Status = WaitForLaunch
+        nicModel = rtl8139,pv
+        emulatedMachine = pc
+        pid = 0
+        vmName = HostedEngine
+        devices = [{'index': '2', 'iface': 'ide', 'specParams': {}, 'readonly': 'true', 'deviceId': '5c1dcd19-94c8-4a96-bc8e-557712625ef4', 'address': {'bus': '1', 'controller': '0', 'type': 'drive', 'target': '0', 'unit': '0'}, 'device': 'cdrom', 'shared': 'false', 'path': '/data/ovirt/iso/CentOS-6.5-x86_64-bin-DVD1.iso', 'type': 'disk'}, {'index': '0', 'iface': 'virtio', 'format': 'raw', 'bootOrder': '1', 'poolID': '00000000-0000-0000-0000-000000000000', 'volumeID': '9157bbdf-12a8-4daa-bde8-1791bdbf18cc', 'imageID': 'adba93e2-104a-4791-83bd-dfba487a9091', 'specParams': {}, 'readonly': 'false', 'domainID': '42d22889-7dac-4f96-8ed8-5b01472e19c9', 'optional': 'false', 'deviceId': 'adba93e2-104a-4791-83bd-dfba487a9091', 'address': {'slot': '0x06', 'bus': '0x00', 'domain': '0x0000', 'type': 'pci', 'function': '0x0'}, 'device': 'disk', 'shared': 'exclusive', 'propagateErrors': 'off', 'type': 'disk'}, {'device': 'scsi', 'model': 'virtio-scsi', 'type': 'controller'}, {'nicModel': 'pv', 'macAddr': '00:16:3e:7f:32:d5', 'linkActive': 'true', 'network': 'ovirtmgmt', 'filter': 'vdsm-no-mac-spoofing', 'specParams': {}, 'deviceId': '71123423-a234-4336-8425-26d11abacbb1', 'address': {'slot': '0x03', 'bus': '0x00', 'domain': '0x0000', 'type': 'pci', 'function': '0x0'}, 'device': 'bridge', 'type': 'interface'}, {'device': 'console', 'specParams': {}, 'type': 'console', 'deviceId': '6e5f311c-91a5-4c37-8b0c-c4c77d321f57', 'alias': 'console0'}]
+        smp = 4
+        vmType = kvm
+        display = vnc
+        displaySecurePort = -1
+        memSize = 8192
+        displayPort = -1
+        cpuType = SandyBridge
+        clientIp = 
+        guestDiskMapping = {}
+        displayIp = 0
+        spiceSecureChannels = smain,sdisplay,sinputs,scursor,splayback,srecord,ssmartcard,susbredir
+
+[root@n93 ~]# hosted-engine --vm-status
+
+
+--== Host 1 status ==--
+
+Status up-to-date                  : True
+Hostname                           : n93.test
+Host ID                            : 1
+Engine status                      : {"health": "good", "vm": "up", "detail": "up"}
+Score                              : 2400
+Local maintenance                  : False
+Host timestamp                     : 1934
+Extra metadata (valid at timestamp):
+        metadata_parse_version=1
+        metadata_feature_version=1
+        timestamp=1934 (Tue Sep 29 18:02:22 2015)
+        host-id=1
+        score=2400
+        maintenance=False
+        state=EngineUp
+
+
+        
+
+        
+三、在另一台宿主机上（n86.test）安装
+1、类似n93那样的流程配置
+【配置ovirt-hosted-engine】
+[root@n86 ~]# yum install ovirt-hosted-engine-setup screen
+[root@n86 ~]# screen
+[root@n86 ~]# ovirt-hosted-engine-setup 
+[ INFO  ] Stage: Initializing
+[ INFO  ] Generating a temporary VNC password.
+[ INFO  ] Stage: Environment setup
+          Continuing will configure this host for serving as hypervisor and create a VM where you have to install oVirt Engine afterwards.
+          Are you sure you want to continue? (Yes, No)[Yes]: 
+          Configuration files: []
+          Log file: /var/log/ovirt-hosted-engine-setup/ovirt-hosted-engine-setup-20150929181504-5y2oal.log
+          Version: otopi-1.3.2 (otopi-1.3.2-1.el6)
+[ INFO  ] Hardware supports virtualization
+[ INFO  ] Bridge ovirtmgmt already created
+[ INFO  ] Stage: Environment packages setup
+[ INFO  ] Stage: Programs detection
+[ INFO  ] Stage: Environment setup
+[ INFO  ] Stage: Environment customization
+         
+          --== STORAGE CONFIGURATION ==--
+         
+          During customization use CTRL-D to abort.
+          Please specify the storage you would like to use (iscsi, nfs3, nfs4)[nfs3]: 
+          Please specify the full shared storage connection path to use (example: host:/path): 10.0.200.220:/data/ovirt/images
+          The specified storage location already contains a data domain. Is this an additional host setup (Yes, No)[Yes]? 
+[ INFO  ] Installing on additional host
+          Please specify the Host ID [Must be integer, default: 2]: 
+          Local storage datacenter name is an internal name and currently will not be shown in engine's admin UI.
+          Please enter local datacenter name [hosted_datacenter]: 
+         
+          --== SYSTEM CONFIGURATION ==--
+         
+[WARNING] A configuration file must be supplied to deploy Hosted Engine on an additional host.
+          The answer file may be fetched from the first host using scp.
+          If you do not want to download it automatically you can abort the setup answering no to the following question.
+          Do you want to scp the answer file from the first host? (Yes, No)[Yes]: 
+          Please provide the FQDN or IP of the first host: n93.test
+          Enter 'root' user password for host n93.test: 
+[ INFO  ] Answer file successfully downloaded
+         
+          --== NETWORK CONFIGURATION ==--
+         
+[ INFO  ] Additional host deployment, firewall manager is 'iptables'
+          The following CPU types are supported by this host:
+                 - model_SandyBridge: Intel SandyBridge Family
+                 - model_Westmere: Intel Westmere Family
+                 - model_Nehalem: Intel Nehalem Family
+                 - model_Penryn: Intel Penryn Family
+                 - model_Conroe: Intel Conroe Family
+         
+          --== HOSTED ENGINE CONFIGURATION ==--
+         
+          Enter the name which will be used to identify this host inside the Administrator Portal [hosted_engine_2]: n86.test
+          Enter 'admin@internal' user password that will be used for accessing the Administrator Portal: 
+          Confirm 'admin@internal' user password: 
+[ INFO  ] Stage: Setup validation
+         
+          --== CONFIGURATION PREVIEW ==--
+         
+          Engine FQDN                        : e01.test
+          Bridge name                        : ovirtmgmt
+          SSH daemon port                    : 22
+          Firewall manager                   : iptables
+          Gateway address                    : 10.0.200.1
+          Host name for web application      : n86.test
+          Host ID                            : 2
+          Image alias                        : vm_e01.test
+          Image size GB                      : 40
+          Storage connection                 : 10.0.200.220:/data/ovirt/images
+          Console type                       : vnc
+          Memory size MB                     : 8192
+          MAC address                        : 00:16:3e:7f:32:d5
+          Boot type                          : disk
+          Number of CPUs                     : 4
+          CPU Type                           : model_SandyBridge
+[ INFO  ] Stage: Transaction setup
+[ INFO  ] Stage: Misc configuration
+[ INFO  ] Stage: Package installation
+[ INFO  ] Stage: Misc configuration
+[ INFO  ] Configuring libvirt
+[ INFO  ] Configuring VDSM
+[ INFO  ] Starting vdsmd
+[ INFO  ] Waiting for VDSM hardware info
+[ INFO  ] Waiting for VDSM hardware info
+[ INFO  ] Connected to Storage Domain
+[ INFO  ] Configuring VM
+[ INFO  ] Updating hosted-engine configuration
+[ INFO  ] Stage: Transaction commit
+[ INFO  ] Stage: Closing up
+[ INFO  ] Waiting for the host to become operational in the engine. This may take several minutes...
+[ INFO  ] The VDSM Host is now operational
+[ INFO  ] Enabling and starting HA services
+          Hosted Engine successfully set up
+[ INFO  ] Stage: Clean up
+[ INFO  ] Generating answer file '/var/lib/ovirt-hosted-engine-setup/answers/answers-20150929101646.conf'
+[ INFO  ] Generating answer file '/etc/ovirt-hosted-engine/answers.conf'
+[ INFO  ] Stage: Pre-termination
+[ INFO  ] Stage: Termination
+
+
+2、查看状态：
+[root@n86 ~]# hosted-engine --vm-status
+
+
+--== Host 1 status ==--
+
+Status up-to-date                  : True
+Hostname                           : n93.test
+Host ID                            : 1
+Engine status                      : {"health": "good", "vm": "up", "detail": "up"}
+Score                              : 2400
+Local maintenance                  : False
+Host timestamp                     : 2943
+Extra metadata (valid at timestamp):
+        metadata_parse_version=1
+        metadata_feature_version=1
+        timestamp=2943 (Tue Sep 29 18:19:12 2015)
+        host-id=1
+        score=2400
+        maintenance=False
+        state=EngineUp
+
+
+--== Host 2 status ==--
+
+Status up-to-date                  : True
+Hostname                           : n86.test
+Host ID                            : 2
+Engine status                      : {"reason": "vm not running on this host", "health": "bad", "vm": "down", "detail": "unknown"}
+Score                              : 0
+Local maintenance                  : True
+Host timestamp                     : 526623
+Extra metadata (valid at timestamp):
+        metadata_parse_version=1
+        metadata_feature_version=1
+        timestamp=526623 (Tue Sep 29 10:19:15 2015)
+        host-id=2
+        score=0
+        maintenance=True
+        state=LocalMaintenance
+
+可以看到，n86的ha-agent服务已经在启动中，等待状态的更新      
+间隔几秒再查看：
+[root@n86 ~]# hosted-engine --vm-status
+
+
+--== Host 1 status ==--
+
+Status up-to-date                  : True
+Hostname                           : n93.test
+Host ID                            : 1
+Engine status                      : {"health": "good", "vm": "up", "detail": "up"}
+Score                              : 2400
+Local maintenance                  : False
+Host timestamp                     : 3117
+Extra metadata (valid at timestamp):
+        metadata_parse_version=1
+        metadata_feature_version=1
+        timestamp=3117 (Tue Sep 29 18:22:05 2015)
+        host-id=1
+        score=2400
+        maintenance=False
+        state=EngineUp
+
+
+--== Host 2 status ==--
+
+Status up-to-date                  : True
+Hostname                           : n86.test
+Host ID                            : 2
+Engine status                      : {"reason": "vm not running on this host", "health": "bad", "vm": "down", "detail": "unknown"}
+Score                              : 2400
+Local maintenance                  : False
+Host timestamp                     : 526785
+Extra metadata (valid at timestamp):
+        metadata_parse_version=1
+        metadata_feature_version=1
+        timestamp=526785 (Tue Sep 29 10:21:57 2015)
+        host-id=2
+        score=2400
+        maintenance=False
+        state=EngineDown
+
+
+
+
+
+
+四、配置数据中心、集群、主机
+1、登录到“管理门户”
+https://e01.test/ovirt-engine
+
+2、测试迁移vm
+集群：Default
+源host：n93.test
+目标host：n86.test
+
+结果：成功
+用时：1m25s
+
+五、继续增加2个主机
+1、增加普通类型的主机到集群“Default”中
+n72
+n73
+
+2、尝试调整n72和n73为“Hosted Engine HA”类型的主机环境
+将n72从集群中移除，菜单：“系统-主机-维护-删除”
+继续操作，类似n86的添加流程
+
+【配置ovirt-hosted-engine】
+[root@n72 ~]# yum install ovirt-hosted-engine-setup screen
+[root@n72 ~]# screen
+[root@n72 network-scripts]# ovirt-hosted-engine-setup        
+[ INFO  ] Stage: Initializing
+[ INFO  ] Generating a temporary VNC password.
+[ INFO  ] Stage: Environment setup
+          Continuing will configure this host for serving as hypervisor and create a VM where you have to install oVirt Engine afterwards.
+          Are you sure you want to continue? (Yes, No)[Yes]: 
+          Configuration files: []
+          Log file: /var/log/ovirt-hosted-engine-setup/ovirt-hosted-engine-setup-20150930022253-wb2pr2.log
+          Version: otopi-1.3.2 (otopi-1.3.2-1.el6)
+[ INFO  ] Hardware supports virtualization
+[ INFO  ] Bridge ovirtmgmt already created
+[ INFO  ] Stage: Environment packages setup
+[ INFO  ] Stage: Programs detection
+[ INFO  ] Stage: Environment setup
+[ INFO  ] Stage: Environment customization
+         
+          --== STORAGE CONFIGURATION ==--
+         
+          During customization use CTRL-D to abort.
+          Please specify the storage you would like to use (iscsi, nfs3, nfs4)[nfs3]: 
+          Please specify the full shared storage connection path to use (example: host:/path): 10.0.200.220:/data/ovirt/images
+          The specified storage location already contains a data domain. Is this an additional host setup (Yes, No)[Yes]? 
+[ INFO  ] Installing on additional host
+          Please specify the Host ID [Must be integer, default: 2]: 3【请注意这里，，之前已经有2个host，这里递增ID即可。】
+          Local storage datacenter name is an internal name and currently will not be shown in engine's admin UI.
+          Please enter local datacenter name [hosted_datacenter]: 
+         
+          --== SYSTEM CONFIGURATION ==--
+         
+[WARNING] A configuration file must be supplied to deploy Hosted Engine on an additional host.
+          The answer file may be fetched from the first host using scp.
+          If you do not want to download it automatically you can abort the setup answering no to the following question.
+          Do you want to scp the answer file from the first host? (Yes, No)[Yes]: 
+          Please provide the FQDN or IP of the first host: n93.test
+          Enter 'root' user password for host n93.test: 
+[ INFO  ] Answer file successfully downloaded
+         
+          --== NETWORK CONFIGURATION ==--
+         
+[ INFO  ] Additional host deployment, firewall manager is 'iptables'
+          The following CPU types are supported by this host:
+                 - model_SandyBridge: Intel SandyBridge Family
+                 - model_Westmere: Intel Westmere Family
+                 - model_Nehalem: Intel Nehalem Family
+                 - model_Penryn: Intel Penryn Family
+                 - model_Conroe: Intel Conroe Family
+         
+          --== HOSTED ENGINE CONFIGURATION ==--
+         
+          Enter the name which will be used to identify this host inside the Administrator Portal [hosted_engine_3]: n72.test
+          Enter 'admin@internal' user password that will be used for accessing the Administrator Portal: 
+          Confirm 'admin@internal' user password: 
+[ INFO  ] Stage: Setup validation
+         
+          --== CONFIGURATION PREVIEW ==--
+         
+          Engine FQDN                        : e01.test
+          Bridge name                        : ovirtmgmt
+          SSH daemon port                    : 22
+          Firewall manager                   : iptables
+          Gateway address                    : 10.0.200.1
+          Host name for web application      : n72.test
+          Host ID                            : 3
+          Image alias                        : vm_e01.test
+          Image size GB                      : 40
+          Storage connection                 : 10.0.200.220:/data/ovirt/images
+          Console type                       : vnc
+          Memory size MB                     : 8192
+          MAC address                        : 00:16:3e:7f:32:d5
+          Boot type                          : disk
+          Number of CPUs                     : 4
+          CPU Type                           : model_SandyBridge
+[ INFO  ] Stage: Transaction setup
+[ INFO  ] Stage: Misc configuration
+[ INFO  ] Stage: Package installation
+[ INFO  ] Stage: Misc configuration
+[ INFO  ] Configuring libvirt
+[ INFO  ] Configuring VDSM
+[ INFO  ] Starting vdsmd
+[ INFO  ] Waiting for VDSM hardware info
+[ INFO  ] Waiting for VDSM hardware info
+[ INFO  ] Connected to Storage Domain
+[ INFO  ] Configuring VM
+[ INFO  ] Updating hosted-engine configuration
+[ INFO  ] Stage: Transaction commit
+[ INFO  ] Stage: Closing up
+[ INFO  ] Waiting for the host to become operational in the engine. This may take several minutes...
+[ INFO  ] The VDSM Host is now operational
+[ INFO  ] Enabling and starting HA services
+          Hosted Engine successfully set up
+[ INFO  ] Stage: Clean up
+[ INFO  ] Generating answer file '/var/lib/ovirt-hosted-engine-setup/answers/answers-20150930022445.conf'
+[ INFO  ] Generating answer file '/etc/ovirt-hosted-engine/answers.conf'
+[ INFO  ] Stage: Pre-termination
+[ INFO  ] Stage: Termination
+
+
+重复添加n72的操作，增加n73，注意2个地方即可：
+            Host name for web application      : n73.test
+            Host ID                            : 4
+
+3、查看vm状态
+[root@n93 network-scripts]# hosted-engine --vm-status
+
+
+--== Host 1 status ==--
+
+Status up-to-date                  : True
+Hostname                           : n93.test
+Host ID                            : 1
+Engine status                      : {"reason": "vm not running on this host", "health": "bad", "vm": "down", "detail": "unknown"}
+Score                              : 2400
+Local maintenance                  : False
+Host timestamp                     : 62351
+Extra metadata (valid at timestamp):
+        metadata_parse_version=1
+        metadata_feature_version=1
+        timestamp=62351 (Wed Sep 30 10:49:21 2015)
+        host-id=1
+        score=2400
+        maintenance=False
+        state=EngineDown
+
+
+--== Host 2 status ==--
+
+Status up-to-date                  : True
+Hostname                           : n86.test
+Host ID                            : 2
+Engine status                      : {"health": "good", "vm": "up", "detail": "up"}
+Score                              : 2400
+Local maintenance                  : False
+Host timestamp                     : 586025
+Extra metadata (valid at timestamp):
+        metadata_parse_version=1
+        metadata_feature_version=1
+        timestamp=586025 (Wed Sep 30 10:49:19 2015)
+        host-id=2
+        score=2400
+        maintenance=False
+        state=EngineUp
+
+
+--== Host 3 status ==--
+
+Status up-to-date                  : True
+Hostname                           : n72.test
+Host ID                            : 3
+Engine status                      : {"reason": "vm not running on this host", "health": "bad", "vm": "down", "detail": "unknown"}
+Score                              : 2400
+Local maintenance                  : False
+Host timestamp                     : 146713
+Extra metadata (valid at timestamp):
+        metadata_parse_version=1
+        metadata_feature_version=1
+        timestamp=146713 (Wed Sep 30 02:49:17 2015)
+        host-id=3
+        score=2400
+        maintenance=False
+        state=EngineDown
+
+
+--== Host 4 status ==--
+
+Status up-to-date                  : True
+Hostname                           : n73.test
+Host ID                            : 4
+Engine status                      : {"reason": "vm not running on this host", "health": "bad", "vm": "down", "detail": "unknown"}
+Score                              : 2400
+Local maintenance                  : False
+Host timestamp                     : 1191483
+Extra metadata (valid at timestamp):
+        metadata_parse_version=1
+        metadata_feature_version=1
+        timestamp=1191483 (Wed Sep 30 02:49:19 2015)
+        host-id=4
+        score=2400
+        maintenance=False
+        state=EngineDown
+
+        
+六、维护模式
+1、如果需要升级或者安装 ovirt-engine-dwh and ovirt-engine-reports ，则要先进入维护状态，engine服务需要先停止。
+（这2个属于报表相关的包，官网doc显示，可以使用独立的engine来安装，这将有利于主机负载，具体后续研究。本次先在同一个engine上安装体验下）
+
+2、在宿主机上执行：
+[root@n93 ~]# hosted-engine --set-maintenance --mode=global
+查看状态：
+[root@n93 network-scripts]# hosted-engine --vm-status
+
+
+!! Cluster is in GLOBAL MAINTENANCE mode !!【注意这里】
+
+
+--== Host 1 status ==--
+
+Status up-to-date                  : True
+Hostname                           : n93.test
+Host ID                            : 1
+Engine status                      : {"reason": "vm not running on this host", "health": "bad", "vm": "down", "detail": "unknown"}
+Score                              : 2400
+Local maintenance                  : False
+Host timestamp                     : 62623
+Extra metadata (valid at timestamp):
+        metadata_parse_version=1
+        metadata_feature_version=1
+        timestamp=62623 (Wed Sep 30 10:53:53 2015)
+        host-id=1
+        score=2400
+        maintenance=False
+        state=GlobalMaintenance【注意这里】
+
+
+--== Host 2 status ==--
+
+Status up-to-date                  : True
+Hostname                           : n86.test
+Host ID                            : 2
+Engine status                      : {"health": "good", "vm": "up", "detail": "up"}
+Score                              : 2400
+Local maintenance                  : False
+Host timestamp                     : 586307
+Extra metadata (valid at timestamp):
+        metadata_parse_version=1
+        metadata_feature_version=1
+        timestamp=586307 (Wed Sep 30 10:54:02 2015)
+        host-id=2
+        score=2400
+        maintenance=False
+        state=GlobalMaintenance
+
+
+--== Host 3 status ==--
+
+Status up-to-date                  : True
+Hostname                           : n72.test
+Host ID                            : 3
+Engine status                      : {"reason": "vm not running on this host", "health": "bad", "vm": "down", "detail": "unknown"}
+Score                              : 2400
+Local maintenance                  : False
+Host timestamp                     : 146993
+Extra metadata (valid at timestamp):
+        metadata_parse_version=1
+        metadata_feature_version=1
+        timestamp=146993 (Wed Sep 30 02:53:57 2015)
+        host-id=3
+        score=2400
+        maintenance=False
+        state=GlobalMaintenance
+
+
+--== Host 4 status ==--
+
+Status up-to-date                  : True
+Hostname                           : n73.test
+Host ID                            : 4
+Engine status                      : {"reason": "vm not running on this host", "health": "bad", "vm": "down", "detail": "unknown"}
+Score                              : 2400
+Local maintenance                  : False
+Host timestamp                     : 1191753
+Extra metadata (valid at timestamp):
+        metadata_parse_version=1
+        metadata_feature_version=1
+        timestamp=1191753 (Wed Sep 30 02:53:49 2015)
+        host-id=4
+        score=2400
+        maintenance=False
+        state=GlobalMaintenance
+
+        
+        
+3、ssh登录到e01.test中，执行：
+[root@e01 ~]# yum install ovirt-engine-dwh ovirt-engine-reports
+[root@e01 ~]# engine-setup 
+[ INFO  ] Stage: Initializing
+[ INFO  ] Stage: Environment setup
+          Configuration files: ['/etc/ovirt-engine-setup.conf.d/10-packaging-jboss.conf', '/etc/ovirt-engine-setup.conf.d/10-packaging.conf', '/etc/ovirt-engine-setup.conf.d/20-setup-ovirt-post.conf']
+          Log file: /var/log/ovirt-engine/setup/ovirt-engine-setup-20150930030635-sa2jhj.log
+          Version: otopi-1.3.2 (otopi-1.3.2-1.el6)
+[ INFO  ] Stage: Environment packages setup
+[ INFO  ] Stage: Programs detection
+[ INFO  ] Stage: Environment setup
+[ INFO  ] Stage: Environment customization
+         
+          --== PRODUCT OPTIONS ==--
+         
+          Configure Data Warehouse on this host (Yes, No) [Yes]: 
+          Configure Reports on this host (Yes, No) [Yes]: 
+         
+          --== PACKAGES ==--
+         
+[ INFO  ] Checking for product updates...
+[ INFO  ] No product updates found
+         
+          --== ALL IN ONE CONFIGURATION ==--
+         
+         
+          --== NETWORK CONFIGURATION ==--
+         
+          Setup can automatically configure the firewall on this system.
+          Note: automatic configuration of the firewall may overwrite current settings.
+          Do you want Setup to configure the firewall? (Yes, No) [Yes]: 
+[ INFO  ] iptables will be configured as firewall manager.
+         
+          --== DATABASE CONFIGURATION ==--
+         
+          Where is the Reports database located? (Local, Remote) [Local]: 
+          Setup can configure the local postgresql server automatically for the Reports to run. This may conflict with existing applications.
+          Would you like Setup to automatically configure postgresql and create Reports database, or prefer to perform that manually? (Automatic, Manual) [Automatic]: 
+          Where is the DWH database located? (Local, Remote) [Local]: 
+          Setup can configure the local postgresql server automatically for the DWH to run. This may conflict with existing applications.
+          Would you like Setup to automatically configure postgresql and create DWH database, or prefer to perform that manually? (Automatic, Manual) [Automatic]: 
+         
+          --== OVIRT ENGINE CONFIGURATION ==--
+         
+          Skipping storing options as database already prepared
+         
+          --== PKI CONFIGURATION ==--
+         
+         
+          --== APACHE CONFIGURATION ==--
+         
+         
+          --== SYSTEM CONFIGURATION ==--
+         
+         
+          --== MISC CONFIGURATION ==--
+         
+          Reports power users password: 
+          Confirm Reports power users password: 
+[WARNING] Password is weak: it is based on a dictionary word
+          Use weak password? (Yes, No) [No]: yes
+         
+          --== END OF CONFIGURATION ==--
+         
+[ INFO  ] Stage: Setup validation
+          During execution engine service will be stopped (OK, Cancel) [OK]: 
+[WARNING] Less than 16384MB of memory is available
+[ INFO  ] Cleaning stale zombie tasks and commands
+         
+          --== CONFIGURATION PREVIEW ==--
+         
+          Firewall manager                        : iptables
+          Update Firewall                         : True
+          Host FQDN                               : e01.test
+          Engine database name                    : engine
+          Engine database secured connection      : False
+          Engine database host                    : localhost
+          Engine database user name               : engine
+          Engine database host name validation    : False
+          Engine database port                    : 5432
+          Engine installation                     : True
+          PKI organization                        : test
+          NFS mount point                         : /var/lib/exports/iso
+          DWH installation                        : True
+          DWH database name                       : ovirt_engine_history
+          DWH database secured connection         : False
+          DWH database host                       : localhost
+          DWH database user name                  : ovirt_engine_history
+          DWH database host name validation       : False
+          DWH database port                       : 5432
+          Configure local DWH database            : True
+          Reports installation                    : True
+          Reports database name                   : ovirt_engine_reports
+          Reports database secured connection     : False
+          Reports database host                   : localhost
+          Reports database user name              : ovirt_engine_reports
+          Reports database host name validation   : False
+          Reports database port                   : 5432
+          Configure local Reports database        : True
+          Engine Host FQDN                        : e01.test
+          Configure WebSocket Proxy               : True
+         
+          Please confirm installation settings (OK, Cancel) [OK]: 
+[ INFO  ] Cleaning async tasks and compensations
+[ INFO  ] Checking the Engine database consistency
+[ INFO  ] Stage: Transaction setup
+[ INFO  ] Stopping dwh service
+[ INFO  ] Stopping reports service
+[ INFO  ] Stopping engine service
+[ INFO  ] Stopping ovirt-fence-kdump-listener service
+[ INFO  ] Stopping websocket-proxy service
+[ INFO  ] Stage: Misc configuration
+[ INFO  ] Stage: Package installation
+[ INFO  ] Stage: Misc configuration
+[ INFO  ] Creating PostgreSQL 'ovirt_engine_history' database
+[ INFO  ] Configuring PostgreSQL
+[ INFO  ] Creating PostgreSQL 'ovirt_engine_reports' database
+[ INFO  ] Configuring PostgreSQL
+[ INFO  ] Backing up database localhost:engine to '/var/lib/ovirt-engine/backups/engine-20150930030842.kcQKet.dump'.
+[ INFO  ] Creating/refreshing Engine database schema
+[ INFO  ] Upgrading CA
+[ INFO  ] Creating/refreshing DWH database schema
+[ INFO  ] Deploying Jasper
+[ INFO  ] Importing data into Jasper
+[ INFO  ] Configuring Jasper Java resources
+[ INFO  ] Configuring Jasper Database resources
+[ INFO  ] Customizing Jasper
+[ INFO  ] Customizing Jasper metadata
+[ INFO  ] Configuring WebSocket Proxy
+[ INFO  ] Generating post install configuration file '/etc/ovirt-engine-setup.conf.d/20-setup-ovirt-post.conf'
+[ INFO  ] Stage: Transaction commit
+[ INFO  ] Stage: Closing up
+         
+          --== SUMMARY ==--
+         
+[WARNING] Less than 16384MB of memory is available【这个提示了好几次，，看来内存要给16G更佳】
+          SSH fingerprint: EF:FF:7A:A6:1A:39:07:84:8F:3F:89:8E:AB:13:4D:24
+          Internal CA 7B:46:84:26:9C:32:F5:76:D7:A5:52:D6:27:2B:60:B8:70:58:27:E9
+          Web access is enabled at:
+              http://e01.test:80/ovirt-engine
+              https://e01.test:443/ovirt-engine
+         
+          --== END OF SUMMARY ==--
+         
+[ INFO  ] Starting engine service
+[ INFO  ] Restarting httpd
+[ INFO  ] Starting dwh service
+[ INFO  ] Starting reports service
+[ INFO  ] Stage: Clean up
+          Log file is located at /var/log/ovirt-engine/setup/ovirt-engine-setup-20150930030635-sa2jhj.log
+[ INFO  ] Generating answer file '/var/lib/ovirt-engine/setup/answers/20150930031453-setup.conf'
+[ INFO  ] Stage: Pre-termination
+[ INFO  ] Stage: Termination
+[ INFO  ] Execution of setup completed successfully
+
+
+退出维护模式：
+[root@n93 ~]# hosted-engine --set-maintenance --mode=none        
+
+
+七、一起讨论研究的几个细节
+Q1：目前4个selfed-host使用的是同一个NFS存储（10.0.200.220:/data/ovirt/images），，这个NFS的可靠性如何保证？商业存储？通过glusterfs之类的分布式文件系统以NFS提供服务？
+Q2：为何在ovirt的web中无法操作hosted_engine这个vm呢？例如：增加网卡，磁盘，做个快照之类的操作要怎么处理？
+Q3：管理网段，存储网段和vm网段怎么规划更合理呢？
+Q4: host-id=1的这台主机故障后，如何重新配置？
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ZYXW、参考
+1、ovirt 官网doc
+http://www.ovirt.org/Features/Self_Hosted_Engine
+http://www.ovirt.org/Ovirt_DWH
+http://www.ovirt.org/Ovirt_Reports
+2、Hosted Engine的部署以及一些问题
+http://coffeeisgrownup.blogspot.com/2014/10/hosted-engine.html
+

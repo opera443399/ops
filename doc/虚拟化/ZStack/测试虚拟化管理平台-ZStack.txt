@@ -1,0 +1,792 @@
+测试虚拟化管理平台-ZStack
+
+
+操作内容：
+一、基础环境
+1、申请办公网物理机资源：
+192.168.56.86  zstack.test
+
+资源分配：
+1）host网卡： em1（192.168.56.86）
+2）vm可用VIP: 192.168.56.30 ~ 192.168.56.39
+3）host主存储目录: /usr/local/zstack/nfs_root
+4）host备份存储目录: /backupStorage
+
+
+2、利用cobbler重做系统
+CentOS-6.5-x86_84
+
+3、安装基础工具
+1）配置本地的yum源：
+[root@zstack.test ~]# yum install wget
+[root@zstack.test ~]# mv /etc/yum.repos.d/*.repo /tmp/ \
+&& wget http://mirrors.office.test/local-office.repo -O /etc/yum.repos.d/local-office.repo \
+&& yum clean all \
+&& yum makecache
+
+配置hosts：
+192.168.56.254   mirrors.office.test
+127.0.0.1 zstack.test
+
+有一个问题要引起注意：
+ZStack利用Ansible检测这个文件是否存在：
+/etc/yum.repos.d/epel.repo 
+
+由于本地环境的yum源提供的repo文件中，已经包含了epel.repo的内容，而不是单独使用了epel.repo这个文件，因此，需要做的是：
+1）增加一个文件epel.repo，内容使用本地的yum源。
+或者：
+2）调整本地yum源的使用方式，将epel.repo独立出来。
+
+
+[root@zstack.test yum.repos.d]# yum clean all 
+[root@zstack.test yum.repos.d]# yum makecache 
+
+
+
+2）安装其他工具
+[root@zstack.test ~]# yum install vim man wget curl ntp tree -y
+
+
+4、数据盘分区大小问题
+ext4最大支持16TB，因为是测试，这里先不调整磁盘分区。
+[root@zstack.test ~]# df -h
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda3       338G  791M  320G   1% /
+tmpfs            16G     0   16G   0% /dev/shm
+/dev/sda1       194M   27M  158M  15% /boot
+/dev/sdb1        16T  129M   15T   1% /data
+
+
+二、安装ZStack
+1、安装
+参考：http://zstack.org/cn/installation/
+
+ZStack的安装程序会在您的系统中安装如下软件：
+
+Apache Tomcat 7 以及 zstack.war
+ZStack web图形界面
+ZStack 命令行工具 zstack-cli
+ZStack 管控工具 zstack-ctl
+MySQL 数据库
+RabbitMQ server 消息总线
+NFS 服务器 （作为之后演示使用）
+Apache HTTP 服务器 （作为之后演示使用）
+默认的用户名和密码
+ZStack图形用户界面默认的用户名和密码是： admin/password.
+
+[root@zstack.test ~]# mkdir /data/download
+[root@zstack.test ~]# cd /data/download/
+[root@zstack.test download]# wget -O install-zstack.sh http://download.zstack.org/releases/0.8/0.8.0/zstack-install-0.8.0.sh
+[root@zstack.test download]# wget -O zstack-all-in-one-0.8.0.tgz http://7xi3lj.com1.z0.glb.clouddn.com/releases/0.8/0.8.0/zstack-all-in-one-0.8.0.tgz
+[root@zstack.test download]# bash install-zstack.sh -a -f zstack-all-in-one-0.8.0.tgz 
+
+_____________________________________________________________________________________________________
+ _________ _____  _    ____ _  __
+|__  / ___|_   _|/ \  / ___| |/ /
+  / /\___ \ | | / _ \| |   | ' / 
+ / /_ ___) || |/ ___ \ |___| . \ 
+/____|____/ |_/_/   \_\____|_|\_\
+                                 
+    _    _     _       ___ _   _    ___  _   _ _____ 
+   / \  | |   | |     |_ _| \ | |  / _ \| \ | | ____|
+  / _ \ | |   | |      | ||  \| | | | | |  \| |  _|  
+ / ___ \| |___| |___   | || |\  | | |_| | |\  | |___ 
+/_/   \_\_____|_____| |___|_| \_|  \___/|_| \_|_____|
+                                                     
+ ___ _   _ ____ _____  _    _     _        _  _____ ___ ___  _   _ 
+|_ _| \ | / ___|_   _|/ \  | |   | |      / \|_   _|_ _/ _ \| \ | |
+ | ||  \| \___ \ | | / _ \ | |   | |     / _ \ | |  | | | | |  \| |
+ | || |\  |___) || |/ ___ \| |___| |___ / ___ \| |  | | |_| | |\  |
+|___|_| \_|____/ |_/_/   \_\_____|_____/_/   \_\_| |___\___/|_| \_|
+                                                                   
+_____________________________________________________________________________________________________
+
+
+ 1. Check System: ... PASS
+
+ 2. Download and Unpack ZStack All In One Package:
+    Download ZStack all-in-one package: ... PASS
+    Unpack ZStack all-in-one package: ... PASS
+    Unpack Tomcat: ... PASS
+    Install ZStack into Tomcat: ... PASS
+
+ 3. Install Ansible:
+    Disable SELinux: ... PASS
+    Install Python and GCC: ... PASS
+    Install PIP: ... PASS
+    Install Ansible: ... PASS
+
+ 4. Install System Libs:
+    Install General Libraries: ... PASS
+    Install Virtualenv: ... PASS
+
+ 5. Install ZStack Tools:
+    Install ZStack Command Line: ... PASS
+    Install ZStack Control: ... PASS
+
+ 6. Configure System:
+    Change Ownership of ZStack Install Root: ... PASS
+    Config zstack.properties: ... PASS
+    Configure Tomcat Java Option: ... PASS
+    Install ZStack management node: ... PASS
+    Configure Local NFS Server (primary storage): ... PASS
+    Configure Local HTTP Server (for storing images): ... PASS
+
+ 7. Install Database and Message Bus:
+    Generate Temp SSH Key: ... PASS
+    Install Mysql Server: ... PASS
+    Deploy ZStack Database: ... PASS
+    Install Rabbitmq Server: ... PASS
+
+ 8. Start ZStack Server:
+    Start ZStack management node: ... PASS
+
+ 9. Start ZStack Web UI:
+    Install ZStack Web UI: ... PASS
+    Start ZStack Dashboard: ... PASS
+
+_____________________________________________________________________________________________________
+ZStack All In One 0.8.0 Installation Completed:
+ - ZStack management node is successfully installed in /usr/local/zstack
+ - the management node is running now
+      You can use /etc/init.d/zstack-server (stop|start) to stop/start it
+ - ZStack web UI is running, vist http://192.168.56.86:5000 in your browser
+      You can use /etc/init.d/zstack-dashboard (stop|start) to stop/start the service
+ - ZStack command line tool is installed: zstack-cli
+ - ZStack control tool is installed: zstack-ctl
+ - 192.168.56.86:/usr/local/zstack/nfs_root is configured for primary storage as an EXAMPLE
+ - http://192.168.56.86/image is ready for storing images as an EXAMPLE.  After copy your images to the folder /usr/local/zstack/http_root, your image local url is http://192.168.56.86/image/your_image_name
+ - You can use `zstack-ctl install_management_node --host=remote_ip` to install more management nodes
+_____________________________________________________________________________________________________
+[root@zstack.test download]# 
+
+
+2、关于数据的存储
+注意事项1：
+参考：http://zstack.org/cn_blog/local-stroage-tutorials.html
+本地存储（Local Storage）是继NFS主存储、iSCSI主存储之后ZStack支持的第三类主存储。 本地存储相比网络共享存储而言，更轻量、更方便（甚至在网络速度和网络存储性能不佳的情况下，本地存储的性能也更高） ，所以也有很多客户采用本地存储方案来搭建云系统。ZStack自v0.8.0开始支持本地存储。本教程仅会介绍如何添加本地存储来做云环境的主存储。
+
+ZStack对于本地存储的使用有如下定义： 
+1. 一个Cluster内的所有计算节点应该有相同的目录放本地存储。 
+2. 如果一个Cluster既拥有本地主存储也挂载了NFS或者其他网络共享存储，那么云主机的根磁盘将会存放在本地存储， 而数据磁盘将会存放在网络共享存储。
+3. 在使用网络共享存储的时候，当原始云主机磁盘被删除后，备份过的磁盘快照依然可以用于创建磁盘镜像模板和恢复磁盘； 但是这个操作在本地存储上无法进行。用户需要在原始磁盘删除前，使用磁盘快照功能创建磁盘镜像模板。
+
+注意事项2：
+参考：http://zstack.org/cn_blog/install-image-by-iso.html
+用户需要把系统安装ISO，通过Image菜单添加到ZStack的备份存储中。（ZStack all in one 安装的时候如果选择了-a参数，会把/usr/local/zstack/http_root作为httpd的目录，用户可以把ISO文件放在这个目录里，访问的方法是http://localhost/image/YOUR_ISO_NAME。）不过我们还是强烈建议用户自己创建一个httpd的服务器，把自己用于安装的ISO放到这个服务器里面，以后可以长期使用。
+
+
+因此，我们先调整系统默认的NFS和HTTP目录，并建立几个目录备用：
+[root@zstack.test download]# mkdir /data/zstack/storage/{nfs,local,backup} -p 
+
+调整NFS：
+[root@zstack.test download]# cat /etc/exports 
+#/usr/local/zstack/nfs_root *(rw,sync,no_root_squash)
+/data/zstack/storage/nfs *(rw,sync,no_root_squash)
+
+[root@zstack.test download]# exportfs -arv
+exporting *:/data/zstack/storage/nfs
+[root@zstack.test download]# showmount -e 192.168.56.86
+Export list for 192.168.56.86:
+/data/zstack/storage/nfs *
+
+调整http：
+[root@zstack.test download]# mkdir /data/zstack/http_root -p
+[root@zstack.test download]# sed -i 's#usr/local#data#g' /etc/httpd/conf.d/zstack-http.conf  
+[root@zstack.test download]# cat /etc/httpd/conf.d/zstack-http.conf    
+Alias /image/ "/data/zstack/http_root/"
+<Directory /data/zstack/http_root/>
+    AllowOverride FileInfo AuthConfig Limit
+    Options MultiViews Indexes SymLinksIfOwnerMatch IncludesNoExec
+    Allow from all
+</Directory>
+[root@zstack.test download]# service httpd restart
+
+
+
+三、开始使用ZStack-经典Amazon EC2 EIP环境
+参考：http://zstack.org/cn/tutorials/ec2-ui.html
+
+1、创建区域（zone）
+点击左侧面板的'Zone': 点击按钮'New Zone'
+
+NAME: zone-sz01
+DESCRIPTION: test zone
+
+完成。
+
+2、创建集群（cluster）
+点击左侧面板的'Cluster': 点击按钮'New Cluster'
+
+ZONE: zone-sz01
+NAME: cluster-sz01
+
+完成。
+
+3、创建宿主机（host）
+点击左侧面板的'Host': 点击按钮'New Host'
+
+ZONE: zone-sz01
+CLUSTER: cluster-sz01
+NAME: host-sz01
+HOST IP: 192.168.56.86
+USER NAME: root
+PASSWORD: xxxx
+HYPERVISOR: KVM
+
+存储和网络先跳过。
+完成。
+我们注意到，ZStack自动在主机上安装了kvm相关的软件包。
+
+
+2、创建存储（storage）
+1）主存储
+点击左侧面板的'Primary Storage': 点击按钮'New Primary Storage'
+
+NAME: ps-sz01-nfs
+TYPE: NFS
+URL: 192.168.56.86:/data/zstack/storage/nfs
+
+点击“NEXT”，附加到集群（ATTACH CLUSTER），选择：
+cluster-sz01
+
+完成。
+
+2）备份存储
+点击左侧面板的'Backup Storage': 点击按钮'New Backup Storage'
+
+NAME: bs-sz01-local
+TYPE: SftpBackupStorage
+URL: /data/zstack/storage/backup
+HOST IP: 192.168.56.86
+USER NAME: root
+PASSWORD: xxxx
+
+点击“NEXT”，附加到区域（ATTACH ZONE），选择：
+zone-sz01
+
+完成。
+
+
+
+3、添加磁盘镜像
+点击左侧面板的'Image': 点击按钮'New Image'
+
+先提前下载2个官方的镜像：
+[root@zstack.test download]# wget http://7xi3lj.com1.z0.glb.clouddn.com/templates/ttylinux.qcow2
+[root@zstack.test download]# cp -a ttylinux.qcow2 /data/zstack/http_root/
+[root@zstack.test download]# wget http://7xi3lj.com1.z0.glb.clouddn.com/templates/zstack-virtualruoter-0.8.0.qcow2
+[root@zstack.test download]# cp zstack-virtualruoter-0.8.0.qcow2 /data/zstack/http_root/
+
+1）云主机镜像
+BACKUP STORAGE: bs-sz01-local
+NAME: ttylinux
+FORMAT: qcow2
+MEDIA TYPE: RootVolumeTemplate
+PLATFORM: Linux
+URL: http://192.168.56.86/image/ttylinux.qcow2
+GUEST OS TYPE: 用户自定义的字段，不填
+SYSTEM IMAGE: 不勾选
+
+完成。
+
+重复操作，添加一个：
+2）虚拟路由器镜像
+BACKUP STORAGE: bs-sz01-local
+NAME: VIRTUAL-ROUTER
+FORMAT: qcow2
+MEDIA TYPE: RootVolumeTemplate
+PLATFORM: Linux
+URL: http://192.168.56.86/image/zstack-virtualruoter-0.8.0.qcow2
+GUEST OS TYPE: 用户自定义的字段，不填
+SYSTEM IMAGE: 勾选
+
+完成。
+
+增加image操作时，指定的BACKUP STORAGE，将存放我们下载的镜像，具体路径可以在image详情中查看。
+
+
+4、创建二层网络（L2 Network）
+创建2个：一个外网，一个内网
+点击左侧面板的'L2 Network': 点击按钮'New L2 Network'
+
+1）PUBLIC-MANAGEMENT-L2
+ZONE: zone-sz01
+NAME: PUBLIC-MANAGEMENT-L2
+TYEP: L2NoVlanNetwork
+PHYSICAL INTERFACE: em1
+
+点击“NEXT”，附加到集群（ATTACH CLUSTER），选择：
+cluster-sz01
+
+完成。
+
+我们注意到，ZStack自动在宿主机的网卡配置上做了调整，增加了一个br（br_em1）桥接到原来的网卡（em1）上。
+查看宿主机的配置：
+[root@zstack.test download]# ip a |grep em1
+2: em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP qlen 1000
+10: br_em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN 
+    inet 192.168.56.86/24 brd 192.168.56.255 scope global br_em1
+[root@zstack.test download]# brctl show
+bridge name     bridge id               STP enabled     interfaces
+br_em1          8000.f8bc124de980       no              em1
+virbr0          8000.525400240dae       yes             virbr0-nic
+
+
+注：和ZS人员沟通以及阅读doc了解到，一个L2Network可以attach到多个cluster上，一个cluster上对应的N个hosts上的网卡名必须一样（例如，都为em1）。因此上述创建bridge的情况，应该是在cluster内所有的hosts上同步操作的。
+
+
+2）PRIVATE-L2
+重复操作，添加一个：私有二层网络
+ZONE: zone-sz01
+NAME: PRIVATE-L2
+TYEP: L2VlanNetwork
+VLAN: 100
+PHYSICAL INTERFACE: em1
+
+点击“NEXT”，附加到集群（ATTACH CLUSTER），选择：
+cluster-sz01
+
+完成。
+
+查看宿主机的配置：
+[root@zstack.test download]# ip a |grep em1
+2: em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP qlen 1000
+10: br_em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN 
+    inet 192.168.56.86/24 brd 192.168.56.255 scope global br_em1
+11: em1.100@em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP 
+12: br_em1_100: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN 
+[root@zstack.test download]# brctl show
+bridge name     bridge id               STP enabled     interfaces
+br_em1          8000.f8bc124de980       no              em1
+br_em1_100              8000.f8bc124de980       no              em1.100
+virbr0          8000.525400240dae       yes             virbr0-nic
+
+
+5、创建三层网络（L3 Network）
+在二层网络的基础上建立2个三层网络：一个外网，一个内网
+点击左侧面板的'L3 Network': 点击按钮'New L3 Network'
+
+1）PUBLIC-MANAGEMENT-L3
+ZONE: zone-sz01
+L2 NETWORK: PUBLIC-MANAGEMENT-L2
+Name: PUBLIC-MANAGEMENT-L3
+DOMAIN NAME: 不填写
+TYPE: L3BasicNetwork
+SYSTEM NETWORK: 勾选
+
+点击“NEXT”，
+NAME: PUBLIC-IP-RANGE
+METHOD: ADD By IP RANGE
+START IP: 192.168.56.30
+END IP: 192.168.56.37
+NETMASK: 255.255.255.0
+GATEWAY: 192.168.56.1
+点击“Add”，
+
+点击“NEXT”，
+DNS: 不填写
+
+点击“NEXT”，
+DHCP等服务：不选择
+
+点击“Create”，直接创建
+
+完成。
+在本教程里，不会有用户的云主机创建在PUBLIC-MANAGEMENT-L3上（因为之前选择了System），所以我们也不需要添加额外的网络服务。
+
+2）PRIVATE-L3
+重复操作，添加一个：私有三层网络
+ZONE: zone-sz01
+L2 NETWORK: PRIVATE-L2
+Name: PRIVATE-L3
+DOMAIN NAME: sz01.org，L3私有网络使用的DNS，用于后续创建vm时，如果vm主机名使用该域名，则可以使用域名来访问其他的vm
+TYPE: L3BasicNetwork
+SYSTEM NETWORK: 不勾选
+
+点击“NEXT”，
+NAME: PRIVATE-IP-RANGE
+METHOD: ADD By IP CIDR
+NETWORK CIDR: 10.0.200.0/24
+
+点击“Add”，
+
+点击“NEXT”，
+DNS: 223.5.5.5
+点击“Add”，
+DNS: 8.8.8.8
+点击“Add”，
+
+点击“NEXT”，
+增加4个服务：
+DHCP, DNS, SNAT, EIP
+
+点击“Create”，直接创建
+
+
+在ZStack中，可以组合L2，L3和网络服务来组成各种网络拓扑。例如：
+扁平网络（flat network）：L3 network + DHCP, DNS
+私有网络（private network）：L3 network + L2VlanNetwork + DHCP, DNS, SNAT
+注：VPC目前不支持。
+
+
+6、创建云主机模板
+点击左边面板的'Instance Offering': 点击按钮'New Instance Offering':
+NAME: cpu1-mem1g
+CPU NUM: 1
+CPU SPEED: 512，单位：HZ，这个 speed 是一个虚的，vm 起来后看到的主频是实际物理机的主频；这个是用来限制一个物理机上能启动多少 vm 用的。
+MEMORY: 1G
+ALLOCATOR STRATEGY: 不填写，采用默认的策略。两种 分配vm 的算法。默认是随机，第一个是最少使用的host先分，也就是公平算法，根据大数定律 当发生很多次的时候 最后还是 平分的。
+
+点击“Create”，直接创建
+
+7、创建虚拟机路由器模板
+点击左边面板的'Virtual Router Offering': 点击按钮'New Virtual Router Offering'
+
+ZONE: zone-sz01
+NAME: VR-OFFERING
+CPU NUM: 1
+CPU SPEED: 512
+MEMORY: 512M
+IMAGE: VIRTUAL-ROUTER
+MANAGEMENT L3 NETWORK: PUBLIC-MANAGEMENT-L3
+PUBLIC L3 NETWORK: PUBLIC-MANAGEMENT-L3
+ALLOCATOR STRATEGY: 不填写
+DEFAULT OFFERING：勾选
+
+点击“Create”，直接创建
+
+
+8、创建云主机
+点击左边面板的'Instance': 点击按钮'New VmInstance'
+
+INSTANCE OFFERING: cpu1-mem1g
+IMAGE: ttylinux
+NAME: vm-01
+HOST NAME: vm01
+L3 NETWORK: PRIVATE-L3
+STATIC IP：不填写
+点击“Add”，
+DATA DISK OFFERING：不填写
+
+点击“NEXT”，
+ZONE: 
+CLUSTER: 
+HOST: 
+上面的3个都是可以不填写的，这样一来，生成的vm将根据模版“instance offering”中定义的“allocator strategy”来分配。
+
+点击“Create”，直接创建
+
+启动第一个云主机会花费较长的时间。当第一次创建云主机的时候，ZStack需要把云主机的磁盘镜像从备份存储下载到主存储中来，根据不同磁盘镜像的大小，它可能需要一段时间。另外ZStack也会为云主机创建虚拟路由器，这个也需要消耗1分钟的时间。 当第一个云主机创建好后，再次创建云主机将会非常快速。
+
+
+9、创建EIP
+点击左侧面板的'EIP': 点击按钮'New EIP'
+
+VIP METHOD: Create New VIP
+L3 Network: PUBLIC-MANAGEMENT-L3
+点击“Create VIP”，
+
+点击“NEXT”，
+VM INSTANCE: vm-01
+NAME: eip-vm-01
+
+点击“Create”，直接创建
+
+
+四、升级版本到0.9-rc2
+1、新增2个功能：
+1）支持ceph
+2）支持LB
+
+2、下载和升级
+[root@zstack.test ~]# cd /data/download/
+[root@zstack.test download]# mkdir -p zstack-0.9-rc2
+[root@zstack.test download]# cd zstack-0.9-rc2/
+[root@zstack.test zstack-0.9-rc2]# wget http://download.zstack.org/releases/0.9/rc2/zstack-install.sh
+[root@zstack.test zstack-0.9-rc2]# wget http://download.zstack.org/releases/0.9/rc2/zstack-all-in-one-0.9.0-rc2.tgz
+
+停止node
+[root@zstack.test zstack-0.9-rc2]# zstack-ctl stop_node
+
+[root@zstack.test zstack-0.9-rc2]# bash zstack-install.sh -u -f zstack-all-in-one-0.9.0-rc2.tgz
+
+____________________________________________________________________________________________________________________________________________________________________________________________________
+ _________ _____  _    ____ _  __
+|__  / ___|_   _|/ \  / ___| |/ /
+  / /\___ \ | | / _ \| |   | ' / 
+ / /_ ___) || |/ ___ \ |___| . \ 
+/____|____/ |_/_/   \_\____|_|\_\
+                                 
+    _    _     _       ___ _   _    ___  _   _ _____ 
+   / \  | |   | |     |_ _| \ | |  / _ \| \ | | ____|
+  / _ \ | |   | |      | ||  \| | | | | |  \| |  _|  
+ / ___ \| |___| |___   | || |\  | | |_| | |\  | |___ 
+/_/   \_\_____|_____| |___|_| \_|  \___/|_| \_|_____|
+                                                     
+ ___ _   _ ____ _____  _    _     _        _  _____ ___ ___  _   _ 
+|_ _| \ | / ___|_   _|/ \  | |   | |      / \|_   _|_ _/ _ \| \ | |
+ | ||  \| \___ \ | | / _ \ | |   | |     / _ \ | |  | | | | |  \| |
+ | || |\  |___) || |/ ___ \| |___| |___ / ___ \| |  | | |_| | |\  |
+|___|_| \_|____/ |_/_/   \_\_____|_____/_/   \_\_| |___\___/|_| \_|
+                                                                   
+____________________________________________________________________________________________________________________________________________________________________________________________________
+
+
+ 1. Check System: ... PASS
+
+ 2. Download and Unpack ZStack All In One Package:
+    Download ZStack all-in-one package: ... PASS
+    Unpack ZStack all-in-one package: ... PASS
+
+ 3. Upgrade ZStack:
+    Upgrade ZStack: ... PASS
+    Install ZStack Web UI: ... PASS
+
+____________________________________________________________________________________________________________________________________________________________________________________________________
+ZStack in /usr/local/zstack has been upgraded to 0.9.0-rc2 
+ Your old zstack was saved in /home/zstack/backup/
+____________________________________________________________________________________________________________________________________________________________________________________________________
+[root@zstack.test zstack-0.9-rc2]# 
+
+3、启动node
+[root@zstack.test zstack-0.9-rc2]# zstack-ctl start_node
+successfully started Tomcat container; now it's waiting for the management node ready for serving APIs, which may take a few seconds
+successfully started management node
+
+4、下载和使用新的Virtual Router
+[root@zstack.test zstack-0.9-rc2]# wget http://download.zstack.org/releases/0.9/rc2/zstack-virtualrouter-0.9.0-rc.qcow2
+[root@zstack.test zstack-0.9-rc2]# cp -a zstack-virtualrouter-0.9.0-rc.qcow2 /data/zstack/http_root/
+
+在UI上新增image：
+image-VR-0.9
+URL: http://192.168.56.86/image/zstack-virtualrouter-0.9.0-rc.qcow2
+
+查看UI界面获取UUID
+UUID:	1b753f9da2fd49e58f021e553a6c59ff
+
+命令行调整VirtualRouterOffering对应的image的UUID为上面提到的新的UUID：
+[root@zstack.test zstack-0.9-rc2]# zstack-cli
+
+>>>LogInByAccount accountName=admin password=password
+{
+    "inventory": {
+        "accountUuid": "36c27e8ff05c4780bf6d2fa65700f22e",
+        "createDate": "Sep 1, 2015 6:31:09 PM",
+        "expiredDate": "Sep 1, 2015 8:31:09 PM",
+        "userUuid": "36c27e8ff05c4780bf6d2fa65700f22e",
+        "uuid": "54fc3aa7583c45efb811216ec6b5ec95"
+    },
+    "success": true
+}
+
+>>>UpdateVirtualRouterOffering uuid=d2bf612859064787b302e97c3e7155c5 imageUuid=1b753f9da2fd49e58f021e553a6c59ff
+{
+    "inventory": {
+        "allocatorStrategy": "DefaultHostAllocatorStrategy",
+        "cpuNum": 1,
+        "cpuSpeed": 512,
+        "createDate": "Aug 31, 2015 5:18:42 PM",
+        "description": "test VR-OFFERING",
+        "imageUuid": "1b753f9da2fd49e58f021e553a6c59ff",
+        "isDefault": true,
+        "lastOpDate": "Aug 31, 2015 5:18:42 PM",
+        "managementNetworkUuid": "364f29a3eeeb478b8abf5a050af7672b",
+        "memorySize": 536870912,
+        "name": "VR-OFFERING",
+        "publicNetworkUuid": "364f29a3eeeb478b8abf5a050af7672b",
+        "sortKey": 0,
+        "state": "Enabled",
+        "type": "VirtualRouter",
+        "uuid": "d2bf612859064787b302e97c3e7155c5",
+        "zoneUuid": "12451310173d43f7b7f68ffca9f030c2"
+    },
+    "success": true
+}
+
+在UI上选择点击左侧面板的'Virtual Router': 在空白处选择VR实例，出现按钮'Action'，点击按钮'Action'弹出菜单，选择'Reconnect'，过了一会儿路由器重连操作完毕。
+
+
+五、开始使用ZStack-扁平网络 Flat Network
+参考：http://zstack.org/cn/tutorials/flat-network-ui.html
+1、先清理我们之前创建的大部分资源，包括：Instance, L2-Network, L3-Network，和网络相关的Virtual Router Offering也会自行被删除。
+
+2、创建二层网络（L2 Network）
+点击左侧面板的'L2 Network': 点击按钮'New L2 Network'
+
+ZONE: zone-sz01
+NAME: L2-FLAT
+TYEP: L2NoVlanNetwork
+PHYSICAL INTERFACE: em1
+
+点击“NEXT”，附加到集群（ATTACH CLUSTER），选择：
+cluster-sz01
+
+完成。
+
+3、创建三层网络（L3 Network）
+点击左侧面板的'L3 Network': 点击按钮'New L3 Network'
+
+ZONE: zone-sz01
+L2 NETWORK: L2-FLAT
+Name: L3-FLAT
+DOMAIN NAME: sz01.org
+TYPE: L3BasicNetwork
+SYSTEM NETWORK: 不勾选
+
+点击“NEXT”，
+NAME: ipr-flat
+METHOD: ADD By IP RANGE
+START IP: 192.168.56.30
+END IP: 192.168.56.37
+NETMASK: 255.255.255.0
+GATEWAY: 192.168.56.1
+点击“Add”，
+
+点击“NEXT”，
+DNS: 223.5.5.5
+点击“Add”，
+DNS: 8.8.8.8
+点击“Add”，
+
+点击“NEXT”，
+增加4个服务：
+DHCP, DNS
+
+点击“Create”，直接创建
+
+完成。
+
+
+4、创建虚拟机路由器模板
+点击左边面板的'Virtual Router Offering': 点击按钮'New Virtual Router Offering'
+
+ZONE: zone-sz01
+NAME: vrOffering-FLAT
+CPU NUM: 1
+CPU SPEED: 512
+MEMORY: 512M
+IMAGE: image-VR-0.9
+MANAGEMENT L3 NETWORK: L3-FLAT
+PUBLIC L3 NETWORK: L3-FLAT
+ALLOCATOR STRATEGY: 不填写
+DEFAULT OFFERING：勾选
+
+点击“Create”，直接创建
+
+
+5、创建云主机
+点击左边面板的'Instance': 点击按钮'New VmInstance'
+
+INSTANCE OFFERING: cpu1-mem1g
+IMAGE: ttylinux
+NAME: vm-01
+HOST NAME: vm01.sz01.org
+L3 NETWORK: L3-FLAT
+STATIC IP：不填写
+点击“Add”，
+DATA DISK OFFERING：不填写
+
+点击“NEXT”，
+ZONE: 
+CLUSTER: 
+HOST: 
+上面的3个都是不填写。
+
+点击“Create”，直接创建
+
+
+
+
+六、磁盘快照
+参考：http://zstack.org/cn/tutorials/snapshot-ui.html
+注：只有Ubuntu14.04 支持live snapshot, CentOS 6/7 均不支持
+
+在扁平网络的基础上，测试符合预期，但创建和恢复快照时，需要停止vm，这个做法会对业务产生直接影响，不方便。
+
+
+
+七、账号用户系统
+参考：http://zstack.org/cn_blog/zstack-account-user-tutorials.html
+注：创建和管理账户只能通过 zstack-cli 来完成。目前还无法通过UI界面来完成账户管理任务
+
+ admin用户的默认密码是：password，用户可以通过Account API登录ZStack系统，例如：
+# zstack-cli LogInByAccount accountName=admin password=password 
+
+登录ZStack系统后，可以通过UpdateAccountPassword来修改自身的登录密码，例如：
+# zstack-cli UpdateAccount password=admin
+
+对用户和组的权限配置请参考原文教程。
+
+
+八、自定义VM模版
+1、先上传一个iso
+http://192.168.56.86/image/CentOS-6.5-x86_64-bin-DVD1.iso
+
+2、在UI上增加到image中
+NAME: iso-CentOS-6.5-x86_64
+
+3、创建存储模版（Disk Offering），10G空间，用作VM的根分区。
+NAME: default-vm-root-centos-10G
+
+4、创建实例模版（Instance Offering），2个CPU和2G内存
+NAME:cpu2-mem2g
+
+5、创建实例
+INSTANCE OFFERING: cpu2-mem2g
+IMAGE: iso-CentOS-6.5-x86_64
+ROOT VOLUME DISK OFFERING: default-vm-root-centos-10G
+L3 NETWORK: L3-FLAT
+NAME: tpl_centos-6.5_2cpu-2g
+
+创建。
+
+连接到实例的console来最小化安装系统。
+OS安装完成后，要注意udev对网卡的限制。
+
+6、停止实例来针对卷Volume制作模版
+
+操作完毕。
+
+
+
+
+九、小结
+优点：
+安装使用起来入门简单，不像OS那样门槛高；
+UI和功能易用，针对存储/镜像/快照/模版、（L2/L3/LB/EIP）网络、实例/主机/集群/区域等功能都可以用；
+
+
+
+
+
+
+
+
+ZYXW、参考
+1、官网doc
+http://zstack.org/cn/installation/
+http://zstack.org/cn/tutorials/
+http://zstack.org/cn_blog/local-stroage-tutorials.html
+http://zstackdoc.readthedocs.org/en/latest/userManual/l2Network.html
+http://zstackdoc.readthedocs.org/en/latest/userManual/l3Network.html
+http://zstack.org/cn/blog/v0.9-rc2.html
+2、ZStack使用FAQ
+http://mp.weixin.qq.com/s?__biz=MzA4MDQyMDY5OQ==&mid=205625596&idx=1&sn=379f4f8396bbaeedb780a500da50cb2f#rd
+3、为何会使用Ansible
+http://mp.weixin.qq.com/s?__biz=MzIyMDA1MzgyNw==&mid=210606255&idx=1&sn=d2ee1d3add3a167d69cd780665c18902&scene=1&srcid=GNKqTPCSxNLTDy3W2H8e#rd
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

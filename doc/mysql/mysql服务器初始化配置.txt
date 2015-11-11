@@ -1,0 +1,13 @@
+1.关闭numa
+  /boot/grub/grub.conf 
+ 加入numa=off
+2.io调度算法
+echo deadline > /sys/block/sda/queue/scheduler
+3.可以考虑使用XFS文件系统,注意预留空间设置。
+4.阵列卡WB策略，禁用磁盘自身缓存，注意监控电池。
+/opt/MegaCli64 -AdpAllInfo -aALL 查raid卡信息
+http://wenku.baidu.com/link?url=u1zFgkHA25V-0xailv4WECDUyiEbPswbhUw2285uIZp5GZlocA31Utq9rZhKkRrKwvEAGhro7buertfPkokSf56tTwHZC3yZ9A_bWo2o06y
+MegaCli64 -cfgdsply -aALL | grep "Error"              【正常都是0】。
+5.io 密集，使用多块小容量disk，来提升iops,可以考虑使用ssd,及pcie卡。
+6.sql 审核工具。
+http://tencentdba.com/blog/sqlparse/

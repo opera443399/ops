@@ -1,0 +1,237 @@
+saltstack的探索-利用脚本增加用户
+
+[root@test1 salt]# cat users/
+bin/       Jack.sls  
+[root@test1 salt]# cat users/Jack.sls 
+/home/ops/bin/Jack.sh:
+  file.managed:
+    - source: salt://users/bin/Jack.sh
+    - mode: 755
+
+users-add-with-key:
+  cmd.run:
+    - require:
+      - file: /home/ops/bin/Jack.sh
+    - name: /bin/bash /home/ops/bin/Jack.sh
+[root@test1 salt]# cat users/bin/Jack.sh 
+#!/bin/bash
+# $ ssh-keygen -t rsa -b 2048 -C you_comment_here -f filename
+# create user with ssh public key
+# 20140214
+username='Jack'
+useradd ${username}
+id ${username}
+
+[ -d /home/${username}/.ssh ] || mkdir -p /home/${username}/.ssh
+
+cat <<_PUBKEY >> /home/${username}/.ssh/authorized_keys
+ssh-rsa bA7jgfNzaC1yc16735ABIwAAAQEAxr/1xngznS0pFktHEKZ7xAJh/1ZgkTOxrgsqb8RIZb8WV64PcxXabcdewUKQkvb44JwRlM/S63Cu/mFHHLpgzg4HqFY8OddM6ZhRBGjETPhEEAZmsgTIMzdC+NryIb6uraFA6YJ8nU2HEIKK09Riw8jsvtd3QD/TsD/fCQoYqScoz+b/Gkrn/dfp1i2Y7JAok4Wy6D9c2ipZhNGcuxCCSkzmLCt/xN1RIlBOLYlBnoDlQTcJSX4tzW9IrAyuD3lvMw45FOBSvC6JHY9yCg1Yf81SGJtA2pwQHopHINFm7L+jAeJ6Vae9MQ74Xl/51gFgrsk3df90vJY8T2d17Labgc== Jack@testzone
+_PUBKEY
+
+chmod 700 /home/${username}/.ssh
+chmod 600 /home/${username}/.ssh/authorized_keys
+chown -R ${username}:${username} /home/${username}/.ssh
+
+cat /home/${username}/.ssh/authorized_keys
+
+[root@test1 salt]# salt 'test10[1-5].company.com' state.sls users.Jack
+test105.company.com:
+----------
+          ID: /home/ops/bin/Jack.sh
+    Function: file.managed
+      Result: True
+     Comment: File /home/ops/bin/Jack.sh updated
+     Started: 14:30:06.478271
+    Duration: 332.27 ms
+     Changes:   
+              ----------
+              diff:
+                  New file
+              mode:
+                  0755
+----------
+          ID: users-add-with-key
+    Function: cmd.run
+        Name: /bin/bash /home/ops/bin/Jack.sh
+      Result: True
+     Comment: Command "/bin/bash /home/ops/bin/Jack.sh" run
+     Started: 14:30:06.811297
+    Duration: 53.552 ms
+     Changes:   
+              ----------
+              pid:
+                  26405
+              retcode:
+                  0
+              stderr:
+                  
+              stdout:
+                  uid=502(Jack) gid=502(Jack) groups=502(Jack)
+                  ssh-rsa bA7jgfNzaC1yc16735ABIwAAAQEAxr/1xngznS0pFktHEKZ7xAJh/1ZgkTOxrgsqb8RIZb8WV64PcxXabcdewUKQkvb44JwRlM/S63Cu/mFHHLpgzg4HqFY8OddM6ZhRBGjETPhEEAZmsgTIMzdC+NryIb6uraFA6YJ8nU2HEIKK09Riw8jsvtd3QD/TsD/fCQoYqScoz+b/Gkrn/dfp1i2Y7JAok4Wy6D9c2ipZhNGcuxCCSkzmLCt/xN1RIlBOLYlBnoDlQTcJSX4tzW9IrAyuD3lvMw45FOBSvC6JHY9yCg1Yf81SGJtA2pwQHopHINFm7L+jAeJ6Vae9MQ74Xl/51gFgrsk3df90vJY8T2d17Labgc== Jack@testzone
+
+Summary
+------------
+Succeeded: 2 (changed=2)
+Failed:    0
+------------
+Total states run:     2
+test101.company.com:
+----------
+          ID: /home/ops/bin/Jack.sh
+    Function: file.managed
+      Result: True
+     Comment: File /home/ops/bin/Jack.sh updated
+     Started: 14:30:06.489709
+    Duration: 412.817 ms
+     Changes:   
+              ----------
+              diff:
+                  New file
+              mode:
+                  0755
+----------
+          ID: users-add-with-key
+    Function: cmd.run
+        Name: /bin/bash /home/ops/bin/Jack.sh
+      Result: True
+     Comment: Command "/bin/bash /home/ops/bin/Jack.sh" run
+     Started: 14:30:06.903340
+    Duration: 55.794 ms
+     Changes:   
+              ----------
+              pid:
+                  26214
+              retcode:
+                  0
+              stderr:
+                  
+              stdout:
+                  uid=503(Jack) gid=503(Jack) groups=503(Jack)
+                  ssh-rsa bA7jgfNzaC1yc16735ABIwAAAQEAxr/1xngznS0pFktHEKZ7xAJh/1ZgkTOxrgsqb8RIZb8WV64PcxXabcdewUKQkvb44JwRlM/S63Cu/mFHHLpgzg4HqFY8OddM6ZhRBGjETPhEEAZmsgTIMzdC+NryIb6uraFA6YJ8nU2HEIKK09Riw8jsvtd3QD/TsD/fCQoYqScoz+b/Gkrn/dfp1i2Y7JAok4Wy6D9c2ipZhNGcuxCCSkzmLCt/xN1RIlBOLYlBnoDlQTcJSX4tzW9IrAyuD3lvMw45FOBSvC6JHY9yCg1Yf81SGJtA2pwQHopHINFm7L+jAeJ6Vae9MQ74Xl/51gFgrsk3df90vJY8T2d17Labgc== Jack@testzone
+
+Summary
+------------
+Succeeded: 2 (changed=2)
+Failed:    0
+------------
+Total states run:     2
+test102.company.com:
+----------
+          ID: /home/ops/bin/Jack.sh
+    Function: file.managed
+      Result: True
+     Comment: File /home/ops/bin/Jack.sh updated
+     Started: 14:30:06.576281
+    Duration: 333.072 ms
+     Changes:   
+              ----------
+              diff:
+                  New file
+              mode:
+                  0755
+----------
+          ID: users-add-with-key
+    Function: cmd.run
+        Name: /bin/bash /home/ops/bin/Jack.sh
+      Result: True
+     Comment: Command "/bin/bash /home/ops/bin/Jack.sh" run
+     Started: 14:30:06.910158
+    Duration: 59.446 ms
+     Changes:   
+              ----------
+              pid:
+                  26188
+              retcode:
+                  0
+              stderr:
+                  
+              stdout:
+                  uid=503(Jack) gid=503(Jack) groups=503(Jack)
+                  ssh-rsa bA7jgfNzaC1yc16735ABIwAAAQEAxr/1xngznS0pFktHEKZ7xAJh/1ZgkTOxrgsqb8RIZb8WV64PcxXabcdewUKQkvb44JwRlM/S63Cu/mFHHLpgzg4HqFY8OddM6ZhRBGjETPhEEAZmsgTIMzdC+NryIb6uraFA6YJ8nU2HEIKK09Riw8jsvtd3QD/TsD/fCQoYqScoz+b/Gkrn/dfp1i2Y7JAok4Wy6D9c2ipZhNGcuxCCSkzmLCt/xN1RIlBOLYlBnoDlQTcJSX4tzW9IrAyuD3lvMw45FOBSvC6JHY9yCg1Yf81SGJtA2pwQHopHINFm7L+jAeJ6Vae9MQ74Xl/51gFgrsk3df90vJY8T2d17Labgc== Jack@testzone
+
+Summary
+------------
+Succeeded: 2 (changed=2)
+Failed:    0
+------------
+Total states run:     2
+test104.company.com:
+----------
+          ID: /home/ops/bin/Jack.sh
+    Function: file.managed
+      Result: True
+     Comment: File /home/ops/bin/Jack.sh updated
+     Started: 14:30:07.549004
+    Duration: 335.777 ms
+     Changes:   
+              ----------
+              diff:
+                  New file
+              mode:
+                  0755
+----------
+          ID: users-add-with-key
+    Function: cmd.run
+        Name: /bin/bash /home/ops/bin/Jack.sh
+      Result: True
+     Comment: Command "/bin/bash /home/ops/bin/Jack.sh" run
+     Started: 14:30:07.885545
+    Duration: 191.27 ms
+     Changes:   
+              ----------
+              pid:
+                  8144
+              retcode:
+                  0
+              stderr:
+                  
+              stdout:
+                  uid=503(Jack) gid=503(Jack) groups=503(Jack)
+                  ssh-rsa bA7jgfNzaC1yc16735ABIwAAAQEAxr/1xngznS0pFktHEKZ7xAJh/1ZgkTOxrgsqb8RIZb8WV64PcxXabcdewUKQkvb44JwRlM/S63Cu/mFHHLpgzg4HqFY8OddM6ZhRBGjETPhEEAZmsgTIMzdC+NryIb6uraFA6YJ8nU2HEIKK09Riw8jsvtd3QD/TsD/fCQoYqScoz+b/Gkrn/dfp1i2Y7JAok4Wy6D9c2ipZhNGcuxCCSkzmLCt/xN1RIlBOLYlBnoDlQTcJSX4tzW9IrAyuD3lvMw45FOBSvC6JHY9yCg1Yf81SGJtA2pwQHopHINFm7L+jAeJ6Vae9MQ74Xl/51gFgrsk3df90vJY8T2d17Labgc== Jack@testzone
+
+Summary
+------------
+Succeeded: 2 (changed=2)
+Failed:    0
+------------
+Total states run:     2
+test103.company.com:
+----------
+          ID: /home/ops/bin/Jack.sh
+    Function: file.managed
+      Result: True
+     Comment: File /home/ops/bin/Jack.sh updated
+     Started: 14:30:07.819385
+    Duration: 336.67 ms
+     Changes:   
+              ----------
+              diff:
+                  New file
+              mode:
+                  0755
+----------
+          ID: users-add-with-key
+    Function: cmd.run
+        Name: /bin/bash /home/ops/bin/Jack.sh
+      Result: True
+     Comment: Command "/bin/bash /home/ops/bin/Jack.sh" run
+     Started: 14:30:08.156811
+    Duration: 221.309 ms
+     Changes:   
+              ----------
+              pid:
+                  12658
+              retcode:
+                  0
+              stderr:
+                  
+              stdout:
+                  uid=503(Jack) gid=503(Jack) groups=503(Jack)
+                  ssh-rsa bA7jgfNzaC1yc16735ABIwAAAQEAxr/1xngznS0pFktHEKZ7xAJh/1ZgkTOxrgsqb8RIZb8WV64PcxXabcdewUKQkvb44JwRlM/S63Cu/mFHHLpgzg4HqFY8OddM6ZhRBGjETPhEEAZmsgTIMzdC+NryIb6uraFA6YJ8nU2HEIKK09Riw8jsvtd3QD/TsD/fCQoYqScoz+b/Gkrn/dfp1i2Y7JAok4Wy6D9c2ipZhNGcuxCCSkzmLCt/xN1RIlBOLYlBnoDlQTcJSX4tzW9IrAyuD3lvMw45FOBSvC6JHY9yCg1Yf81SGJtA2pwQHopHINFm7L+jAeJ6Vae9MQ74Xl/51gFgrsk3df90vJY8T2d17Labgc== Jack@testzone
+
+Summary
+------------
+Succeeded: 2 (changed=2)
+Failed:    0
+------------
+Total states run:     2

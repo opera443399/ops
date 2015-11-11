@@ -1,0 +1,93 @@
+怎样修复损坏的软RAID1
+发布者：Wei Wang，发布时间：2010-1-6 上午9:02   [ 更新时间：2010-4-21 下午10:14 ]
+怎么知道有硬盘坏了
+
+RAID1 子系统一般由两个硬盘组成，由系统自动在两个盘上进行数据复写，这样，即使其中一个盘出错，绝大部分情况下仍能保证数据的不丢失。但是及时了解硬盘系统的运行状态还是很重要，特别是一个硬盘出现故障时，要及时更换，尽量避免两个盘同时出故障的尴尬状况。
+
+那么怎么能及时知道盘坏了呢？一个简单的办法：
+
+cat /proc/mdstat
+
+Linux 的 RAID 管理程序 mdadm 可以用来监控 RAID 子系统的运行情况，并可以给系统管理员发电子邮件，报告 RAID 系统的状态。
+拆除故障硬盘
+
+首先，上面那条命令可以告诉你那个 RAID 子系统有问题：
+
+# cat /proc/mdstat
+Personalities : [linear] [multipath] [raid0] [raid1] [raid5] [raid4] [raid6] [raid10]
+md0 : active raid1 sda1[0] sdb1[2](F)
+      24418688 blocks [2/1] [U_]
+
+md1 : active raid1 sda2[0] sdb2[1]
+      24418688 blocks [2/2] [UU]
+
+unused devices: <none>
+
+
+上面这个命令行显示的是服务器上有两个 RAID1 子系统：md0 和 md1。其中，md1 的情况目前正常 (状态显示是 [UU]，表明两个硬盘分区 sda2 和 sdb2 都正常)，但是 md0 里面 sdb1 这个磁盘分区有故障 (状态显示是 [U_])，所以现在 md0 只有一个盘工作。
+
+修复 RAID 子系统的第一步：拆除故障硬盘。
+
+server1:~# mdadm --manage /dev/md0 --remove /dev/sdb1
+server1:~# mdadm --manage /dev/md1 --remove /dev/sdb2
+
+因为 sdb 整个是一个硬盘，只能整个更换。尽管 sdb2 分区还能工作，但是硬盘一旦局部出现坏区，故障会很快蔓延到整个盘的其他不为。因此我们建议硬盘一旦出现故障，应尽快换新硬盘，以保证数据的可靠。
+
+server:~# cat /proc/mdstat
+Personalities : [linear] [multipath] [raid0] [raid1] [raid5] [raid4] [raid6] [raid10]
+md0 : active raid1 sda1[0]
+      24418688 blocks [2/1] [U_]
+
+md1 : active raid1 sda2[0] sdb2[2](F)
+      24418688 blocks [2/1] [U_]
+
+unused devices: <none>
+
+然后，你就可以关机、切断电源，把坏的硬盘取出，换上新的硬盘，然后重新开机。当然，如果你的服务器支持热置换 (hot swap)，那么你可能不必关机。
+
+# shutdown -h now
+加新的硬盘
+
+新硬盘安装完毕重新开机之后，首先要做的就是给新硬盘分区：
+
+# sfdisk -d /dev/sda | sfdisk /dev/sdb
+
+
+上面这个命令假设新装的 sdb 和 sda 是同样大小的硬盘。如果不是，则你也可以手工分区：
+
+# sfdisk /dev/sdb
+
+如果你手工分区的话，一定要注意新盘的分区一定要至少与旧盘分区的大小一样，稍大一些无妨，如果小了则重建 RAID 子系统就可能失败。
+
+下一步：把新硬盘加入到 RAID 自系统中：
+
+# mdadm --manage /dev/md0 --add /dev/sdb1
+# mdadm --manage /dev/md1 --add /dev/sdb2
+
+这就完了！这时，系统会自动将数据同步备份到新加入的硬盘上去：
+
+# cat /proc/mdstat
+Personalities : [linear] [multipath] [raid0] [raid1] [raid5] [raid4] [raid6] [raid10]
+md0 : active raid1 sda1[0] sdb1[1]
+      24418688 blocks [2/1] [U_]
+      [=>...................]  recovery =  9.9% (2423168/24418688) finish=2.8min speed=127535K/sec
+
+md1 : active raid1 sda2[0] sdb2[1]
+      24418688 blocks [2/1] [U_]
+      [=>...................]  recovery =  6.4% (1572096/24418688) finish=1.9min speed=196512K/sec
+
+unused devices: <none>
+
+系统同步完之后，在输入以上命令，应该看到：
+
+# cat /proc/mdstat
+Personalities : [linear] [multipath] [raid0] [raid1] [raid5] [raid4] [raid6] [raid10]
+md0 : active raid1 sda1[0] sdb1[1]
+      24418688 blocks [2/2] [UU]
+
+md1 : active raid1 sda2[0] sdb2[1]
+      24418688 blocks [2/2] [UU]
+
+unused devices: <none>
+
+到这儿，故障的 RAID 子系统的修复就全部完成了。

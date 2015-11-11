@@ -1,0 +1,33 @@
+
+这个perl脚本可以上网搜索下。
+http://caspian.dotconf.net/menu/Software/SendEmail/
+
+sendEmail -s smtp.company.com \
+-xu mail_username@company.com \
+-xp mail_password \
+-f mail_from@company.com \
+-t mail_to@client.com \
+-u 'msg title' \
+-m 'msg body' \
+-a /tmp/attachment.txt 
+Aug 14 17:00:10 tvm-test sendEmail[6319]: Email was sent successfully!
+
+
+可以用shell包装下供zabbix发邮件：
+[root@test alertscripts]# cat mailman.sh 
+#!/bin/bash
+# 
+# 2015/8/18
+export LANG="en_US.UTF-8"
+
+s_to="$1"
+s_title="【告警】$2"
+s_body="$3"
+
+sendEmail -s smtp.company.com \
+-xu mail_username@company.com \
+-xp mail_password \
+-f mail_from@company.com \
+-t $s_to \
+-u $s_title \
+-m $s_body

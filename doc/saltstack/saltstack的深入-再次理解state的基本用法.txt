@@ -1,0 +1,523 @@
+再次理解state的基本用法
+
+
+
+一、基础环境
+1、在tvm-saltmaster的基础上操作。
+2、网络：
+eth0：host-only（用于虚拟内网，手动固定IP，这样从宿主机可以直接连接到这个vm）
+eth1：NAT（用于上外网，动态IP）
+[root@tvm-saltmaster ~]# cd /etc/sysconfig/network-scripts/
+[root@tvm-saltmaster network-scripts]# cat ifcfg-eth0
+DEVICE=eth0
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=192.168.56.253
+PREFIX=24
+GATEWAY=192.168.56.1
+DNS1=192.168.56.254
+
+[root@tvm-saltmaster network-scripts]# cat ifcfg-eth1
+DEVICE=eth1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+DNS1=192.168.56.254
+
+
+二、salt-master大致上是啥样的
+1、基本结构
+[root@tvm-saltmaster salt]# tree /srv/
+/srv/
+├── pillar
+│   ├── job
+│   │   └── init.sls
+│   ├── package
+│   │   └── init.sls
+│   └── top.sls
+└── salt
+    ├── base
+    │   ├── abc
+    │   │   ├── hosts.sls
+    │   │   ├── init.sls
+    │   │   ├── locale.sls
+    │   │   ├── ntp.sls
+    │   │   ├── packages.sls
+    │   │   ├── resolv.sls
+    │   │   └── yum.sls
+    │   ├── conf.d
+    │   │   ├── dnsmasq
+    │   │   │   └── office.conf
+    │   │   │   ├── locale
+    │   │   │   │   ├── ntp.conf
+    │   │   │   │   ├── README.txt
+    │   │   │   │   ├── sysconfig_i18n
+    │   │   │   │   ├── sysconfig_ntpd
+    │   │   │   │   └── tpl.ntp.conf
+    │   │   ├── monit
+    │   │   │   ├── monit-mail.conf
+    │   │   │   └── salt-minion.conf
+    │   │   ├── resolv
+    │   │   │   ├── client.conf
+    │   │   │   └── server.conf
+    │   │   ├── ssh
+    │   │   │   └── sshd_config
+    │   │   ├── vim
+    │   │   │   └── vimrc
+    │   │   └── yum
+    │   │       └── local-office.repo
+    │   ├── crontab
+    │   │   └── init.sls
+    │   ├── dnsmasq
+    │   │   └── init.sls
+    │   ├── monit
+    │   │   └── init.sls
+    │   ├── postfix
+    │   │   └── init.sls
+    │   ├── README.TXT
+    │   ├── salt
+    │   │   └── minion.sls
+    │   ├── ssh
+    │   │   └── init.sls
+    │   ├── top.sls
+    │   ├── vim
+    │   │   └── init.sls
+    │   └── web
+    │       └── init.sls
+    ├── dev
+    │   ├── top.sls
+    │   └── web.sls
+    ├── prod
+    │   ├── top.sls
+    │   └── web.sls
+    └── qa
+        ├── conf.d
+        │   └── crontab
+        │       └── client.conf
+        ├── crontab
+        │   └── init.sls
+        └── top.sls
+
+27 directories, 33 files
+
+注意：
+1）/srv/salt & /srv/pillar是安装完成后默认的路径
+2）/srv/salt 下面粉了4个环境，这个是测试多环境的意图，具体配置是在这里定义的：
+[root@tvm-saltmaster salt]# cat /etc/salt/master.d/file_roots.conf
+# Master file_roots configuration:
+file_roots:
+  base:
+    - /srv/salt/base
+  dev:
+    - /srv/salt/dev
+  qa:
+    - /srv/salt/qa
+  prod:
+    - /srv/salt/prod
+[root@tvm-saltmaster salt]# mkdir /srv/salt/{base,dev,qa,prod}/ -p
+[root@tvm-saltmaster salt]# service salt-master restart
+
+3）默认是在base环境下，这是不可缺的。以base环境为根，我们再继续往下看
+4）【top.sls】，这个是一个环境的入口，可以匹配target，指定以“.sls”为后缀来定义的salt state文件，例如：
+[root@tvm-saltmaster salt]# cat base/top.sls 
+base:
+  'tvm-yum':
+    - dnsmasq
+    - crontab
+    - web
+
+  '*':
+    - abc
+    - monit
+    - postfix
+    - salt.minion
+    - ssh
+    - vim
+上面指定了dnsmasq，其实对应的就是/srv/salt/base/dnsmasq.sls，但我们改进成通过目录来管理，因此变成：
+/srv/salt/base/dnsmasq/init.sls，因此我们得到6）的经验
+5）【init.sls】，这个特殊的sls会继承当前目录的名称
+6）通常是用多级目录来分类管理sls文件，例如：
+salt.minion，对应的是：/srv/salt/base/salt/minion.sls
+依此类推，还可以划分的更细。
+
+
+
+
+2、如何让minion的state变成我们期望的那样呢？
+1）首先，我们知道可以执行指定的模块.函数来执行salt命令
+salt 'tvm-test' cmd.run 'hostname'
+
+2）其实执行state也是类似的。指定了target主机为：'tvm-test' ，再指定一个sls文件“web.sls”，默认的saltenv='base'
+salt 'tvm-test' state.sls web
+
+3）指定一个其他的saltenv
+salt 'tvm-test' state.sls crontab saltenv='qa'
+
+4）测试开关
+salt 'tvm-test' state.sls crontab saltenv='qa' test=True
+
+5）highstate方式，minions从salt-master拉取自己匹配的所有的state数据，并执行
+salt '*' state.highstate
+
+6）salt执行后的输出太多怎么办？
+[root@tvm-saltmaster base]# salt '*' state.highstate --out-file=/tmp/salt.log
+强制将输出重定向到文件，默认是在cat时带有颜色显示。可以对比一下，用>/tmp/salt.log来输出是没有颜色显示的。
+
+
+
+    
+    
+三、/srv/pillar
+pillar经常拿来和grains做对比。官网也有介绍：
+Grains and Pillar are sometimes confused, just remember that Grains are data about a minion which is stored or generated from the minion. This is why information like the OS and CPU type are found in Grains. Pillar is information about a minion or many minions stored or generated on the Salt Master.
+后者（grains）记录了minions中包括了os，cpu等相对静态的k/v键值对的数据，通常是来自salt-minion上报的信息。
+前者（pillar）咱们可以定义一些自定义的参数供salt的sls文件来引用，这个通常是在salt-master上为minions而定义的。
+
+1、入口文件
+[root@tvm-saltmaster salt]# cat /srv/pillar/top.sls 
+base:
+  '*':
+    - package
+    - job
+
+2、针对安装包，指定vim和apache的k/v键值对
+[root@tvm-saltmaster salt]# cat /srv/pillar/package/init.sls 
+pkgs:
+  {% if grains['os_family'] == 'RedHat' %}
+  vim: vim-enhanced
+  apache: httpd
+  {% elif grains['os_family'] == 'Debian' %}
+  vim: vim
+  apache: apache2
+  {% elif grains['os'] == 'Arch' %}
+  vim: vim
+  apache: httpd
+  {% endif %}
+  
+3、针对highstate，定义一个schedule
+[root@tvm-saltmaster salt]# cat /srv/pillar/job/init.sls 
+schedule:
+  highstate:
+    function: state.highstate
+    minutes: 2
+    
+    
+四、/srv/salt
+这里定义了一些state文件，重点是“base”这个环境，其次是在“qa”这个环境做一些测试的工作。
+
+1、首先，我们保证“tvm-yum”上安装的dnsmasq，crontab和web中的服务是符合预期
+1）配置dnsmasq服务的状态是：正在运行、开机启动，配置文件变得可以重启服务。
+这里用到了：“pkg.installed, service.running, file.replace”
+-------------------------------------------------------------dnsmasq
+[root@tvm-saltmaster salt]# cat base/dnsmasq/init.sls 
+dnsmasq:
+  pkg.installed: []
+  service.running:
+    - enable: True
+    - restart: True
+    - watch:
+      - file: /etc/dnsmasq.d/office.conf
+      - file: /etc/dnsmasq.conf
+
+/etc/dnsmasq.d/office.conf:
+  file.managed:
+    - source: salt://conf.d/dnsmasq/office.conf
+  
+/etc/dnsmasq.conf:
+  file.replace:
+    - pattern: '#addn-hosts=/etc/banner_add_hosts'
+    - repl: 'addn-hosts=/etc/dnsmasq.d/office.conf'
+-------------------------------------------------------------dnsmasq end
+
+2）配置crontab服务的状态是：定时执行指定的脚本。
+这里用到了：“cron.present”
+-------------------------------------------------------------crontab
+[root@tvm-saltmaster salt]# cat base/crontab/init.sls 
+## 使用cron.present这个方法来控制，默认是追加到现有的crontab中
+crontab-REPO-UPDATE:
+  cron.present:
+    - identifier: CRON-REPO-UPDATE
+    - name: '/bin/bash /data/ops/bin/repo_update.sh >/tmp/repo_update.log 2>&1 &'
+    - user: root
+    - minute: '0'
+    - hour: '12'
+    - daymonth: '*'
+    - month: '*'
+    - dayweek: '*'
+-------------------------------------------------------------crontab end
+
+3）配置web服务的状态是：正在运行和开机启动。（当然，此处的处理简略粗糙）
+这里用到了：“pkg.installed, service.running, pillar”
+-------------------------------------------------------------web
+[root@tvm-saltmaster salt]# cat base/web/init.sls 
+apache:
+  pkg.installed:
+    - name: {{ pillar['pkgs']['apache'] }}
+  service.running:
+    - name: {{ pillar['pkgs']['apache'] }}
+    - enable: True
+    - require:
+        - pkg: apache
+-------------------------------------------------------------web end
+
+
+2、接着，我们在“abc”中列出了基本的安装包和域名解析相关的配置文件，期望的定位是：在主机上线前固定不变的一些初始化操作。
+1）“init.sls”用“include”来包含了几个分类的状态文件。
+这里用到了：“include”
+-------------------------------------------------------------abc init
+[root@tvm-saltmaster salt]# cat base/abc/init.sls 
+include:
+  - abc.hosts
+  - abc.resolv
+  - abc.yum
+  - abc.locale
+  - abc.ntp
+  - abc.packages
+-------------------------------------------------------------abc init end  
+2）“hosts.sls”更新了“/etc/hosts”文件。
+这里用到了：“file.append”：
+-------------------------------------------------------------abc hosts  
+[root@tvm-saltmaster salt]# cat base/abc/hosts.sls 
+/etc/hosts:
+  file.append:
+    - text: 
+      - '192.168.56.253  salt-m.office.test'
+      - '192.168.56.254  mirrors.office.test'
+      - "127.0.0.1       {{ grains['id'] }}"
+-------------------------------------------------------------abc hosts end        
+3）“resolv.sls”更新了/etc/resolv.conf文件。
+这里用到了：“if..else..endif, grains”
+-------------------------------------------------------------abc resolv  
+[root@tvm-saltmaster salt]# cat base/abc/resolv.sls 
+/etc/resolv.conf:
+  file.managed:
+    {% if grains['id'] == 'tvm-yum' %}
+    - source: salt://conf.d/resolv/server.conf
+    {% else %}
+    - source: salt://conf.d/resolv/client.conf
+    {% endif %}
+-------------------------------------------------------------abc resolv end  
+
+4）指定yum源的配置。
+这里用到了：“file.managed”
+-------------------------------------------------------------abc yum
+[root@tvm-saltmaster salt]# cat base/abc/yum.sls    
+/etc/yum.repos.d/local-office.repo:
+  file.managed:
+    - name: /etc/yum.repos.d/local-office.repo
+    - source: salt://conf.d/yum/local-office.repo
+    - mode: 644 
+-------------------------------------------------------------abc end      
+
+5）指定i18n，timezone和ntp这类本地化的配置
+这里用到了：“file.managed, file.copy, pkg.installed, service.running”
+-------------------------------------------------------------abc locale
+[root@tvm-saltmaster salt]# cat base/abc/locale.sls 
+## update i18n settings
+# 
+# via pc @ 2015/8/19
+
+/etc/sysconfig/i18n:
+  file.managed:
+    - source: salt://conf.d/locale/sysconfig_i18n
+
+-------------------------------------------------------------abc locale end
+-------------------------------------------------------------abc ntp
+[root@tvm-saltmaster salt]# cat base/abc/ntp.sls 
+## use local timezone and ntp settings
+# 
+# via pc @ 2015/8/19
+
+/etc/localtime:
+  file.copy:
+    - source: /usr/share/zoneinfo/Asia/Shanghai
+    - force: True
+
+pkg-ntp-start:
+  pkg.installed:
+    - name: ntp
+  file.managed:
+    - name: /etc/ntp.conf
+    - source: salt://conf.d/locale/ntp.conf
+    - requires:
+      - pkg: ntp
+  service.running:
+    - name: ntpd
+    - enable: True
+    - reload: True
+    - watch:
+      - file: /etc/ntp.conf
+    - require:
+      - pkg: ntp
+    - require_in:
+      - file: /etc/sysconfig/ntpd
+
+/etc/sysconfig/ntpd:
+  file.managed:
+    - source: salt://conf.d/locale/sysconfig_ntpd
+
+-------------------------------------------------------------abc ntp end
+
+6）指定要安装的包。
+这里用到了：“pkg.installed, pkgs, pkg.latest”
+-------------------------------------------------------------abc packages 
+[root@tvm-saltmaster salt]# cat base/abc/packages.sls 
+## 此处列出主机上线时需要的软件包
+#
+common-pkgs:
+  pkg.installed:
+    - pkgs:
+      - lrzsz
+      - wget
+      - curl
+      - rsync
+      - screen
+      - dos2unix
+      - tree
+      - ntp
+      - bind-utils
+      - nc
+      - telnet
+      - git  
+
+## 此处列出需要update的软件包
+#
+up2date-pkgs:
+  pkg.latest:
+    - pkgs:
+      - bash
+      - openssl
+-------------------------------------------------------------abc packages end 
+      
+3、最后，给出了一些自定义的配置的示例，例如针对monit，postfix，salt，ssh和vim的配置。
+1）配置monit，salt的状态是：正在运行和开机启动，并配置禁用了postfix服务。
+这里用到了：“pkg.installed, service.running, file.managed, service.disabled, pillar”
+-------------------------------------------------------------monit
+[root@tvm-saltmaster salt]# cat base/monit/init.sls 
+monit:
+  pkg.installed: []
+  service.running:
+    - enable: True
+
+/etc/monit.d/monit-mail.conf:
+  file.managed:
+    - source: salt://conf.d/monit/monit-mail.conf
+    - require:
+      - pkg: monit
+
+/etc/monit.d/salt-minion.conf:
+  file.managed:
+    - source: salt://conf.d/monit/salt-minion.conf
+    - require:
+      - pkg: monit
+-------------------------------------------------------------monit end 
+-------------------------------------------------------------postfix
+[root@tvm-saltmaster salt]# cat base/postfix/init.sls 
+postfix:
+  pkg.installed: []
+  service.disabled: []
+-------------------------------------------------------------postfix end 
+-------------------------------------------------------------salt
+[root@tvm-saltmaster salt]# cat base/salt/minion.sls 
+salt-minion:
+  pkg.installed: []
+  service.running:
+    - enable: True
+-------------------------------------------------------------salt end     
+-------------------------------------------------------------ssh 
+[root@tvm-saltmaster salt]# cat base/ssh/init.sls 
+openssh-clients:
+  pkg.installed: []
+
+openssh-server:
+  pkg.installed: []
+
+sshd:
+  service.running:
+    - enable: True
+    - require:
+      - pkg: openssh-clients
+      - pkg: openssh-server
+      - file: /etc/ssh/sshd_config
+
+/etc/ssh/sshd_config:
+  file.managed:
+    - source: salt://conf.d/ssh/sshd_config
+    - require:
+      - pkg: openssh-server
+-------------------------------------------------------------ssh end 
+-------------------------------------------------------------vim
+[root@tvm-saltmaster salt]# cat base/vim/init.sls 
+vim:
+  pkg.installed:
+    - name: {{ pillar['pkgs']['vim'] }}
+
+/root/.vimrc:
+  file.managed:
+    - source: salt://conf.d/vim/vimrc
+    - require:
+      - pkg: vim
+-------------------------------------------------------------vim end 
+
+      
+4、中间的2个环境略过，再看看qa环境的配置.
+这里用到了：“cron.file”
+-------------------------------------------------------------qa
+[root@tvm-saltmaster salt]# cat qa/top.sls 
+qa:
+  '* and not tvm-yum':
+    - crontab
+[root@tvm-saltmaster salt]# cat qa/crontab/init.sls 
+## 使用cron.file这个方法来控制，可以替换全部的crontab内容
+cron-ntpdate-office:
+  cron.file:
+    - name: salt://conf.d/crontab/client.conf
+-------------------------------------------------------------qa end
+要注意，这里是用“name”，而不是“source”来指定文件路径。
+
+
+五、小结一下state
+1、state.sls, state.highstate
+2、pkg
+pkg.installed
+pkg.latest
+pkgs
+
+3、file
+file.managed
+file.replace
+file.append
+file.copy
+
+4、service
+service.running
+service.disabled
+
+5、cron
+cron.present
+cron.file
+
+6、grains
+7、pillars
+8、include
+
+
+
+
+
+
+
+
+ZYXW、参考
+1、官网doc
+http://docs.saltstack.com/en/latest/topics/tutorials/pillar.html
+http://docs.saltstack.com/en/latest/ref/modules/all/salt.modules.state.html
+http://docs.saltstack.com/en/latest/ref/states/requisites.html
+http://docs.saltstack.com/en/latest/ref/states/all/salt.states.cron.html
+http://docs.saltstack.com/en/latest/ref/states/all/salt.states.file.html
+http://docs.saltstack.com/en/latest/ref/states/all/salt.states.pkg.html
+http://docs.saltstack.com/en/latest/ref/states/all/salt.states.service.html
+

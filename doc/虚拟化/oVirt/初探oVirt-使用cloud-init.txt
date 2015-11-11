@@ -1,0 +1,134 @@
+初探oVirt-使用cloud-init
+2015/11/9 time 10:43
+
+cloud-init用来设置vm启动后的主机名，时区，验证，网络和自定义脚本。
+
+一、安装
+[root@localhost ~]# yum -y install cloud-init
+[root@localhost ~]# rpm -qa |grep cloud
+cloud-init-0.7.4-2.el6.noarch
+
+二、配置
+[root@localhost ~]# vim /etc/cloud/cloud.cfg
+最后增加一行：使用本地的cloud服务（cloud-init-local）
+datasource_list: ["NoCloud", "ConfigDrive"]
+
+三、测试在ovirt页面使用cloud-init的功能是否符合生效
+1、针对vm
+清理文件
+[root@localhost ~]# echo> /var/log/cloud-init.log
+[root@localhost ~]# echo> /var/log/cloud-init-output.log
+[root@localhost ~]# rm /var/lib/cloud -fr
+先关闭vm：
+[root@localhost ~]# init 0
+然后切回到ovirt页面，再选择“只运行一次”，设定
+初始运行-使用cloud-init
+虚拟机主机名： abc123
+用户名： root
+密码： abc123
+重新生成 SSH 密钥：勾选
+【验证】符合预期
+
+
+2、针对从模版创建的vm
+1）从模版创建vm后，先选择启动vm，关闭，再选择“只运行一次”，配置cloud-init参数。
+符合预期。
+2）从模版创建vm后，先选择“只运行一次”，配置cloud-init参数。
+符合预期。
+
+
+四、总结
+1、 cloud-init在 ovirt 中的使用方式，个人理解是：
+1）通常我们创建vm时，会使用“只运行一次”，来启用引导选项
+2） ovirt 在启动 vm 的参数中，附加一个镜像，里面包含了 cloud-init 所需的配置
+3） vm 在启动过程中由 cloud-init 服务判断是使用本地配置，因此，尝试挂载设备读取内容（参考日志：/var/log/cloud-init.log）
+
+2、验证
+1）在ovirt的页面找到vm是在哪台宿主机运行（以n73为例）。
+2）查看进程：
+[root@n73 ~]# ps -ef |grep qemu-kvm |grep --color 'vdsm/payload'
+发现这样一行：
+-drive file=/var/run/vdsm/payload/0e34c95b-ce99-48f4-94c4-695632e57aae.a7cf6312125311b1143a1c49c7694a49.img
+
+3）尝试挂载上述的img
+[root@n73 ~]# mount -o loop /var/run/vdsm/payload/0e34c95b-ce99-48f4-94c4-695632e57aae.a7cf6312125311b1143a1c49c7694a49.img /mnt
+[root@n73 ~]# tree /mnt/
+/mnt/
+└── openstack
+    └── latest
+        ├── meta_data.json
+        └── user_data
+
+2 directories, 2 files
+
+4）查看文件内容，发现笔者在ovirt页面配置的主机名，root密码都在其中。
+[root@n73 ~]# cat /mnt/openstack/latest/meta_data.json 
+{
+  "launch_index" : "0",
+  "availability_zone" : "nova",
+  "network-interfaces" : "auto eth0\niface eth0 inet static\n  address 10.50.200.242\n  netmask 255.255.255.0\n  gateway 10.50.200.1\n",
+  "name" : "abc123",
+  "network_config" : {
+    "content_path" : "/content/0000",
+    "path" : "/etc/network/interfaces"
+  },
+  "hostname" : "abc123",
+  "uuid" : "27fab643-103c-4816-b6da-dbbdccf69eaf",
+  "meta" : {
+    "essential" : "false",
+    "role" : "server",
+    "dsmode" : "local"
+  }
+}[root@n73 ~]# cat /mnt/openstack/latest/user_data 
+#cloud-config
+ssh_pwauth: true
+disable_root: 0
+ssh_deletekeys: 'True'
+output:
+  all: '>> /var/log/cloud-init-output.log'
+user: root
+password: abc123
+chpasswd:
+  expire: false
+runcmd:
+- 'sed -i ''/^datasource_list: /d'' /etc/cloud/cloud.cfg; echo ''datasource_list:
+  ["NoCloud", "ConfigDrive"]'' >> /etc/cloud/cloud.cfg'
+
+[root@n73 ~]# umount /mnt
+
+  
+5）对比查看vm
+[root@abc123 ~]# cd /var/lib/cloud/
+[root@abc123 cloud]# ls -l
+total 28
+drwxr-xr-x. 2 root root 4096 Oct 20 14:14 data
+drwxr-xr-x. 2 root root 4096 Oct 20 14:14 handlers
+lrwxrwxrwx. 1 root root   61 Oct 20 14:14 instance -> /var/lib/cloud/instances/27fab643-103c-4816-b6da-dbbdccf69eaf
+drwxr-xr-x. 3 root root 4096 Oct 20 14:14 instances
+drwxr-xr-x. 5 root root 4096 Oct 20 14:14 scripts
+drwxr-xr-x. 2 root root 4096 Oct 20 14:14 seed
+drwxr-xr-x. 2 root root 4096 Oct 20 14:14 sem
+
+[root@abc123 cloud]# cat data/instance-id 
+27fab643-103c-4816-b6da-dbbdccf69eaf
+[root@abc123 cloud]# cat instance/datasource
+DataSourceConfigDrive: DataSourceConfigDrive [local,ver=2][source=/dev/sr1]
+
+挂载设备检查内容：和宿主机上的设备一致。
+符合预期。
+
+
+
+
+ZYXW、参考
+1、结合 cloud-init 的 doc来看【No cloud】这一段：
+http://cloudinit.readthedocs.org/en/latest/topics/datasources.html#no-cloud
+简单翻译下：
+NoCloud 和 NoCloudNet 这类数据源，允许用户不需要运行网络服务（甚至不用激活网络）即可提供文件： user-data 和 meta-data 给 实例（instance）
+你可以通过vfat or iso9660文件系统提供文件： meta-data 和 user-data 给一个本地 vm 在启动是使用。
+2、结合 Installation and Configuration of cloud-init on RHEL 了解到要注意启动优先级的问题。
+http://www-01.ibm.com/support/knowledgecenter/SSB27U_6.3.0/com.ibm.zvm.v630.hcpo1/instrhel.htm
+3、oVirt 中的 cloudinit 体验
+http://mathslinux.org/?p=570
+4、OpenStack Nova：虚拟机初始化user-data & Cloud-init
+http://blog.csdn.net/juvxiao/article/details/22664457

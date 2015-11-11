@@ -1,0 +1,289 @@
+salt指定目标和分组
+
+一、探讨一下，如何针对指定的minion id来执行
+先了解官网文档的targeting这一节的内容：
+Targeting
+
+Salt allows for minions to be targeted based on a wide range of criteria. The default targeting system uses globular expressions to match minions, hence if there are minions named larry1, larry2, curly1, and curly2, a glob of larry* will match larry1 and larry2, and a glob of *1 will match larry1 and curly1.
+
+Many other targeting systems can be used other than globs, these systems include:
+
+Regular Expressions
+Target using PCRE-compliant regular expressions
+Grains
+Target based on grains data: Targeting with Grains
+Pillar
+Target based on pillar data: Targeting with Pillar
+IP
+Target based on IP address/subnet/range
+Compound
+Create logic to target based on multiple targets: Targeting with Compound
+Nodegroup
+Target with nodegroups: Targeting with Nodegroup
+
+二、通配符和正则
+
+5.1 Matching the minion id
+5.1.1 Globbing
+The default matching that Salt utilizes is shell-style globbing around the minion id. This also works for states in the top file.
+Note: You must wrap salt calls that use globbing in single-quotes to prevent the shell from expanding the globs before Salt is invoked.
+Match all minions:
+
+salt ’*’ test.ping
+
+
+Match all minions in the example.net domain or any of the example domains:
+
+salt ’*.example.net’ test.ping
+salt ’*.example.*’ test.ping
+
+
+Match all the webN minions in the example.net domain (web1.example.net, web2.example.net . . . webN.example.net):
+
+salt ’web?.example.net’ test.ping
+
+
+Match the web1 through web5 minions:
+
+salt ’web[1-5]’ test.ping
+
+
+Match the web-x, web-y, and web-z minions:
+
+salt ’web-[x-z]’ test.ping
+
+
+5.1.2 Regular Expressions
+Minions can be matched using Perl-compatible regular expressions (which is globbing on steroids and a ton of caf-feine).
+Match both web1-prod and web1-devel minions:
+
+salt -E ’web1-(prod|devel)’ test.ping
+
+When using regular expressions in a State’s top file, you must specify the matcher as the first option. The following example executes the contents of webserver.sls on the above-mentioned minions.
+
+base:
+  ’web1-(prod|devel)’:
+    - match: pcre
+    - webserver
+
+5.1.3 Lists
+At the most basic level, you can specify a flat list of minion IDs:
+
+salt -L ’web1,web2,web3’ test.ping
+
+
+三、Grains
+我的理解：通过grains能得到系统底层的一些基本信息。是静态的。可以在master和minion的配置中写入key:value，但要注意优先级等区别。
+还是翻官网文档先：
+5.2 Grains
+Salt comes with an interface to derive information about the underlying system. This is called the grains interface, because it presents salt with grains of information.
+Grains Static bits of information that a minion collects about the system when the minion first starts.
+The grains interface is made available to Salt modules and components so that the right salt minion commands are automatically available on the right systems.
+It is important to remember that grains are bits of information loaded when the salt minion starts, so this informationis static. This means that the information in grains is unchanging, therefore the nature of the data is static. So grainsinformation are things like the running kernel, or the operating system.
+
+
+Match all CentOS minions:
+
+salt -G ’os:CentOS’ test.ping
+
+
+Match all minions with 64-bit CPUs and return number of available cores:
+
+salt -G ’cpuarch:x86_64’ grains.item num_cpus
+
+
+Additionally, globs can be used in grain matches, and grains that are nested in a dictionary can be matched by adding a colon for each level that is traversed. For example, the following will match hosts that have a grain called ec2_tags,which itself is a dict with a key named environment, which has a value that contains the word production:
+
+salt -G ’ec2_tags:environment:*production*’
+
+
+5.2.1 Listing Grains
+Available grains can be listed by using the ‘grains.ls’ module:
+salt ’*’ grains.ls
+
+
+Grains data can be listed by using the ‘grains.items’ module:
+salt ’*’ grains.items
+
+
+5.2.2 Grains in the Minion Config
+Grains can also be statically assigned within the minion configuration file. Just add the option grains and pass options to it:
+grains:
+  roles:
+    - webserver
+    - memcache
+  deployment: datacenter4
+  cabinet: 13
+  cab_u: 14-15
+
+  
+Then status data specific to your servers can be retrieved via Salt, or used inside of the State system for matching. It also makes targeting, in the case of the example above, simply based on specific data about your deployment.
+
+
+5.2.3 Grains in /etc/salt/grains
+If you do not want to place your custom static grains in the minion config file, you can also put them in /etc/salt/grains. They are configured in the same way as in the above example, only without a top-level grains: key:
+roles:
+  - webserver
+  - memcache
+deployment: datacenter4
+cabinet: 13
+cab_u: 14-15
+
+
+Precedence of Custom Static Grains
+Be careful when defining grains both in /etc/salt/grains and within the minion config file. If a grain is defined in both places, the value in the minion config file takes precedence, and will always be used over its counterpart in /etc/salt/grains.
+
+
+5.2.4 Writing Grains
+Grains are easy to write. The grains interface is derived by executing all of the “public” functions found in the modules located in the grains package or the custom grains directory. The functions in the modules of the grains must return a Python dict, where the keys in the dict are the names of the grains and the values are the values.
+Custom grains should be placed in a _grains directory located under the file_roots specified by the mas-ter config file. They will be distributed to the minions when state.highstate is run, or by executing the 
+saltutil.sync_grains or saltutil.sync_all functions.
+Before adding a grain to Salt, consider what the grain is and remember that grains need to be static data. If the data is something that is likely to change, consider using Pillar instead.
+Examples of Grains
+The core module in the grains package is where the main grains are loaded by the Salt minion and provides the principal example of how to write grains:
+https://github.com/saltstack/salt/blob/develop/salt/grains/core.py
+Syncing Grains
+Syncing grains can be done a number of ways, they are automatically synced when state.highstate is called, or the grains can be synced and reloaded by calling the saltutil.sync_grains or saltutil.sync_all functions.
+
+
+
+
+
+四、Nodegroup
+在master的配置文件/etc/salt/master 中：
+
+有如下一段：
+
+
+#####         Node Groups           #####
+##########################################
+# Node groups allow for logical groupings of minion nodes. A group consists of a group
+# name and a compound target.
+#nodegroups:
+#  group1: 'L@foo.domain.com,bar.domain.com,baz.domain.com and bl*.domain.com'
+#  group2: 'G@os:Debian and foo.domain.com'
+
+
+咱们继续看文档：
+5.3 Node groups
+Node group A predefined group of minions declared in the master configuration file nodegroups setting as a compound target.
+Nodegroups are declared using a compound target specification. The compound target documentation can be found here:
+Compound Matchers（参考下面一段）
+For example, in the master config file nodegroups setting:
+
+nodegroups:
+group1: ’L@foo.domain.com,bar.domain.com,baz.domain.com or bl*.domain.com’
+group2: ’G@os:Debian and foo.domain.com’
+
+
+Specify a nodegroup via the -N option at the command-line:
+
+salt -N group1 test.ping
+
+
+Specify a nodegroup with - match: nodegroup in a top file:
+base:
+  group1:
+    - match: nodegroup
+    - webserver
+
+
+实例：
+# vim /etc/salt/master
+nodegroups:
+  cabinet01: 'E@test2(1[1-9]|3[1-2]).company.com'
+  cabinet02: 'E@test(12|14[0-6]|18[3-5]).company.com'
+  cabinet03: 'E@test10[1-5].company.com'
+
+# salt -N cabinet02 test.ping
+test144.company.com:
+    True
+test183.company.com:
+    True
+test185.company.com:
+    True
+test146.company.com:
+    True
+test140.company.com:
+    True
+test143.company.com:
+    True
+test141.company.com:
+    True
+test145.company.com:
+    True
+test142.company.com:
+    True
+test12.company.com:
+    True
+    
+
+五、混合匹配
+5.4 Compound matchers
+Compound matcher A combination of many target definitions that can be combined with boolean operators.
+
+Compound matchers allow very granular minion targeting using any of the previously discussed matchers. The default matcher is a glob, as usual. For matching via anything other than glob, preface it with the letter denoting the match type. The currently implemented “letters” are:
+Letter              Meaning                             Example
+G                   Grains glob match                   G@os:Ubuntu
+E                   PCRE Minion id match                E@web\d+\.(dev|qa|prod)\.loc
+P                   Grains PCRE match                   P@os:(RedHat|Fedora|CentOS)
+L                   List of minions                     L@minion1.example.com,minion3.domain.com or bl*.domain.com
+I                   Pillar glob match                   I@pdata:foobar
+S                   Subnet/IP addr match                S@192.168.1.0/24 or S@192.168.1.100
+R                   Range cluster match                 R@%foo.bar
+D                   Minion Data match                   D@key:value
+
+Matchers can be joined using boolean and, or, and not operators.
+
+For example, the following command matches all minions that have a hostname that begins with “webserv” and that are running Debian or it matches any minions that have a hostname that matches the regular expression web-dc1-srv.
+* :
+
+salt -C ’webserv* and G@os:Debian or E@web-dc1-srv.*’ test.ping
+
+
+That same example expressed in a top file looks like the following:
+base:
+  ’webserv* and G@os:Debian or E@web-dc1-srv.*’:
+    - match: compound
+    - webserver
+
+    
+Note that you cannot have a leading not in a command. Instead you must do something like the following:
+salt -C ’* and not G@kernel:Darwin’ test.ping
+
+
+实例：
+[root@test200 ~]# salt -C 'E@test(12|14[0-6]|18[3-5]).company.com or dev0[1-2].office.com' test.ping 
+test144.company.com:
+    True
+test183.company.com:
+    True
+test185.company.com:
+    True
+test146.company.com:
+    True
+test140.company.com:
+    True
+test143.company.com:
+    True
+test141.company.com:
+    True
+test145.company.com:
+    True
+test142.company.com:
+    True
+test12.company.com:
+    True
+dev01.office.com:
+    True
+dev02.office.com:
+    True
+
+
+
+
+
+
+
+
+

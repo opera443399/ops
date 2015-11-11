@@ -1,0 +1,215 @@
+docker深入1-docker的数据卷
+参考：
+http://docs.docker.com/userguide/dockervolumes/
+
+
+针对数据的存储，有个data volume的概念。
+使用参数： -v
+在container中创建一个volume，或者类似目录映射的方式，挂载一个数据盘或者目录到docker的container中。
+环境准备：
+[root@svr200-10 ~]# yum install docker-io -y
+[root@svr200-10 ~]# docker -v
+Docker version 1.5.0, build a8a31ef/1.5.0
+[root@svr200-10 ~]# service docker start
+[root@svr200-10 ~]# useradd Jack && usermod -a -G docker Jack
+[root@svr200-10 ~]# su Jack
+[Jack@svr200-10 bin]$ docker pull centos
+[Jack@svr200-10 bin]$ docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+centos              7                   fd44297e2ddb        11 days ago         215.7 MB
+centos              centos7             fd44297e2ddb        11 days ago         215.7 MB
+centos              latest              fd44297e2ddb        11 days ago         215.7 MB
+
+
+一、简单的方式是：挂载一个数据目录到container中
+[Jack@svr200-10 bin]$ docker run -d -it -v /home/datacenter:/datacenter --name datacenter centos                
+66f5e0e0e7042e371c092ff24117598055b7f65d4224f9738efbf13ba6273127
+[Jack@svr200-10 bin]$ docker ps -a
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+66f5e0e0e704        centos:7            "/bin/bash"         12 seconds ago      Up 11 seconds                           datacenter             
+[Jack@svr200-10 bin]$ docker attach test01
+
+[root@66f5e0e0e704 /]# ll /
+total 60
+lrwxrwxrwx.   1 root root    7 Apr 15 14:28 bin -> usr/bin
+drwxr-xr-x.   2 root root 4096 May  4 02:55 datacenter
+drwxr-xr-x.   5 root root  380 May  4 02:51 dev
+drwxr-xr-x.  47 root root 4096 May  4 02:51 etc
+drwxr-xr-x.   2 root root 4096 Jun 10  2014 home
+lrwxrwxrwx.   1 root root    7 Apr 15 14:28 lib -> usr/lib
+lrwxrwxrwx.   1 root root    9 Apr 15 14:28 lib64 -> usr/lib64
+drwx------.   2 root root 4096 Apr 15 14:26 lost+found
+drwxr-xr-x.   2 root root 4096 Jun 10  2014 media
+drwxr-xr-x.   2 root root 4096 Jun 10  2014 mnt
+drwxr-xr-x.   2 root root 4096 Jun 10  2014 opt
+dr-xr-xr-x. 235 root root    0 May  4 02:51 proc
+dr-xr-x---.   2 root root 4096 Apr 15 14:29 root
+drwxr-xr-x.  10 root root 4096 Apr 15 14:29 run
+lrwxrwxrwx.   1 root root    8 Apr 15 14:28 sbin -> usr/sbin
+drwxr-xr-x.   2 root root 4096 Jun 10  2014 srv
+dr-xr-xr-x.  13 root root    0 May  4 02:51 sys
+-rw-r--r--.   1 root root   11 May  4 02:52 test01
+-rw-r--r--.   1 root root   11 May  4 02:52 test04
+drwxrwxrwt.   7 root root 4096 May  4 02:51 tmp
+drwxr-xr-x.  13 root root 4096 Apr 15 14:28 usr
+drwxr-xr-x.  19 root root 4096 Apr 15 14:29 var
+[root@66f5e0e0e704 /]# df -h
+Filesystem                                                                                        Size  Used Avail Use% Mounted on
+/dev/mapper/docker-252:0-262241-66f5e0e0e7042e371c092ff24117598055b7f65d4224f9738efbf13ba6273127  9.8G  254M  9.0G   3% /
+tmpfs                                                                                             1.9G     0  1.9G   0% /dev
+shm                                                                                                64M     0   64M   0% /dev/shm
+/dev/mapper/vg_svr20010-lv_root                                                                    50G  9.3G   38G  20% /etc/hosts
+/dev/mapper/vg_svr20010-lv_home                                                                   405G   48G  338G  13% /datacenter
+tmpfs                                                                                             1.9G     0  1.9G   0% /proc/kcore
+
+写入数据：
+[root@66f5e0e0e704 /]# echo "`date` aaa" >/datacenter/test01
+[root@66f5e0e0e704 /]# echo "`date` 123" >/datacenter/test02   
+[root@66f5e0e0e704 /]# ls /datacenter/
+test01  test02
+[root@66f5e0e0e704 /]# cat /datacenter/test0*
+Mon May  4 02:57:19 UTC 2015 aaa
+Mon May  4 02:57:27 UTC 2015 123
+
+[root@66f5e0e0e704 /]# exit 
+exit
+
+查看宿主机挂载目录的文件和内容：
+[Jack@svr200-10 bin]$ ll /home/datacenter
+total 8
+-rw-r--r--. 1 root root 33 May  4 10:57 test01
+-rw-r--r--. 1 root root 33 May  4 10:57 test02
+[Jack@svr200-10 bin]$ cat /home/datacenter/test0*
+Mon May  4 02:57:19 UTC 2015 aaa
+Mon May  4 02:57:27 UTC 2015 123
+
+
+[Jack@svr200-10 bin]$ docker stop datacenter
+datacenter
+[Jack@svr200-10 bin]$ docker rm datacenter  
+datacenter
+
+
+二、复杂一点儿：创建一个data volume container，共享给其他container
+如官网所示：
+If you have some persistent data that you want to share between containers, or want to use from non-persistent containers, it's best to create a named Data Volume Container, and then to mount the data from it.
+
+
+1）创建一个container，提供一个数据卷供其他container使用：
+[Jack@svr200-10 bin]$ docker run -d -it -v /home/datacenter:/datacenter --name Data_Vol centos  
+7691eccc73f6e4e2e2c3d6816cf6ba6a80a5f98f5067d48db6e8bafb4e4db021
+
+[Jack@svr200-10 bin]$ docker ps -a
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+7691eccc73f6        centos:7            "/bin/bash"         7 seconds ago       Up 5 seconds                            Data_Vol   
+
+
+再创建2个container，使用刚才创建的数据卷Data_Vol来存储数据。
+在启动container时，用这个参数：--volumes-from Data_Vol，而不是之前提到的-v参数，来挂载数据卷。
+
+2）创建一个container：app1   ，写入一点儿数据  
+[Jack@svr200-10 bin]$ docker run -d -it --volumes-from Data_Vol --name app1 centos
+1474f622b7f04c98da98e320d10864538b50b0b053677bbda039c8fb657062c1
+[Jack@svr200-10 bin]$ docker attach app1
+
+[root@1474f622b7f0 /]# ll /
+total 52
+lrwxrwxrwx.   1 root root    7 Apr 15 14:28 bin -> usr/bin
+drwxr-xr-x.   2 root root 4096 May  4 02:56 datacenter
+drwxr-xr-x.   5 root root  380 May  4 03:40 dev
+drwxr-xr-x.  47 root root 4096 May  4 03:40 etc
+drwxr-xr-x.   2 root root 4096 Jun 10  2014 home
+lrwxrwxrwx.   1 root root    7 Apr 15 14:28 lib -> usr/lib
+lrwxrwxrwx.   1 root root    9 Apr 15 14:28 lib64 -> usr/lib64
+drwx------.   2 root root 4096 Apr 15 14:26 lost+found
+drwxr-xr-x.   2 root root 4096 Jun 10  2014 media
+drwxr-xr-x.   2 root root 4096 Jun 10  2014 mnt
+drwxr-xr-x.   2 root root 4096 Jun 10  2014 opt
+dr-xr-xr-x. 244 root root    0 May  4 03:40 proc
+dr-xr-x---.   2 root root 4096 Apr 15 14:29 root
+drwxr-xr-x.  10 root root 4096 Apr 15 14:29 run
+lrwxrwxrwx.   1 root root    8 Apr 15 14:28 sbin -> usr/sbin
+drwxr-xr-x.   2 root root 4096 Jun 10  2014 srv
+dr-xr-xr-x.  13 root root    0 May  4 03:40 sys
+drwxrwxrwt.   7 root root 4096 May  4 03:40 tmp
+drwxr-xr-x.  13 root root 4096 Apr 15 14:28 usr
+drwxr-xr-x.  19 root root 4096 Apr 15 14:29 var
+[root@1474f622b7f0 /]# ls /datacenter/
+test01  test02
+[root@1474f622b7f0 /]# touch /datacenter/app1
+[root@1474f622b7f0 /]# ls /datacenter/       
+app1  test01  test02
+[root@1474f622b7f0 /]# echo "`date` hello app1" >/datacenter/app1 
+[root@1474f622b7f0 /]# cat /datacenter/app1 
+Mon May  4 03:43:11 UTC 2015 hello app1
+[root@1474f622b7f0 /]# exit
+exit
+
+
+2）再创建一个container：app2   ，写入一点儿数据  
+[Jack@svr200-10 bin]$ docker run -d -it --volumes-from Data_Vol --name app2 centos
+c4d743681ec95d78b21a52d3a558b4cab40a9f7ba43e884e4686c57c313b6923
+
+[Jack@svr200-10 bin]$ docker attach app2
+
+[root@c4d743681ec9 /]# df -h
+Filesystem                                                                                        Size  Used Avail Use% Mounted on
+/dev/mapper/docker-252:0-262241-c4d743681ec95d78b21a52d3a558b4cab40a9f7ba43e884e4686c57c313b6923  9.8G  254M  9.0G   3% /
+tmpfs                                                                                             1.9G     0  1.9G   0% /dev
+shm                                                                                                64M     0   64M   0% /dev/shm
+/dev/mapper/vg_svr20010-lv_root                                                                    50G  9.3G   38G  20% /etc/hosts
+/dev/mapper/vg_svr20010-lv_home                                                                   405G   48G  338G  13% /datacenter
+tmpfs                                                                                             1.9G     0  1.9G   0% /proc/kcore
+[root@c4d743681ec9 /]# ls /datacenter/ 
+app1  test01  test02
+[root@c4d743681ec9 /]# cat /datacenter/app1 
+Mon May  4 03:43:11 UTC 2015 hello app1
+[root@c4d743681ec9 /]# echo "`date` this is app2" >/datacenter/app2       
+[root@c4d743681ec9 /]# exit
+exit
+
+[Jack@svr200-10 bin]$ docker ps -a
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                            PORTS               NAMES
+c4d743681ec9        centos:7            "/bin/bash"         6 minutes ago       Exited (0) 6 seconds ago                              app2                
+1474f622b7f0        centos:7            "/bin/bash"         6 minutes ago       Exited (130) About a minute ago                       app1                
+7691eccc73f6        centos:7            "/bin/bash"         7 minutes ago       Up 7 minutes                                          Data_Vol            
+[Jack@svr200-10 bin]$ 
+
+
+
+3）我们停止Data_Vol这个容器，再试试写入数据
+[Jack@svr200-10 bin]$ docker stop Data_Vol
+Data_Vol
+
+[Jack@svr200-10 bin]$ docker start app1
+app1
+[Jack@svr200-10 bin]$ docker ps -a        
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                          PORTS               NAMES
+c4d743681ec9        centos:7            "/bin/bash"         7 minutes ago       Exited (0) About a minute ago                       app2                
+1474f622b7f0        centos:7            "/bin/bash"         8 minutes ago       Up 7 seconds                                        app1                
+7691eccc73f6        centos:7            "/bin/bash"         8 minutes ago       Exited (137) 16 seconds ago                         Data_Vol            
+[Jack@svr200-10 bin]$ docker attach app1
+
+[root@1474f622b7f0 /]# ls /datacenter/
+app1  app2  test01  test02
+[root@1474f622b7f0 /]# echo "`date` app1 is back here" >>/datacenter/app1        
+[root@1474f622b7f0 /]# cat /datacenter/app1
+Mon May  4 03:43:11 UTC 2015 hello app1
+Mon May  4 03:48:53 UTC 2015 app1 is back here
+[root@1474f622b7f0 /]# exit
+exit
+
+看起来，，这个用来持久化的Data_Vol不用启动，，其他的container用--volumes-from Data_Vol来挂载数据卷，也是可以正常使用的。
+
+4）回到宿主机了，我们看下数据
+[Jack@svr200-10 bin]$ ls /home/datacenter/
+app1  app2  test01  test02
+
+看起来，文件都在这里呢，再看下数据：
+[Jack@svr200-10 bin]$ cat /home/datacenter/app1
+Mon May  4 03:43:11 UTC 2015 hello app1
+Mon May  4 03:48:53 UTC 2015 app1 is back here
+[Jack@svr200-10 bin]$ cat /home/datacenter/app2
+Mon May  4 03:46:37 UTC 2015 this is app2
+
+看，符合预期。

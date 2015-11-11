@@ -1,0 +1,70 @@
+php通过yum webtatic安装。
+
+https://webtatic.com/projects/yum-repository/
+
+Webtatic EL6 for CentOS/RHEL 6:
+
+rpm -Uvh http://mirror.webtatic.com/yum/el6/latest.rpm
+
+
+以php56为例：
+
+# yum search php56 |grep php
+============================== N/S Matched: php56 ==============================
+php56w.x86_64 : PHP scripting language for creating dynamic web sites
+
+
+# yum install php56w 
+
+
+【模块】
+# yum install php56w-bcmath php56w-fpm php56w-gd php56w-mbstring php56w-mcrypt php56w-mysqlnd php56w-opcache php56w-pdo php56w-pear php56w-pecl-gearman php56w-pecl-geoip php56w-pecl-imagick php56w-pecl-imagick-devel php56w-pecl-memcache php56w-process php56w-soap php56w-xml php56w-xmlrpc
+
++--------------------+
+若安装imagick可能有问题，可以先不安装
+
+# yum install php56w php56w-bcmath php56w-fpm php56w-gd php56w-mbstring php56w-mcrypt php56w-mysqlnd php56w-opcache php56w-pdo php56w-pear php56w-pecl-gearman php56w-pecl-geoip php56w-pecl-memcache php56w-process php56w-soap php56w-xml php56w-xmlrpc
+
+后续用pecl安装：
+
+# rpm -e php56w-pecl-imagick-3.1.2-1.w6.x86_64 php56w-pecl-imagick-devel-3.1.2-1.w6.x86_64
+
+# pecl install imagick
+
+[root@test118 download]# cat /etc/php.d/imagick.ini
+; Enable imagick extension module
+extension=imagick.so
++--------------------+
+
+
+安装sphinx：
+
+[root@test118 download]# yum install libsphinxclient-devel
+[root@test118 download]# pecl install sphinx
+Build process completed successfully
+Installing '/usr/lib64/php/modules/sphinx.so'
+install ok: channel://pecl.php.net/sphinx-1.3.2
+configuration option "php_ini" is not set to php.ini location
+You should add "extension=sphinx.so" to php.ini
+
+[root@test118 web]# cat /etc/php.d/sphinx.ini 
+; Enable sphinx extension module
+extension=sphinx.so
+
+
+
+【调整参数】
+调整php.ini:
+# vim /etc/php.ini
+
+expose_php = Off
+max_execution_time = 300
+max_input_time = 600
+post_max_size = 100M
+date.timezone = Asia/Shanghai
+
+
+
+启动php-fpm
+service php-fpm start
+

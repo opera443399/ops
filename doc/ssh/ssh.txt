@@ -1,0 +1,77 @@
+ssh的用法记录
+
+一、基础用法
+1、生成ssh免密码登录（passphrase 为空）
+[root@vm_1_2 ~]# ssh-keygen 
+[root@vm_1_2 ~]# ssh-copy-id cephuser@ceph-node1
+[root@vm_1_2 ~]# ssh-copy-id cephuser@ceph-node2
+[root@vm_1_2 ~]# ssh-copy-id cephuser@ceph-node3
+测试：
+[root@vm_1_2 ~]# ssh cephuser@ceph-node3
+[cephuser@vm_1_5 ~]$ exit
+logout
+Connection to ceph-node3 closed.
+
+2、配置config，这样一来，登录ssh时，将不用指定用户名：
+[root@vm_1_2 ~]# cat ~/.ssh/config
+Host ceph-node1
+   Hostname ceph-node1
+   User cephuser
+Host ceph-node2
+   Hostname ceph-node2
+   User cephuser
+Host ceph-node3
+   Hostname ceph-node3
+   User cephuser
+
+测试：
+[root@vm_1_2 ~]# ssh ceph-node2   
+[cephuser@vm_1_4 ~]$ exit
+logout
+Connection to ceph-node2 closed.
+
+
+二、特殊用法
+# ssh-keygen -t rsa -b 2048 -C you_comment_here -f filename
+
+三、脚本
+#!/bin/bash
+# 创建用户，并追加ssh public key
+# 使用这个命令来生成key
+# ssh-keygen -t rsa -b 2048 -C you_comment_here -f filename
+# 例如：
+# ssh-keygen -t rsa -b 2048 -C yourname@office -f yourname
+# 将生成个文件：
+# yourname      私钥
+# yourname.pub  公钥
+# 2015/07/14
+
+username='yourname'
+useradd ${username}
+id ${username}
+ 
+[ -d /home/${username}/.ssh ] || mkdir -p /home/${username}/.ssh
+ 
+cat <<_PUBKEY >> /home/${username}/.ssh/authorized_keys
+paste your public key(#cat yourname.pub) here
+_PUBKEY
+ 
+chmod 700 /home/${username}/.ssh
+chmod 600 /home/${username}/.ssh/authorized_keys
+chown -R ${username}:${username} /home/${username}/.ssh
+ 
+cat /home/${username}/.ssh/authorized_keys
+
+
+
+
+
+
+
+
+
+
+
+
+
+

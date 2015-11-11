@@ -1,0 +1,147 @@
+docker深入1-配置docker服务的https通信
+
+参考：https://docs.docker.com/articles/https/
+
+
+一、使用OpenSSL创建CA, server and client keys
+
+1、生成 CA private and public keys
+[root@server200-20 ~]# openssl genrsa -aes256 -out ca-key.pem 4096
+Generating RSA private key, 4096 bit long modulus
+.............................++
+....................................................................++
+e is 65537 (0x10001)
+Enter pass phrase for ca-key.pem:
+Verifying - Enter pass phrase for ca-key.pem:
+
+[root@server200-20 ~]# openssl req -new -x509 -days 365 -key ca-key.pem -sha256 -out ca.pem
+Enter pass phrase for ca-key.pem:
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:CN
+State or Province Name (full name) []:GD
+Locality Name (eg, city) [Default City]:GZ
+Organization Name (eg, company) [Default Company Ltd]:ABC
+Organizational Unit Name (eg, section) []:RD
+Common Name (eg, your name or your server's hostname) []:registry.company.com
+Email Address []:root@company.com   
+
+
+现在我们有个一个CA，可以创建server key and certificate signing request (CSR)，要确保"Common Name"这一块要和用来连接docker的主机一致。
+
+2、生成 server keys
+[root@server200-20 ~]# openssl genrsa -out server-key.pem 4096
+Generating RSA private key, 4096 bit long modulus
+.....................................................++
+................................................................................................................++
+e is 65537 (0x10001)
+
+[root@server200-20 ~]# openssl req -subj "/CN=registry.company.com" -sha256 -new -key server-key.pem -out server.csr
+
+接下来，我们用自己的CA给这个public key签名，由于TLS连接可以通过IP和域名，这个需要在创建证书时指明，例如，允许来自这个IP的连接：
+10.0.200.10， 10.0.200.20， 127.0.0.1
+
+[root@server200-20 ~]# echo subjectAltName = IP:10.0.200.10,IP:10.0.200.20,IP:127.0.0.1 > extfile.cnf 
+[root@server200-20 ~]# openssl x509 -req -days 365 -sha256 -in server.csr -CA ca.pem -CAkey ca-key.pem \
+  -CAcreateserial -out server-cert.pem -extfile extfile.cnf
+Signature ok
+subject=/CN=registry.company.com
+Getting CA Private Key
+Enter pass phrase for ca-key.pem:
+
+
+3、生成 client keys
+创建一个client key and certificate signing request用于client认证:
+[root@server200-20 ~]# openssl genrsa -out key.pem 4096
+Generating RSA private key, 4096 bit long modulus
+..................++
+............................................................................................................................................................++
+e is 65537 (0x10001)
+[root@server200-20 ~]# openssl req -subj '/CN=client' -new -key key.pem -out client.csr
+
+为了让key适合 client authentication建立一个extensions config file:
+
+[root@server200-20 ~]# echo extendedKeyUsage = clientAuth > extfile.cnf
+
+给public key签名
+[root@server200-20 ~]# openssl x509 -req -days 365 -sha256 -in client.csr -CA ca.pem -CAkey ca-key.pem \
+>   -CAcreateserial -out cert.pem -extfile extfile.cnf
+Signature ok
+subject=/CN=client
+Getting CA Private Key
+Enter pass phrase for ca-key.pem:
+
+生成cert.pem and server-cert.pem 后可以放心的删除 2个 certificate signing requests:
+[root@server200-20 ~]# rm -v client.csr server.csr
+rm: remove regular file `client.csr'? y
+removed `client.csr'
+rm: remove regular file `server.csr'? y
+removed `server.csr'
+
+
+系统默认的default umask 是 022，这种情况下 secret keys的权限太大，为了安全考虑，调整为只读
+[root@server200-20 ~]# chmod -v 0400 ca-key.pem key.pem server-key.pem
+mode of `ca-key.pem' changed to 0400 (r--------)
+mode of `key.pem' changed to 0400 (r--------)
+mode of `server-key.pem' changed to 0400 (r--------)
+
+Certificates 可以写，也存在风险，需调整为：
+[root@server200-20 ~]# chmod -v 0444 ca.pem server-cert.pem cert.pem
+mode of `ca.pem' changed to 0444 (r--r--r--)
+mode of `server-cert.pem' changed to 0444 (r--r--r--)
+mode of `cert.pem' changed to 0444 (r--r--r--)
+
+
+现在， 只有提供了被我们的CA信赖的证书的clients 才能连接到Docker daemon
+
+$ docker -d --tlsverify --tlscacert=ca.pem --tlscert=server-cert.pem --tlskey=server-key.pem \
+  -H=0.0.0.0:2376
+  
+  
+To be able to connect to Docker and validate its certificate, you now need to provide your client keys, certificates and trusted CA:
+
+Note: replace all instances of $HOST in the following example with the DNS name of your Docker daemon's host.
+$ docker --tlsverify --tlscacert=ca.pem --tlscert=cert.pem --tlskey=key.pem \
+  -H=$HOST:2376 version
+Note: Docker over TLS should run on TCP port 2376.
+Warning: As shown in the example above, you don't have to run the docker client with sudo or the docker group when you use certificate authentication. That means anyone with the keys can give any instructions to your Docker daemon, giving them root access to the machine hosting the daemon. Guard these keys as you would a root password!
+Secure by default
+If you want to secure your Docker client connections by default, you can move the files to the .docker directory in your home directory -- and set the DOCKER_HOST and DOCKER_TLS_VERIFY variables as well (instead of passing -H=tcp://$HOST:2376 and --tlsverify on every call).
+
+$ mkdir -pv ~/.docker
+$ cp -v {ca,cert,key}.pem ~/.docker
+$ export DOCKER_HOST=tcp://$HOST:2376 DOCKER_TLS_VERIFY=1
+Docker will now connect securely by default:
+
+$ docker ps
+Other modes
+If you don't want to have complete two-way authentication, you can run Docker in various other modes by mixing the flags.
+
+Daemon modes
+tlsverify, tlscacert, tlscert, tlskey set: Authenticate clients
+tls, tlscert, tlskey: Do not authenticate clients
+Client modes
+tls: Authenticate server based on public/default CA pool
+tlsverify, tlscacert: Authenticate server based on given CA
+tls, tlscert, tlskey: Authenticate with client certificate, do not authenticate server based on given CA
+tlsverify, tlscacert, tlscert, tlskey: Authenticate with client certificate and authenticate server based on given CA
+If found, the client will send its client certificate, so you just need to drop your keys into ~/.docker/{ca,cert,key}.pem. Alternatively, if you want to store your keys in another location, you can specify that location using the environment variable DOCKER_CERT_PATH.
+
+$ export DOCKER_CERT_PATH=~/.docker/zone1/
+$ docker --tlsverify ps
+Connecting to the Secure Docker port using curl
+To use curl to make test API requests, you need to use three extra command line flags:
+
+$ curl https://$HOST:2376/images/json \
+  --cert ~/.docker/cert.pem \
+  --key ~/.docker/key.pem \
+  --cacert ~/.docker/ca.pem
+
+
+
+

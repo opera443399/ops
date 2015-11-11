@@ -1,0 +1,860 @@
+﻿Book : "Expert C Programming:Deep C Secrets"
+Author : Perter Van Der LinDen
+
+Book : "C Programming FAQs: Frequently Asked Questions"
+Author : Steve Summit
+
+Book : "C++: The Complete Reference, Fourth Edition"
+Author : Herbert Schildt 
+
+
+1. 太多的缺省可见性
+-------------------------
+
+定义C函数时，在缺省情况下函数的名字是全局可见的。可以在函数的名字前加个冗余的extern关键字，也可以不加，效果是一样的。这个函数对于链接到它所在的目标文件的任何东西都是可见的。如果想限制对这个函数的访问，就必须加个static关键字。
+
+
+ function apple() {/*在任何地方均可见*/}
+ extern function pear() {/*在任何地方均可见*/}
+ 
+ static function orange() {/*在这个文件之外不可见*/}
+
+事实上，几乎所以人都没有在函数名前面添加存储类型说明符的习惯，所以绝大多数函数都是全局可见的。根据实际经验，这种缺省的全局可见性多次被证明是个错误，这已经是盖棺定论。软件对象在大多数情况下应该缺省的采用有限可见性。当程序员需要让它全局可见时，应该采用显示的手段。这种太大范围的全局可见性会与C语言的另一个特性相互产生影响，那就是inter-positioning。也就是用户编写和库函数同名的函数并取而代之的行为。这里不做详细介绍，现在你的脑子里只要这样想："关于inter-positioning，我还需要学习很多东西。"范围过宽的问题常见于库中：一个库需要让一个对象在在另一个库中可见。唯一的方法是让它变得全局可见。但这样一来，它对于连接到该库的所有对象都是可见的了。这就是"all or nothing"----一个符号要么全局可见，要么对其他文件都不可见。在C语言中，对信息可见性的选择就是这么有限。
+
+准则 : 不要让程序中的任何符号成为全局的，除非有意把它们作为程序的接口之一。
+
+
+
+2. C语言中的符号重载
+----------------------------
+
+
+
+static :-------- 
+        a.在函数内部，表示该变量的值在各个调用间一直保存延续性
+        b.在函数这一级，表示该函数只对本文件可见
+extern :-------- 
+        a.用于函数定义，表示全局可见
+        b.用于变量，表示它在其他地方定义
+void   :--------
+        a.作为函数的返回类型，表示不返回任何值
+        b.在指针声明中，表示通用指针的类型
+*      :--------
+        a.乘法运算符
+        b.用于指针，间接引用
+        c.在声明时，表示指针
+&      :--------
+        a.位的AND操作符
+        b.取地址操作符
+=      :赋值符
+==     :比较运算符
+<=     :小于等于运算符
+<<     :左移复合赋值运算符
+<      :--------
+        a.小于运算符
+        b.#include指令的左定界符
+()     :--------
+        a.在函数定义中，包围形式参数表
+        b.调用一个函数
+        c.改变表达式的运算次序
+        d.将值转换为其他类型(强制类型转换)
+        e.定义带参数的宏
+        f.包围sizeof操作符的操作数(如果它是类型名)
+
+        
+3. 计算的次序
+-----------------
+
+有些专家建议，在C语言中牢记两个优先级就够了：
+乘法和除法优先于加法和减法，在涉及其他操作符时一律加上括号。
+我认为这是条很好的建议。
+
+
+4. 虚拟内存
+--------------
+
+如果它存在，而且你能看见它—它是真实的〔real)
+如果它不存在，但你能看见它—它是虚拟的(virtual)
+如果它存在，但你看不见它—它是透明的((transparent)
+如果它不存在。而且你也看不见它—那肯定是你把它擦掉了 
+
+----IBM用于解释虚拟内存的张贴画，大约是在1978年
+
+
+5.程序检验的限制
+----------------------
+
+工程师所存在的问题是他们采取欺骗手段以获得结果
+数学家所存在的问题是他们研究一些玩具性的问题以获得结果
+程序检验员所存在的问题是他们在玩具性的问题上采取欺骗手段以获得结果
+
+----匿名人士
+
+
+
+6.对参数表和由此引发的对C语言声明的记忆:
+-------------------------------------------------------
+
+回顾一下入口函数的参数表：
+int main(int argc, char* argv[])
+
+
+a. int argc：(argument count ?)表示有几个参数传递到程序中,如某个程序参数表如下：
+   
+c:\a.exe -x -y -z 
+
+上面这条参数argc是多少？3 or 4 ？
+答案是：4。
+
+b. char* argv[]：这是什么呢？argument value? 可以这么说。
+正如char *str 表示str是个指向某个字符的指针，而一串连续的字符放在你面前的话，
+就可以操纵str来得到整个字符串了，从这个意义讲，str指向一个字符串。
+同理，这里的argv则是一个数组，它的每一个元素都指向一个字符串罢了。
+
+-=-=-=-=-=-=
+
+下面来讨论下对argv的声明的理解
+一、从C语言声明的角度：
+
+
+
+  请注意C的声明应该这样来读：
+A. 首先，找左边第一个变量名, 然后按照优先级顺序依次读取
+B. 优先级从高到低依次是：
+ B. 1  声明中被括号括起来的那部分
+ B. 2  后缀操作符
+  括号()表示这是一个函数
+  方括号[]表示这是一个数组
+   B. 3  前缀操作符
+  * 表示"指向...的指针"
+
+>>>>>>
+1). 找到变量名 : "argv",
+2). 找到 [] : 表示这是一个数组
+3). 找到 *  : 表示"指向...的指针"
+4). 结合前面的char，表示"指向字符的指针"
+
+总结：argv是一个数组，它的元素是指向字符的指针
+<<<<<<
+
+二、从编译数组的角度:
+ 
+C语言中里面只有一种别的语言称为数组的数组的形式，但C语言称它为多维数组。
+在语言中，可以像下面这样声明一个3x5的多维字符数组:
+char array[3][5];
+
+
+或者声明一种看上去更像"数组的数组"的形式:
+typedef char arr[5];
+
+arr array[3];
+
+
+<<<<
+无论如何，访问单个字符都是通过 array[i][j] 的形式，编译器在编译的时候会把它解析为：
+*(*(array+i)+j)
+的形式。
+尽管术语上称为"多维数组",但C语言实际上只支持数组的数组。如果在你的思维模式中，把数组看做是一种向量(即某种对象的一维数组，它的元素可以是另一个数组)就能极大简写编程语言中这个相当复杂的领域。
+<<<<
+
+
+7. 臭名昭著的空指针
+-------------------------
+
+简而言之，
+int *p = 0;
+
+
+此处"0"就是空指针，表示“未分配”或者“尚未指向任何地方”的指针。
+为了区别常整数0，所以才有了NULL这种风格
+#define NULL ((void *)0)
+
+
+有两条简单规则你必须遵循:
+a). 当你在源码中需要空指针常数时,用"0"或"NULL"。
+b). 如果在函数调用中"0"或"NULL"用作参数,把它转换成被调函数需要的指针类型
+
+讨论的其它内容是关于别人的误解。
+
+
+
+8. 被忽略了的记忆
+-----------------------
+
+a).>>>> 
+为什么这段代码不行？
+
+
+
+ char*answer;
+ printf("Type something:\n");
+ gets(answer);
+ printf("You typed\"%s\"\n",answer);
+指针变量answer,传入gets(),意在指向保存得到的应答的位置,但却没有指向任何合法的
+位置。换言之,我们不知道指针answer指向何处。因为局部变量没有初始化,通常包含垃圾
+信息,所以甚至都不能保证answer是一个合法的指针。
+
+改正提问程序的最简单方案是使用局部数组,而不是指针,让编译器考虑分配的问题:
+
+
+ #include<stdio.h>
+ #include<string.h>
+ int main()
+ {
+  char answer[100]
+  int i;
+  printf("Type something:\n");
+  fgets(answer, sizeof(answer), stdin);
+  i = strlen(answer) - 1;
+  if(answer[i] == '\n')
+   answer[i] = '\0';  
+  printf("You typed\"%s\"\n",answer);
+  return 0;
+ }
+
+本例中同时用fgets()代替gets(),以便array的结束符不被改写。它能限制所读的字符数，因而防止数据越界。唯一的麻烦是fgets()没有删除换行符而gets()删除了，所以你将不得不手工删除它。
+
+
+
+b).>>>>
+动态分配的内存一旦释放之后你就不能再使用,是吧？
+
+
+几乎没有那个程序员会有意使用释放的内存,但是意外的使用却是常有的事。
+考虑下面释放单链表的正确代码:
+
+
+struct list *listp, *nextp;
+for(listp = base; listp!= NULL; listp = nextp)
+{
+ nextp = listp->next;
+ free(listp);
+}
+
+请注意如果在循环表达式中没有使用临时变量nextp, 而使用
+
+
+listp = listp->next;
+free(listp);
+
+会产生什么恶劣后果。
+
+
+c).>>>>
+当我malloc()为一个函数的局部指针分配内存时,我还需要用free()明确的释放吗？
+
+
+是的。记住指针和它所指向的东西是完全不同的。局部变量在函数返回时就会释放,但是在指针变量这个问题上,这表示指针被释放,而不是它所指向的对象。用malloc()分配的内存直到你明确释放它之前都会保留在那里。一般地,对于每一个malloc()都必须有个对应的free()调用。
+
+d).>>>>
+这样的代码有什么问题？
+
+
+char c;
+while((c=getchar())!=EOF)
+...
+
+第一,保存getchar的返回值的变量必须是int型。getchar()可能返回任何字符值,包括EOF。如果把getchar的返回值截为char型,则正常的字符可能会被错误的解释为EOF,或者EOF可能会被修改(尤其是char型为无符号的时候),从而永不出现。
+
+e).>>>>
+当我用"%d\n"调用scanf从键盘读取数字的时候,好像要多输入一行函数才返回?
+可能令人吃惊,'\n'在scanf格式串中不表示等待换行符,而是读取并放弃所有的空白字符。
+
+f).>>>>
+我如何用printf实现可变的域宽度？就是说,我想在运行时确定宽度而不是使用%8d？
+使用 '*' 星号吧。
+printf("%*d",width,x)
+
+就能达到你的要求。
+
+g).>>>>
+为什么有的人用 if(0==x) 而不是 if(x==0)？
+
+这是用来防护一个通常错误的小技巧:
+if(x=0)
+
+如果你养成了把常量放在==前面的习惯,当你意外的把代码写成了:
+if(0=x)
+
+那编译器就会报怨。明显的,一些人会觉得记住反换测试比记住输入双=号
+容易。当然这个技巧只对和常量比较的情况有用。
+
+
+h).>>>>
+怎样产生标准分布或高斯分布的随机数？
+
+这里有一个由Marsaglia首创Knuth推荐的方法:
+
+
+#include<stdlib.h>
+#include<math.h>
+double gaussrand()
+{
+ static double V1, V2, S;
+ static int phase = 0;
+ double X;
+ if(phase == 0)
+ {
+  do
+  {
+   double U1 = (double)rand() / RAND_MAX;
+   double U2 = (double)rand() / RAND_MAX;
+   V1 = 2 * U1 - 1;
+   V2 = 2 * U2 - 1;
+   S  = (V1 * V1) + (V2 * V2);
+  }while(S >= 1 || S == 0);
+ 
+  X = V1 * sqrt(-2 * log(S) / S);
+ }
+ else
+ {
+  X = V2 * sqrt(-2 * log(S) / S);
+ }
+ 
+ phase = 1 - phase;
+ 
+ return X;
+}
+
+
+
+i).>>>>
+一个难题:怎样写一个输出自己源代码的程序？
+char*s="char*s=%c%s%c;main(){printf(s,34,s,34);}";main(){printf(s,34,s,34);}
+
+
+这段程序有一些依赖,忽略了#include<stdio.h>,还假设了双引号"的值为34,和ASCII中的值一样。
+
+这里还有一个有James Hu发布的改进版：
+
+
+#define q(k) main(){return!puts(#k"\nq("#k")");}
+q(#define q(k)main(){return!puts(#k"\nq("#k")");})
+
+
+
+9. 需要温故而知新的、重申的指针概念
+------------------------------------------------
+
+a). int a 和 int *b
+ 
+a的大小是
+sizeof(int); 
+
+而b的大小是4;
+因为b是一个指针，它指向的数据的类型是int。
+b = &a;
+
+可以这样理解:b接受了同类型的a的地址。
+记住，指针存放的就是地址。
+ 
+b). 指针数组常用来存放字符串。
+
+比如可以用来显示错误信息：
+
+
+ void Msg_Error(int index)
+ {
+  static char *Error_MessageA[] = 
+  {
+   "Error A occurred!\n",
+   "Error B occurred!\n",
+   "Error C occurred!\n" 
+  };
+  printf("%s", Error_MessageA[index]); 
+ }
+
+命令行参数char *argv[]也是一个很好的实用。
+
+
+c). Multiple Indirection(多级间址)
+ 
+也就是指针的指针，这种比较容易困惑的构造。
+
+
+ int X, *pX, **ppX;
+ X = 10;
+ pX = &X;
+ ppX = &pX;
+ /*此时要访问一个被指针的指针指向的目标值X，需要2次星号*/
+ printf("%d\n", **ppX);//print 10;
+
+
+d). 指针初始化和释放
+ 
+如何注意初始化指针呢？
+一个非static的local指针在声明之后，但未赋值时其所包含的值是未知的。而global和static的指针被自动初始化为NULL了，这就是需要注意的信息。
+在new 一个指针*p后，很多人记住了要delete p; 可是有多少人有意识到，应该紧接附上这一句：p = NULL;  
+ 
+重用指针时，要重新初始化。例如下面程序段有一个bug：
+
+
+ char *p;
+ char s[80];
+ p = s;
+ do
+ {
+  gets(s);
+  while(*p) printf("%d", p++); 
+ }while(strcmp(s, "done"));
+
+这个程序段使用p来print数组s中的字符的ascii值。
+问题是p仅被赋予s的地址一次。等到第二次循环的时候，p就不知道会指向哪了。
+这样就会出现问题。所以应该这样做：
+
+
+ char *p;
+ char s[80];
+ do
+ {
+  p = s;
+  gets(s);
+  while(*p) printf("%d", p++); 
+ }while(strcmp(s, "done"));
+
+
+10. C++ polymorphism(多态)--运行时绑定
+----------------------------------------------------
+
+多态是覆盖(override)而不是重载(overload)。
+
+所有的多态成员函数具有相同的函数名，由运行时来判断哪一个最适合。当使用继承的时候就用到了这个机制：有时你无法在编译时分辨所拥有的对象到底是基类还是派生类，这个判断并正确调用的过程被称为"后期绑定"(late binding)。此时，应该在成员函数前面加上virtual关键字告诉编译器该成员函数是多态的(也就是虚拟函数)。也许通过代码来表达会比较清晰。
+
+我们来构造一个水果类：
+
+
+
+class Fruit
+{
+private:
+    int weight;
+    int calories_per_oz;
+public:
+    void slice();
+    void juice();
+    void peel()
+    {
+     printf("peeling a base class fruit\n");
+    }
+};
+
+
+接下来我们调用Fruit类的方法peel(),来为水果剥皮。
+
+
+Fruit banana;
+banana.peel();
+
+我们将得到信息：peeling a base class fruit
+
+  目前为止，一切正常。现在考虑从水果类派生出苹果类，并实现苹果类自己的peel()方法。
+无论如何，苹果和香蕉去皮的方式还是有所不同的。
+
+
+
+class Apple : public Fruit
+{
+public:
+    void peel()
+    {
+      printf("peeling an apple\n");
+    }
+    void make_candy_apple(float weight);
+};
+
+
+让我们声明一个指向水果类的指针，并指向一个苹果对象，接着我们尝试下去调它的果皮。
+
+
+Fruit *p;
+p = new Apple;
+p->peel();
+
+如果这样做，我们将得到信息：peeling a base class fruit
+
+换句话说，苹果的剥皮方式没用采用，现在还是用的老方法。
+
+解释：
+出现这个结果的原因是，当想用派生类的函数来取代基类的函数时，必须提前告诉编译期。
+而我们该怎么通知到它呢？在可能被取代的基类函数前面加上virtual关键字！
+也就是说，将Fruit类的peel()函数变成：
+virtual void peel() 
+
+即可。Yes，virtual就是这么用的。
+
+
+11. C++ inline(内联)函数 
+------------------------------
+
+inline函数是C++中的一个重要特效。它能使代码更加有效率。
+用户可以创建实际上不调用的短函数，它们的代码在每次调用的程序行里
+得到扩展。事实上，这个过程非常像使用类函数的宏。
+考虑下面的程序：
+
+
+ inline int max(int a, int b)
+ {
+  return a > b ? a : b;
+ }
+ int main()
+ {
+  cout << max(10, 20);
+  return 0;
+ }
+
+就编译器而言，上面的程序等价于：
+
+
+ ...
+ cout << (10 > 20 ? 10 : 20);
+ ...
+
+要记住的是，如果一个函数不能被inline,则当作一个正常的函数来调用。
+我们经常见到所有的短函数都在类声明内定义，事实上，它们将自动地转换成inline函数。
+
+
+ class myclass
+ {
+ private:
+   int a, b;
+ public:
+   void init(int i, int j)
+   {
+    a = i;
+    b = j;
+   }
+   void show()
+   {
+    cout << a << b <<endl;
+   }
+ };
+
+当然，虽然函数行内扩展能产生较快的执行速度，但由于重复编码会产生较长的代码，因此，应该inline那些能明显影响程序性能的函数。
+ 
+12. C++ friend(友元)函数/类
+-----------------------------------
+
+考虑下面的程序：
+
+
+ class myclass
+ {
+ private:
+  int a, b;
+ public:
+  friend int sum(myclass x);
+  void set_ab(int i,int j);
+  friend class Min;
+ };
+ int sum(myclass x)
+ {
+  return x.a + x.b;
+ }
+ void myclass::set_ab(int i, int j)
+ {
+  a = i;
+  b = j;
+ }
+
+如上所示，sum()不是myclass的成员，但是它仍然可以访问其私有成员。这便是friend函数最基本的用法。 
+一个类可以是另一个类的friend。此时，friend类和它的所有成员函数可以访问其他类中定义的私有成员。
+继续上例：
+
+
+ class Min
+ {
+ public:
+  int min(myclass x);
+ };
+ int Min::min(myclass x)
+ {
+  return x.a < x.b ? x.a : x.b;
+ }
+ int main()
+ {
+  myclass s(10, 20);
+  Min t;
+  cout << t.min(s);
+  return 0;
+ }
+
+这样,class Min 访问了myclass的私有变量a和b。但是它只能访问，不能继承该类，friend类较少使用，仅为了运行一些特殊情况的存在。
+
+
+13. C++ 静态(static)类成员
+---------------------------------
+
+在声明一个static成员变量时，编译器被告知该变量只存在一个副本，且该类的所以对象将共享这个变量。不管创建多少个该类的对象，其静态数据成员的副本只有一个。在创建第一个对象前，所以的静态变量都被初始化为0。
+静态成员变量的一个用途就是对一些被类的所以对象使用的共享资源提供访问控制。
+考虑下面的例子：
+
+
+ #include <iostream>
+ using namespace std;
+ class c1
+ {
+ private:
+   static int resource;  //0: in use; 1: free
+ public:
+   int get_resource();
+   void free_resource(){resource = 0;} 
+ };
+ int c1::resource;  //define static varible;
+ 
+ int cl::get_resource()
+ {
+  if(resource)
+   return 0;
+  else
+  {
+   resource = 1;
+   return 1; 
+  } 
+ }
+ 
+ int main()
+ {
+  c1 objA, objB;
+  if(objA.get_resource())
+   cout << "objA has resource" <<endl;
+  if(!objB.get_resource())
+   cout << "objB denied resource" <<endl;
+  objA.free_resource();
+  if(objB.get_resource())
+   cout << "objB has resource" <<endl;
+  return 0; 
+ }
+通过使用静态成员变量，实际上可以销毁任何全局变量。全局变量带给OOP的问题就是
+它们几乎总是违背封装原则。
+
+
+14. C++ 域作用符"::"
+--------------------------
+通常来说，我们用运算符::来连接类名和成员名，以指定成员属于哪个类。然而，域作用符还有另一个相关的用途： 它允许在一个封闭的作用域里被同一名称的局部声明"隐藏"的名字。例如，考虑下面的代码：
+
+
+ int i;  //global i
+ void f()
+ {
+  int i; //local i
+  i = 10; //use local i
+  ...
+ }
+
+现在要访问全局的变量i怎么办？
+
+
+ int i;
+ void f()
+ {
+  int i;  //local i
+  ::i = 10; //use global i
+  ...
+ }
+
+ 
+15. virtual函数的继承是分层的 
+-------------------------------------
+
+考虑下面的程序：
+
+
+class base
+{
+public:
+    virtual void vfunc()
+    {
+      cout << "This is base's vfunc()."<<endl;
+    }
+};
+
+class derived1 : public base
+{
+public:
+    void vfunc()
+    {
+      cout << "This is derived1's vfunc()."<<endl;
+    }
+};
+
+class derived2 : public derived1
+{
+public:
+/*
+    void vfunc()
+    {
+      cout << "This is derived2's vfunc()."<<endl;
+    }
+*/
+};
+
+derived2 ---继承自---> derived1 ---继承自---> base
+
+当derived2没有override掉virtual函数vfunc()时，
+若有derived2的对象引用vfunc(), 将调用derived1的vfunc()。
+
+
+16. 探讨函数的参数默认值的使用
+-----------------------------------------
+
+考虑下面缩进文本块的程序：
+
+
+#include <iostream>
+using namespace std;
+/* Default indent to -1. This value tells the function
+   to reuse the previous value. */
+void iputs(char *str, int indent = -1)
+{
+ static i = 0;  //holds previous indent value
+ if(indent >= 0)
+  i = indent;
+ else
+  indent = i;  //reuse old indent value
+ for(; indent; indent--)
+  cout << " ";
+ cout << str <<endl;
+}
+
+int main()
+{
+ iputs("AAA", 4);
+ iputs("BBB);
+ iputs("CCC", 6);
+ iputs("DDD", 2);
+ return 0;
+}
+
+这个程序显示如下的输出：
+    AAA
+    BBB
+      CCC
+  DDD 
+
+
+17. 关键字__closure的理解
+----------------------------------
+
+__closure关键字被用来声明这是一个类方法。大家都知道，对于类方法的调用，跟普通的方法调用有一个最大的区别，就是类方法会push一个this指针。而__closure就是要告诉编译器，这一个方法在被调用时候需要额外的传送一个this指针。
+
+
+
+#include<iostream>
+using namespace std;
+
+class MyObject
+{
+public:
+    int Func(int i)
+    {
+        return i*i;
+    }
+};
+
+int main(int argc, char* argv[])
+{
+    MyObject obj;
+    int(__closure *pFunc)(int) ;//如果没有__closure下一句是不能编译的
+    pFunc = obj.Func;
+    cout<<pFunc(100)<<endl;
+    return 0;
+}
+
+__closure包含有一个对象指针，这不同于一般的C++类成员函数指针。在标准C++中，你可以将一个继承类的对象赋给基类的指针，然而你不能将一个继承类的成员函数指针赋给基类成员函数指针，下面的代码作出解释：   
+
+
+class base   
+{   
+public:   
+ void   func(int x);   
+};   
+    
+class derived: public base   
+{   
+public:   
+ void   new_func(int i);   
+};   
+    
+void   (base::*bptr)(int);   
+    
+bptr = &derived::new_func; //   非法！   
+
+
+18. dynamic_cast要点
+---------------------------
+
+dynamic_cast执行一个运行时转换，该转换验证一个强制转换的有效性。如果该强制转换在执行dynamic_cast时是无效的，则这个转换失败。其一般形式如下：
+  dynamic_cast<target-type>(expr)
+
+其中，target-type指定强制转换的目标类型，expr是被强制转换为新类型的表达式。目标类型必须是一个指针/引用类型，被强制转换的表达式的值也必须是一个指针/引用类型。因此，dynamic_cast可以被用来将一种指针/引用类型强制转换为另一种指针/引用类型。
+
+dynamic_cast的目的是执行多态类型的强制转换。例如，假定有两个多态类分别是B和D，其中D从B中派生而来，dynamic_cast总是可以把指针D*强制转换为指针B*。这是因为基类指针总是可以指向它的派生对象，而只有当基类指针所指的对象真是一个D类对象时，dynamic_cast才可以把指针B*强制转换为指针D*。
+
+一般来说，如果被强制转换的指针/引用指向目标类型的对象或指向从目标类型派生的对象，dynamic_cast将会执行成功。否则，强制转换操作将会失败。如果转换失败，若该转换涉及指针，那么dynamic_cast的值将为空；如果一个涉及到引用类型的dynamic_cast以失败告终，则会抛出一个bad_cast异常。
+
+下面的程序是一个简单的例子(假设Base是一个多态类，Drived是Base的派生类)：
+  
+
+
+  Base *pBase, objBase;
+  Drived *pDrived, objDrived;
+   
+  //cast from Base * to Base * OK:
+  pBase = dynamic_cast<Base *> (&objBase);
+  
+  //cast from Drived * to Drived * OK: 
+  pDrived = dynamic_cast<Drived *> (&objDrived); 
+    
+  //cast from Drived * to Base * OK:  
+  pBase = dynamic_cast<Base *> (&objDrived);
+
+  //cast from Base * to Drived * NOT OK:  
+  pDrived = dynamic_cast<Drived *> (&objBase);
+    
+  //cast from pBase[point to Drived]  to Drived * OK:  
+  pBase = &ojbDrived;       
+  pDrived = dynamic_cast<Drived *> (pBase);
+
+  //cast from pBase[point to Base]  to Drived * NOT OK:  
+  pBase = &ojbBase;       
+  pDrived = dynamic_cast<Drived *> (pBase);
+
+  //cast from pDrived[point to Drived]  to Base * OK: 
+  pDrived = &ojbDrived;       
+  pBase = dynamic_cast<Base *> (pDrived);
+
+
+
+19. 怎样建立和理解非常复杂的声明？
+---------------------------------------------
+
+例如定义一个包含N个指向返回指向字符的指针的函数的指针的数组？
+这个问题至少有以下3种答案：
+a. 直接声明：
+ char *(*(*a[N])())();
+
+
+b. 用typedef逐步完成声明：
+
+
+  typedef char *pc  /* 字符指针 */
+ typedef pc fpc;  /* 返回字符指针的函数 */
+ typedef fpc *pfpc;  /* 上面函数的指针 */
+ typedef pfpc fpfpc(); /* 返回函数指针的函数 */
+ typedef fpfpc *pfpfpc; /* 上面函数的指针 */
+ pfpfpc a[N];  /* 上面指针的数组 */
+
+c. 使用cdecl程序，它可以把英文翻译成C或者把C翻译成英文：
+
+
+ cdecl> declare a as array of pointer to function returning
+  pointer to function returning pointer to char
+ char *(*(*a[])())() 
+
+
+20. 声明struct x1 { ... }; 和 typedef struct { ... } x2; 有什么不同？
+------------------------------------------------------------------------------
+ 第一种形式声明了一个“结构标签”；
+第二种声明了1个“类型定义”。
+
+也就是说，在后面引用时，需要用"struct x1"表示第一种，而用"x2"表示第二种。

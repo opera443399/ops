@@ -1,0 +1,3 @@
+yum -y update bash  && rpm -q --changelog bash |head -n 3
+yum -y update openssl  && rpm -q --changelog openssl |head -n 3
+yum -y update glibc  && rpm -q --changelog glibc |head -n 3

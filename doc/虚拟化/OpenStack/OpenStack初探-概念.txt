@@ -1,0 +1,25 @@
+OpenStack初探-概念
+
+一、结构
+
+核心服务包括：
+Nova，计算服务(Compute as a service)
+Neutron，网络服务(Networking as a service)
+Swift，对象存储服务(Object as a service)
+Cinder，块存储服务(Block as a service)
+
+公共服务包括：
+Glance，镜像服务(Image as a service)
+Keystone，认证服务(Identity as a service)
+Horizon，仪表盘服务(Dashboard as a service)
+
+依赖库项目包括：
+Oslo，基础设施代码共享依赖库(Common Lab as a service)
+
+孵化项目包括：
+Ceilometer，计费和监控服务
+Heat，编排服务
+Ironic，物理设备服务(Bare Metal as a service)
+Marconi，消息队列服务(Message Queue as a service)
+Savanna，大数据处理(MapReduce as a service)
+Trove，数据库服务(Database as a service)

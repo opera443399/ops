@@ -1,0 +1,37 @@
+对应的zabbix配置：
+UserParameter=hardware_nic_health,awk -v hardware_nic_number=`omreport chassis nics|grep -v "xenbr" |grep -c "Interface Name"` -v hardware_nic=`omreport chassis nics |awk '/^Connection Status/{print $NF}'|wc -l ` 'BEGIN{if(hardware_nic_number==hardware_nic) {print 1} else {print 0}}'
+
+
+涉及的命令：
+[root@local ~]# omreport chassis nics
+
+Network Interfaces Information
+
+Physical NIC Interface(s)
+Index             : 0
+Interface Name    : em1
+Vendor            : Broadcom Corporation
+Description       : NetXtreme BCM5720 Gigabit Ethernet PCIe
+Connection Status : Connected
+Slot              : Embedded
+
+Index             : 1
+Interface Name    : em2
+Vendor            : Broadcom Corporation
+Description       : NetXtreme BCM5720 Gigabit Ethernet PCIe
+Connection Status : Disabled
+Slot              : Embedded
+
+Index             : 2
+Interface Name    : em3
+Vendor            : Broadcom Corporation
+Description       : NetXtreme BCM5720 Gigabit Ethernet PCIe
+Connection Status : Disabled
+Slot              : Embedded
+
+Index             : 3
+Interface Name    : em4
+Vendor            : Broadcom Corporation
+Description       : NetXtreme BCM5720 Gigabit Ethernet PCIe
+Connection Status : Disabled
+Slot              : Embedded

@@ -1,0 +1,342 @@
+配置seafile服务
+
+
+操作内容：
+一、基础环境
+1、使用cobbler安装一个vm来测试。
+2、网络：
+eth0：host-only（用于虚拟内网，手动固定IP，这样从宿主机可以直接连接到这个vm）
+eth1：NAT（用于上外网，动态IP）
+[root@tvm-seafile ~]# cd /etc/sysconfig/network-scripts/
+[root@tvm-seafile network-scripts]# cat ifcfg-eth0
+DEVICE=eth0
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=192.168.56.248
+PREFIX=24
+GATEWAY=192.168.56.1
+DNS1=192.168.56.254
+
+[root@tvm-seafile network-scripts]# cat ifcfg-eth1
+DEVICE=eth1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+
+
+二、配置seafile环境
+1、配置数据库
+[root@tvm-mysql ~]# mysql -S /tmp/mysql.3306.sock -uroot -p
+Enter password: 
+mysql> create database `ccnet-db` character set = 'utf8';
+
+mysql> create database `seafile-db` character set = 'utf8';
+
+mysql> create database `seahub-db` character set = 'utf8';
+
+mysql> create user 'seafile'@'192.168.56.%' identified by 'seafile';
+
+mysql> GRANT ALL PRIVILEGES ON `ccnet-db`.* to `seafile`;
+
+mysql> GRANT ALL PRIVILEGES ON `seafile-db`.* to `seafile`;
+
+mysql> GRANT ALL PRIVILEGES ON `seahub-db`.* to `seafile`;
+
+2、安装
+[root@tvm-seafile ~]# mkdir /data/{download,seafile}
+[root@tvm-seafile ~]# cd /data/download
+[root@tvm-seafile download]# wget http://download-cn.seafile.com/seafile-server_4.3.0_x86-64.tar.gz
+[root@tvm-seafile download]# tar zxvf seafile-server_4.3.0_x86-64.tar.gz -C /data/seafile/
+[root@tvm-seafile download]# cd /data/seafile/
+[root@tvm-seafile seafile]# yum install mysql python-setuptools python-imaging  MySQL-python
+
+一步步的引导安装即可安装好。
+[root@tvm-seafile seafile-server-4.3.0]# sh setup-seafile-mysql.sh
+
+（略）
+---------------------------------
+This is your configuration
+---------------------------------
+
+    server name:            seafile-test
+    server ip/domain:       seafile.office.test
+
+    seafile data dir:       /data/seafile/seafile-data
+    fileserver port:        8082
+
+    database:               use exising
+    ccnet database:         ccnet-db
+    seafile database:       seafile-db
+    seahub database:        seahub-db
+    database user:          seafile
+
+
+
+---------------------------------
+Press ENTER to continue, or Ctrl-C to abort
+---------------------------------
+（略）
+-----------------------------------------------------------------
+Your seafile server configuration has been finished successfully.
+-----------------------------------------------------------------
+
+run seafile server:     ./seafile.sh { start | stop | restart }
+run seahub  server:     ./seahub.sh  { start <port> | stop | restart <port> }
+
+-----------------------------------------------------------------
+If you are behind a firewall, remember to allow input/output of these tcp ports:
+-----------------------------------------------------------------
+
+port of seafile fileserver:   8082
+port of seahub:               8000
+
+When problems occur, Refer to
+
+        https://github.com/haiwen/seafile/wiki
+
+for information.
+
+防火墙放行8082和8000端口。
+启动服务：
+[root@tvm-seafile seafile-server-4.3.0]# ll /data/seafile/seafile-server-latest && cd /data/seafile/seafile-server-latest
+lrwxrwxrwx 1 root root 20 Jul 30 11:11 /data/seafile/seafile-server-latest -> seafile-server-4.3.0
+[root@tvm-seafile seafile-server-latest]# sh seafile.sh start
+启动网页：
+[root@tvm-seafile seafile-server-latest]# sh seahub.sh start
+[root@tvm-seafile seafile-server-latest]# ss -antp |grep 80
+LISTEN     0      128                       *:8082                     *:*      users:(("seaf-server",3212,23))
+LISTEN     0      128                       *:8000                     *:*      users:(("python2.6",3404,7),("python2.6",3407,7),("python2.6",3408,7),("python2.6",3409,7))
+
+访问：
+http://seafile.office.test:8000/
+
+3、使用nginx来访问
+[root@tvm-seafile seafile-server-latest]# yum install nginx
+[root@tvm-seafile seafile-server-latest]# chkconfig nginx on
+[root@tvm-seafile seafile-server-latest]# cat /etc/nginx/conf.d/seafile.conf 
+server {
+    listen 80;
+    server_name seafile.office.test;
+
+    proxy_set_header X-Forwarded-For $remote_addr;
+
+    location / {
+        fastcgi_pass    127.0.0.1:8000;
+        fastcgi_param   SCRIPT_FILENAME     $document_root$fastcgi_script_name;
+        fastcgi_param   PATH_INFO           $fastcgi_script_name;
+
+        fastcgi_param   SERVER_PROTOCOL     $server_protocol;
+        fastcgi_param   QUERY_STRING        $query_string;
+        fastcgi_param   REQUEST_METHOD      $request_method;
+        fastcgi_param   CONTENT_TYPE        $content_type;
+        fastcgi_param   CONTENT_LENGTH      $content_length;
+        fastcgi_param   SERVER_ADDR         $server_addr;
+        fastcgi_param   SERVER_PORT         $server_port;
+        fastcgi_param   SERVER_NAME         $server_name;
+        fastcgi_param   REMOTE_ADDR         $remote_addr;
+
+        access_log      /var/log/nginx/seahub.access.log;
+        error_log       /var/log/nginx/seahub.error.log;
+    }
+
+    location /seafhttp {
+        rewrite ^/seafhttp(.*)$ $1 break;
+        proxy_pass http://127.0.0.1:8082;
+        client_max_body_size 0;
+        proxy_connect_timeout  36000s;
+        proxy_read_timeout  36000s;
+    }
+
+    location /media {
+        root /data/seafile/seafile-server-latest/seahub;
+    }
+}
+
+[root@tvm-seafile seafile-server-latest]# service nginx start
+
+[root@tvm-seafile seafile-server-latest]# echo "FILE_SERVER_ROOT = 'http://seafile.office.test'" >>seahub/seahub/settings.py
+[root@tvm-seafile seafile-server-latest]# sh seahub.sh stop
+[root@tvm-seafile seafile-server-latest]# sh seahub.sh start-fastcgi
+
+测试访问
+http://seafile.office.test/
+[root@tvm-seafile seafile-server-latest]# tail /var/log/nginx/seahub.access.log -n 1
+192.168.56.1 - - [30/Jul/2015:13:50:55 +0800] "GET /accounts/login/?next=/ HTTP/1.1" 200 11728 "-" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.107 Safari/537.36"
+
+4、加入开机启动
+---------------------------------------------------------------
+[root@tvm-seafile ~]# cat /etc/sysconfig/seafile
+# 请将 user 改为你的Linux用户名
+user=root
+
+# 请将 script_path 改为你的 Seafile 文件安装路径
+seafile_dir=/data/seafile
+script_path=${seafile_dir}/seafile-server-latest
+seafile_init_log=${seafile_dir}/logs/init.seafile.log
+seahub_init_log=${seafile_dir}/logs/init.seahub.log
+
+# 若使用 fastcgi, 请将其设置true
+fastcgi=true
+
+# fastcgi 端口, 默认为 8000. 
+fastcgi_port=8000
+---------------------------------------------------------------
+[root@tvm-seafile ~]# cat /etc/init.d/seafile
+#!/bin/bash
+#
+# seafile
+
+#
+# chkconfig: - 68 32
+# description: seafile
+
+# Source function library.
+. /etc/init.d/functions
+
+# Source networking configuration.
+. /etc/sysconfig/network
+
+if [ -f /etc/sysconfig/seafile ];then
+        . /etc/sysconfig/seafile
+        else
+            echo "Config file /etc/sysconfig/seafile not found! Bye."
+            exit 200
+        fi
+
+RETVAL=0
+
+start() {
+        # Start daemons.
+        echo -n $"Starting seafile: "
+        ulimit -n 30000
+        su - ${user} -c"${script_path}/seafile.sh start >> ${seafile_init_log} 2>&1"
+        RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && touch /var/lock/subsys/seafile
+        return $RETVAL
+}
+
+stop() {
+        echo -n $"Shutting down seafile: "
+        su - ${user} -c"${script_path}/seafile.sh stop >> ${seafile_init_log} 2>&1"
+        RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/seafile
+        return $RETVAL
+}
+
+# See how we were called.
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart|reload)
+        stop
+        start
+        RETVAL=$?
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|restart}"
+        RETVAL=3
+esac
+
+exit $RETVAL
+---------------------------------------------------------------
+[root@tvm-seafile ~]# cat /etc/init.d/seahub 
+#!/bin/bash
+#
+# seahub
+
+#
+# chkconfig: - 69 31
+# description: seahub
+
+# Source function library.
+. /etc/init.d/functions
+
+# Source networking configuration.
+. /etc/sysconfig/network
+
+if [ -f /etc/sysconfig/seafile ];then
+        . /etc/sysconfig/seafile
+        else
+            echo "Config file /etc/sysconfig/seafile not found! Bye."
+            exit 200
+        fi
+
+RETVAL=0
+
+start() {
+        # Start daemons.
+        echo -n $"Starting seahub: "
+        ulimit -n 30000
+        if [  $fastcgi = true ];
+                then
+                su - ${user} -c"${script_path}/seahub.sh start-fastcgi ${fastcgi_port} >> ${seahub_init_log} 2>&1"
+                else
+                su - ${user} -c"${script_path}/seahub.sh start >> ${seahub_init_log} 2>&1"
+                fi
+        RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && touch /var/lock/subsys/seahub
+        return $RETVAL
+}
+
+stop() {
+        echo -n $"Shutting down seafile: "
+        su - ${user} -c"${script_path}/seahub.sh stop >> ${seahub_init_log} 2>&1"
+        RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/seahub
+        return $RETVAL
+}
+
+# See how we were called.
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart|reload)
+        stop
+        start
+        RETVAL=$?
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|restart}"
+        RETVAL=3
+esac
+
+exit $RETVAL
+---------------------------------------------------------------
+
+
+[root@tvm-seafile ~]# chmod +x /etc/init.d/sea*
+[root@tvm-seafile ~]# chkconfig seafile on
+[root@tvm-seafile ~]# chkconfig seahub on
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ZYXW、参考
+1、官网doc
+http://manual-cn.seafile.com/index.html

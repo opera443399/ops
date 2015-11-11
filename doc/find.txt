@@ -1,0 +1,89 @@
+find博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
+另，附上几个blog的文章，后续可能会更新这个列表：
+Linux文件查找命令find,xargs详述 http://boyun.sh.cn/bio/?p=773
+
+
+用的最多的2个，找到指定类型的文件，打印和删除：
+find ${d_bak_log} -type f -name "*.log" -mtime +${s_copies} -print
+find ${d_bak_log} -type f -name "*.log" -mtime +${s_copies} -delete
+
+找出空目录
+find /path -depth -type d -empty
+
+找字节为0的文件
+find /path -depth -type f -empty
+
+找出具体文件名的文件
+find /path -name name_of_file
+
+找出特定扩展名的文件
+find /path -name “*.given_extension”
+
+根据权限及指定扩展名寻找文件
+find /path -name ‘*.txt’ -perm 644
+
+找出指定权限的文件
+find /path -perm -permision_bits(权限位)
+
+找出指定文件名(任意扩展名的文件)
+find /path -name ‘given_name.*’
+
+最近10分钟改动过的文件：
+find /home/web/log/exportlog -type f -mmin -10 -exec ls -l {} \;
+
+find根据时间寻找
+用减号-来限定更改时间在距今n日以内的文件，而用加号+来限定更改时间在距今n日以前的文件。
+各参数说明
+-amin n
+查找系统中最后N分钟访问的文件
+-atime n
+查找系统中最后n*24小时访问的文件
+-cmin n
+查找系统中最后N分钟被改变文件状态的文件
+-ctime n
+查找系统中最后n*24小时被改变文件状态的文件
+-mmin n
+查找系统中最后N分钟被改变文件数据的文件
+-mtime n
+查找系统中最后n*24小时被改变文件数据的文件
+更改时间在5日以内的文件
+find /path -mtime -5
+
+找出并删除文件
+find /path -name “core.*” -type f -print | xargs /bin/rm -f
+
+找出指定扩展名后修改扩展名
+find /path -type f | xargs rename .baksh “.sh”
+
+找出乱码文件名并删除
+例子1：
+[root@s1 download]# ls -li
+134742021 -rw-r--r--   1 root     root        0 Feb 17 17:28 ??p?
+134754342 -rw-r--r--   1 root     root     3.8M Mar 28  2012 xtrabackup-1.6.6-332.rhel6.x86_64.rpm
+134742018 -rw-r--r--   1 root     root        0 Feb 17 17:28 ?x,u
+
+[root@s1 download]# find . -inum 134742021
+./??p?
+[root@s77 download]# find . -inum 134742021 -exec rm {} \;
+[root@s77 download]# ls
+?x,u  xtrabackup-1.6.6-332.rhel6.x86_64.rpm
+
+例子2：
+[root@s1 download]#  ll -hi
+25953325 -rw-rw-r--  1 root root  63M May 30  2012 --exclude
+
+[root@s1 download]#  find . -inum 25953325 -print
+./--exclude
+
+[root@s1 download]#  find . -inum 25953325 -delete
+
+
+例子3：
+[Jack@test ~]$ ls -i
+916302 ?眙?[??d?G?go?e]?Hk?I??_???X?????-?q???
+[Jack@s80 ~]$ find -inum 916302 -print 
+./?眙?[??d?G?go?e]?Hk?I??_???X?????-?q???
+[Jack@s80 ~]$ find -inum 916302 -delete
+[Jack@s80 ~]$ ls
+
+

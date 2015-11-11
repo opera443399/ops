@@ -1,0 +1,76 @@
+OS优化：
+
+
+ulimit -a
+
+查看linux系统级的最大打开文件数限制：
+cat /proc/sys/fs/file-max
+
+vim /etc/rc.local
+增加：
+echo 16 > /sys/block/sda/queue/read_ahead_kb 
+echo 512 > /sys/block/sda/queue/nr_requests
+ulimit -HSc unlimited
+ulimit -HSn 32768
+ulimit -HSu 65535
+
+
+
+
+修改/etc/sysctl.conf，增加：
+fs.aio-max-nr=3145728
+
+net.ipv4.tcp_thin_dupack = 1
+net.ipv4.tcp_thin_linear_timeouts = 1
+net.ipv4.tcp_timestamps = 0
+
+net.ipv4.tcp_max_syn_backlog = 819200
+net.core.netdev_max_backlog = 400000
+net.core.somaxconn = 4096
+
+后sysctl -p生效
+
+
+===============================================================
+
+crontab的打core问题
+2013年6月13日admin发表评论阅读评论
+
+接到同事报障, 程序又crash了, 但是找不到core, 而且是应该产生core的, 系统肯定哪里又有bug了.
+
+先从系统层面大概都巡查了一下:
+
+1.  找到别的程序的pid号,然后cat /proc/pid/limits  |grep core,返回Max core file size        0            unlimited            bytes, 有大问题, Soft Limit值居然是0, 继续找原因.
+
+2.  用程序用户执行ulimit -c, 返回unlimited, 系统设置没问题.
+
+3.  sysctl -a |grep core_ , 查看core_pattern返回core.%p.%e , 没有目录存在与否和权限的问题.
+
+4.  ssh XX.XX.XX.XX “ulimit -c ” , 远程登陆执行命令, 返回unlimited, 排除了我之前说的怪物世界不打core问题.
+
+基本问题都查了一下, 貌似没问题,  但确实没打core, 问题在哪呢? 纠结. 又重复查了下 :(
+
+还是没找到问题, 但是有些服务器和程序又反馈是正常的…. (省略一些无用功), 之前的文章说提到, 先ulimit -c unlimited ,然后重启sshd, 这样ssh过来的连接也默认有这个参数了, 也就是说, ulimit值为0 , 很有可能也是从上一级”父程序”继承到的. 看程序启动时间都是在同一个时间点, 查找bash记录和cron记录, 没有发现有谁手动设置ulimit 的core值然后启动游戏之类的, 只有cron的记录重启游戏. 莫非就是crontab的问题, ps -ef |grep crond找到crontab的进程id号, 然后进入proc目录查看他的limits文件,发现这个程序确实是0值, 也就是说crond被设置成了不打core, 然后他启动的任何程序, 除非手动申明过, 否则都不会打core, 然后简单验证:
+
+在crontab里面加入计划任务运行/lib64/libss.so.2, 这是个库文件, 直接运行就会打core报错,  但是放在crontab里面确实没有打core, 就是这个问题了: crontab引起的不打core问题.
+
+但是为什么呢, 为什么crond这个程序为什么没有设置为打core呢, 按理说, 是会继承bash的unlimited值, 除非自己另外设置过,  记得 /etc/crontab 里面可以设置crond的变量, 然后手动在里面指定unlimited值还是一样的无效, 查看 /etc/init.d/crond 启动文件, 发现也会加载/etc/sysconfig/crond这个设置文件, 然后手动指定, 结果还是无效. 在 /etc/init.d/crond文件里面几个地方设置”断点” ,加入 cat /proc/$$/limits| grep core , 结果都返回unlimited值, 又是一阵迷茫中.
+
+继续设置”断点” ,结果在daemon启动crond的时候发现有些关键, 然后查找daemon的来源: /etc/rc.d/init.d/functions文件, 在里面发现了daemon函数的定义, 而且里面有个关键命令239行有个corelimit=”ulimit -S -c ${DAEMON_COREFILE_LIMIT:-0}” , 而且DAEMON_COREFILE_LIMIT这个变量没有地方设置, 想到之前设置snmp的日志问题, 同样在/etc/sysconfig/crond 里面加入DAEMON_COREFILE_LIMIT=unlimited然后重新启动crond就可以了. 不过这是针对crontab启动的程序, 另外我们经常有一些程序是用服务启动, 而且服务里面默认都会加载/etc/rc.d/init.d/functions这个文件, 如果想完全杜绝用系统服务启动的程序不打core这个情况, 直接把corelimit=”ulimit -S -c ${DAEMON_COREFILE_LIMIT:-0}”这行注释掉就可以了.
+
+重新设置crontab, 运行/lib64/libss.so.2这个文件, 发现crash顺利打core了, crontab启动的程序已经可以顺利打core了, 貌似问题到此都解决了.
+
+但是疑问又来了, 为什么有些服务器有些项目程序也是用crontab重启程序, 但是没有这个情况? 悲剧, 继续找问题…… (业务问题,省略), 问题找到了, 因为有些程序是另另外一个父程序守护, crontab重启那些游戏只是简单地kill掉程序, 然后又父程序自动启动, 然后这个父程序是用手动启动的, 是可以正常打core的, 所以不存在这个问题. 按理说这个情况又解释好了, 但是又有例外, 有个项目不是用守护启动的, 但是没有这个bug, 解释不通, 悲剧, 继续找问题.
+
+整个流程几乎又重来了, 但是依然没有找到个解释说法, 重新浮动一个想法, 最开始之前就怀疑过开发老大们, 是否在程序里面手动设置过ulimit值, 但是说没有, 如果真没有, 那就解释不通了, 然后打算自己针对二进制文件进行简单分析:
+在服务器上通过strings命令查看是否有ulimit和core之类的文本, 结果真地找到了, 里面有 set corefile size之类的文本, 肯定就是这个问题了, 继续找项目开发人员了解情况, 有说法了, 他们在程序里面加入了setrlimit函数,  这个函数是用来设置task进程使用资源的上限的. 就是这个问题了. 因为是针对自己启动的程序或者子程序, 所以普通用户也是可以设置这个值.
+
+ok, 又有3个打core问题全部解释通了, 稍微总结一下:
+
+1. crontab启动时候从系统函数那里得到core值为0导致启动的所有程序都是不打core的.
+
+2. 守护程序启用了core, 他启动的程序都直接继承这个属性了.
+
+3. 程序可以自己另外设置core值.
+
+另外普及一下,查看正在运行的程序是否能产生core, 并不是让他crash掉, 而是通过proc文件系统里面的pid文件夹的limits文件. 这是之前一篇文章重点讲过的. powered by liu.

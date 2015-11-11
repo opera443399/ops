@@ -1,0 +1,26 @@
+配置DNS服务-简易配置dnsmasq来提供服务
+
+【DNS服务器】
+[root@vm220 ~]# yum -y install dnsmasq
+[root@vm220 ~]# cat /etc/hosts
+10.50.100.30 e01.test
+10.50.100.72 n72.test
+10.50.100.73 n73.test
+10.50.100.86 n86.test
+10.50.100.93 n93.test
+
+
+[root@vm220 ~]# cat /etc/resolv.conf 
+nameserver 10.50.100.93
+nameserver 223.5.5.5
+
+[root@vm220 ~]# service dnsmasq restart
+放行TCP和UDP的53端口。
+
+测试：
+[root@node93 ~]# nslookup e01.test                         
+Server:         10.50.100.220
+Address:        10.50.100.220#53
+
+Name:   e01.test
+Address: 10.50.100.30

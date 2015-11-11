@@ -1,0 +1,83 @@
+查看1周的日志中http状态码：
+使用正则匹配多个文件
+zcat 2013-08-0[5-9]-*.fg.log.* 2013-08-1[0-1]-*.fg.log.* |awk '{print $9}'|sort|uniq -c|sort -nr|more
+
+
+inux 命令 zcat , pgrep，grep 
+
+单独查找文件内容grep
+grep   /usr/local/*   -e   who       #who 是查找的内容
+ 
+用 zcat 查看压缩的文件 
+
+单个磁盘的容量现在已经超过了 1TB，但是大型数据文件、日志文件、图像以及电影等媒体文件很快就把磁盘装满了。为了节省空间，可以把许多文件压缩到原大小的几分之一。例如，Apache 日志文件（是简单的文本）可以压缩到原大小的十分之一。 
+
+尽管压缩可以节省磁盘空间，但是也会增加工作量。例如，如果需要分析压缩的 Apache 日志文件，就必须解压它，处理数据，然后重新压缩它。如果有大量日志文件（如果保留分析趋势所需的记录，这种情况很常见），那么开销会非常大。 
+
+幸运的是，gzip 套件包含许多可以 “在原地” 处理压缩文件的实用程序。zcat、zgrep、zless、zdiff 等实用程序的作用分别与 cat、grep、less 和 diff 相同，但是它们操作压缩的文件。 
+ zcat /home/downfile/test.tar.gz | grep -a 'key_name'      # -a ：  grep认为这是二进制文件
+
+用 pgrep 寻找进程 
+
+您可能无数次使用 ps aux | grep ... 寻找进程。这当然是有效的，但是有一种更高效的搜索进程的方法。请试试 pgrep。 
+
+例如，以下命令寻找 strike 的所有登录 shell（其中的 strike 是用户名）： 
+
+$ pgrep -l -u strike zsh 
+10331 zsh 
+10966 zsh 
+
+
+pgrep 命令提供筛选选项，允许按用户名（上面给出的 -u）、进程组、组等筛选进程。配套的实用程序 pkill 接受 pgrep 的所有选项和一个信号，它把这个信号发送给与给定的条件匹配的所有进程。 
+
+例如，命令 pkill -9 -u strike zsh 与 pgrep -u strike zsh | xargs kill -9 等效。 
+
+
+~:pgrep -l -u zuroc 
+7722 zmq_server 
+15673 sshd 
+15674 bash 
+20336 memcached 
+20636 fcgi.online.py 
+20640 fcgi.dev.py 
+20645 nginx 
+20646 nginx 
+20647 nginx 
+20660 fcgi.online.py 
+20661 fcgi.online.py 
+20662 fcgi.online.py 
+20663 fcgi.online.py 
+20664 fcgi.online.py 
+22495 sshd 
+22496 bash 
+
+~:pgrep -l fc 
+20636 fcgi.online.py 
+20640 fcgi.dev.py 
+20660 fcgi.online.py 
+20661 fcgi.online.py 
+20662 fcgi.online.py 
+20663 fcgi.online.py 
+20664 fcgi.online.py 
+
+~:pgrep -u zuroc 
+7722 
+15673 
+15674 
+20336 
+20636 
+20640 
+20645 
+20646 
+20647 
+20660 
+20661 
+20662 
+20663 
+20664 
+22495 
+22496
+
+
+
+

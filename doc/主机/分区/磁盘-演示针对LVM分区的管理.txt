@@ -1,0 +1,306 @@
+演示针对LVM分区的管理。
+
+假设已经增加一块磁盘：/dev/sdb
+
+一、将sdb配置成LVM分区
+1）当前系统有sda和sdb2个物理磁盘，各有100G的大小。
+[root@svr200-11 ~]# ls /dev/sd*
+sda   sda1  sda2  sdb   
+
+2）给sdb分区
+最简单的方式是使用整个磁盘：
+[root@svr200-11 ~]# pvcreate /dev/sdb
+
+否则的话，请继续：
+[root@svr200-11 ~]# fdisk /dev/sdb
+
+WARNING: DOS-compatible mode is deprecated. It's strongly recommended to
+         switch off the mode (command 'c') and change display units to
+         sectors (command 'u').
+注1：使用“n”创建新分区
+Command (m for help): n
+Command action
+   e   extended
+   p   primary partition (1-4)
+注2：使用“p”创建主分区
+p
+
+注3：使用“1”创建分区1（在1-4中选择，当前磁盘支持最多4个主分区，GPT格式的磁盘支持更多主分区）
+Partition number (1-4): 1
+
+注4：选择默认值
+First cylinder (1-13054, default 1): 
+Using default value 1
+
+注5：选择一个分区大小，看提示，可以用"+|大小|单位"这样的格式，此处是增加20G的分区
+Last cylinder, +cylinders or +size{K,M,G} (1-13054, default 13054): +20G
+
+注6：更改分区格式为LVM，先输入“t”，然后输入“8e”（Linux LVM），不清楚请输入“l”去查看对应的代码
+Command (m for help): t
+Selected partition 1
+Hex code (type L to list codes): l
+
+ 0  Empty           24  NEC DOS         81  Minix / old Lin bf  Solaris        
+ 1  FAT12           39  Plan 9          82  Linux swap / So c1  DRDOS/sec (FAT-
+ 2  XENIX root      3c  PartitionMagic  83  Linux           c4  DRDOS/sec (FAT-
+ 3  XENIX usr       40  Venix 80286     84  OS/2 hidden C:  c6  DRDOS/sec (FAT-
+ 4  FAT16 <32M      41  PPC PReP Boot   85  Linux extended  c7  Syrinx         
+ 5  Extended        42  SFS             86  NTFS volume set da  Non-FS data    
+ 6  FAT16           4d  QNX4.x          87  NTFS volume set db  CP/M / CTOS / .
+ 7  HPFS/NTFS       4e  QNX4.x 2nd part 88  Linux plaintext de  Dell Utility   
+ 8  AIX             4f  QNX4.x 3rd part 8e  Linux LVM       df  BootIt         
+ 9  AIX bootable    50  OnTrack DM      93  Amoeba          e1  DOS access     
+ a  OS/2 Boot Manag 51  OnTrack DM6 Aux 94  Amoeba BBT      e3  DOS R/O        
+ b  W95 FAT32       52  CP/M            9f  BSD/OS          e4  SpeedStor      
+ c  W95 FAT32 (LBA) 53  OnTrack DM6 Aux a0  IBM Thinkpad hi eb  BeOS fs        
+ e  W95 FAT16 (LBA) 54  OnTrackDM6      a5  FreeBSD         ee  GPT            
+ f  W95 Ext'd (LBA) 55  EZ-Drive        a6  OpenBSD         ef  EFI (FAT-12/16/
+10  OPUS            56  Golden Bow      a7  NeXTSTEP        f0  Linux/PA-RISC b
+11  Hidden FAT12    5c  Priam Edisk     a8  Darwin UFS      f1  SpeedStor      
+12  Compaq diagnost 61  SpeedStor       a9  NetBSD          f4  SpeedStor      
+14  Hidden FAT16 <3 63  GNU HURD or Sys ab  Darwin boot     f2  DOS secondary  
+16  Hidden FAT16    64  Novell Netware  af  HFS / HFS+      fb  VMware VMFS    
+17  Hidden HPFS/NTF 65  Novell Netware  b7  BSDI fs         fc  VMware VMKCORE 
+18  AST SmartSleep  70  DiskSecure Mult b8  BSDI swap       fd  Linux raid auto
+1b  Hidden W95 FAT3 75  PC/IX           bb  Boot Wizard hid fe  LANstep        
+1c  Hidden W95 FAT3 80  Old Minix       be  Solaris boot    ff  BBT            
+1e  Hidden W95 FAT1
+Hex code (type L to list codes): 8e
+Changed system type of partition 1 to 8e (Linux LVM)
+
+注7：打印当前的分区状态
+Command (m for help): p
+
+Disk /dev/sdb: 107.4 GB, 107374182400 bytes
+255 heads, 63 sectors/track, 13054 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0xb07a7c89
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sdb1               1        2612    20980858+  8e  Linux LVM
+
+注8：确认无误，写入磁盘
+Command (m for help): w
+The partition table has been altered!
+
+Calling ioctl() to re-read partition table.
+Syncing disks.
+
+
+二、物理卷（Physical Volume）
+1）创建PV
+[root@svr200-11 ~]# pvcreate  /dev/sdb1
+2）查看PV
+[root@svr200-11 ~]# pvdisplay 
+
+  
+三、卷组（Volume Group）  
+1）创建一个VG，定义组名，组员（PV）
+[root@svr200-11 ~]# vgcreate vg_test01 /dev/sdb1  
+2）查看VG
+[root@svr200-11 ~]# vgdisplay 
+
+  
+四、逻辑卷（Logical Volume）
+1）创建一个新LV（理解成常规的一个分区，需要mkfs格式化后挂载到文件系统使用），定义大小，逻辑卷名称，以及从哪个VG上创建。
+[root@svr200-11 ~]# lvcreate -L 8G -n lv_test01 vg_test01
+当然，也可以使用全部的磁盘空间：
+[root@svr200-11 ~]# lvcreate -l 100%FREE lv_test01 vg_test01
+这里要注意一下“-l”参数的用法。
+
+2）查看逻辑卷
+[root@svr200-11 ~]# lvdisplay 
+
+
+五、格式化lv并挂载到文件系统使用
+1）格式化
+[root@svr200-11 ~]# mkfs -t ext4 /dev/vg_test01/lv_test01 
+
+2）挂载
+[root@svr200-11 ~]# mkdir /data/test01 
+[root@svr200-11 ~]# mount /dev/vg_test01/lv_test01 /data/test01/
+[root@svr200-11 ~]# df -h |grep data
+/dev/mapper/vg_test01-lv_test01  7.9G  146M  7.4G   2% /data/test01  
+
+注：当然了，要记得更新fstab文件
+或者先查询uuid
+# blkid /dev/vg_test01/lv_test01
+然后写入fstab
+# cat <<'_EOF' >>/etc/fstab
+UUID=xxxx /data                   ext4    defaults        0 0
+_EOF
+接着挂载
+# mount -a
+
+
+六、当前状态
+1）物理磁盘：sdb，100G
+2）新建了一个LVM格式的分区：sdb1，20G
+3）新建了一个vg（vg_test01），把sdb1加入了vg_test01中
+4）在vg_test01上，创建了一个大小为8G的分区lv_test01（逻辑卷lv）
+5）格式化和挂载分区lv_test01到/data/test01上使用
+
+
+七、上述是常规的增加一个分区的步骤，接下来探讨如何给分区扩容。
+假设已经删除了上面使用的/dev/sdb，这次的目的是，给卷组（vg_svr20011）扩容，最终是要给逻辑卷（lv_home）扩容
+扫描和删除有如下命令：
+pvscan
+vgscan
+lvscan
+pvremove
+vgremove
+lvremove
+
+
+1）创建/dev/sdb1，大小全部空间（100G），LVM分区
+
+fdisk /dev/sdb <<_EOF
+n
+p
+1
+
+
+t
+8e
+p
+w
+_EOF
+
+
+创建PV：
+[root@svr200-11 ~]# pvcreate /dev/sdb1
+  Physical volume "/dev/sdb1" successfully created
+
+查看PV状态：
+[root@svr200-11 ~]# pvscan 
+  PV /dev/sda2   VG vg_svr20011     lvm2 [99.51 GiB / 0    free]
+  PV /dev/sdb1                      lvm2 [100.00 GiB]
+  Total: 2 [199.51 GiB] / in use: 1 [99.51 GiB] / in no VG: 1 [100.00 GiB]
+
+给现有的VG扩容：
+[root@svr200-11 ~]# vgextend vg_svr20011 /dev/sdb1
+  Volume group "vg_svr20011" successfully extended
+
+再次查看PV的状态：  
+[root@svr200-11 ~]# pvscan
+  PV /dev/sda2   VG vg_svr20011   lvm2 [99.51 GiB / 0    free]
+  PV /dev/sdb1   VG vg_svr20011   lvm2 [100.00 GiB / 100.00 GiB free]
+  Total: 2 [199.50 GiB] / in use: 2 [199.50 GiB] / in no VG: 0 [0   ]
+
+sdb1已经和sda2已经属于同一个卷组。
+
+
+2）给逻辑卷（LV）扩容
+查看LV的状态：
+[root@svr200-11 ~]# lvscan
+  ACTIVE            '/dev/vg_svr20011/lv_root' [50.00 GiB] inherit
+  ACTIVE            '/dev/vg_svr20011/lv_home' [47.54 GiB] inherit
+  ACTIVE            '/dev/vg_svr20011/lv_swap' [1.97 GiB] inherit
+
+目前lv_home 使用了50G，先扩容到80G看看
+[root@svr200-11 ~]# lvextend -L 80G /dev/vg_svr20011/lv_home 
+  Extending logical volume lv_home to 80.00 GiB
+  Logical volume lv_home successfully resized
+[root@svr200-11 ~]# lvscan
+  ACTIVE            '/dev/vg_svr20011/lv_root' [50.00 GiB] inherit
+  ACTIVE            '/dev/vg_svr20011/lv_home' [80.00 GiB] inherit
+  ACTIVE            '/dev/vg_svr20011/lv_swap' [1.97 GiB] inherit
+
+用df查看分区信息：
+[root@svr200-11 ~]# df -h
+Filesystem                       Size  Used Avail Use% Mounted on
+/dev/mapper/vg_svr20011-lv_root   50G  3.1G   44G   7% /
+tmpfs                            499M     0  499M   0% /dev/shm
+/dev/sda1                        485M   34M  426M   8% /boot
+/dev/mapper/vg_svr20011-lv_home   47G   38G  7.2G  84% /home
+此时用df命令查看分区，会发现分区大小尚未更新，因为我们还需要on-line resize一下分区：
+  
+[root@svr200-11 ~]# resize2fs /dev/vg_svr20011/lv_home 
+resize2fs 1.41.12 (17-May-2010)
+Filesystem at /dev/vg_svr20011/lv_home is mounted on /home; on-line resizing required
+old desc_blocks = 3, new_desc_blocks = 5
+Performing an on-line resize of /dev/vg_svr20011/lv_home to 20971520 (4k) blocks.
+The filesystem on /dev/vg_svr20011/lv_home is now 20971520 blocks long.
+
+再看：
+[root@svr200-11 ~]# df -h
+Filesystem                       Size  Used Avail Use% Mounted on
+/dev/mapper/vg_svr20011-lv_root   50G  3.1G   44G   7% /
+tmpfs                            499M     0  499M   0% /dev/shm
+/dev/sda1                        485M   34M  426M   8% /boot
+/dev/mapper/vg_svr20011-lv_home   79G   38G   38G  50% /home
+
+符合预期
+
+
+
+八、附上一个可有可无的小脚本，用于快速的删除和建立lvm分区来熟悉命令
+[root@svr200-11 ~]# cat lvm_fdisk.sh 
+#!/bin/bash
+#
+# 2015/4/30
+# 创建和删除lvm分区的一个示例
+
+function part_lvm() {
+  echo -e "\033[1;40;31m[+] 使用fdisk创建分区\033[0m"
+  echo -e "\033[40;32m开始操作：\033[40;37m"
+  fdisk $1 <<_EOF
+n
+p
+1
+
+
+t
+8e
+p
+w
+_EOF
+  echo
+  echo -e "\033[40;32m完成！\033[40;37m"
+  echo -e "\033[1;40;31m[-] 已经创建分区：${1}1\033[0m"
+}
+
+function part_rm() {
+  echo -e "\033[1;40;31m[+] 使用fdisk删除分区\033[0m"
+  echo -e "\033[40;32m开始操作：\033[40;37m"
+  count=$(fdisk -l /dev/sdb |grep dev |grep -v Disk |wc -l)
+  if [ $count -lt 2 ]; then
+    fdisk $1 <<_EOF
+d
+p
+w
+_EOF
+    echo
+    echo -e "\033[40;32m完成！\033[40;37m"
+    echo -e "\033[1;40;31m[-] 已经删除分区：${1}1\033[0m"
+    echo
+  else
+    echo -e "\033[1;40;31m[-] 这个磁盘有多个分区，请先检查确认！\033[0m"
+  fi
+}
+
+function usage() {
+  cat <<_EOF
+
+usage: $0 type device
+
+$0 lvm /dev/sdb
+$0 rm /dev/sdb
+
+_EOF
+}
+
+case $1 in
+  lvm|rm)
+    part_$1 $2
+    ;;
+  *)
+    usage
+    ;;
+esac
+
+
+
+

@@ -1,0 +1,56 @@
+ps的用法简介
+ps这个工具也是博大精深，各工具的详情请查看man和参考网络文章。
+
+       -A              Select all processes. Identical to -e.
+       a               Lift the BSD-style "only yourself" restriction, which is imposed upon the set of all
+                       processes when some BSD-style (without "-") options are used or when the ps personality
+                       setting is BSD-like. The set of processes selected in this manner is in addition to the set
+                       of processes selected by other means. An alternate description is that this option causes ps
+                       to list all processes with a terminal (tty), or to list all processes when used together
+                       with the x option
+
+
+       -e              Select all processes. Identical to -A.
+
+       x               Lift the BSD-style "must have a tty" restriction, which is imposed upon the set of all
+                       processes when some BSD-style (without "-") options are used or when the ps personality
+                       setting is BSD-like. The set of processes selected in this manner is in addition to the set
+                       of processes selected by other means. An alternate description is that this option causes ps
+                       to list all processes owned by you (same EUID as ps), or to list all processes when used
+                       together with the a option.
+
+       u               display user-oriented format
+       
+       f               ASCII-art process hierarchy (forest)       
+                       
+
+                       
+常用
+1）ps -ef
+
+2）ps auxf
+
+3）指定输出的列，查找状态为D的进程
+[Jack@test1 ~]$ ps -eo pid,stat,wchan,args |grep D |grep -v grep |wc -l
+19
+[Jack@test1 ~]$ ps -eo pid,stat,wchan,args |grep D |grep -v grep
+  PID STAT WCHAN  COMMAND
+ 2679 D    lookup df
+ 2998 D    lookup df
+ 3878 D    lookup df
+ 7776 D    lookup df -h
+ 8761 D    lookup df -h
+ 9285 D    lookup df -h
+ 9977 D    vfs_re bash
+10163 D    lookup umount -lf /home/web/upload/phonerecord/2012
+10672 D    lookup fuser -m -v /home/web/upload/phonerecord/2012
+12806 D    lookup ls --color=tty /home/web/upload/phonerecord/
+14184 D    nfs4_h ls --color=tty /home/web/upload/phonerecord/2012
+14507 D    lookup /sbin/mount.nfs 192.168.5.75:/home/phonerecord/2012 /home/web/upload/phonerecord/2012 -o rw
+17947 D    lookup df -h
+18195 D    lookup umount /home/web/upload/phonerecord/2012
+19069 D    lookup /sbin/mount.nfs 192.168.5.75:/home/phonerecord/2012 /home/web/upload/phonerecord/2012 -v -o rw
+21375 D    lookup df -vh
+24728 D    lookup df -H
+28849 D    lookup ls --color=tty
+29396 D    lookup df -i

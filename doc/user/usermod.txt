@@ -1,0 +1,18 @@
+[root@test240 ~]# id git
+uid=502(git) gid=506(git) groups=506(git)
+[root@test240 ~]# usermod -G www git
+[root@test240 ~]# id git
+uid=502(git) gid=506(git) groups=506(git),501(www)
+[root@test240 ~]# usermod -aG redmine git
+[root@test240 ~]# id git
+uid=502(git) gid=506(git) groups=506(git),501(www),504(redmine)
+[root@test240 ~]# usermod -G www git
+[root@test240 ~]# id git
+uid=502(git) gid=506(git) groups=506(git),501(www)
+[root@test240 ~]# usermod -G git git
+[root@test240 ~]# id git            
+uid=502(git) gid=506(git) groups=506(git)
+
+
+一次增加多个用户组：
+# usermod -G bin,daemon,adm,lp,ecweb daemon

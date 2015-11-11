@@ -1,0 +1,377 @@
+saltstack的深入-再次理解file_roots，state，pillar和highstate的使用
+
+
+
+一、基础环境
+1、在tvm-rpm的基础上，更新hostname=tvm-saltmaster，配置测试用途的salt-master服务，并在其他的测试机上配置salt-minion。
+2、网络：
+eth0：host-only（用于虚拟内网，手动固定IP，这样从宿主机可以直接连接到这个vm）
+eth1：NAT（用于上外网，动态IP）
+[root@tvm-saltmaster ~]# cd /etc/sysconfig/network-scripts/
+[root@tvm-saltmaster network-scripts]# cat ifcfg-eth0
+DEVICE=eth0
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=192.168.56.253
+PREFIX=24
+GATEWAY=192.168.56.1
+DNS1=192.168.56.254
+
+[root@tvm-saltmaster network-scripts]# cat ifcfg-eth1
+DEVICE=eth1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+DNS1=192.168.56.254
+
+
+二、配置saltstack环境
+1、安装salt-master
+[root@tvm-saltmaster ~]# yum -y install salt-master
+[root@tvm-saltmaster ~]# service salt-master start
+防火墙放行TCP端口：4505:4506
+
+2、更新dns服务器（tvm-yum）的解析
+[root@tvm-yum ~]# echo '192.168.56.253 salt-m.office.test' >>/etc/hosts
+[root@tvm-yum ~]# service dnsmasq restart
+[root@tvm-yum ~]# nslookup salt-m.office.test 127.0.0.1
+Server:         127.0.0.1
+Address:        127.0.0.1#53
+
+Name:   salt-m.office.test
+Address: 192.168.56.253
+
+3、配置salt-minion
+将tvm-saltmaster，tvm-yum，tvm-cobbler加入salt平台，当然，后续是在cobbler安装os时配置了salt-minion服务。
+[root@tvm-yum bin]# cat saltstack-install-minion.sh 
+#!/bin/bash
+#
+# 2015/7/20
+
+salt_m=salt-m.office.test
+yum install salt-minion -y
+
+cp -a /etc/salt/minion /etc/salt/minion.bak
+cat <<_EOF >/etc/salt/minion
+master: ${salt_m}
+id: $(hostname)
+
+_EOF
+
+service salt-minion start
+cat /etc/salt/minion
+
+
+4. 在salt-master上接受salt-minion的key
+[root@tvm-saltmaster ~]# salt-key -L
+Accepted Keys:
+Denied Keys:
+Unaccepted Keys:
+tvm-cobbler
+tvm-saltmaster
+tvm-test
+tvm-yum
+Rejected Keys:
+[root@tvm-saltmaster ~]# salt-key -A
+The following keys are going to be accepted:
+Unaccepted Keys:
+tvm-cobbler
+tvm-saltmaster
+tvm-test
+tvm-yum
+Proceed? [n/Y] y
+Key for minion tvm-cobbler accepted.
+Key for minion tvm-saltmaster accepted.
+Key for minion tvm-test accepted.
+Key for minion tvm-yum accepted.
+
+测试：
+[root@tvm-saltmaster ~]# salt 'tvm*' test.ping
+tvm-test:
+    True
+tvm-yum:
+    True
+tvm-cobbler:
+    True
+tvm-saltmaster:
+    True
+
+
+三、一个示例
+[root@tvm-saltmaster salt]# cd /srv/salt/
+1、更新salt-master的配置，调整file_roots，分成多个环境（dev，qa，prod，以及base这个通用的）：
+[root@tvm-saltmaster salt]# mkdir /etc/salt/master.d/
+[root@tvm-saltmaster salt]# cat /etc/salt/master.d/file_roots.conf
+# Master file_roots configuration:
+file_roots:
+  base:
+    - /srv/salt/base
+  dev:
+    - /srv/salt/dev
+  qa:
+    - /srv/salt/qa
+  prod:
+    - /srv/salt/prod
+[root@tvm-saltmaster salt]# mkdir /srv/salt/{base,dev,qa,prod}/ -p
+[root@tvm-saltmaster salt]# service salt-master restart
+
+这样做的目的是：
+将state trees 分别放入 dev, qa 和 prod 环境, 留下base环境提供通用的文件传输，此时前面3个环境的top.sls文件分别是类似这样的：
+dev:
+  'webserver*dev*':
+    - webserver
+  'db*dev*':
+    - db
+qa:
+  'webserver*qa*':
+    - webserver
+  'db*qa*':
+    - db
+prod:
+  'webserver*prod*':
+    - webserver
+  'db*prod*':
+    - db
+    
+关于YAML格式，参考doc的说明，其中提到：
+RULE ONE: INDENTATION
+YAML uses a fixed indentation scheme to represent relationships between data layers. Salt requires that the indentation for each level consists of exactly two spaces. Do not use tabs.
+YAML的书写中，用2个空格来做缩进，不要用tab
+
+2、具体的测试工作
+[root@tvm-saltmaster salt]# tree /srv/salt
+/srv/salt/
+├── base
+│   ├── hosts
+│   │   ├── hosts_office.conf
+│   │   └── init.sls
+│   ├── monit
+│   │   ├── init.sls
+│   │   └── monit.d
+│   │       ├── monit-mail.conf
+│   │       └── salt-minion.conf
+│   ├── salt
+│   │   └── minion.sls
+│   ├── top.sls
+│   └── vim
+│       ├── init.sls
+│       └── vimrc
+├── dev
+│   ├── top.sls
+│   └── web.sls
+├── prod
+│   ├── top.sls
+│   └── web.sls
+└── qa
+    ├── dns
+    │   ├── init.sls
+    │   └── resolv.conf
+    └── top.sls
+
+10 directories, 16 files
+
+1）首先我们看看base的配置
+================------------------------==============base
+[root@tvm-saltmaster salt]# cat base/top.sls 
+base:
+  '*':
+    - vim
+    - monit
+    - salt.minion
+  '* and not tvm-yum':
+    - hosts
+===================================================hosts
+[root@tvm-saltmaster salt]# cat base/hosts/init.sls
+/etc/hosts:
+  file.managed:
+    - source: salt://hosts/hosts_office.conf
+[root@tvm-saltmaster salt]# cat base/hosts/hosts_office.conf 
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+192.168.56.253 salt-m.office.test
+===================================================hosts end
+===================================================vim
+[root@tvm-saltmaster salt]# cat base/vim/init.sls 
+vim:
+  pkg.installed:
+    - name: {{ pillar['pkgs']['vim'] }}
+
+/root/.vimrc:
+  file.managed:
+    - source: salt://vim/vimrc
+    - require:
+      - pkg: vim
+
+对应的pillar是这样的：
+=-------------------------------------------------=pillar
+[root@tvm-saltmaster salt]# tree /srv/pillar/
+/srv/pillar/
+├── package
+│   └── init.sls
+└── top.sls
+
+1 directory, 2 files     
+[root@tvm-saltmaster salt]# cat /srv/pillar/top.sls 
+base:
+  '*':
+    - package
+[root@tvm-saltmaster salt]# cat /srv/pillar/package/init.sls 
+pkgs:
+  {% if grains['os_family'] == 'RedHat' %}
+  vim: vim-enhanced
+  {% elif grains['os_family'] == 'Debian' %}
+  vim: vim
+  {% elif grains['os'] == 'Arch' %}
+  vim: vim
+  {% endif %}
+=-------------------------------------------------=pillar end
+===================================================vim end
+===================================================salt
+[root@tvm-saltmaster salt]# cat base/salt/minion.sls 
+salt-minion:
+  pkg.installed: []
+  service.running:
+    - enable: True
+===================================================salt end
+===================================================monit
+[root@tvm-saltmaster salt]# cat base/monit/init.sls 
+monit:
+  pkg.installed: []
+  service.running:
+    - enable: True
+
+/etc/monit.d/monit-mail.conf:
+  file.managed:
+    - source: salt://monit/monit.d/monit-mail.conf
+    - require:
+      - pkg: monit
+
+/etc/monit.d/salt-minion.conf:
+  file.managed:
+    - source: salt://monit/monit.d/salt-minion.conf
+    - require:
+      - pkg: monit
+===================================================monit end
+================------------------------==============base end
+2）接着我们看其他几个环境的。
+================------------------------==============dev, prod, qa
+[root@tvm-saltmaster salt]# cat dev/top.sls
+dev:
+  'tvm-yum':
+    - web
+[root@tvm-saltmaster salt]# cat dev/web.sls 
+httpd:
+  pkg:
+    - installed
+[root@tvm-saltmaster salt]# cat prod/top.sls
+prod:
+  'tvm-cobbler':
+    - web
+[root@tvm-saltmaster salt]# cat prod/web.sls 
+httpd:
+  pkg:
+    - installed
+[root@tvm-saltmaster salt]# cat qa/top.sls 
+qa:
+  'E@tvm-(saltmaster|cobbler|test)':
+    - dns
+[root@tvm-saltmaster salt]# cat qa/dns/init.sls 
+/etc/resolv.conf:
+  file.managed:
+    - source: salt://dns/resolv.conf
+[root@tvm-saltmaster salt]# cat qa/dns/resolv.conf
+nameserver 192.168.56.254
+================------------------------==============dev, prod, qa end
+
+上述分别测试了以下内容：
+所有对象，安装和运行vim，salt-minion，monit服务，并同步这些服务的相关配置。
+针对指定的对象，安装httpd服务，或者更新dns的配置。
+
+
+3、测试执行
+[root@tvm-saltmaster salt]# salt '*' state.highstate test=True
+
+4、执行
+[root@tvm-saltmaster salt]# salt '*' state.highstate 
+
+5、建立计划任务，让highstate定时执行
+=-------------------------------------------------=pillar
+[root@tvm-saltmaster salt]# tree /srv/pillar/
+/srv/pillar/
+├── job
+│   └── init.sls
+├── package
+│   └── init.sls
+└── top.sls
+
+2 directories, 3 files
+[root@tvm-saltmaster salt]# cat /srv/pillar/top.sls 
+base:
+  '*':
+    - package
+    - job
+[root@tvm-saltmaster salt]# cat /srv/pillar/job/init.sls 
+schedule:
+  highstate:
+    function: state.highstate
+    minutes: 2
+
+  
+=-------------------------------------------------=pillar end
+
+注：上述是在master这一侧通过pillar来统一调整的schedule。时间的单位有： seconds, minutes, hours, or days.
+执行：
+[root@tvm-saltmaster salt]# salt '*' saltutil.refresh_pillar
+tvm-test:
+    True
+tvm-yum:
+    True
+tvm-cobbler:
+    True
+tvm-saltmaster:
+    True
+
+    
+先改变tvm-test的dns配置：
+[root@tvm-test ~]# echo -e "\n[`date`] ------------before" && cat /etc/resolv.conf \
+&& echo 'nameserver 223.5.5.5' >>/etc/resolv.conf \
+&& echo -e "\n[`date`] ------------after" && cat /etc/resolv.conf
+
+[Thu Jul 23 13:35:47 CST 2015] ------------before
+nameserver 192.168.56.254
+
+[Thu Jul 23 13:35:47 CST 2015] ------------after
+nameserver 192.168.56.254
+nameserver 223.5.5.5
+
+[root@tvm-test ~]# while true; do echo -e "\n[`date`] ------------now" && cat /etc/resolv.conf ; sleep 1s ; done
+[Thu Jul 23 13:37:10 CST 2015] ------------now
+nameserver 192.168.56.254
+nameserver 223.5.5.5
+
+[Thu Jul 23 13:37:11 CST 2015] ------------now
+nameserver 192.168.56.254
+nameserver 223.5.5.5
+
+[Thu Jul 23 13:37:12 CST 2015] ------------now
+nameserver 192.168.56.254
+
+[Thu Jul 23 13:37:13 CST 2015] ------------now
+nameserver 192.168.56.254
+
+经过多次测试，，基本上不到2分钟，，配置已经更新，说明执行了state.highstate
+
+
+
+
+ZYXW、参考
+1、官网doc-states
+http://docs.saltstack.com/en/latest/ref/states/top.html
+2、官网doc-jobs
+https://docs.saltstack.com/en/latest/topics/jobs/index.html#highstates
+3、官网doc-yaml
+http://docs.saltstack.com/en/latest/topics/yaml/index.html
+

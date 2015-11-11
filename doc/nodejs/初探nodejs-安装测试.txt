@@ -1,0 +1,94 @@
+初探nodejs-安装测试
+
+一、安装
+[root@test ~]# curl --silent --location https://rpm.nodesource.com/setup | bash -
+[root@test ~]# yum -y install nodejs
+
+二、测试
+1、helloworld
+[root@test ~]# node -e "console.log('Hello from node.js ' + process.version)"
+Hello from node.js v0.10.40
+
+或者：
+[root@test ~]# cat helloworld.js 
+console.log('Hello from node.js ' + process.version)
+[root@test ~]# node helloworld.js 
+Hello from node.js v0.10.40
+
+
+三、管理
+[root@test test_nodejs]# npm install pm2
+[root@test test_nodejs]# ll ./node_modules/pm2/bin/pm2
+-rwxr-xr-x. 1 root root 21646 Sep 28 18:38 ./node_modules/pm2/bin/pm2
+[root@test test_nodejs]# ./node_modules/pm2/bin/pm2 start index.js --name 'test01'
+
+                        -------------
+
+
+   Looking for a complete monitoring and management tool for PM2?
+                          Check out:
+    _                             _        _            _
+   | | _____ _   _ _ __ ___   ___| |_ _ __(_) ___ ___  (_) ___
+   | |/ / _ \ | | | '_ ` _ \ / _ \ __| '__| |/ __/ __| | |/ _ \
+   |   <  __/ |_| | | | | | |  __/ |_| |  | | (__\__ \_| | (_) |
+   |_|\_\___|\__, |_| |_| |_|\___|\__|_|  |_|\___|___(_)_|\___/
+             |___/
+
+                       Register here:
+
+                  https://app.keymetrics.io/
+
+
+                        -------------
+
+[PM2] Spawning PM2 daemon
+[PM2] PM2 Successfully daemonized
+[PM2] Starting index.js in fork_mode (1 instance)
+[PM2] Done.
+┌──────────┬────┬──────┬───────┬────────┬─────────┬────────┬────────────┬──────────┐
+│ App name │ id │ mode │ pid   │ status │ restart │ uptime │ memory     │ watching │
+├──────────┼────┼──────┼───────┼────────┼─────────┼────────┼────────────┼──────────┤
+│ test01   │ 0  │ fork │ 10449 │ online │ 0       │ 0s     │ 6.207 MB   │ disabled │
+└──────────┴────┴──────┴───────┴────────┴─────────┴────────┴────────────┴──────────┘
+ Use `pm2 show <id|name>` to get more details about an app
+
+
+
+[root@test test_nodejs]# ./node_modules/pm2/bin/pm2 show test01
+Describing process with id 0 - name test01
+┌───────────────────┬────────────────────────────────────┐
+│ status            │ online                             │
+│ name              │ test01                             │
+│ id                │ 0                                  │
+│ path              │ /root/test_nodejs/index.js         │
+│ args              │                                    │
+│ exec cwd          │ /root/test_nodejs                  │
+│ error log path    │ /root/.pm2/logs/test01-error-0.log │
+│ out log path      │ /root/.pm2/logs/test01-out-0.log   │
+│ pid path          │ /root/.pm2/pids/test01-0.pid       │
+│ mode              │ fork_mode                          │
+│ node v8 arguments │                                    │
+│ watch & reload    │ ✘                                  │
+│ interpreter       │ node                               │
+│ restarts          │ 0                                  │
+│ unstable restarts │ 0                                  │
+│ uptime            │ 2m                                 │
+│ created at        │ 2015-11-02T09:20:41.057Z           │
+└───────────────────┴────────────────────────────────────┘
+Probes value
+┌────────────┬───────┐
+│ Loop delay │ 0.7ms │
+└────────────┴───────┘
+
+
+
+
+
+ZYXW、参考
+1、官网doc
+https://nodejs.org/en/download/package-manager/
+https://nodejs.org/api/documentation.html
+2、教程
+http://ourjs.com/detail/529ca5950cb6498814000005
+
+

@@ -1,0 +1,25 @@
+
+进入：
+$ screen
+$ screen -ls
+There is a screen on:
+        18596.pts-0.test240     (Detached)
+1 Socket in /var/run/screen/S-root.
+
+$ screen -r 18596
+
+进入screen后，
+先按：
+ctrl+a
+
+然后按：
+a
+c：新建screen
+d：detached
+k：结束该screen
+n：下一个screen
+p：上一个screen
+w：显示screen
+A：给screen命名
+?：帮助
+0-9：选择screen

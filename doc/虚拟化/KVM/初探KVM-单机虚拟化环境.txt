@@ -1,0 +1,696 @@
+日期：2015/10/9 - 2015/10/16 time 9:58
+主机：n86
+目的：初探KVM-单机虚拟化环境
+操作内容：
+一、基础环境
+1、资源分配
+host: n86.test
+
+2、主机配置
+【关闭selinux】
+# setenforce  0
+# sed -i 's/=enforcing/=disabled/g' /etc/selinux/config
+
+
+二、配置配置vnc服务
+1. 安装包
+# yum install tigervnc-server
+# yum groupinstall "Desktop"
+
+2. 配置vnc密码：
+# vncpasswd
+
+3. 更新vnc配置：
+# vim /etc/sysconfig/vncservers
+新增内容如下：
+VNCSERVERS="1:root"
+VNCSERVERARGS[1]="-geometry 1280x960"
+
+4. 启动服务
+# service vncserver start
+
+5. 调整防火墙配置，放行端口：5900:5901
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 5900:5901 -j ACCEPT 
+
+其中：
+5900：用来后续连接到vm
+5901：用来连接到宿主机n86
+
+6. 如果在win下使用vncviewer连接异常，一直黑屏，调整下面的参数：
+options->Expert->ColorLevel,value=full
+
+三、配置单机虚拟化环境
+1、配置kvm环境
+[root@n86 ~]# yum groupinstall -y "Virtualization Client" "Virtualization Platform" "Virtualization Tools"
+
+启动服务：
+[root@n86 ~]# service libvirtd start
+
+2、增加网桥br0
+[root@n86 ~]# cd /etc/sysconfig/network-scripts
+[root@n86 network-scripts]# cat <<'_EOF' >ifcfg-br0
+DEVICE=br0
+TYPE=Bridge
+ONBOOT=yes
+NM_CONTROLLED=no
+BOOTPROTO=none
+IPADDR=10.50.200.86
+PREFIX=24
+GATEWAY=10.50.200.1
+DELAY=0
+DEFROUTE=yes
+
+_EOF
+
+[root@n86 network-scripts]# mv ifcfg-em1 bak.ifcfg-em1 \
+&& cat <<'_EOF' >ifcfg-em1
+DEVICE=em1
+BRIDGE=br0
+ONBOOT=yes
+MTU=1500
+NM_CONTROLLED=no
+
+_EOF
+
+[root@n86 network-scripts]# service network restart
+[root@n86 network-scripts]# brctl show
+bridge name     bridge id               STP enabled     interfaces
+br0             8000.f8bc124de980       no              em1
+virbr0          8000.525400288c45       yes             virbr0-nic
+
+
+3、准备vm存放目录和iso文件
+[root@n86 ~]# mkdir /data/kvm/{images,iso} -p
+假设已上传一个iso文件：
+[root@n86 ~]# ls /data/kvm/iso/
+CentOS-6.5-x86_64-bin-DVD1.iso
+
+继续操作。
+
+创建一个磁盘镜像，用于安装系统。
+[root@n86 ~]# qemu-img create -f qcow2  /data/kvm/images/e01.test-vda.qcow2 40G 
+
+4、创建虚拟机
+1）通过virt-manager管理
+2）命令行
+[root@n86 ~]# virt-install --name e01.test \
+--ram 8192 \
+--vcpus=4 \
+--cdrom  /data/kvm/iso/CentOS-6.5-x86_64-bin-DVD1.iso \
+--disk path=/data/kvm/images/e01.test-vda.qcow2,device=disk,bus=virtio,size=40,format=qcow2 \
+--network bridge:br0 \
+--graphics vnc,port=5900,listen=0.0.0.0 \
+--hvm \
+--arch x86_64 \
+--os-type=linux \
+--os-variant=rhel6 \
+--noautoconsole
+
+Starting install...
+Creating domain...                                    |    0 B     00:00     
+Domain installation still in progress. You can reconnect to 
+the console to complete the installation process.
+
+OK，接下来稍等一下，我们先收集点信息：
+[root@n86 ~]# virsh list
+ Id    Name                           State
+----------------------------------------------------
+ 19    e01.test                       running
+ 
+（virt-manager的GUI界面操作容易，略过，后续仅探讨virsh相关的命令行工具怎么使用）
+
+3）xml文件
+这个文件保存的是vm的配置，可以根据这个xml文件的内容来调整vm的配置。
+[root@n86 ~]# cd /data/kvm/images
+先保存一份xml文件后续做对比：
+[root@n86 images]# virsh dumpxml e01.test >e01.test-1.xml
+
+通过VNC连接上去安装OS后，选择reboot将停止这个vm。
+此时再保存一份xml文件：
+[root@n86 images]# virsh dumpxml e01.test >e01.test-2.xml
+我们对比上面收集的2个xml文件看一下：
+最主要的区别， 是针对cdrom的设置以及对应的引导方式，其次是针对开关机时不同状态的变化。
+
+
+四、vm管理【Domain Management】
+1、启动这个vm：
+[root@n86 images]# virsh start e01.test
+
+2、重启vm：
+[root@n86 images]# virsh reboot e01.test
+Domain e01.test is being rebooted
+
+强制重启vm（相当于按了电源的reset键）：
+[root@n86 images]# virsh reset e01.test
+Domain e01.test was reset
+
+3、暂停vm：
+[root@n86 images]# virsh suspend e01.test
+Domain e01.test suspended
+列出vm查看状态：
+[root@n86 images]# virsh list
+ Id    Name                           State
+----------------------------------------------------
+ 20    e01.test                       paused
+
+4、恢复暂停的vm：
+[root@n86 images]# virsh resume e01.test  
+Domain e01.test resumed
+列出vm查看状态：
+[root@n86 images]# virsh list
+ Id    Name                           State
+----------------------------------------------------
+ 20    e01.test                       running
+
+5、关闭vm：
+[root@n86 images]# virsh shutdown e01.test
+Domain e01.test is being shutdown
+
+上述是正常的关闭方式
+强制关闭（类似断电）：
+[root@n86 images]# virsh shutdown e01.test
+Domain e01.test destroyed
+
+列出vm查看状态：
+[root@n86 images]# virsh list
+ Id    Name                           State
+----------------------------------------------------
+看不到vm，怎么办？
+使用下面的方法试试。
+
+6、列出所有的vm：
+[root@n86 images]# virsh list --all
+ Id    Name                           State
+----------------------------------------------------
+ -     e01.test                       shut off
+
+7、vm处于“shut off”状态下，导出vm的配置为xml文件：
+[root@n86 images]# virsh dumpxml e01.test >e01.test-3.xml
+这个时候导出的xml文件和系统存放的内容是一致的：
+/etc/libvirt/qemu/e01.test.xml 
+
+
+8、编辑vm的配置：
+[root@n86 images]# virsh edit e01.test
+Domain e01.test XML configuration edited.
+（尚未生效，需shutdown再start这个vm才能生效）
+这个edit的操作，相当于：
+virsh dumpxml --inactive --security-info domain > domain.xml
+vi domain.xml (or make changes with your other text editor)
+virsh define domain.xml
+
+
+9、从指定的xml文件创建vm，并启动：
+virsh create e01.test-main.xml
+
+
+10、从指定的xml文件创建vm，但不启动，后续可以edit一下这个xml文件：
+virsh define e01.test-main.xml
+
+
+11、移除指定的vm
+virsh undefine e01.test
+
+
+12、保存和恢复vm的运行状态（RAM，而不是DISK的状态，类似休眠）
+[root@n86 images]# virsh save e01.test --file e01.test-save.qcow2
+Domain e01.test saved to e01.test-save.qcow2
+（紧跟着，vm处于“shut off”的状态）
+[root@n86 images]# virsh restore --file e01.test-save.qcow2 
+Domain restored from e01.test-save.qcow2
+
+
+13、自启动这个vm：
+[root@n86 images]# virsh autostart e01.test
+Domain e01.test marked as autostarted
+对应的xml文件是：
+[root@n86 images]# ls /etc/libvirt/qemu/autostart/ -l
+total 0
+lrwxrwxrwx 1 root root 30 Oct 10 10:00 e01.test.xml -> /etc/libvirt/qemu/e01.test.xml
+
+
+14、调整graphics
+这个不能热插拔，要在vm是“shut off”的状态下才能增加
+edit新增或修改这一段：
+    <graphics type='vnc' port='-1' autoport='yes' listen='0.0.0.0'>
+      <listen type='address' address='0.0.0.0'/>
+    </graphics>
+[root@n86 images]# virsh edit e01.test 
+Domain e01.test XML configuration edited.
+启动vm后验证，符合预期
+
+如何查看随机给的vnc端口呢？
+[root@n86 images]# virsh vncdisplay e01.test
+:0
+
+这意味着端口是：5900
+
+
+15、在线调整vcpu
+[root@n86 images]# virsh help |grep vcpu
+    maxvcpus                       connection vcpu maximum
+    setvcpus                       change number of virtual CPUs
+    vcpucount                      domain vcpu counts
+    vcpuinfo                       detailed domain vcpu information
+    vcpupin                        control or query domain vcpu affinity
+
+当前的配置：
+[root@n86 images]# virsh dumpxml e01.test |grep vcpu
+  <vcpu placement='static' current='2'>4</vcpu>
+  
+[root@n86 images]# virsh vcpucount e01.test 
+maximum      config         4
+maximum      live           4
+current      config         2
+current      live           2
+
+[root@n86 images]# virsh vcpuinfo e01.test 
+VCPU:           0
+CPU:            0
+State:          running
+CPU time:       498.1s
+CPU Affinity:   yyyyyyyy
+
+VCPU:           1
+CPU:            2
+State:          running
+CPU time:       422.9s
+CPU Affinity:   yyyyyyyy
+
+设置vcpu为4个：
+[root@n86 images]# virsh setvcpus e01.test 4
+
+对比：
+[root@n86 images]# virsh vcpucount e01.test 
+maximum      config         4
+maximum      live           4
+current      config         2
+current      live           4
+
+[root@n86 images]# virsh vcpuinfo e01.test  
+VCPU:           0
+CPU:            0
+State:          running
+CPU time:       503.9s
+CPU Affinity:   yyyyyyyy
+
+VCPU:           1
+CPU:            2
+State:          running
+CPU time:       430.2s
+CPU Affinity:   yyyyyyyy
+
+VCPU:           2
+CPU:            2
+State:          running
+CPU time:       2.2s
+CPU Affinity:   yyyyyyyy
+
+VCPU:           3
+CPU:            6
+State:          running
+CPU time:       2.1s
+CPU Affinity:   yyyyyyyy
+
+【调整前】
+[root@e01 ~]# cat /proc/cpuinfo  |grep proce
+processor       : 0
+processor       : 1
+【调整后】
+[root@e01 ~]# cat /proc/cpuinfo  |grep proce
+processor       : 0
+processor       : 1
+processor       : 2
+processor       : 3
+
+注意：最大值要关机才能调整；上述操作重启后失效，因此，需写入xml文件中
+[root@n86 images]# virsh dumpxml e01.test |grep vcpu
+  <vcpu placement='static'>4</vcpu>
+编辑xml写入新的配置即可。
+
+
+
+16、在线调整内存
+[root@n86 images]# virsh help |grep mem
+    memtune                        Get or set memory parameters
+    setmaxmem                      change maximum memory limit
+    setmem                         change memory allocation
+    dommemstat                     get memory statistics for a domain
+    freecell                       NUMA free memory
+    node-memory-tune               Get or set node memory parameters
+    nodememstats                   Prints memory stats of the node.
+    
+当前值：8G，最大16G
+[root@n86 images]# virsh dumpxml e01.test |grep -i memory
+  <memory unit='KiB'>16777216</memory>
+  <currentMemory unit='KiB'>8388608</currentMemory>    
+  
+[root@n86 images]# virsh dommemstat e01.test
+actual 8388608
+rss 4239140
+
+调整当前值为：4G
+[root@n86 images]# virsh setmem e01.test 4194304
+
+[root@n86 images]# virsh dommemstat e01.test       
+actual 4194304
+rss 3922468
+
+配置文件需要更新：
+[root@n86 images]# virsh dumpxml e01.test |grep -i memory
+  <memory unit='KiB'>16777216</memory>
+  <currentMemory unit='KiB'>4194304</currentMemory>
+
+
+  
+五、物理机【Host and Hypervisor】
+1、查看物理机的节点信息：
+[root@n86 ~]# virsh nodeinfo
+CPU model:           x86_64
+CPU(s):              8
+CPU frequency:       1800 MHz
+CPU socket(s):       1
+Core(s) per socket:  4
+Thread(s) per core:  1
+NUMA cell(s):        2
+Memory size:         32827228 KiB
+
+2、查看物理机的虚拟化环境的版本：
+[root@n86 ~]# virsh version
+Compiled against library: libvirt 0.10.2
+Using library: libvirt 0.10.2
+Using API: QEMU 0.10.2
+Running hypervisor: QEMU 0.12.1
+
+
+
+六、网络接口和虚拟网卡【Networking】
+1、查看网络接口列表：
+[root@n86 images]# virsh net-list
+Name                 State      Autostart     Persistent
+--------------------------------------------------
+default              active     yes           yes
+
+2、查看指定的网络接口信息：
+[root@n86 images]# virsh net-info default
+Name            default
+UUID            d73b23a6-1d0b-45a1-9bd8-407bf17806e5
+Active:         yes
+Persistent:     yes
+Autostart:      yes
+Bridge:         virbr0
+
+3、编辑网络接口配置（修改默认的virbr0的IP配置）：
+[root@n86 images]# virsh net-edit default
+Network default XML configuration edited.
+<network>
+  <name>default</name>
+  <uuid>d73b23a6-1d0b-45a1-9bd8-407bf17806e5</uuid>
+  <forward mode='nat'/>
+  <bridge name='virbr0' stp='on' delay='0' />
+  <mac address='52:54:00:28:8C:45'/>
+  <ip address='10.0.200.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='10.0.200.100' end='10.0.200.199' />
+    </dhcp>
+  </ip>
+</network>
+
+（DHCP是通过自动配置dnsmasq来提供的服务）
+
+重启网络接口使配置生效：
+[root@n86 images]# virsh net-destroy default
+Network default destroyed
+[root@n86 images]# virsh net-start default  
+Network default started
+
+
+4、查看vm中的虚拟网卡
+[root@n86 images]# virsh domiflist e01.test
+Interface  Type       Source     Model       MAC
+-------------------------------------------------------
+vnet0      bridge     br0        virtio      52:54:00:2f:53:d2   
+
+
+5、在线给vm新增虚拟网卡
+[root@n86 images]# virsh attach-interface --domain e01.test --type bridge --source virbr0 --model virtio --mac 52:54:00:2f:53:d3
+Interface attached successfully
+
+[root@n86 images]# virsh domiflist e01.test
+Interface  Type       Source     Model       MAC
+-------------------------------------------------------
+vnet0      bridge     br0        virtio      52:54:00:2f:53:d2
+vnet1      bridge     virbr0     virtio      52:54:00:2f:53:d3
+
+移除：
+[root@n86 images]# virsh detach-interface e01.test bridge --mac 52:54:00:2f:53:d3
+Interface detached successfully
+
+切换到vm的console去检查：
+[root@e01 network-scripts]# pwd
+/etc/sysconfig/network-scripts
+[root@e01 network-scripts]# cat ifcfg-eth1
+DEVICE=eth1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+[root@e01 network-scripts]# ifup eth1
+[root@e01 network-scripts]# ip a show dev eth1
+3: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 52:54:00:2f:53:d3 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.200.15/24 brd 10.0.200.255 scope global eth1
+    inet6 fe80::5054:ff:fe2f:53d3/64 scope link 
+       valid_lft forever preferred_lft forever
+       
+符合预期。但这个配置重启vm后将消失，因此要永久保存配置。
+将xml文件导出到一个临时文件然后，复制这个xml文件中的一段内容（如下所示）
+    <interface type='bridge'>
+      <mac address='52:54:00:2f:53:d3'/>
+      <source bridge='virbr0'/>
+      <target dev='vnet1'/>
+      <model type='virtio'/>
+      <alias name='net1'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
+    </interface>
+    
+最后edit这个vm的配置文件将这段内容拷贝进去：
+[root@n86 images]# virsh edit e01.test
+Domain e01.test XML configuration edited.
+先shutdown再start这个vm来验证配置是否更新，符合预期。
+
+
+注意：如果后续又去调整过virbr0的配置，，则需要shutdown这个vm再start，上面新增的这个虚拟网卡才能工作。
+
+
+
+八、存储
+1、查看存储池
+[root@n86 images]# virsh pool-list
+Name                 State      Autostart 
+-----------------------------------------
+default              active     yes  
+
+2、编辑
+改变image保存的路径
+[root@n86 images]# virsh pool-edit default
+Pool default XML configuration edited.
+
+3、更新
+[root@n86 images]# virsh pool-destroy default     
+Pool default destroyed
+
+[root@n86 images]# virsh pool-start default  
+Pool default started
+
+4、查看信息
+[root@n86 images]# virsh pool-info default   
+Name:           default
+UUID:           4875d0a1-1ae6-1914-6bf0-b66e45e65bc6
+State:          running
+Persistent:     yes
+Autostart:      yes
+Capacity:       36.38 TiB
+Allocation:     9.96 GiB
+Available:      36.37 TiB
+
+5、在线新增1块磁盘vdb
+[root@n86 images]# qemu-img create -f qcow2  /data/kvm/images/e01.test-vdb.qcow2 100G 
+[root@n86 images]# virsh attach-disk e01.test --source /data/kvm/images/e01.test-vdb.qcow2 --target vdb --subdriver qcow2    
+Disk attached successfully
+
+[root@n86 images]# virsh domblklist e01.test
+Target     Source
+------------------------------------------------
+vda        /data/kvm/images/e01.test-vda.qcow2
+vdb        /data/kvm/images/e01.test-vdb.qcow2
+hdc        -
+
+移除
+[root@n86 images]# virsh detach-disk e01.test --target vdb
+Disk detached successfully
+
+切换到vm的console去检查：
+[root@e01 ~]# fdisk -l /dev/vdb
+
+Disk /dev/vdb: 107.4 GB, 107374182400 bytes
+16 heads, 63 sectors/track, 208050 cylinders
+Units = cylinders of 1008 * 512 = 516096 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+
+符合预期，保存xml文件。
+将xml文件导出到一个临时文件然后，复制这个xml文件中的一段内容（如下所示）
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/data/kvm/images/e01.test-vdb.qcow2'/>
+      <target dev='vdb' bus='virtio'/>
+      <alias name='virtio-disk1'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
+    </disk>
+    
+最后edit这个vm的配置文件将这段内容拷贝进去：
+[root@n86 images]# virsh edit e01.test
+Domain e01.test XML configuration edited.
+先shutdown再start这个vm来验证配置是否更新，符合预期。
+
+
+
+九、快照【snapshot】
+1、指定参数来创建快照：
+[root@n86 images]# virsh snapshot-create-as e01.test --name ss01 --description "os installed,selinux disabled;"
+（注意：这段时间，vm是处于暂停（suspend）的状态）
+Domain snapshot ss01 created
+列出快照：
+[root@n86 images]# virsh snapshot-list e01.test
+ Name                 Creation Time             State
+------------------------------------------------------------
+ ss01                 2015-10-10 10:58:06 +0800 running
+
+在关机状态下重做一次快照：
+[root@n86 images]# virsh snapshot-create-as e01.test --name ss01 --description "os installed,selinux disabled; rpm installed: lrzsz wget ntp"
+Domain snapshot ss01 created
+列出快照：
+[root@n86 images]# virsh snapshot-list e01.test       
+ Name                 Creation Time             State
+------------------------------------------------------------
+ ss01                 2015-10-10 17:54:05 +0800 shutoff
+ 
+ 
+默认的xml文件存放在这里：
+[root@n86 images]# ls /var/lib/libvirt/qemu/snapshot/e01.test/
+ss01.xml
+
+2、查看快照信息：
+[root@n86 images]# virsh snapshot-info e01.test --current（指定快照名称，或者使用current指定当前最新的快照）
+[root@n86 images]# virsh snapshot-dumpxml e01.test ss01 |grep desc
+  <description>os installed,selinux disabled; rpm installed: lrzsz wget ntp</description>
+  
+3、回滚操作
+停止vm后再回滚：
+[root@n86 images]# virsh shutdown e01.test
+Domain e01.test is being shutdown
+[root@n86 images]# virsh list --all
+ Id    Name                           State
+----------------------------------------------------
+ -     e01.test                       shut off
+ 
+（在vm中随便创建几个文件，然后执行；vm处于running状态时回滚需要增加参数 --force）：
+[root@n86 images]# virsh snapshot-revert e01.test ss01
+操作完毕后，查看vm，发现：
+1）vm是“running”的状态，且卡住了没有任何反应；
+尝试强制重启：
+[root@n86 images]# virsh reset e01.test 
+Domain e01.test was reset
+登录到vm后查看是否已经回滚，符合预期。
+2）因为我们的快照ss01是vm在running状态做的，后续测试表明，如果是在“shut off”状态做的快照，启动vm，改动文件，关闭vm，再revert后，vm也是处于“shut off”的状态，此时再start这个vm无异常卡住的现象，符合预期。
+
+4、删除快照：
+[root@n86 images]# virsh snapshot-delete e01.test ss01
+Domain snapshot ss01 deleted
+
+
+
+十、克隆
+1、克隆vm
+[root@n86 images]# virsh suspend e01.test
+[root@n86 images]# virt-clone -o e01.test --auto-clone
+[root@n86 images]# virsh resume e01.test  
+列出vm查看状态：
+[root@n86 images]# virsh list
+ Id    Name                           State
+----------------------------------------------------
+ 20    e01.test                       running
+ -     e01.test-clone                 shut off
+ 
+[root@n86 images]# ls /etc/libvirt/qemu
+autostart  e01.test-clone.xml  e01.test.xml  networks
+对比xml可以发现，克隆的对象修改了以下内容：
+name
+uuid
+source file
+mac address
+graphics
+
+移除克隆的vm：
+[root@n86 images]# virsh undefine e01.test-clone
+Domain e01.test-clone has been undefined
+
+[root@n86 images]# ls /etc/libvirt/qemu
+autostart  e01.test.xml  networks
+[root@n86 images]# rm e01.test-vda-clone.qcow2 
+
+
+2、克隆卷
+[root@n86 images]# dt=`date +%Y%m%d_%H%M%S` && \
+virsh vol-clone /data/kvm/images/e01.test-vda.qcow2 vol_clone-${dt}-e01.test-vda.qcow2 
+Vol vol_clone-20151014_105103-e01.test-vda.qcow2 cloned from e01.test-vda.qcow2
+
+
+
+
+
+
+
+
+十、排错
+【Q1】：提示：“ERROR    Guest name 'e01.test' is already in use.”
+A：之前使用virt-install安装失败，，但这个名称还残留下来，需要清理。
+[root@n86 ~]# virsh undefine e01.test
+Domain e01.test has been undefined
+
+【Q2】：提示：“internal error storage volume name 'e01.test-vda-clone.qcow2' already in use.”
+A：克隆卷时，提示异常
+[root@n86 images]# virsh vol-clone /data/kvm/images/e01.test-vda.qcow2 e01.test-vda-clone.qcow2 
+error: Failed to clone vol from e01.test-vda.qcow2
+error: internal error storage volume name 'e01.test-vda-clone.qcow2' already in use.
+
+上述操作之前是刚rm了这个volume
+rm e01.test-vda-clone.qcow2
+判断可能是pool没刷新，试试：
+[root@n86 images]# virsh pool-refresh default
+Pool default refreshed
+
+再次尝试，符合预期，问题解决
+
+
+
+
+ZYXW、参考
+1、virsh(1) - Linux man page
+http://linux.die.net/man/1/virsh
+
+
+
+
+
+
+
+
+
+
+
+
+
+

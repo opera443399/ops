@@ -1,0 +1,26 @@
+openssl passwd:     Generation of hashed passwords.
+# openssl passwd -h
+Usage: passwd [options] [passwords]
+where options are
+-crypt             standard Unix password algorithm (default)
+-1                 MD5-based password algorithm
+-apr1              MD5-based password algorithm, Apache variant
+-salt string       use provided salt
+-in file           read passwords from file
+-stdin             read passwords from stdin
+-noverify          never verify when reading password from terminal
+-quiet             no warnings
+-table             format output as table
+-reverse           switch table columns
+
+
+使用MD5+salt的方式生成密码对应的hash值：
+# openssl passwd -1 -salt 'root'
+Password: 
+$1$root$abcdylRh83kdjWxfghm.abc
+
+得到一个hash后的密码
+再举例：
+#openssl passwd -1 -salt 'random-phrase' 'password'
+$1$random-p$sFftrCTxKKsDZ.Sdr8mDG0
+

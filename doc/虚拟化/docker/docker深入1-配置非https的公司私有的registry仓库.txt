@@ -1,0 +1,115 @@
+docker深入1-配置非https的公司私有的registry仓库
+
+
+一、安装使用docker服务
+请参考另一篇文档。
+
+
+二、使用registry这个image来构建私有仓库
+1、拉取image
+[Jack@server200-20 root]$ docker pull registry 
+Pulling repository registry
+9a2409206c78: Download complete 
+428b411c28f0: Download complete 
+435050075b3f: Download complete 
+9fd3c8c9af32: Download complete 
+6d4946999d4f: Download complete 
+cf73ddbcb12b: Download complete 
+7cb6f45e653d: Download complete 
+c624e1a476d0: Download complete 
+4b087f2af755: Download complete 
+6940f969b4ed: Download complete 
+1bc2ae3e600b: Download complete 
+c35a7b3ee359: Download complete 
+b4696f4e4d61: Download complete 
+7413e661f075: Download complete 
+Status: Downloaded newer image for registry:latest
+
+[root@server200-20 conf.d]# docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+registry            latest              9a2409206c78        31 hours ago        413.9 MB
+
+2、创建目录用于存储images的数据文件：
+[root@server200-20 conf.d]# mkdir /data/docker/registry -p
+
+3、启动
+注1：默认参数启动遇到错误，暂时用环境变量“-e GUNICORN_OPTS=["--preload"]”来规避这个异常；
+
+
+[Jack@server200-20 ~]$ sudo docker run -d -p 5000:5000 -v /data/docker/registry:/tmp/registry -e GUNICORN_OPTS=["--preload"] --name reg4work registry         
+[root@server200-20 ~]# docker ps -a
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS                    NAMES
+7014a9de8765        registry:latest     "docker-registry"   4 minutes ago       Up 4 seconds        0.0.0.0:5000->5000/tcp   reg4work 
+[root@server200-20 ~]# docker logs reg4work
+16/Jun/2015:05:15:44 +0000 WARNING: Cache storage disabled!
+16/Jun/2015:05:15:44 +0000 WARNING: LRU cache disabled!
+16/Jun/2015:05:15:44 +0000 DEBUG: Will return docker-registry.drivers.file.Storage
+[2015-06-16 05:15:45 +0000] [1] [INFO] Starting gunicorn 19.1.1
+[2015-06-16 05:15:45 +0000] [1] [INFO] Listening at: http://0.0.0.0:5000 (1)
+[2015-06-16 05:15:45 +0000] [1] [INFO] Using worker: gevent
+[2015-06-16 05:15:45 +0000] [17] [INFO] Booting worker with pid: 17
+[2015-06-16 05:15:45 +0000] [18] [INFO] Booting worker with pid: 18
+[2015-06-16 05:15:45 +0000] [19] [INFO] Booting worker with pid: 19
+[2015-06-16 05:15:45 +0000] [20] [INFO] Booting worker with pid: 20
+
+
+三、验证
+配置域名解析（当然，直接用IP也成）：
+10.0.200.20 registry.company.com
+
+调整docker服务的启动参数：
+[Jack@svr200-10 ~]$ sudo service docker stop
+[Jack@svr200-10 ~]$ sudo vim /etc/sysconfig/docker
+other_args="--dns 10.0.200.20 --insecure-registry registry.company.com:5000"
+[Jack@svr200-10 ~]$ sudo service docker start
+
+
+通过push一个image来验证
+[Jack@svr200-10 ~]$ docker tag pcnk/base:v2 registry.company.com:5000/jack/centos7base:latest
+[Jack@svr200-10 ~]$ docker images |grep base
+registry.company.com:5000/jack/centos7base   latest              064aa35dfcef        5 weeks ago         251.3 MB
+pcnk/base                                    v2                  064aa35dfcef        5 weeks ago         251.3 MB
+
+
+
+[Jack@svr200-10 ~]$ docker push registry.company.com:5000/jack/centos7base:latest
+The push refers to a repository [registry.company.com:5000/centos7base] (len: 1)
+Sending image list
+Pushing repository registry.company.com:5000/centos7base (1 tags)
+6941bfcbbfca: Image successfully pushed 
+41459f052977: Image successfully pushed 
+fd44297e2ddb: Image successfully pushed 
+751a85a0d00b: Image successfully pushed 
+19b009f08542: Image successfully pushed 
+420cb9e73c70: Image successfully pushed 
+e97f94a79de0: Image successfully pushed 
+fde06c761bde: Image successfully pushed 
+dbfae1099999: Image successfully pushed 
+064aa35dfcef: Image successfully pushed 
+Pushing tag for rev [064aa35dfcef] on {http://registry.company.com:5000/v1/repositories/centos7base/tags/v2}
+
+
+[Jack@svr200-10 ~]$ curl registry.company.com:5000/v1/search |python -m json.tool
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0    96    0    96    0     0  16751      0 --:--:-- --:--:-- --:--:-- 19200
+{
+    "num_results": 1, 
+    "query": "", 
+    "results": [
+        {
+            "description": "", 
+            "name": "jack/centos7base"
+        }
+    ]
+}
+
+
+
+
+
+
+
+
+
+

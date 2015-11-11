@@ -1,0 +1,25 @@
+  几个概念： 
+  1） sapi：可以简单的理解为php引擎对外的一个统一接口，使得php可以和外部程序进行交互
+  2） php的生命周期中关键四个调用：MINT -> RINT -> RSHUTDOWN -> MSHUTDOWN
+
+  3)  fpm : fastcgi进程管理器
+
+  那么fpm方式的流程就是： fpm通过sapi接口与php进程交互，
+  在fpm启动的时候，
+第一步： 会调用各扩展的MINT方法，进行一些数据初始化（长驻内存），
+第二步： 每个请求过来，先会执行RINT对单个请求行一个初始化，
+第三步： 执行php脚本，
+第四步： 执行RSHUTDOWN方法，
+第五步： 如果你要停止fpm了，才会执行MSHUTDOWN。
+
+  fpm对每个请求的处理都是一直在在重复执行 2~4步 。
+
+ 在第三步中， php的脚本是动态执行的，由于每次都要执行一次php脚本，而每次php脚本都要有一个把php文件翻译成opcode的流程（比较耗时）, 于是就产生的opcache工具。
+
+ opcache:  直接把php翻译后的opcode代码树保存到共享内存中，以便直接使用，从而减少每次都把php翻译成opcode的开销。
+
+opcache的问题：按照他的描述，修改了php文件，并不能立即被更新，
+
+opcache的解决方案：有一个配置来设置隔多长时间检测文件是否更新了，从而有机会在第二步重新来reload相关的文件.
+
+  当然，你也可以直接reload fpm，从而达到php热更新的效果(opcache扩展可以在第四步把相关的opcode cache给清空)。

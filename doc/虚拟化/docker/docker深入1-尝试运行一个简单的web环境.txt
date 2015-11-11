@@ -1,0 +1,180 @@
+docker深入1-尝试运行一个简单的web环境
+
+目的：在基础镜像（pcnk/base:v2）上增加一个web环境：sync
+做法：启动新的container，然后逐步增加web服务，再提交到image，这里用到了端口映射，数据卷挂载。
+
+
+一、在【pcnk/base:v2】这个基础image上运行一个container【web】来安装sync所需的httpd等服务
+1）container【web】
+[Jack@test101 base]$ docker run -d -v /home/download:/home/download -v /home/datacenter:/data --name web -p 10032:22 pcnk/base:v2   
+152d0ca20346fc4a0d0a5a8fe04671910dcc685801f572159ae3c7f5dd2ecf43
+[Jack@test101 base]$ docker ps -l
+CONTAINER ID        IMAGE               COMMAND                CREATED             STATUS              PORTS                   NAMES
+152d0ca20346        pcnk/base:v2        "/usr/bin/supervisor   7 seconds ago       Up 6 seconds        0.0.0.0:10032->22/tcp   web   
+
+[Jack@test101 base]$ ssh -p 10032 root@127.0.0.1
+root@127.0.0.1's password: 
+Last login: Wed May  6 10:11:26 2015 from 172.17.42.1
+
+2）调整时间：
+[root@152d0ca20346 /]# mv -f /etc/localtime /etc/localtime.old
+[root@152d0ca20346 /]# ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+[root@152d0ca20346 /]# echo 'ZONE="Asia/Shanghai"' >/etc/sysconfig/clock
+
+[root@152d0ca20346 /]# cd /home/download/vriteam-sync-0.2.4
+[root@152d0ca20346 vriteam-sync-0.2.4]# yum -y install wget gcc perl autoconf automake make bzip2 tar zip && yum clean all
+[root@152d0ca20346 vriteam-sync-0.2.4]# ./install all
+
+3）安装php模块：
+[root@152d0ca20346 vriteam-sync-0.2.4]# ./install ssh2
+[root@152d0ca20346 vriteam-sync-0.2.4]# ./install svn
+[root@152d0ca20346 vriteam-sync-0.2.4]# cd /etc/php.d
+[root@152d0ca20346 php.d]# cat ssh2.ini svn.ini 
+; Enable ssh2 extension module
+extension=ssh2.so
+; Enable svn extension module
+extension=svn.so
+[root@152d0ca20346 vriteam-sync-0.2.4]# ls /lib64/php/modules/
+curl.so  fileinfo.so  json.so  mysqli.so  mysql.so  pdo_mysql.so  pdo.so  pdo_sqlite.so  phar.so  sqlite3.so  ssh2.so  svn.so  zip.so
+[root@152d0ca20346 conf.d]# yum clean all
+
+4）调整httpd的配置：
+[root@152d0ca20346 supervisor.d]# ln -s /data/supervisor.d/httpd.ini .
+[root@152d0ca20346 supervisor.d]# ll
+total 4
+lrwxrwxrwx. 1 root root 28 May  6 02:46 httpd.ini -> /data/supervisor.d/httpd.ini
+-rw-rw-r--. 1 root root 41 May  5 10:47 sshd.ini
+
+[root@152d0ca20346 supervisor.d]# cd /etc/httpd/conf.d/
+[root@152d0ca20346 conf.d]# mv welcome.conf /tmp/
+[root@152d0ca20346 conf.d]# ln -s /data/httpd/conf.d/sync.conf .
+[root@152d0ca20346 conf.d]# ll
+total 16
+-rw-r--r--. 1 root root 2893 Mar 12 15:07 autoindex.conf
+-rw-r--r--. 1 root root  691 Oct 31  2014 php.conf
+-rw-r--r--. 1 root root  366 Mar 12 15:08 README
+lrwxrwxrwx. 1 root root   28 May  6 02:47 sync.conf -> /data/httpd/conf.d/sync.conf
+-rw-r--r--. 1 root root 1252 Mar 12 14:57 userdir.conf
+[root@152d0ca20346 conf.d]# cat sync.conf 
+<VirtualHost *:80>
+    ServerAdmin pc@ec.office
+    ServerName sync.ec.office
+    DocumentRoot /data/sync/src
+    DirectoryIndex index.html index.php   
+
+    <Directory /data/sync/src>
+        AllowOverride None
+        Require all granted
+    </Directory>
+
+    ErrorLog /data/log/sync-error_log
+    CustomLog /data/log/sync-access_log common
+</VirtualHost>
+
+
+
+
+二、提交成image：【pcnk/web:sync】
+[Jack@test101 base]$ docker commit 152d0ca20346 pcnk/web:sync
+
+
+
+
+三、在image【pcnk/web:sync】的基础上，创建新的container【app_sync】，映射80端口，启动httpd服务
+
+1）container【app_sync】
+[Jack@test101 base]$ docker run -d -v /home/download:/home/download -v /home/datacenter:/data --name app_sync -p 10042:22 -p 80:80 pcnk/web:sync
+[Jack@test101 base]$ ssh -p 10042 root@127.0.0.1
+The authenticity of host '[127.0.0.1]:10042 ([127.0.0.1]:10042)' can't be established.
+RSA key fingerprint is 15:18:db:44:ed:03:ca:ac:15:a3:d0:ea:ac:01:7e:27.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '[127.0.0.1]:10042' (RSA) to the list of known hosts.
+root@127.0.0.1's password: 
+Last login: Wed May  6 11:51:55 2015 from 172.17.42.1
+[root@4df93ea135a9 ~]# ps -ef
+UID        PID  PPID  C STIME TTY          TIME CMD
+root         1     0  0 12:02 ?        00:00:00 /usr/bin/python /usr/bin/supervisord
+root         9     1  0 12:02 ?        00:00:00 /usr/sbin/httpd -DFOREGROUND
+root        10     1  0 12:02 ?        00:00:00 /usr/sbin/sshd -D
+apache      12     9  0 12:02 ?        00:00:00 /usr/sbin/httpd -DFOREGROUND
+apache      13     9  0 12:02 ?        00:00:00 /usr/sbin/httpd -DFOREGROUND
+apache      14     9  0 12:02 ?        00:00:00 /usr/sbin/httpd -DFOREGROUND
+apache      15     9  0 12:02 ?        00:00:00 /usr/sbin/httpd -DFOREGROUND
+apache      16     9  0 12:02 ?        00:00:00 /usr/sbin/httpd -DFOREGROUND
+root        17    10  0 12:03 ?        00:00:00 sshd: root@pts/0
+root        19    17  0 12:03 pts/0    00:00:00 -bash
+root        36    19  0 12:03 pts/0    00:00:00 ps -ef
+
+
+
+2）httpd服务的控制
+
+[root@ea8daf7b62d4 ~]# supervisorctl status httpd 
+httpd                            RUNNING   pid 9, uptime 0:00:48       
+
+[root@6a199d754f77 ~]# chmod 777 /data/sync/src/tmp/
+[root@6a199d754f77 ~]# chmod 777 /data/sync/src/data/
+[root@6a199d754f77 ~]# chmod 777 /data/sync/src/install/
+[root@6a199d754f77 ~]# chmod 777 /data/sync/src/db.cfg.php 
+
+3）通过web访问，引导安装，db这个环节略过。
+
+
+四、停止之前用的container，删掉image【pcnk/web:sync】，提交成一个新的image【website/sync】，然后通过这个来启动服务
+1）image【website/sync】
+[Jack@test101 base]$ docker stop app_sync
+[Jack@test101 base]$ docker rm app_sync
+[Jack@test101 base]$ dcoker rmi 
+[Jack@test101 base]$ docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+website/sync        latest              1bda5d872bf7        22 minutes ago      508 MB
+pcnk/web            sync                b41b76b51e1a        4 hours ago         505.9 MB
+pcnk/base           v2                  064aa35dfcef        6 hours ago         251.3 MB
+centos              7                   fd44297e2ddb        2 weeks ago         215.7 MB
+centos              centos7             fd44297e2ddb        2 weeks ago         215.7 MB
+centos              latest              fd44297e2ddb        2 weeks ago         215.7 MB
+
+
+[Jack@test101 base]$ docker rmi b41b76b51e1a
+Untagged: pcnk/web:sync
+
+[Jack@test101 base]$ docker commit -m "增加 httpd,php 服务，用于sync这个应用。" -a "pcnk" ea8daf7b62d4 website/sync
+
+
+
+2）container【app_sync_web】
+[Jack@test101 base]$ docker run -d -v /home/download:/home/download -v /home/datacenter:/data --name app_sync_web -p 40022:22 -p 80:80 website/sync
+[Jack@test101 base]$ docker ps -l
+CONTAINER ID        IMAGE                 COMMAND                CREATED             STATUS              PORTS                                       NAMES
+2ab2a9866251        website/sync:latest   "/usr/bin/supervisor   6 seconds ago       Up 4 seconds        0.0.0.0:80->80/tcp, 0.0.0.0:40022->22/tcp   app_sync_web   
+
+
+
+五、现在我们来看一下images之间的关联
+[Jack@test101 ~]$ docker images --tree
+Warning: '--tree' is deprecated, it will be removed soon. See usage.
+└─6941bfcbbfca Virtual Size: 0 B
+  └─41459f052977 Virtual Size: 215.7 MB
+    └─fd44297e2ddb Virtual Size: 215.7 MB Tags: centos:centos7, centos:latest, centos:7
+      └─751a85a0d00b Virtual Size: 215.7 MB
+        └─19b009f08542 Virtual Size: 228.1 MB
+          └─420cb9e73c70 Virtual Size: 251.3 MB
+            └─e97f94a79de0 Virtual Size: 251.3 MB
+              └─fde06c761bde Virtual Size: 251.3 MB
+                └─dbfae1099999 Virtual Size: 251.3 MB
+                  └─064aa35dfcef Virtual Size: 251.3 MB Tags: pcnk/base:v2
+                    └─b41b76b51e1a Virtual Size: 505.9 MB
+                      └─1bda5d872bf7 Virtual Size: 508 MB Tags: website/sync:latest
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,372 @@
+初探GlusterFS-入门指引
+
+
+操作内容：
+一、基础环境
+1、建立2个虚拟机作为GlusterFS的节点服务器。
+2、概况
+tvm-glusterfs-node01: 192.168.56.241
+tvm-glusterfs-node02: 192.168.56.242
+
+更新内网本地dns服务上的解析
+更新相关主机的hosts文件（防止dns服务失效时该服务异常）
+192.168.56.241  glusterfs-node01.office.test
+192.168.56.242  glusterfs-node02.office.test
+
+3、配置数据盘
+【在2个node上操作】
+1）新增一块数据盘/dev/sdb，fdisk格式一下
+[root@tvm-glusterfs-node01 ~]# fdisk /dev/sdb <<'_EOF'
+n
+p
+1
+
+
+p
+w
+_EOF
+[root@tvm-glusterfs-node01 ~]# fdisk -l /dev/sdb |grep sdb1 
+/dev/sdb1               1      133674  1073736373+  83  Linux
+
+2）创建xfs文件系统
+[root@tvm-glusterfs-node01 ~]# yum install xfsprogs -y
+[root@tvm-glusterfs-node01 ~]# mkfs.xfs -i size=512 /dev/sdb1
+
+3）挂载到目录/data/brick1： 
+[root@tvm-glusterfs-node01 ~]# mkdir /data/brick1
+[root@tvm-glusterfs-node01 ~]# mount /dev/sdb1 /data/brick1
+[root@tvm-glusterfs-node01 ~]# df -h |grep sdb1
+/dev/sdb1       1.0T   33M  1.0T   1% /data/brick1
+
+增加到fstab中：
+[root@tvm-glusterfs-node01 ~]# echo '/dev/sdb1                                 /data/brick1            xfs     defaults        1 2' >>/etc/fstab 
+
+注1：上述操作在2个node都执行。
+
+
+二、配置GlusterFS服务
+1、下载rpm包并更新本地的yum源。
+以最新的稳定版3.6为例：
+http://download.gluster.org/pub/gluster/glusterfs/3.6/LATEST/CentOS/epel-6/x86_64/
+
+【yum源上操作】
+[root@tvm-yum tmp]# wget --execute robots=off -nc -nd -r -l1 -A'*.rpm' http://download.gluster.org/pub/gluster/glusterfs/3.6/LATEST/CentOS/epel-6/x86_64/
+[root@tvm-yum tmp]# ls
+glusterfs-3.6.4-1.el6.x86_64.rpm            glusterfs-devel-3.6.4-1.el6.x86_64.rpm            glusterfs-rdma-3.6.4-1.el6.x86_64.rpm
+glusterfs-api-3.6.4-1.el6.x86_64.rpm        glusterfs-extra-xlators-3.6.4-1.el6.x86_64.rpm    glusterfs-server-3.6.4-1.el6.x86_64.rpm
+glusterfs-api-devel-3.6.4-1.el6.x86_64.rpm  glusterfs-fuse-3.6.4-1.el6.x86_64.rpm             
+glusterfs-cli-3.6.4-1.el6.x86_64.rpm        glusterfs-geo-replication-3.6.4-1.el6.x86_64.rpm  
+glusterfs-debuginfo-3.6.4-1.el6.x86_64.rpm  glusterfs-libs-3.6.4-1.el6.x86_64.rpm
+[root@tvm-yum tmp]# cd /data/yum/repo/office/6/x86_64
+[root@tvm-yum x86_64]# mv /tmp/glusterfs-* .
+[root@tvm-yum x86_64]# createrepo .
+
+
+2、安装glusterfs-server并启动服务
+【在2个node上操作】
+我们看看依赖关系：
+[root@tvm-glusterfs-node01 ~]# yum makecache
+[root@tvm-glusterfs-node01 ~]# yum install glusterfs-server -y
+Dependencies Resolved
+
+=============================================================================================================================================
+ Package                                Arch                         Version                              Repository                    Size
+=============================================================================================================================================
+Installing:
+ glusterfs-server                       x86_64                       3.6.4-1.el6                          office                       719 k
+Installing for dependencies:
+ glusterfs                              x86_64                       3.6.4-1.el6                          office                       1.4 M
+ glusterfs-api                          x86_64                       3.6.4-1.el6                          office                        64 k
+ glusterfs-cli                          x86_64                       3.6.4-1.el6                          office                       143 k
+ glusterfs-fuse                         x86_64                       3.6.4-1.el6                          office                        92 k
+ glusterfs-libs                         x86_64                       3.6.4-1.el6                          office                       281 k
+ keyutils                               x86_64                       1.4-5.el6                            base                          39 k
+ libevent                               x86_64                       1.4.13-4.el6                         base                          66 k
+ libgssglue                             x86_64                       0.1-11.el6                           base                          23 k
+ libtirpc                               x86_64                       0.2.1-10.el6                         base                          79 k
+ nfs-utils                              x86_64                       1:1.2.3-64.el6                       base                         331 k
+ nfs-utils-lib                          x86_64                       1.1.5-11.el6                         base                          68 k
+ python-argparse                        noarch                       1.2.1-2.1.el6                        base                          48 k
+ rpcbind                                x86_64                       0.2.0-11.el6                         base                          51 k
+Updating for dependencies:
+ keyutils-libs                          x86_64                       1.4-5.el6                            base                          20 k
+
+Transaction Summary
+=============================================================================================================================================
+Install      14 Package(s)
+Upgrade       1 Package(s)
+
+Total download size: 3.4 M
+
+[root@tvm-glusterfs-node01 ~]# service glusterd start
+Starting glusterd:                                         [  OK  ]
+
+调整防火墙，放行内网网卡的数据：
+[root@tvm-glusterfs-node01 ~]# iptables -I INPUT -i eth0 -j ACCEPT
+[root@tvm-glusterfs-node01 ~]# sed -i '/-A INPUT -i lo -j ACCEPT/a\## glusterd added.\n-A INPUT -i eth0 -j ACCEPT' /etc/sysconfig/iptables
+
+注1：上述操作在2个node都执行。
+
+
+
+3、配置主机互为值得信赖的资源池（trusted pool）
+在其中一台主机上操作，信赖其他的主机，即可形成一个“trusted pool”，本次测试只有2台，在配置对方的域名并测试互通后，使用“gluster peer probe”来配置即可。
+[root@tvm-glusterfs-node01 ~]# ping glusterfs-node02.office.test -c3 >/dev/null && echo 'ok'
+ok
+[root@tvm-glusterfs-node02 ~]# ping glusterfs-node01.office.test -c3 >/dev/null && echo 'ok'     
+ok
+
+[root@tvm-glusterfs-node01 ~]# gluster peer probe glusterfs-node02.office.test
+peer probe: success. 
+
+注1：此时，node01和node02已经组成一个pool，在node02上不需要再重复操作，当然如果你操作了，会发现是这样的：
+[root@tvm-glusterfs-node02 ~]# gluster peer probe glusterfs-node01.office.test
+peer probe: success. Host glusterfs-node01.office.test port 24007 already in peer list
+
+注2：假设我们有第3个node：glusterfs-node03.office.test，接着要做的，仅是重复之前的步骤，类似这样：
+[root@tvm-glusterfs-node01 ~]# gluster peer probe glusterfs-node03.office.test
+
+
+4、配置GlusterFS磁盘卷（Glusterfs Volume）
+1）创建目录
+【在2个node上操作】
+[root@tvm-glusterfs-node01 ~]# mkdir /data/brick1/gv0
+
+2）创建Glusterfs Volume：gv0，模式为replica（glusterfs的卷模式请参考后附资料）
+【在其中任意1个node上操作】
+[root@tvm-glusterfs-node01 ~]# gluster volume create gv0 replica 2 glusterfs-node01.office.test:/data/brick1/gv0 glusterfs-node02.office.test:/data/brick1/gv0 
+volume create: gv0: success: please start the volume to access data
+[root@tvm-glusterfs-node01 ~]# gluster volume start gv0
+volume start: gv0: success
+
+3）确认当前的卷信息
+[root@tvm-glusterfs-node01 ~]# gluster volume info
+ 
+Volume Name: gv0
+Type: Replicate
+Volume ID: dcbe6745-2c66-4cfa-a9e6-7ada2d909795
+Status: Started
+Number of Bricks: 1 x 2 = 2
+Transport-type: tcp
+Bricks:
+Brick1: glusterfs-node01.office.test:/data/brick1/gv0
+Brick2: glusterfs-node02.office.test:/data/brick1/gv0
+
+
+5、查看运行状态
+1、tcp连接状态
+[root@tvm-glusterfs-node01 ~]# ss -antp |egrep -v ':22|:25|:450[5-6]|:10050'   
+
+2、日志
+[root@tvm-glusterfs-node01 ~]# tail /var/log/glusterfs/etc-glusterfs-glusterd.vol.log -n 1
+[2015-08-19 07:02:14.294298] W [socket.c:620:__socket_rwv] 0-management: readv on /var/run/ff31c4d2fa607c6e32e93a1d8d800fb3.socket failed (Invalid argument)
+
+疑问：
+1）日志记录的时间为何不对？少了8小时。和时区有关系吗？
+2）日志记录的socket failed问题指的是什么？
+
+
+三、客户端测试
+1、先更新hosts文件（当然，仅用内网的dns服务也成，只要保证能正常解析服务端）
+[root@tvm-test ~]# cat /etc/hosts |grep gluster
+192.168.56.241  glusterfs-node01.office.test
+192.168.56.242  glusterfs-node02.office.test
+
+2、安装包“glusterfs-fuse”以便于mount识别glusterfs格式。
+[root@tvm-test ~]# yum install glusterfs-fuse -y
+
+3、挂载
+[root@tvm-test ~]# mount -t glusterfs glusterfs-node01.office.test:/gv0 /mnt
+[root@tvm-test ~]# df -h |grep mnt
+glusterfs-node01.office.test:/gv0  1.0T   33M  1.0T   1% /mnt
+
+4、测试写入文件
+[root@tvm-test ~]# for i in `seq -w 1 100`; do cp -rp /var/log/messages /mnt/copy-test-$i; done
+确认文件数量：
+[root@tvm-test ~]# ls /mnt |wc -l
+100
+
+再对比每个node服务器的文件数量：
+[root@tvm-glusterfs-node01 ~]# ls /data/brick1/gv0/ |wc -l
+100
+[root@tvm-glusterfs-node02 ~]# ls /data/brick1/gv0/ |wc -l
+100
+
+再来一次：
+[root@tvm-test ~]# for i in `seq -w 1 234`; do cp -rp /var/log/messages /mnt/copy-test-again-$i; done   
+[root@tvm-test ~]# ls /mnt |wc -l
+334
+[root@tvm-glusterfs-node01 ~]# ls /data/brick1/gv0/ |wc -l
+334
+[root@tvm-glusterfs-node02 ~]# ls /data/brick1/gv0/ |wc -l
+334
+
+5、小结
+很明显，我们在“Type: Replicate”这种模式下，有2个副本，node01和node02互为镜像，类似RAID1。
+
+
+四、异常情况测试
+1、某个节点网络异常，离线
+1）当前状态
+-----------
+[root@tvm-glusterfs-node01 ~]# gluster peer status
+Number of Peers: 1
+
+Hostname: glusterfs-node02.office.test
+Uuid: 35dbbb8e-d7b2-42f3-bea4-fb69dcc680fd
+State: Peer in Cluster (Connected)
+
+[root@tvm-glusterfs-node02 ~]# gluster peer status
+Number of Peers: 1
+
+Hostname: glusterfs-node01.office.test
+Uuid: 43c1c156-07f8-4434-b8f0-627e26a1ffdc
+State: Peer in Cluster (Connected)
+
+[root@tvm-test ~]# mount -t glusterfs glusterfs-node01.office.test:/gv0 /mnt
+[root@tvm-test ~]# df -h |grep mnt
+glusterfs-node01.office.test:/gv0  1.0T   33M  1.0T   1% /mnt
+
+[root@tvm-test ~]# ss -ant |grep -E "49152|24007" |grep 'ESTAB'
+ESTAB      0      0            192.168.56.251:1022        192.168.56.241:24007 
+ESTAB      0      0            192.168.56.251:1017        192.168.56.241:49152 
+ESTAB      0      0            192.168.56.251:1016        192.168.56.242:49152 
+-----------
+
+2）我们下线tvm-glusterfs-node01（断开网卡），查看集群情况
+[root@tvm-glusterfs-node02 ~]# gluster peer status
+Number of Peers: 1
+
+Hostname: glusterfs-node01.office.test
+Uuid: 43c1c156-07f8-4434-b8f0-627e26a1ffdc
+State: Peer in Cluster (Disconnected)
+
+[root@tvm-glusterfs-node02 ~]# gluster volume status
+Status of volume: gv0
+Gluster process                                         Port    Online  Pid
+------------------------------------------------------------------------------
+Brick glusterfs-node02.office.test:/data/brick1/gv0     49152   Y       1085
+NFS Server on localhost                                 2049    Y       1090
+Self-heal Daemon on localhost                           N/A     Y       1095
+ 
+Task Status of Volume gv0
+------------------------------------------------------------------------------
+There are no active volume tasks
+ 
+ 
+ 
+3）查看客户端访问的状态
+[root@tvm-test ~]# ls /mnt/
+ls: cannot access /mnt/: Transport endpoint is not connected
+
+
+无法访问当前挂载点，我们卸载掉，改为挂载node02到/mnt上：
+[root@tvm-test ~]# df -h |grep mnt
+glusterfs-node01.office.test:/gv0  1.0T   58M  1.0T   1% /mnt
+[root@tvm-test ~]# umount /mnt
+
+[root@tvm-test ~]# mount -t glusterfs glusterfs-node02.office.test:/gv0 /mnt 
+[root@tvm-test ~]# df -h |grep mnt
+glusterfs-node02.office.test:/gv0  1.0T   58M  1.0T   1% /mnt
+[root@tvm-test ~]# ls /mnt/ |wc -l
+334
+
+
+4）写入文件
+[root@tvm-test ~]# for i in `seq -w 1 55`; do cp -rp /var/log/messages /mnt/copy-test-only2-$i; done              
+[root@tvm-test ~]# ls /mnt |wc -l
+389
+
+对比，查看tvm-glusterfs-node02的文件数量：
+[root@tvm-glusterfs-node02 ~]# ls /data/brick1/gv0/ |wc -l
+389
+
+5）我们上线tvm-glusterfs-node01，看看文件是否同步了：
+[root@tvm-glusterfs-node01 ~]# ls /data/brick1/gv0/ |wc -l
+389
+
+小结：单个节点下线后，再次上线时，可以同步文件，但客户端需要手动挂载。
+
+
+2、测试 backupvolfile-server
+1）挂载
+[root@tvm-test ~]# umount /mnt
+[root@tvm-test ~]# mount -t glusterfs -o backupvolfile-server=glusterfs-node02.office.test,log-level=DEBUG,log-file=/tmp/gluster-test.log glusterfs-node01.office.test:/gv0 /mnt 
+[root@tvm-test ~]# ss -ant |grep -E "49152|24007"
+ESTAB      0      0            192.168.56.251:1019        192.168.56.242:49152 
+ESTAB      0      0            192.168.56.251:1020        192.168.56.241:49152 
+ESTAB      0      0            192.168.56.251:1023        192.168.56.242:24007 
+
+请注意：这里连接了“192.168.56.242:24007”，这个是node02上的 glusterd 的服务端口，也就是说，上述的挂载方式，优先选择了指定的节点 node02 上的服务。
+同样的，如果我们指定的 backupvolfile-server 是node01的话，则：
+[root@tvm-test ~]# mount -t glusterfs -o backupvolfile-server=glusterfs-node01.office.test,log-level=DEBUG,log-file=/tmp/gluster-test.log glusterfs-node01.office.test:/gv0 /mnt 
+[root@tvm-test ~]# ss -ant |grep -E "49152|24007" |grep 'ESTAB'
+ESTAB      0      0            192.168.56.251:1018        192.168.56.242:49152 
+ESTAB      0      0            192.168.56.251:1023        192.168.56.241:24007 
+ESTAB      0      0            192.168.56.251:1019        192.168.56.241:49152 
+
+
+
+2）下线tvm-glusterfs-node01（断开网卡），查看集群的状态
+[root@tvm-glusterfs-node02 ~]# gluster peer status  
+Number of Peers: 1
+
+Hostname: glusterfs-node01.office.test
+Uuid: 43c1c156-07f8-4434-b8f0-627e26a1ffdc
+State: Peer in Cluster (Disconnected)
+[root@tvm-glusterfs-node02 ~]# gluster volume status
+Status of volume: gv0
+Gluster process                                         Port    Online  Pid
+------------------------------------------------------------------------------
+Brick glusterfs-node02.office.test:/data/brick1/gv0     49152   Y       1085
+NFS Server on localhost                                 2049    Y       1090
+Self-heal Daemon on localhost                           N/A     Y       1095
+ 
+Task Status of Volume gv0
+------------------------------------------------------------------------------
+There are no active volume tasks
+ 
+
+3）查看客户端访问的状态
+[root@tvm-test ~]# ls /mnt/ |wc -l
+393
+咦，竟然不用手动重新挂载，那我们尝试写文件，看看是不是写到node02上了：
+[root@tvm-test ~]# for i in `seq -w 1 10`; do cp -rp /var/log/messages /mnt/is_write_on_node02-$i; done 
+
+对比一下：
+ 
+[root@tvm-glusterfs-node02 ~]# ls /data/brick1/gv0/ |wc -l
+403
+[root@tvm-glusterfs-node02 ~]# ls /data/brick1/gv0/ |grep 'write'
+is_write_on_node02-01
+is_write_on_node02-02
+is_write_on_node02-03
+is_write_on_node02-04
+is_write_on_node02-05
+is_write_on_node02-06
+is_write_on_node02-07
+is_write_on_node02-08
+is_write_on_node02-09
+is_write_on_node02-10
+
+果然是写到node02上（也只有这个节点可用）
+
+4）再次上线node01，肯定可以同步啦
+[root@tvm-glusterfs-node01 ~]# ls /data/brick1/gv0/ |wc -l
+393
+过了大约1秒（这个时间预计取决于文件大小）
+[root@tvm-glusterfs-node01 ~]# ls /data/brick1/gv0/ |wc -l
+403
+
+
+小结：客户端挂载卷时，使用参数 backupvolfile-server 可以在节点异常自动切换到备用节点。
+
+
+
+ZYXW、参考
+1、官网 doc
+http://gluster.readthedocs.org/en/latest/Quick-Start-Guide/Quickstart/
+2、Set up GlusterFS on two nodes
+http://banoffeepiserver.com/glusterfs/set-up-glusterfs-on-two-nodes.html
+3、第二章 一个可靠的存储后端
+http://inthecloud.readthedocs.org/zh_CN/draft/posts/ch02.html

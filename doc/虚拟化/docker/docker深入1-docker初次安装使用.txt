@@ -1,0 +1,251 @@
+docker深入1-docker初次安装使用
+
+===
+参考资料：
+Docker 和一个正常的虚拟机有何区别？http://developer.51cto.com/art/201312/421964.htm
+全球首部Docker书籍：让你迈出使用Docker的第一步(1) http://cloud.51cto.com/art/201412/461998.htm
+docker镜像与容器存储结构分析 http://www.csdn123.com/html/topnews201408/94/7494.htm
+
+===
+[root@test01 download]# yum update 
+
+【】安装
+[root@test01 download]# yum install docker-io
+[root@test01 download]# docker -v     
+Docker version 1.3.2, build 39fa2fa/1.3.2
+
+【】启动服务
+[root@test01 download]# service docker start
+
+
+【】查看状态
+[root@test01 download]# docker info         
+Containers: 0
+Images: 0
+Storage Driver: devicemapper
+ Pool Name: docker-253:0-2228227-pool
+ Pool Blocksize: 65.54 kB
+ Data file: /var/lib/docker/devicemapper/devicemapper/data
+ Metadata file: /var/lib/docker/devicemapper/devicemapper/metadata
+ Data Space Used: 305.7 MB
+ Data Space Total: 107.4 GB
+ Metadata Space Used: 733.2 kB
+ Metadata Space Total: 2.147 GB
+ Library Version: 1.02.89-RHEL6 (2014-09-01)
+Execution Driver: native-0.2
+Kernel Version: 2.6.32-431.el6.x86_64
+Operating System: <unknown>
+
+
+【】将某个用户加入到docker组，以便已非root用户来运行docker命令。
+[root@test01 download]# useradd Jack             
+[root@test01 download]# usermod -a -G docker Jack
+[root@test01 download]# id Jack
+uid=500(Jack) gid=500(Jack) groups=500(Jack),490(docker)
+[root@test01 download]# su Jack
+
+【】查看images
+[Jack@test01 download]$ docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+
+从国内的仓库docker.cn上pull一个
+[Jack@test01 download]$ docker pull docker.cn/docker/centos
+Pulling repository docker.cn/docker/centos
+34943839435d: Download complete 
+511136ea3c5a: Download complete 
+5b12ef8fd570: Download complete 
+Status: Downloaded newer image for docker.cn/docker/centos:latest
+
+再次查看
+[Jack@test01 download]$ docker images
+REPOSITORY                TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+docker.cn/docker/centos   centos7             34943839435d        5 weeks ago         224 MB
+docker.cn/docker/centos   latest              34943839435d        5 weeks ago         224 MB
+
+
+[root@test01 download]# cd /var/lib/docker/
+[root@test01 docker]# ls
+containers  devicemapper  execdriver  graph  init  linkgraph.db  repositories-devicemapper  tmp  trust  volumes
+
+
+【】查看docker使用的镜像层次存储的driver是devicemapper
+查看内容：
+[root@test01 download]# cat /var/lib/docker/repositories-devicemapper |python -mjson.tool
+{
+    "Repositories": {
+        "docker.cn/docker/centos": {
+            "centos7": "34943839435dfb2ee646b692eebb06af13823a680ace00c0adc232c437c4f90c", 
+            "latest": "34943839435dfb2ee646b692eebb06af13823a680ace00c0adc232c437c4f90c"
+        }
+    }
+}
+
+Device mapper driver 会创建一个100G的简单文件包含你的镜像和容器。每一个容器被限制在10G大小的卷内。
+磁盘占用：100G不是实际占用，556M才是。
+[root@test01 devicemapper]# cd devicemapper/devicemapper
+
+[root@test01 devicemapper]# ll -h
+total 556M
+-rw------- 1 root root 100G Jan  7 14:52 data
+-rw------- 1 root root 2.0G Jan  7 19:13 metadata
+
+
+【】启动一个容器：
+语法：
+docker run -it -d --name Container_Name REPOSITORY:TAG CMD
+-i：开启容器中STDIN
+-t：分配一个tty来提供一个交互式shell
+-d：后台模式
+--name: 容器名
+
+[Jack@test01 download]$ docker run -it docker.cn/docker/centos /bin/bash
+    
+[root@896725223c75 /]# ip a
+13: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436 qdisc noqueue state UNKNOWN 
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+14: eth0: <BROADCAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 02:42:ac:11:00:04 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.4/16 scope global eth0
+    inet6 fe80::42:acff:fe11:4/64 scope link 
+       valid_lft forever preferred_lft forever
+       
+[root@896725223c75 /]# cat /etc/hosts
+172.17.0.4      896725223c75
+ff02::2 ip6-allrouters
+127.0.0.1       localhost
+::1     localhost ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+
+
+该选项指定容器名
+[Jack@test01 download]$ docker run --name test-docker-01    
+
+【】如何用TAG
+可以这样：
+[Jack@test01 download]$ docker run -it docker.cn/docker/centos /bin/bash
+也可以这样：
+[Jack@test01 download]$ docker run -it docker.cn/docker/centos:centos7 /bin/bash
+[Jack@test01 download]$ docker run -it docker.cn/docker/centos:7 /bin/bash
+
+不能这样：
+[Jack@server200-21 ~]$ docker run -it docker.cn/docker/centos:centos /bin/bash
+Unable to find image 'docker.cn/docker/centos:centos' locally
+Pulling repository docker.cn/docker/centos
+FATA[0000] Tag centos not found in repository docker.cn/docker/centos 
+
+
+【】查看docker进程
+docker ps -l    该选项会列出最后一次运行的容器，包括正在运行和已经停止的。
+docker ps -a    显示全部容器
+docker ps -n 2  显示最近2个容器
+
+[Jack@test01 download]$ docker ps -a
+CONTAINER ID        IMAGE                             COMMAND             CREATED             STATUS                       PORTS               NAMES
+896725223c75        docker.cn/docker/centos:centos7   "/bin/bash"         3 minutes ago       Exited (127) 2 seconds ago                       condescending_morse   
+3eb4e1567db2        docker.cn/docker/centos:centos7   "/bin/bash"         9 minutes ago       Exited (0) 8 minutes ago                         jolly_archimedes      
+8a4f4b9e5984        docker.cn/docker/centos:centos7   "/bin/bash"         11 minutes ago      Exited (0) 10 minutes ago                        test-docker-01
+
+
+【】重新启动已经停止的容器
+[Jack@test01 download]$ docker start test-docker-01
+test-docker-01
+[Jack@test01 download]$ docker ps
+CONTAINER ID        IMAGE                             COMMAND             CREATED             STATUS              PORTS               NAMES
+8a4f4b9e5984        docker.cn/docker/centos:centos7   "/bin/bash"         14 minutes ago      Up 22 seconds                           test-docker-01
+
+Docker容器重新启动的时候，会沿用docker run命令时指定的参数来运行，因此我们容器重新启动后会运行一个交互式会话shell。此外，我们也可以用docker attach命令，重新附着到该容器的会话上
+
+[Jack@test01 download]$ docker attach test-docker-01
+[root@8a4f4b9e5984 /]# exit
+
+【】守护式容器
+除了这些交互式运行的容器（interactive container），我们也可以创建长期运行的容器。
+守护式容器 （daemonized container） 没有交互式会话，非常适合运行应用程序和服务。大多数时候我们都需要以守护式来运行我们的容器。
+
+
+[Jack@test01 docker]$ docker run --name test-docker02-daemon -d docker.cn/docker/centos /bin/bash -c "while true; do echo hello world; sleep 1; done" 
+589a71825c044120a5729dca24154dd32c257bfa529d83966a931ea67e2d058f
+
+【】使用logs来查看容器的日志
+[Jack@test01 docker]$ docker logs test-docker02-daemon
+hello world
+hello world
+
+类似tail -n
+[Jack@test01 docker]$ docker logs --tail 10 test-docker02-daemon
+
+类似tail -f
+[Jack@test01 docker]$ docker logs -f test-docker02-daemon       
+
+查看容器内的进程，类似top
+[Jack@test01 docker]$ docker top test-docker02-daemon
+UID                 PID                 PPID                C                   STIME               TTY                 TIME                CMD
+root                28600               26577               0                   19:41               ?                   00:00:00            /bin/bash -c while true; do echo hello world; sleep 1; done
+root                28898               28600               0                   19:44               ?                   00:00:00            sleep 1
+
+
+【】在容器内部运行进程
+[Jack@test01 docker]$ docker exec -d test-docker02-daemon touch /etc/new_file
+
+【】启动一个诸如打开shell的交互式任务
+[Jack@test01 docker]$ docker exec -t -i test-docker02-daemon /bin/bash
+[root@589a71825c04 /]# ls /etc/new*
+/etc/new_file
+
+【】停止守护式容器
+docker stop命令会向Docker容器进程发送SIGTERM信号。
+docker kill命令来向容器进程发送SIGKILL信号。如果你想快速停止某个容器。
+[Jack@test01 docker]$ docker stop test-docker02-daemon
+test-docker02-daemon
+
+
+【】自动重启容器
+docker run --restart=always --name test-docker03 -d docker.cn/docker/centos bin/bash -c "while true; do echo hello world; sleep 1; done" 
+
+--restart标志被设置为always。无论容器的退出代码是什么，Docker都会自动重启该容器，除了always。
+我们还可以将这个标志设为on-failure，这样，只有当容器的退出代码为非0值的时候，才会自动重启。另外，on-failure``还接受``一个可选的重启次数参数，例如：
+--restart=on-failure:5  
+
+【】使用inspect得到更多信息
+[Jack@test01 docker]$ docker inspect test-docker02-daemon 
+
+[Jack@test01 docker]$ docker inspect --help
+
+Usage: docker inspect [OPTIONS] CONTAINER|IMAGE [CONTAINER|IMAGE...]
+
+Return low-level information on a container or image
+
+  -f, --format=""    Format the output using the given go template.
+  --help=false       Print usage
+
+  
+docker inspect 某个容器名，会返回一堆json格式的数据；
+可以指定-f or --format  后边跟着key的名称，这样可以精确匹配到value
+
+例如：得到容器app1所在的docker host的IP地址：
+[Jack@test01 docker]# docker inspect -f '{{ .NetworkSettings.IPAddress }}' app1
+172.17.0.12
+
+
+
+【】删除容器
+需要注意的是，运行中的Docker容器是无法删除的！你必须先通过docker stop或docker kill命令停止容器，才能将其删除。
+[Jack@test01 docker]$ docker rm test-docker02-daemon
+test-docker02-daemon
+
+删除所有容器
+-a：列出所有容器
+-q：只返回容器的ID
+[Jack@test01 docker]$ docker rm `docker ps -aq`
+896725223c75
+3eb4e1567db2
+8a4f4b9e5984
+
+[Jack@test01 docker]$ docker ps -a
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+

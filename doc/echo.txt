@@ -1,0 +1,38 @@
+echo的使用记录
+
+-n 用法：输出不换行
+
+例如：
+echo -n "a1: "
+echo "b2"
+得到：
+a1: b2
+
+
+-e 用法：允许后面的输出进行转义
+例如：
+exit_script()
+{
+  echo -e "\033[1;40;31mInstall $1 error,will exit.\n\033[0m"
+  rm -f $LOCKfile
+  exit 1
+}
+
+
+LOCKfile=/tmp/.$(basename $0)
+if [ -f "$LOCKfile" ]
+then
+  echo -e "\033[1;40;31mThe script is already exist,please next time to run this script.\n\033[0m"
+  exit
+else
+  echo -e "\033[40;32mStep 1.No lock file,begin to create lock file and continue.\n\033[40;37m"
+  touch $LOCKfile
+fi
+
+#check user
+if [ $(id -u) != "0" ]
+then
+  echo -e "\033[1;40;31mError: You must be root to run this script, please use root to install this script.\n\033[0m"
+  rm -f $LOCKfile
+  exit 1
+fi

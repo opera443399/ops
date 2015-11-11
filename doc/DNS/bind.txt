@@ -1,0 +1,65 @@
+DNS服务器搭建文档
+
+来自：http://www.xiyang-liu.com/2012/05/dns-server-install/
+
+随着服务器数量的不断增多，使用IP地址标识服务器的方式，已经显得捉襟见肘。这是就需要一个DNS服务。前段时间刚搭建了一个DNS服务器。现把搭建过长写成脚本。供大家使用。 一些参数的设置： DNS IP地址：10.1.1.1 使用的域：lockeliu.org 子域：svr.lockeliu.org 废话不说，上脚本：
+
+
+#!/bin/bash
+# README
+#the script to install bind name server. you should prepare some
+#zone files in the dir same as this script. this script may work
+#on CentOS 6.2 and later . i write it for CentOS 6.2. you should
+#know how it work before you run it.
+#                                            by locke liu
+# 说明文件
+#本脚本意在建议基于bind的域名服务器。为了方便管理，请预先准备好
+#区域文件（*.zone）。建议阅读脚本后，执行。本脚本只在CentOS 6.2 及
+#以上版本有效。在CentOS 6.2 测试通过。
+#                                            刘西洋
+echo "instal bind."
+# 安装必要软件包
+yum install bind bind-chroot bind-utils
+echo "generate a conf file for rndc"
+#生成rndc.conf文件。
+rndc-confgen > /etc/rndc.conf
+#复制rndc.conf中相应内容到named.conf
+echo "config named.conf for rndc"
+tail -n 10 /etc/rndc.conf | sed 's/^.//g' | sed '$d' >> /etc/named.conf
+#这条语句啥意思？
+#首先读取/etc/rndc.conf文件后十行内容，传给sed；sed删除每行首字符（即#号
+#注释），然后再由下一个sed删除最后一行；然后以追加的形式输出到named.conf
+echo "prepare named.conf for us"
+sed -i -e 's#/t(listen-on-v6*)#//t/1#g' /etc/named.conf
+#注释ipv6支持
+sed -i -e 's#(recursion yes;)#/1/n/tforwarders {202.102.224.68;202.102.227.68;8.8.8.8;};/n/tforward only;/n#g' /etc/named.conf
+#添加转发功能。
+#声明相应的域
+cat << !ZONE! >> /etc/named.rfc1912.zones
+zone "lockeliu.org" IN {
+  type master;
+  file "lockeliu.org.zone";
+};
+zone "svr.lockeliu.org" IN {
+  type master;
+  file "svr.lockeliu.org.zone";
+};
+zone "vm.lockeliu.org" IN {
+  type master;
+  file "vm.lockeliu.org.zone";
+};
+!ZONE!
+#复制区域文件到工作文件夹/var/named
+echo "copy zone file to /var/named"
+cp lockeliu.org.zone svr.lockeliu.org.zone vm.lockeliu.org.zone /var/named/
+echo "setup selinux for bind, and change owner to root: group"
+#修改权限，即selinux设置。
+chcon system_u:object_r:named_zone_t:s0 *lockeliu.org.zone
+chown root:named *lockeliu.org.zone
+#修改防火墙设置
+sed -i -e 's#(-A INPUT -m state --state NEW -m tcp -p tcp --dport 22 -j ACCEPT)#1n-A INPUT -m state --state NEW -m tcp -p tcp --dport 53 -j ACCEPTn-A INPUT -m state --state NEW -m udp -p udp --dport 53 -j ACCEPTn#g' /etc/sysconfig/iptables
+#重启防火墙
+service iptables restart
+#修改解析指向文件resolv.conf
+echo -e "search lockeliu.orgnnameserver 10.1.100.181" > /etc/resolv.conf
+#修改网卡配置文件

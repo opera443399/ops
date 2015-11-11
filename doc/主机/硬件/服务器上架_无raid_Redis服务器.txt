@@ -1,0 +1,194 @@
+【时间】2014-12-15 ~ 2015-01-05
+【主机】IP: s82
+【目的】协助web组使用redis服务，配置大内存型服务器。
+【操作记录】
+1. 沟通需求。
+20141215
+
+了解需求：
+1）机房现有机柜，还可放1台1U的服务器。
+2）确认采购64G内存的戴尔R420一台，直接寄送到机房，安装系统并上线。
+
+
+2. 下单采购
+20141216
+和戴尔方面沟通：
+1）关于配置
+
+型号：R430
+内存：16GB x4
+CPU：E5-2620 v3 x2
+硬盘： 600G 15K x1
+导轨：无
+iDRAC： Enterprise
+RAID：H330
+电源：单个
+
+报价：26000 元
+
+CPU：E5-2620 v3 = 3000+
+内存：16G = 1600+
+硬盘：15K 600G = 1600+ 
+
+
+2）关于IDC（收货方）的联系方式
+本次采购，将直接寄送到我司机房，而不是之前采用的办公室地址，请留意。
+
+    广州信息港机房：广州市天河区科韵路16号广州信息港C座国际电子商务中心4楼
+    联系人：柳发勇
+    电话：15374049774
+
+发票还是寄到公司。
+
+预计本周付款，这样在下周五前能到货。
+
+
+20141217
+正在处理采购流程。
+
+
+3. 收货上架
+20141219
+已付款，等待收货。
+
+订单号：中邮 806659995
+订单号会写在外包装箱上面的，如果发货后，通过它在这里可以查到物流信息
+http://www.cnpl.com.cn/cnpl/custservice/outweb/DellOutServlet?method=doLogout
+
+20141223
+最近工厂的订单量大，预计12月25日发货，（周六到下周一之间）最迟29日广州机房签收；
+计划本周五查询得到已发货的物流信息后，将订单号和配置服务器的需求告知机房商务邱建伟。
+
+
+20141226  物流配送。
+
+20141229  机房签收。
+
+20150105  准备上架。
+填写维护单请机房的运维安装需求来安装系统，上架。【20150105_睿江用户服务器维护授权书（2014）.docx】
+
+一、服务器已经寄送到机房，详情如下。
+
+序号	订单号	报价单号	详情单号	目的地	运输方式	件数	预计送达时间	签收时间	备注	当前状态
+1	806659995	105097112	CE00776981	广东省广州市	陆运	1	2014-12-29	2014-12-29		全票签收
+
+二、安装配置准备上架
+1）iDRAC
+IP=192.168.5.26
+GATEWAY=192.168.5.80
+帐号：配置用户root的密码
+
+2）分区：
+单硬盘，无raid，自动分区即可
+
+3）OS
+系统：Oracle Linux 6.5 x64
+时区：上海，取消UTC
+帐号：配置用户root的密码
+
+内网IP配置：
+DEVICE=em1
+IPADDR=192.168.5.82
+PREFIX=24
+GATEWAY=192.168.5.80
+DNS1=223.5.5.5
+DNS2=223.6.6.6
+
+安装包：
+development tools
+
+
+19点，机房通知已上线。
+
+
+20150106  配置系统。
+
+1）基础设置
+初次更新root密码
+# passwd
+
+时间同步
+# yum install vim lrzsz ntp man
+# ntpdate 192.168.5.80
+
+主机名
+# hostname s82.workec.com
+# echo 's82.workec.com' >>/etc/sysconfig/network
+
+网卡
+# cat /etc/sysconfig/network-scripts/ifcfg-em1 
+DEVICE=em1
+HWADDR=B0:83:FE:E9:6A:32
+TYPE=Ethernet
+UUID=d6095a58-01c3-4034-9b29-4354046b16e4
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=stctic
+IPADDR=192.168.5.82
+NETMASK=255.255.255.0
+GATEWAY=192.168.5.80
+DNS1=223.5.5.5
+DNS2=223.6.6.6
+
+目录
+mkdir -p /data/ops/bin && chmod 700 /data/ops
+
+安全更新
+# yum update bash openssl
+
+禁用selinux，清空防火墙，调整sshd配置
+# sh init_sshd.sh
+ 
+调整系统配置参数
+# sh init_limits.sh
+# sh init_profile.sh
+# sh init_sysctl.sh
+
+重启
+# reboot
+
+2）调整用户使用ssh public key登录。
+
+增加用户
+# sh create_user_with_sshkey.sh 
+
+调整ssh端口，禁用root用户和密码登录
+# vim /etc/ssh/sshd_config
+Port 932
+PasswordAuthentication no
+PermitRootLogin no
+GSSAPIAuthentication no
+
+调整对应的防火墙设置
+# vim /root/rc.firewall.txt
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 932 -j ACCEPT 
+
+导入防火墙配置
+# iptables-restore /root/rc.firewall.txt
+
+重启ssh
+# service sshd restart
+
+测试
+$ ssh -p932 192.168.5.82 -i jump_s81 
+
+保存防火墙配置
+# service iptables save
+
+再次更新root为随机密码
+# passwd
+
+
+redis服务器s82上线。
+
+更新文档【workec.固定资产表.服务器.xlsx】
+
+3）增加到监控平台。
+使用zabbix_agent_deploy.tar.gz配置的脚本自动化安装。
+调整防火墙配置，放行10050端口。
+
+4）安装软件包
+yum groupinstall "Development Tools"
+yum install wget
+
+

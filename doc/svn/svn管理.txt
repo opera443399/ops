@@ -1,0 +1,20 @@
+EXAMPLES
+             htpasswd /usr/local/etc/apache/.htpasswd-users jsmith
+
+       Adds or modifies the password for user jsmith. The user is prompted for the password. If executed  on  a
+       Windows  system,  the password will be encrypted using the modified Apache MD5 algorithm; otherwise, the
+       system¡¯s crypt() routine will be used. If the file does not  exist,  htpasswd  will  do  nothing  except
+       return an error.
+
+             htpasswd -c /home/doe/public_html/.htpasswd jane
+
+       Creates  a  new  file and stores a record in it for user jane. The user is prompted for the password. If
+       the file exists and cannot be read, or cannot be written, it is not altered and htpasswd will display  a
+       message and return an error status.
+
+             htpasswd -mb /usr/web/.htpasswd-all jones Pwd4Steve
+
+       Encrypts  the  password  from the command line (Pwd4Steve) using the MD5 algorithm, and stores it in the
+       specified file.
+
+

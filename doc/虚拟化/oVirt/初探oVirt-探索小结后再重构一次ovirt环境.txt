@@ -1,0 +1,655 @@
+日期：2015/10/12 - 2015/11/5 time 17:52
+主机：n72, n73, n86, n93, vm220
+目的：初探oVirt-探索小结后再重构一次ovirt环境
+操作内容：
+一、基础环境
+1、本次测试环境使用4台物理机来测试：n72, n73, n86, n93
+CPU：    Intel(R) Xeon(R) CPU E5-2603 v2 @ 1.80GHz
+内存：   32G    
+硬盘：   系统盘sda + 数据盘sdb
+
+
+ovirt-engine: e01(在n86上用virt-install手动创建的vm，安装vm和ovirt-engine的方法，前文有述略过不提)
+ovirt-hosts: n72, n73, n93
+ovirt-gluster: n72, n73, n93
+NFS: n86
+DNS: vm220 （局域网另行配置的一个DNS服务器）
+
+
+2、配置NFS服务(n86)
+1）安装服务
+[root@n86 ~]# yum install nfs-utils -y
+chkconfig rpcbind on
+chkconfig nfs on
+service rpcbind start
+service nfs start
+mkdir -p /data/ovirt/{data,export,iso} \
+&& chown -R 36:36 /data/ovirt  \
+&& chmod -R 0755 /data/ovirt  \
+&& cat <<'_EOF' >>/etc/exports
+/data/ovirt/data  *(rw,sync,no_subtree_check,all_squash,anonuid=36,anongid=36)
+/data/ovirt/export  *(rw,sync,no_subtree_check,all_squash,anonuid=36,anongid=36)
+/data/ovirt/iso  *(rw,sync,no_subtree_check,all_squash,anonuid=36,anongid=36)
+_EOF
+exportfs -arv
+
+2）调整nfs端口
+[root@n86 ~]# mv /etc/sysconfig/nfs /etc/sysconfig/nfs.bak`date +%Y%m%d%H%M%S` \
+&& cat <<'_EOF' >>/etc/sysconfig/nfs
+RPCRQUOTADOPTS="-p 875"
+LOCKD_TCPPORT=32803
+LOCKD_UDPPORT=32769
+RPCNFSDCOUNT=8
+RPCMOUNTDOPTS="-p 892"
+STATDARG="-p 662 -o 2020"
+_EOF
+service rpcbind restart
+service nfs restart
+
+3）最后调整防火墙的配置：
+[root@n86 ~]# sed -i.backup '/-A INPUT -i lo -j ACCEPT/a\## NFS related \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 111 -j ACCEPT \
+-A INPUT -p udp -m state --state NEW -m udp --dport 111 -j ACCEPT \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 662 -j ACCEPT \
+-A INPUT -p udp -m state --state NEW -m udp --dport 662 -j ACCEPT \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 875 -j ACCEPT \
+-A INPUT -p udp -m state --state NEW -m udp --dport 875 -j ACCEPT \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 892 -j ACCEPT \
+-A INPUT -p udp -m state --state NEW -m udp --dport 892 -j ACCEPT \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 2049 -j ACCEPT \
+-A INPUT -p udp -m state --state NEW -m udp --dport 32769 -j ACCEPT \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 32803 -j ACCEPT \
+# \
+' /etc/sysconfig/iptables
+[root@n86 ~]# service iptables reload
+
+先从外边的其他机器访问来测试一下：
+【调整前】
+[root@e01 ~]# showmount -e 10.50.200.86
+rpc mount export: RPC: Unable to receive; errno = No route to host
+
+【调整后】
+[root@e01 ~]# showmount -e 10.50.200.86
+Export list for 10.50.200.86:
+/data/ovirt/iso    *
+/data/ovirt/export *
+/data/ovirt/data   *
+
+符合预期。
+
+
+3、网络配置
+1）几台主机的网络划分：
+管理网段：10.50.200.0/24
+
+2）【DNS服务器】
+[root@vm220 ~]# yum -y install dnsmasq
+[root@vm220 ~]# cat /etc/hosts
+10.50.200.30 e01.test
+10.50.200.72 n72.test
+10.50.200.73 n73.test
+10.50.200.86 n86.test
+10.50.200.93 n93.test
+
+
+[root@vm220 ~]# cat /etc/resolv.conf 
+nameserver 10.50.200.93
+nameserver 223.5.5.5
+
+[root@vm220 ~]# service dnsmasq restart
+放行TCP和UDP的53端口。
+
+测试：
+[root@node93 ~]# nslookup e01.test                         
+Server:         10.50.200.220
+Address:        10.50.200.220#53
+
+Name:   e01.test
+Address: 10.50.200.30
+
+
+
+
+二、配置ovirt
+1、新增集群
+数据中心：Default
+集群名称：Host-Only
+CPU类型：选择SandyBridge
+启用 Virt 服务：勾选（默认）
+启用 Gluster 服务：不勾选（不建议 Virt 和 Gluster 同时启用。理由是： Gluster 服务相对比较容易出现异常，这个时候，将会对 Virt 服务也造成影响。）
+创建。
+
+3、新增主机
+增加n72,n73,n93
+【选择菜单：“数据中心-Default-主机-新建”】
+数据中心：Default
+主机集群：Host-Only
+名称：n72.test
+地址：n72.test
+密码：xxx
+【电源管理】
+启用电源管理：勾选
+地址：idrac的IP
+用户名：root
+密码：xxx
+类型：drac7
+测试：Test Succeeded, on
+确定。
+
+4、增加存储域
+【选择菜单：“数据中心-Default-存储-新建域”】
+
+【data域】
+名称：data-nfs
+域功能/存储类型：Data/NFS
+使用主机：n93.test
+路径：n86.test:/data/ovirt/data
+
+【export域】
+名称：export-nfs
+域功能/存储类型：Export/NFS
+使用主机：n93.test
+路径：n86.test:/data/ovirt/export
+
+后续在建立vm和模版后，建议立即导出到export域中备份。
+
+【iso域】
+名称：iso-nfs
+域功能/存储类型：ISO/NFS
+使用主机：n93.test
+路径：n86.test:/data/ovirt/iso
+
+拷贝一个ISO文件到iso域中：
+[root@n86 11111111-1111-1111-1111-111111111111]# pwd
+/data/ovirt/iso/a1373048-e959-4ec7-b1f3-97ad58299ae4/images/11111111-1111-1111-1111-111111111111
+[root@n86 11111111-1111-1111-1111-111111111111]# chown 36:36 CentOS-6.5-x86_64-bin-DVD1.iso
+[root@n86 11111111-1111-1111-1111-111111111111]# ll -h
+total 4.2G
+-rw-r--r-- 1 vdsm kvm 4.2G Jul 24  2014 CentOS-6.5-x86_64-bin-DVD1.iso
+
+
+【附】使用glusterfs类型的主机的方式（本次操作略过，未使用；使用手动管理的glusterfs服务，请参考附录1）
+----------------------------------------------------------------------
+假设有3台主机（n1,n2,n3）提供glusterfs服务。
+首先，在主机上新建目录：
+/data/gv0
+
+其次，用ovirt管理卷：
+【选择菜单：“集群-GlusterOnly-卷-新建卷”】
+名称：gv0
+类型：replicate
+Replica Count：3
+主机：g1,g2,g3
+Brick 目录：/data/gv0/brick1
+确定
+为 Virt 库进行优化：勾选（后续也可选，主要是配置了gluster的一些参数，例如gid和uid设定为36）
+创建。
+启动。
+
+最后，提供服务：
+【选择菜单：“数据中心-Default-存储-新建域”】
+【data域】
+名称：data-gv0
+域功能/存储类型：Data/GlusterFS
+使用主机：n93.test
+路径：g1.test:/gv0
+挂载选项：backupvolfile-server=g2.test,backupvolfile-server=g3.test
+----------------------------------------------------------------------
+
+
+
+
+6、新建vm
+【选择菜单：“数据中心-Default-虚拟机-新建虚拟机”】
+集群：Host-Only/Default
+操作系统：Red Hat Enterprise Linux 6.x x84
+名称：vm4tpl-s1
+注释：centos6u5x64-c1-2g-d20g-if1
+
+nic1：ovirtmgmt
+时区：GMT+8
+确定。
+
+配置虚拟磁盘
+大小：20
+别名：vm4tpl-s1_Disk1
+描述：vmdisk_os
+
+激活：勾选
+可引导：勾选
+确定。
+
+【选择菜单：“数据中心-Default-虚拟机-只运行一次”】
+【引导选项】
+附加CD：勾选
+确定。
+
+【选择菜单：“数据中心-Default-虚拟机-控制台”】
+打开spice窗口安装系统（请参考前文）。
+--- 配置系统 ---
+网卡：开机启动，DHCP
+root密码
+时区：Shanghai
+UTC：不勾选
+分区：
+/boot   200 M
+/swap   2048 M（同内存大小）
+/       all
+软件包：basic server
+安装完成后，reboot
+
+
+
+三、将上一步创建的vm制作成模版前的准备工作（封装linux）
+1、--- 安装常用软件 ---
+[root@localhost ~]# yum -y install bind-utils lrzsz man ntp openssh-clients rsync traceroute vim wget tree 
+注意sshd的配置中，保证passwd的验证方式是开启的。
+
+2、--- 使用ntpd服务来控制vm的时间同步 ---
+先更新一次：
+[root@localhost ~]# /usr/sbin/ntpdate stdtime.gov.hk
+
+[root@localhost ~]# sed -i.backup '/server 0.centos.pool.ntp.org iburst/i\## NTP related \
+server stdtime.gov.hk iburst \
+server 0.asia.pool.ntp.org iburst \
+server 1.asia.pool.ntp.org iburst \
+server 2.asia.pool.ntp.org iburst \
+\
+' /etc/ntp.conf
+
+启动ntpd服务：
+[root@localhost ~]# service ntpd start
+[root@localhost ~]# chkconfig ntpd on
+
+3、--- 安装 ovirt-guest-agent ---
+在vm上先安装ovirt-release35.rpm这个yum源。
+[root@localhost ~]# yum -y install http://plain.resources.ovirt.org/pub/yum-repo/ovirt-release35.rpm
+[root@localhost ~]# yum -y install ovirt-guest-agent
+启动服务
+[root@localhost ~]# service ovirt-guest-agent start
+[root@localhost ~]# chkconfig ovirt-guest-agent on
+重启一次，测试一下ovirt页面对vm的控制是否生效。
+
+--- 安装 cloud-init ---
+请参考“初探oVirt-使用cloud-init”
+
+
+4、手动清理在创建虚拟机时可能导致冲突的配置
+--- 清理cloud-init ---
+rm /var/lib/cloud -fr
+
+--- 清理hostname ---
+cat <<'_EOF' >/etc/sysconfig/network
+NETWORKING=yes
+HOSTNAME=localhost.localdomain
+_EOF
+
+--- 清理网卡相关 ---
+sed -i -e '/UUID/d' -e '/HWADDR/d' -e '/ONBOOT/d' -e '/BOOTPROTO/d' \
+-e '/IPADDR/d' -e '/NETMASK/d' -e '/GATEWAY/d' \
+-e '/TYPE=Ethernet/a\ONBOOT=no\nBOOTPROTO=dhcp' /etc/sysconfig/network-scripts/ifcfg-eth*
+
+--- 清理ssh相关 ---
+rm -f /etc/ssh/ssh_host_*
+rm /root/.ssh -fr 
+
+--- 清理log ---
+find /var/log -type f -delete
+find /root -type f ! -name ".*" -delete
+
+
+--- 最后一步 ---
+手动配置（不想重置root密码和其他服务，如果通过sys-unconfig将会这样操作）
+--- 清理 udev 和history ---
+rm /etc/udev/rules.d/*-persistent-*.rules -f
+echo> /root/.bash_history
+history -c
+
+
+五、模版和导出
+1、模版
+【选择菜单：“数据中心-Default-虚拟机-创建模版”】
+名称：tpl-s1
+描述：c1-2g-d20g-if1
+注释：centos6u5x64-small
+
+
+2、测试新建虚拟机
+【选择菜单：“数据中心-Default-虚拟机-新建虚拟机”】
+基于模版：tpl-s1
+名称：test01
+确定。
+
+【选择菜单：“数据中心-Default-虚拟机-只运行一次”】
+【初识运行】
+使用 Cloud-Init：勾选
+设定vm名称等项目后，确定。
+
+
+3、导出
+【选择菜单：“数据中心-Default-虚拟机（选择指定的虚拟机）-导出”】
+【选择菜单：“数据中心-Default-模版（选择指定的模版）-导出”】
+
+
+4、调整vm
+【选择菜单：“数据中心-Default-虚拟机”】
+名称：vm4tpl-s1
+选中vm，选择下方菜单：“磁盘-取消激活”
+目的：将这个制作模版的vm的磁盘设置成未激活的状态，以免误操作启动了这个vm
+
+
+六、测试engine的备份和恢复
+1、从应用层面和kvm层面着手尝试。
+
+2、#####----- 【应用层面】 -----#####
+【备份】
+[root@e01 ~]# cd /backup && dt=`date +%Y%m%d_%H%M%S` && engine-backup --mode=backup --file=${dt}.bak --log=${dt}.bak.log >${dt}.run.log 2>&1
+【恢复】
+未验证。作为备用方案。
+请参考：http://www.ovirt.org/Ovirt-engine-backup#Restore
+或：初探oVirt-体验
+
+
+3、#####----- 【kvm 层面】 -----#####
+1）克隆vm并归档（参考附录：脚本；挂载外边备份卷到目录：/backup）
+[root@n86 ~]# mkdir -p /data/backup/logs && /bin/bash /data/ops/bin/backupVM.sh >/data/backup/logs/clone_$(date +%Y%m%d).log 2>&1
+
+2）查看日志：
+[root@n86 ~]# cat /data/backup/logs/clone_20151027.log        
+mkdir: created directory `/data/backup/VMs/e01.test/20151027'
+#virsh# list --all
+ 1     e01.test                       running
+[1] Tue Oct 27 13:14:08 CST 2015 [INFO] 准备克隆。
+Domain e01.test suspended
+
+#virsh# list --all
+ 1     e01.test                       paused
+Allocating 'e01.test-vda-clone.qcow2'                    |  40 GB     00:23     
+
+Clone 'e01.test-clone' created successfully.
+Domain e01.test resumed
+
+#virsh# list --all
+ 1     e01.test                       running
+ -     e01.test-clone                 shut off
+[1] Tue Oct 27 13:14:32 CST 2015 [INFO] step 1 完成。
+[2] Tue Oct 27 13:14:32 CST 2015 [INFO] 收集 xml 和 images 并拷贝到本地存储。
+`/etc/libvirt/qemu/e01.test.xml' -> `/data/backup/VMs/e01.test/20151027/e01.test.xml'
+`/etc/libvirt/qemu/e01.test-clone.xml' -> `/data/backup/VMs/e01.test/20151027/e01.test-clone.xml'
+removed `/etc/libvirt/qemu/e01.test-clone.xml'
+`/data/kvm/images/e01.test-vda-clone.qcow2' -> `/data/backup/VMs/e01.test/20151027/e01.test-vda-clone.qcow2'
+[2] Tue Oct 27 13:14:32 CST 2015 [INFO] step 2 完成。
+[3] Tue Oct 27 13:14:32 CST 2015 [INFO] 归档到外部存储。
+`/data/backup/VMs/e01.test/20151027' -> `/backup/e01.test/20151027'
+`/data/backup/VMs/e01.test/20151027/e01.test.xml' -> `/backup/e01.test/20151027/e01.test.xml'
+`/data/backup/VMs/e01.test/20151027/e01.test-clone.xml' -> `/backup/e01.test/20151027/e01.test-clone.xml'
+`/data/backup/VMs/e01.test/20151027/e01.test-vda-clone.qcow2' -> `/backup/e01.test/20151027/e01.test-vda-clone.qcow2'
+[3] Tue Oct 27 13:15:19 CST 2015 [INFO] step 3 完成。
+[4-1] Tue Oct 27 13:15:19 CST 2015 [INFO] 移除克隆的 VM
+Domain e01.test-clone has been undefined
+
+[4-1] Tue Oct 27 13:15:19 CST 2015 [INFO] 列出目录：/data/backup/VMs/e01.test
+20151024
+20151025
+20151026
+20151027
+[4-1] Tue Oct 27 13:15:19 CST 2015 [INFO] 清理本地超过3天的副本。
+removed `/data/backup/VMs/e01.test/20151024/e01.test.xml'
+removed `/data/backup/VMs/e01.test/20151024/e01.test-clone.xml'
+removed `/data/backup/VMs/e01.test/20151024/e01.test-vda-clone.qcow2'
+removed directory: `/data/backup/VMs/e01.test/20151024'
+[4-1] Tue Oct 27 13:15:20 CST 2015 [INFO] 列出目录：/data/backup/VMs/e01.test
+20151025
+20151026
+20151027
+[4-1] Tue Oct 27 13:15:20 CST 2015 [INFO] step 4-1 完成。
+[4-2] Tue Oct 27 13:15:20 CST 2015 [INFO] 列出目录：/backup/e01.test
+20151020
+20151021
+20151022
+20151023
+20151024
+20151025
+20151026
+20151027
+[4-2] Tue Oct 27 13:15:20 CST 2015 [INFO] 清理外部存储超过7天的副本。
+removed `/backup/e01.test/20151020/e01.test.xml'
+removed `/backup/e01.test/20151020/e01.test-vda-clone.qcow2'
+removed `/backup/e01.test/20151020/e01.test-clone.xml'
+removed directory: `/backup/e01.test/20151020'
+[4-2] Tue Oct 27 13:15:21 CST 2015 [INFO] 列出目录：/backup/e01.test
+20151021
+20151022
+20151023
+20151024
+20151025
+20151026
+20151027
+[4-2] Tue Oct 27 13:15:21 CST 2015 [INFO] step 4-2 完成。
+
+
+
+3）备份的文件列表如下所示
+[root@n86 ~]# tree -L 1 /backup/e01.test/
+/backup/e01.test/
+├── 20151021
+├── 20151022
+├── 20151023
+├── 20151024
+├── 20151025
+├── 20151026
+└── 20151027
+
+7 directories, 0 files
+[root@n86 ~]# tree -L 1 /data/backup/VMs/e01.test/
+/data/backup/VMs/e01.test/
+├── 20151025
+├── 20151026
+└── 20151027
+
+3 directories, 0 files
+[root@n86 ~]# tree -L 1 /data/backup/VMs/e01.test/20151027
+/data/backup/VMs/e01.test/20151027
+├── e01.test-clone.xml
+├── e01.test-vda-clone.qcow2
+└── e01.test.xml
+
+0 directories, 3 files
+
+
+4）恢复
+对比xml可以发现，克隆的对象修改了以下内容：
+name
+uuid
+source file
+mac address
+graphics
+
+编辑clone的镜像对应的xml文件：
+D1）调整name（可选，使用原来的即可，例如：e01.test）
+D2）替换uuid为原来的e01.test对应的uuid，如果这个已经不可用，已经undefine掉，则直接删除uuid即可，后续会自动生成
+D3）调整source file对应的镜像文件名称（可选）
+D4）将mac地址更换为e01.test的mac
+D5）调整vnc密码，端口等（可选）
+调整完毕后：
+virsh define e01.test
+virsh start e01.test
+
+
+
+4、场景
+1）测试engine的备份和恢复
+【场景1】使用新克隆的的vm来运行engine（e01.test-clone）
+--- 现象 ---
+先克隆 vm（e01.test) 为 e01.test-clone
+再关闭 e01.test
+最后使用 e01.test-clone
+--- 结果 ---
+engine页面：正常。
+
+【场景2】使用旧的vm来运行engine（e01.test）
+--- 现象 ---
+上一步使用e01.test-clone的时候，启动了一个vm（vm01，状态为“UP”）
+过了2小时后，停止e01.test-clone，恢复使用e01.test
+--- 结果 ---
+engine页面：正常。
+
+【场景3】使用昨天备份的副本（e01.test-clone）之前，在engine（e01.test）页面上操作增加了1个vm（vm02），且这个vm处于running状态，此时停止engine（e01.test）所在的VM，再恢复昨天的副本（e01.test-clone），问题是，这个新增的vm（vm02）可以在engine（e01.test）上正常运行吗？
+--- 现象 ---
+昨天的副本运行后：engine（e01.test-clone）也可以工作，但 vm02 被识别成“external-vm02”，可以强制关机，但无法再启动这个VM，启动时报错：“无法 运行 VM。引擎没有管理这个虚拟机。”
+--- 结果 ---
+engine页面：异常。
+结论：engine可以正常运作，但这一天所做的操作（新增或删除vm、磁盘等要记录到db中的行为）将会丢失。当然，任何备份方式也无法避免这种情况，只能尽量降低损失。
+
+
+
+2）外部创建的vm如何导入ovirt平台。如果可行，则可以继续尝试将xen，vmware上运行的vm转换为kvm导入ovirt平台。
+【场景4】手动在主机n73上创建并运行一个vm（tvm01），engine的也可以识别吗？
+--- 现象 ---
+virsh的命令行可以正常管理；但engine页面不能显示这个vm，完全不会感知到它的存在。
+--- 结果 ---
+engine页面：正常。
+结论：外边创建的vm不能直接被engine识别。
+
+
+
+5、结论
+1）建议    同时启用2种备份方式。
+2）不可行  外部创建的vm不能直接导入ovirt平台，因此，将xen，vmware上运行的vm转换为kvm再导入ovirt平台的想法将遇到麻烦。
+3）不建议  在使用虚拟化管理平台的同时，手动使用virsh配置，这将导致行为和数据的不一致。
+
+
+
+
+
+四、附录1【glusterfs】
+1、使用glusterfs集群作为ovirt-engine的后端存储和engine的备份卷
+本次示例，由3个副本组成的集群，节点包括：
+node33.glusterfs
+node34.glusterfs
+node35.glusterfs
+
+2、手动管理glusterfs服务。
+配置 卷 e01_data：挂载作为 ovirt-engine 的 data 域 
+配置 卷 gv4kvm：挂载作为 ovirt-engine 所在 kvm 的备份卷
+
+--------------- 配置 卷 e01_data ---------------
+【创建卷】
+创建卷 e01_data 作为主数据域：
+mkdir -p /data/e01.test
+gluster volume create e01_data replica 3 transport tcp \
+node33.glusterfs:/data/e01.test/engine_data \
+node34.glusterfs:/data/e01.test/engine_data \
+node35.glusterfs:/data/e01.test/engine_data
+
+【启动】
+[root@n86 ~]# gluster volume start e01_data
+【配置参数】
+gluster volume set e01_data diagnostics.count-fop-hits on
+gluster volume set e01_data diagnostics.latency-measurement on
+gluster volume set e01_data storage.owner-gid 36
+gluster volume set e01_data storage.owner-uid 36 
+gluster volume set e01_data cluster.server-quorum-type server
+gluster volume set e01_data cluster.quorum-type auto
+gluster volume set e01_data network.remote-dio enable
+gluster volume set e01_data cluster.eager-lock enable
+gluster volume set e01_data performance.stat-prefetch off
+gluster volume set e01_data performance.io-cache off
+gluster volume set e01_data performance.read-ahead off
+gluster volume set e01_data performance.quick-read off
+gluster volume set e01_data auth.allow \*
+gluster volume set e01_data user.cifs enable
+gluster volume set e01_data nfs.disable off
+
+【挂载】
+ovirt-engine，选择菜单：“数据中心-Default-存储-新建域”
+名称：data-e01_data
+域功能/存储类型：Data/GlusterFS
+使用主机：n93.test
+路径：node35.glusterfs:/e01_data
+挂载选项：backupvolfile-server=node33.glusterfs,backupvolfile-server=node34.glusterfs
+--------------- 配置 卷 e01_data ---------------
+--------------- 配置 卷 e01_bak_kvm ---------------
+【创建卷】
+创建卷 e01_bak_kvm 作为kvm备份卷：
+gluster volume create e01_bak_kvm replica 3 transport tcp \
+node33.glusterfs:/data/e01.test/bak_kvm \
+node34.glusterfs:/data/e01.test/bak_kvm \
+node35.glusterfs:/data/e01.test/bak_kvm
+
+【启动】
+[root@n86 ~]# gluster volume start e01_bak_kvm
+【挂载】
+[root@n86 ~]# mkdir /backup
+mount.glusterfs node35.glusterfs:/e01_bak_kvm -o backupvolfile-server=node33.glusterfs,backupvolfile-server=node34.glusterfs /backup
+[root@n86 ~]# df -h /backup
+Filesystem                     Size  Used Avail Use% Mounted on
+node35.glusterfs:/e01_bak_kvm   11T   17G   11T   1% /backup
+--------------- 配置 卷 e01_bak_kvm ---------------
+
+
+五、附录2【backupVM.sh】   
+[root@n86 ~]# cat /data/ops/bin/backupVM.sh 
+#!/bin/bash
+#
+# 2015/10/27
+
+s_vm='e01.test'                                         # 源 vm 的名称: e01.test
+s_vm_clone="${s_vm}-clone"                              # 克隆后的 vm 名称: e01.test-clone
+d_vm_img='/data/kvm/images'                             # 源 vm 的磁盘镜像目录
+f_vm_img_clone="${d_vm_img}/${s_vm}-vda-clone.qcow2"    # 源 vm 的磁盘镜像文件路径
+d_bak_root="/data/backup/VMs/${s_vm}"                   # 本地 备份目录
+d_standby_root="/backup/${s_vm}"                        # 外部 备份目录
+s_date=$(date +%Y%m%d)                                  # 日期: 20151027
+s_date_3=$(date -d "3 days ago" +%Y%m%d)                # 日期: 20151024
+s_date_7=$(date -d "7 days ago" +%Y%m%d)                # 日期: 20151020
+d_clone="${d_bak_root}/${s_date}"                       # 当前备份存放目录: /data/backup/VMs/e01.test/20151027
+d_clone_3="${d_bak_root}/${s_date_3}"                   # 3天前备份存放目录: /data/backup/VMs/e01.test/20151024
+d_standby_7="${d_standby_root}/${s_date_7}"             # 7天前备份存放目录: /data/backup/VMs/e01.test/20151020
+mkdir -pv ${d_clone}
+mkdir -pv ${d_standby_root}
+
+
+function clone_vm() {
+    ### 【1】
+    echo '#virsh# list --all' && virsh list --all |grep ${s_vm}
+    echo "[1] `date` [INFO] 准备克隆。"
+    virsh suspend ${s_vm}
+    echo '#virsh# list --all' && virsh list --all |grep ${s_vm}
+    ret=$?
+    virt-clone -o e01.test --auto-clone
+    [ ${ret} -eq 0 ] && virsh resume ${s_vm}
+    echo '#virsh# list --all' && virsh list --all |grep ${s_vm}
+    echo "[1] `date` [INFO] step 1 完成。"
+    ### 【2】
+    echo "[2] `date` [INFO] 收集 xml 和 images 并拷贝到本地存储。"
+    cp -av /etc/libvirt/qemu/${s_vm}.xml ${d_clone}
+    mv -fv /etc/libvirt/qemu/${s_vm_clone}.xml ${d_clone}
+    mv -fv ${f_vm_img_clone} ${d_clone} 
+    echo "[2] `date` [INFO] step 2 完成。"
+    ### 【3】
+    echo "[3] `date` [INFO] 归档到外部存储。"
+    cp -afv ${d_clone} ${d_standby_root}
+    echo "[3] `date` [INFO] step 3 完成。"
+    ### 【4-1】
+    echo "[4-1] `date` [INFO] 移除克隆的 VM"
+    virsh undefine ${s_vm_clone}
+    echo "[4-1] `date` [INFO] 列出目录：${d_bak_root}" && ls ${d_bak_root}
+    echo "[4-1] `date` [INFO] 清理本地超过3天的副本。"
+    [ -d ${d_clone_3} ] && rm ${d_clone_3} -frv
+    echo "[4-1] `date` [INFO] 列出目录：${d_bak_root}" && ls ${d_bak_root}
+    echo "[4-1] `date` [INFO] step 4-1 完成。"
+    ### 【4-2】
+    echo "[4-2] `date` [INFO] 列出目录：${d_standby_root}" && ls ${d_standby_root}
+    echo "[4-2] `date` [INFO] 清理外部存储超过7天的副本。"
+    [ -d ${d_standby_7} ] && rm ${d_standby_7} -frv
+    echo "[4-2] `date` [INFO] 列出目录：${d_standby_root}" && ls ${d_standby_root}
+    echo "[4-2] `date` [INFO] step 4-2 完成。"
+}
+
+##-
+clone_vm
+
+#mkdir -p /data/backup/logs && /bin/bash /data/ops/bin/backupVM.sh >/data/backup/logs/clone_$(date +%Y%m%d).log 2>&1
+# crontab
+#0 2 * * * /bin/bash /data/ops/bin/backupVM.sh >/data/backup/logs/clone_$(date +\%Y\%m\%d).log 2>&1 &

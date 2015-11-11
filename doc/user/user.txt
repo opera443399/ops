@@ -1,0 +1,112 @@
+linux user 用法记录
+
+
+一、参数
+1、创建或添加新用户使用useradd命令来实现，其命令用法为：
+useradd [option] username
+该命令的option选项较多，常用的主要有：
+-c 注释             用户设置对账户的注释说明文字
+-d 主目录           指定用来取代默认的/home/username的主目录
+-m                  若主目录不存在，则创建它。-r与-m相结合，可为系统账户创建主目录 
+-M                  不创建主目录
+-e date             指定账户过期的日期。日期格式为MM/DD/YY
+-f days             帐号过期几日后永久停权。若指定为-，则立即被停权，若为-1，则关闭此功能
+-g 用户组           指定将用户加入到哪个用户组，该用户组必须存在
+-G 用户组列表       指定用户同时加入的用户组列表，各组用逗分隔
+-n                  不为用户创建私有用户组
+-s shell            指定用户登录时使用的shell，默认为/bin/bash
+-r                  创建一个用户ID小于500的系统账户，默认不创建对应的主目录
+-u 用户ID           手动指定新用户的ID值，该值必须唯一，且大于499
+-p password         为新建用户指定登录密码。此处的 password 是对应登录密码经MD5加密后所得到的
+                    密码值，不实真实密码原文，因此在实际应用中，该参数选项使用较少，通常单独
+                    使用passwd命令来为用户设置登录密码。
+
+
+2、涉及到的配置文件：
+/etc/passwd
+/etc/group
+
+
+二、常用命令
+添加删除组：
+groupadd [groupname]: 
+#groupadd group1
+
+从组中删除用户：
+# gpasswd -d ecweb daemon
+Removing user ecweb from group daemon
+
+groupadd -g [groupnumber] [groupname]
+#groupadd -g 1001 group1
+
+groupdel [groupname]
+#groupdel group1
+
+添加删除用户：
+useradd [username]
+#useradd user1
+
+增加一个不能登录的用户：
+useradd -s /sbin/nologin -d /var/lib/zabbix -c "Zabbix Monitoring System" zabbix
+useradd -s /sbin/nologin -d /var/lib/mysql -c "Mysql Server" mysql
+
+useradd -m [username]，使用-m，套用/etc/default/useradd中的设置。
+
+可以用多个命令指定详细信息。
+#useradd -u 1001 -g 1001 -d/home/user1 -s/bin/sh -c user1's full name -m user1
+
+userdel [username]
+#userdel user1
+
+同时删除用户的根目录：
+#userdel -r user1
+
+删除密码：
+passwd -d username
+
+管理帐号：
+#usermod -g group1 user1
+#usermod -a -G group2 user1
+#gpasswd -a user1 group2
+#usermod -d/home/user2 -s/bin/bash user1
+
+passwd [username]，用户更改自己的密码，可直接用passwd
+#passwd
+只有超级用户uid为0，才能改他人的密码
+#passwd user1
+
+关闭帐号，短时不用，而不是删除时，可用-l关闭，使用-u解锁
+#passwd -l user1
+#passwd -u user1
+也可通过修改/etc/security/access.conf来限制登录
+新增内容：
+-:user1:ALL
+或多用户用空格隔开：
+-:user1 user2 user3:ALL
+重启后生效。
+
+限制同一账号最多的登录数目：
+/etc/security/limits.conf
+user1 maxlogins 3
+若要限制组：
+@group1 maxlogins 3
+重启后生效。
+
+
+
+三、特殊用法
+1、显示的的创建一个用户
+useradd admin
+SSH_USERPASS=admin
+echo -e "$SSH_USERPASS\n$SSH_USERPASS" | (passwd --stdin admin)
+
+更新：
+echo "username:password" | chpasswd 
+
+2、先生成加密后的密码，再创建用户
+[root@vm_1_2 ~]# openssl passwd -1 -salt 'cephuser'
+Password: 
+$1$cephuser$s.kBq3jpmu6NwZhSaIYW11
+[root@vm_1_2 ~]# useradd -p '$1$cephuser$s.kBq3jpmu6NwZhSaIYW11'  cephuser
+参考：
+https://www.openssl.org/docs/manmaster/apps/passwd.html

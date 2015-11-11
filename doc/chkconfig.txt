@@ -1,0 +1,76 @@
+
+chkconfig的用法
+
+用户自定义的服务要添加到开机启动：
+1、/etc/rc.local
+开机时，最后会找到这个文件中写入的每行内容，执行
+
+2、/etc/init.d/
+开机时，会根据系统配置，到这个目录中，找到对应的服务
+例如：nginx这个服务的控制脚本（官方有提供，也可以自己编写），放在这个位置：
+/etc/init.d/nginx
+
+可以先查看是否已经将nginx这个服务加入开机启动
+chkconfig --list |grep nginx
+
+可以管理开机启动（添加/删除）
+chkconfig nginx on
+chkconfig nginx off
+
+可以管理服务：
+service nginx start
+
+
+3、你可以把自己写的脚本丢到/etc/init.d/下面作为服务控制，但要注意最前面要指定chkconfig的服务级别
+例如，lvs-realsvr.sh这脚本中，
+
+#!/bin/bash
+# 
+# 2015/3/27
+# lvs real server
+#
+# chkconfig:   - 85 15
+# description:  control vip on lvs realserver 
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# Source networking configuration.
+. /etc/sysconfig/network
+
+# Check that networking is up.
+[ "$NETWORKING" = "no" ] && exit 0
+
+lockfile="/var/lock/subsys/lvs-real"
+（略）
+
+
+最前面我们定义了：
+# chkconfig:   - 85 15
+
+-       ：   表示启动级别1-5，默认都是off，可以用具体的数字来指定，例如：345
+85 15   ：   表示启动和关闭系统时该服务的优先级
+
+
+
+4、脚本中启动顺序和依赖关系
+以cloud-init这个服务为例：
+
+cloud-init-local服务启动前，我们要确保2个服务是在它前面启动的：ovirt-guest-agent 和 sshd，尤其是 ovirt-guest-agent ，cloud-init-local需要这个服务来控制vm启动时，挂载虚拟光驱。
+这样配置即可：
+编辑启动脚本，找到第28行：
+# vim /etc/init.d/cloud-init-local
+增加2个服务的依赖关系，如下所示：
+默认是：
+# Required-Start:    $local_fs $remote_fs 
+更新为： 
+# Required-Start:    $local_fs $remote_fs $ovirt-guest-agent $sshd
+
+
+
+
+
+
+
+
+

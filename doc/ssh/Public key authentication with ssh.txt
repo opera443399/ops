@@ -1,0 +1,78 @@
+TITLE: Public key authentication with ssh
+
+Introduction
+This LinuxAnswer describes how to set up public key authentication with ssh{1}.
+It will include all sub components like scp too.
+I will refer to the client machine{2} as the "client" and the server machine{3} as "server"
+
+
+Assumptions
+1) You know how to open up a terminal and type a few basic commands.
+2) You have a working ssh server and client installed. If not then see:
+ftp://ftp.ca.openbsd.org/pub/OpenBSD...rtable/INSTALL
+
+
+Why would you want to?
+There are many reasons so I'll just list a few:
+1) You don't need to type your password each time you want to login to a remote system. This can protect against malicious applications such as keyloggers
+2) You can run automated maintenance tasks/checks on other machines.
+3) You can run secure backups over ssh using rsync. See LinuxAnswer Using rsync to mirror data between servers
+
+
+The real howto
+1) Create the private{4} and public{5} keys:
+ssh-keygen -t dsa
+You will be prompted for a key location, the default is fine so just press enter.
+Then you are asked to enter a passphrase. From man ssh-keygen:
+Quote:
+The program also asks for a passphrase. The passphrase may be empty to indicate no passphrase (host keys must have an empty passphrase), or it may be a string of arbitrary length. A passphrase is similar to a password, except it can be a phrase with a series of words, punctuation, numbers, whitespace, or any string of characters you want. Good passphrases are 10-30 characters long, are not simple sentences or otherwise easily guessable (English prose has only 1-2 bits of entropy per character, and provides very bad passphrases), and contain a mix of upper and lowercase letters, numbers, and non alphanumeric characters.
+If you are intending to set up automated tasks that will use this key it is probably best not to supply a passphrase although it will inevitably be less secure{6}.
+2) Copy the public key to the server (you will need to enter the password):
+cat ~/.ssh/id_dsa.pub | ssh user@server "cat - >> ~/.ssh/authorized_keys"
+3) That's it, to test it just ssh to the other server and you shouldn't need a password. If you entered a passphrase then you need will need to enter it when prompted:
+ssh user@server
+
+If it doesn't work then please look at the troubleshooting section below.
+Answers to most questions should be there.
+If you still have problems then search the LQ forums and if you still have a problem start a new thread.
+
+
+Using ssh-agent to store passphrases
+If you decided to use a passphrase then you need only enter it once per session using ssh-agent and ssh-add.
+1) The parent shell process in which you work should be started by ssh-agent - ie:
+ssh-agent /bin/bash
+2) Then to store your passphrase for that session run:
+ssh-add
+Enter your passphrase when prompted
+3) Thats it, to test it just ssh to the other server and you shouldn't need a password or passphrase:
+ssh user@server
+
+If you use a desktop environment or window manager you can start it in the same way as a the bash shell was above with ssh-agent so that any child processes (terminals etc) also have access to your passphrase.
+
+
+Troubleshooting
+If you get a connection refused message
+You probably have a server problem, check sshd is running "netstat -nlp" and there is no firewall rule in place blocking port 22 "iptables -nL".
+
+You still get prompted for a password
+Try to ssh to the server with verbose output:
+ssh -vv user@server
+If you get a line like this, not containing "publickey":
+debug1: Authentications that can continue: password,keyboard-interactive
+Then check sshd_config on the server and remove the line "PubkeyAuthentication no" if it exists then restart sshd.
+If you don't get a line like:
+debug1: try pubkey: /home/rossy/.ssh/id_dsa
+Then check "ssh_config" on the client and if it exists, remove "PubkeyAuthentication no" if it exists.
+If you still don't see that line then make sure that "~/.ssh/id_dsa" exists on the client.
+If you get a line like:
+debug2: we sent a publickey packet, wait for reply
+Check that "~/.ssh/authorized_keys" exists on the server and contains a line the same as "~/.ssh/id_dsa.pub" on the client.
+
+
+A small bit about the jargon
+{1} ssh stands for Secure SHell on a basic level it is like telnet but has many other differences the main one being encryption.
+{2} Client the client is the machine that initiates the connection.
+{3} Server the server is the machine that listens for incoming connections.
+{4} Private keys are stored on the client.
+{5} Public keys are stored on the server.
+{6} Less secure if the client is compromised so is access to the server

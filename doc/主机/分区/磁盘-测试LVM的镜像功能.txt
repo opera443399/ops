@@ -1,0 +1,240 @@
+测试LVM的快照功能
+
+
+操作内容：
+一、假设已经新增一块磁盘，sdb，，建立了一个分区/dev/sdb1
+二、创建一个lvm分区
+【pv】
+[root@tvm-test ~]# pvcreate /dev/sdb1
+
+【vg】  
+[root@tvm-test ~]# vgcreate vg01 /dev/sdb1
+  
+【lv】 
+[root@tvm-test ~]# lvcreate -L 10G -n lv01 vg01
+
+【mkfs】
+[root@tvm-test ~]# mkfs.ext4 /dev/vg01/lv01 
+
+【mount】
+[root@tvm-test ~]# mkdir /DATA01 && mount /dev/vg01/lv01 /DATA01
+[root@tvm-test ~]# echo "UUID=$(blkid /dev/vg01/lv01 |cut -d'"' -f2) /DATA01                 ext4    defaults        1 2" >>/etc/fstab
+[root@tvm-test ~]# df -h
+Filesystem             Size  Used Avail Use% Mounted on
+/dev/sda3              3.8G  1.7G  2.0G  46% /
+tmpfs                  246M   12K  246M   1% /dev/shm
+/dev/sda1              194M   29M  155M  16% /boot
+/dev/mapper/vg01-lv01  9.9G  151M  9.2G   2% /DATA01
+
+
+随便写几个文件到/DATA01/下
+[root@tvm-test ~]# touch /DATA01/file2_{1..5} && mkdir /DATA01/dir2_{1,2,3} && touch /DATA01/dir2_{1,2}/file3.{aa,bb,cc}
+[root@tvm-test ~]# dd if=/dev/zero of=/DATA01/dir2_3/test1.dd bs=512 count=100000
+100000+0 records in
+100000+0 records out
+51200000 bytes (51 MB) copied, 0.186818 s, 274 MB/s
+[root@tvm-test ~]# dd if=/dev/zero of=/DATA01/dir2_3/test2.dd bs=1024 count=100000
+100000+0 records in
+100000+0 records out
+102400000 bytes (102 MB) copied, 0.230891 s, 443 MB/s
+[root@tvm-test ~]# dd if=/dev/zero of=/DATA01/dir2_3/test2.dd bs=2048 count=100000
+100000+0 records in
+100000+0 records out
+204800000 bytes (205 MB) copied, 0.319986 s, 640 MB/s
+[root@tvm-test ~]# dd if=/dev/zero of=/DATA01/dir2_3/test2.dd bs=4096 count=100000
+100000+0 records in
+100000+0 records out
+409600000 bytes (410 MB) copied, 0.572126 s, 716 MB/s
+[root@tvm-test ~]# tree /DATA01/
+/DATA01/
+├── dir2_1
+│   ├── file3.aa
+│   ├── file3.bb
+│   └── file3.cc
+├── dir2_2
+│   ├── file3.aa
+│   ├── file3.bb
+│   └── file3.cc
+├── dir2_3
+│   ├── test1.dd
+│   └── test2.dd
+├── file2_1
+├── file2_2
+├── file2_3
+├── file2_4
+└── file2_5
+
+3 directories, 13 files
+
+[root@tvm-test ~]# df -h /DATA01/
+Filesystem             Size  Used Avail Use% Mounted on
+/dev/mapper/vg01-lv01  9.9G  590M  8.8G   7% /DATA01
+
+
+三 测试给lv01建立快照
+1、创建快照
+[root@tvm-test /]# lvcreate -L 2G -s -n snap_lv01  /dev/vg01/lv01
+  Logical volume "snap_lv01" created
+
+2、挂载后压缩备份
+[root@tvm-test ~]# lv_snap="/dev/vg01/snap_lv01" \
+&& d_backup='/data/backup/snapshot' \
+&& f_snap="/data/backup/snapshot/lv01_$(date +%F).tar.gz" \
+
+test -d ${d_backup} || mkdir -p ${d_backup}/mnt \
+&& mount -o ro ${lv_snap} ${d_backup}/mnt \
+&& cd ${d_backup} \
+&& tar zcf ${f_snap} mnt/* \
+&& ls -lh ${f_snap} \
+&& df -h
+
+-rw-r--r-- 1 root root 438K Jul 31 16:23 /data/backup/snapshot/lv01_2015-07-31.tar.gz
+Filesystem                  Size  Used Avail Use% Mounted on
+/dev/sda3                   3.8G  1.7G  2.0G  46% /
+tmpfs                       246M   12K  246M   1% /dev/shm
+/dev/sda1                   194M   29M  155M  16% /boot
+/dev/mapper/vg01-lv01       9.9G  590M  8.8G   7% /DATA01
+/dev/mapper/vg01-snap_lv01  9.9G  590M  8.8G   7% /data/backup/snapshot/mnt
+
+  
+  
+3、卸载后移除快照
+[root@tvm-test /]# umount ${d_backup}/mnt && lvremove -f ${lv_snap}
+  Logical volume "snap_lv01" successfully removed
+  
+  
+4、总结步骤
+#1 create 创建快照
+#2 mount to tar backup 挂载后压缩备份
+#3 umount to remove 卸载后移除快照
+（可以写成脚本了）
+
+[root@tvm-test bin]# cat lvm_test_snapshot.sh 
+#!/bin/bash
+# 
+# 2015/7/31
+
+n_size='2G'
+f_vg='vg01'
+f_orin='lv01'
+f_snap='snap_lv01'
+lv_orig="/dev/${f_vg}/${f_orig}"
+lv_snap="/dev/${f_vg}/${f_snap}"
+d_backup='/data/backup/snapshot'
+f_snap="${d_backup}/${f_orig}_$(date +%F).tar.gz"
+
+#1 create 创建快照
+lvcreate -L ${n_size} -s -n ${f_snap} ${lv_orig}
+
+#2 mount to tar backup 挂载后压缩备份
+test -d ${d_backup} || mkdir -p ${d_backup}/mnt \
+&& mount -o remount,ro ${lv_snap} ${d_backup}/mnt \
+&& df -h
+
+cd ${d_backup} \
+&& tar zcf ${f_snap} mnt/* \
+&& ls -lh ${f_snap} 
+
+#3 umount to remove 卸载后移除快照
+umount ${d_backup}/mnt && lvremove -f ${lv_snap}
+
+  
+四、疑问
+Q：建立快照时，要分配多大的size呢？
+A：翻一下lvcreate的man，注意-s选项的描述中有这么一段话：
+    The non thin volume snapshot with the specified size does  not need  the  
+    same  amount  of  storage  the origin has. In a typical scenario, 15-20% 
+    might be enough. In case the snapshot runs out of storage, use  lvextend(8)  
+    to  grow  it.  Shrinking  a snapshot is supported by lvreduce(8) as well. 
+    Run lvs(8) on the snapshot in order to check how much  data  is  allocated 
+    to it.  Note: a small amount of the space you allocate to the snapshot is 
+    used to track the locations of the chunks of data, so you should allocate 
+    slightly  more space than you actually need and monitor (--monitor) the rate 
+    at which the snapshot data is growing so you can avoid running out of space.
+    给snapshot分配20%左右的origin的容量即可。
+
+测试：              
+[root@tvm-test /]# dd if=/dev/zero of=/DATA01/dir2_3/test3.dd bs=4096 count=200000
+200000+0 records in
+200000+0 records out
+819200000 bytes (819 MB) copied, 1.21615 s, 674 MB/s
+[root@tvm-test snapshot]# rm -f /DATA01/dir2_3/test2.dd 
+
+[root@tvm-test snapshot]# pwd
+/data/backup/snapshot
+[root@tvm-test snapshot]# ls
+lv01_2015-07-31.tar.gz  mnt
+[root@tvm-test snapshot]# tar zxvf lv01_2015-07-31.tar.gz 
+mnt/dir2_1/
+mnt/dir2_1/file3.aa
+mnt/dir2_1/file3.bb
+mnt/dir2_1/file3.cc
+mnt/dir2_2/
+mnt/dir2_2/file3.aa
+mnt/dir2_2/file3.bb
+mnt/dir2_2/file3.cc
+mnt/dir2_3/
+mnt/dir2_3/test2.dd
+mnt/dir2_3/test1.dd
+mnt/file2_1
+mnt/file2_2
+mnt/file2_3
+mnt/file2_4
+mnt/file2_5
+[root@tvm-test snapshot]# ls mnt/
+dir2_1  dir2_2  dir2_3  file2_1  file2_2  file2_3  file2_4  file2_5
+[root@tvm-test snapshot]# ll -h mnt/dir2_3/
+total 440M
+-rw-r--r-- 1 root root  49M Jul 31 15:35 test1.dd
+-rw-r--r-- 1 root root 391M Jul 31 15:36 test2.dd
+
+拷贝到另一台主机：
+[root@tvm-test snapshot]# rsync -avzP lv01_2015-07-31.tar.gz 192.168.56.253:/data/testarea
+The authenticity of host '192.168.56.253 (192.168.56.253)' can't be established.
+RSA key fingerprint is 35:10:6d:25:4e:3d:6f:59:86:87:e3:88:9f:9c:81:a8.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '192.168.56.253' (RSA) to the list of known hosts.
+root@192.168.56.253's password: 
+sending incremental file list
+lv01_2015-07-31.tar.gz
+      447649 100%   79.13MB/s    0:00:00 (xfer#1, to-check=0/1)
+
+sent 447890 bytes  received 31 bytes  68910.92 bytes/sec
+total size is 447649  speedup is 1.00
+
+在另一台主机上操作：
+[root@tvm-saltmaster testarea]# ll -h
+total 440K
+-rw-r--r-- 1 root root 438K Jul 31 16:23 lv01_2015-07-31.tar.gz
+[root@tvm-saltmaster testarea]# tar zxvf lv01_2015-07-31.tar.gz 
+mnt/dir2_1/
+mnt/dir2_1/file3.aa
+mnt/dir2_1/file3.bb
+mnt/dir2_1/file3.cc
+mnt/dir2_2/
+mnt/dir2_2/file3.aa
+mnt/dir2_2/file3.bb
+mnt/dir2_2/file3.cc
+mnt/dir2_3/
+mnt/dir2_3/test2.dd
+mnt/dir2_3/test1.dd
+mnt/file2_1
+mnt/file2_2
+mnt/file2_3
+mnt/file2_4
+mnt/file2_5
+[root@tvm-saltmaster testarea]# ls mnt/
+dir2_1  dir2_2  dir2_3  file2_1  file2_2  file2_3  file2_4  file2_5
+[root@tvm-saltmaster testarea]# ll -h mnt/dir2_3/
+total 440M
+-rw-r--r-- 1 root root  49M Jul 31 15:35 test1.dd
+-rw-r--r-- 1 root root 391M Jul 31 15:36 test2.dd
+
+
+
+    
+ZYXW、参考
+1、常用Linux命令使用技巧：LVM快照Snapshot备份
+http://chengkinhung.blogspot.com/2012/09/linuxlvmsnapshot.html
+2、LVM snapshot
+http://blog.csdn.net/xjtuse_mal/article/details/5504771

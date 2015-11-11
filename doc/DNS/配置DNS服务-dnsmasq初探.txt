@@ -1,0 +1,46 @@
+配置DNS服务-dnsmasq初探
+[root@tvm-test ~]# yum install dnsmasq
+
+默认
+启动服务后，读取的是/etc/hosts下的IP和域名的映射关系。
+也会使用系统的/etc/resolv.conf下的dns服务器
+同时会读取/etc/dnsmasq.d/*.conf
+
+
+当然，我们可以自定义：
+
+
+[root@tvm-test ~]# cp /etc/dnsmasq.conf{,.bak}
+[root@tvm-test ~]# cat >/etc/dnsmasq.conf <<'_EOF'
+no-resolv
+no-poll
+server=114.114.114.114
+server=223.5.5.5
+conf-dir=/etc/dnsmasq.d
+_EOF
+
+
+然后再定义一个配置文件做本地解析：
+[root@tvm-test ~]# cat /etc/dnsmasq.d/office.conf
+# office test
+address=/mirrors.office.test/192.168.56.254
+address=/ntp.office.test/192.168.56.254
+
+
+放行防火墙的tcp和udp的53端口。
+[root@tvm-test ~]# iptables-save > ~/rc.firewall.txt 
+[root@tvm-test ~]# cat ~/rc.firewall.txt
+增加2条策略：
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 53 -j ACCEPT 
+-A INPUT -p udp -m state --state NEW -m udp --dport 53 -j ACCEPT 
+
+[root@tvm-test ~]# iptables-restore ~/rc.firewall.txt 
+[root@tvm-test ~]# service iptables save
+iptables: Saving firewall rules to /etc/sysconfig/iptables:[  OK  ]
+
+启动服务
+[root@tvm-test ~]# service dnsmasq start
+Starting dnsmasq:                                          [  OK  ]
+
+别忘了加入开机启动：
+[root@tvm-test ~]# chkconfig dnsmasq on 

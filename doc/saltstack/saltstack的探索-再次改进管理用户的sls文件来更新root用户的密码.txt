@@ -1,0 +1,57 @@
+saltstack的探索-再次改进管理用户的sls文件来更新root用户的密码
+
+
+一、目录
+[root@test200 user]# pwd
+/srv/salt/user/group/ops/root
+
+
+二、命令
+openssl passwd:     Generation of hashed passwords.
+# openssl passwd -h
+Usage: passwd [options] [passwords]
+where options are
+-crypt             standard Unix password algorithm (default)
+-1                 MD5-based password algorithm
+-apr1              MD5-based password algorithm, Apache variant
+-salt string       use provided salt
+-in file           read passwords from file
+-stdin             read passwords from stdin
+-noverify          never verify when reading password from terminal
+-quiet             no warnings
+-table             format output as table
+-reverse           switch table columns
+
+
+使用MD5+salt的方式生成密码对应的hash值：
+[root@test200 user]# openssl passwd -1 -salt 'root'
+Password: 
+$1$root$abcdylRh83kdjWxfghm.abc
+
+得到一个hash后的密码，用于下一步。
+
+
+三、sls文件
+
+sls-更新root用户： 
+[root@test200 root]# cat replace.sls 
+root:
+  user.present:
+    - password: '$1$root$abcdylRh83kdjWxfghm.abc'
+    - uid: 0
+    - gid: 0
+
+    
+四、运行：
+salt 'test101.company.com' state.sls user.group.ops.root.replace
+    
+符合预期。
+查看结果：
+[Jack@test101 ~]$ su
+Password: 
+[root@test101 ~]#
+
+
+
+
+

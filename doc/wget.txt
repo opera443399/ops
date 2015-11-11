@@ -1,0 +1,94 @@
+wget的常用参数记录
+2015/11/6
+
+1、下载指定目录的内容
+下载指定页面的所有 rpm 包：
+wget --execute robots=off -nc -nd -r -l1 -A '*.rpm' http://download.gluster.org/pub/gluster/glusterfs/3.6/LATEST/CentOS/epel-6/x86_64
+
+下载指定页面的所有 rpm 包，并排除debuginfo相关的包：
+wget --execute robots=off -nc -nd -r -l1 -A '*.rpm' -R '*debuginfo*.rpm' http://download.ceph.com/rpm-giant/el6/x86_64	
+
+参数解释：
+    -nc 避免重复下载
+    -nd 不创建目录
+    -r 递归
+    -l 递归深度
+    -A 通配符，accept 指定的文件
+    -R 通配符，reject 指定的文件
+
+
+2、ftp下载        
+saveto=文件保存路径
+URL=ftp路径
+wgetlog=wget日志文件路径
+
+
+wget -P ${saveto} --ftp-user=xxx --ftp-password=xxx -m -c -t5 ${URL} -a ${wgetlog} -nv
+
+参数解释：
+    -o logfile 输出 log 到指定的文件
+    --output-file=logfile
+       Log all messages to logfile.  The messages are normally reported to standard error.
+
+    -a logfile 追加输出 log 到指定的文件
+    --append-output=logfile
+       Append to logfile.  This is the same as -o, only it appends to logfile instead of
+       overwriting the old log file.  If logfile does not exist, a new file is created.
+
+
+    -nv  不显示调试信息
+    --no-verbose
+       Turn off verbose without being completely quiet (use -q for that), which means that
+       error messages and basic information still get printed.
+       
+    Download Options
+    -t number 重试次数
+    --tries=number
+       Set number of retries to number.  Specify 0 or inf for infinite retrying.  The
+       default is to retry 20 times, with the exception of fatal errors like "connection
+       refused" or "not found" (404), which are not retried.		   
+       
+    -O file 下载的文件另存为
+    --output-document=file
+       The documents will not be written to the appropriate files, but all will be
+       concatenated together and written to file.  If - is used as file, documents will be
+       printed to standard output, disabling link conversion.  (Use ./- to print to a file
+       literally named -.)
+
+    -c 断点续传
+    --continue
+       Continue getting a partially-downloaded file.  This is useful when you want to
+       finish up a download started by a previous instance of Wget, or by another program.
+       For instance:
+
+               wget -c ftp://sunsite.doc.ic.ac.uk/ls-lR.Z
+
+       If there is a file named ls-lR.Z in the current directory, Wget will assume that it
+       is the first portion of the remote file, and will ask the server to continue the
+       retrieval from an offset equal to the length of the local file.	
+
+    -P prefix 下载到指定的目录
+    --directory-prefix=prefix
+       Set directory prefix to prefix.  The directory prefix is the directory where all
+       other files and subdirectories will be saved to, i.e. the top of the retrieval
+       tree.  The default is . (the current directory).
+
+    -m 镜像
+    --mirror
+       Turn on options suitable for mirroring.  This option turns on recursion and time-
+       stamping, sets infinite recursion depth and keeps FTP directory listings.  It is
+       currently equivalent to -r -N -l inf --no-remove-listing.
+
+3、综合示例
+function validate_wget() {
+    cd $1
+    for f_rpm in `ls .`; do 
+        echo "[validate] ${f_rpm}"
+        wget -c $2/"${f_rpm}"
+    done
+}
+
+d_dest='/var/www/html/ceph/rpm-giant/el6'
+cd ${d_dest}/x86_64
+wget --execute robots=off -nc -nd -r -l1 -A '*.rpm' -R '*debuginfo*.rpm' http://download.ceph.com/rpm-giant/el6/x86_64
+validate_wget ${d_dest}/x86_64 http://download.ceph.com/rpm-giant/el6/x86_64

@@ -1,0 +1,5 @@
+$ ./nginx -V
+nginx version: nginx/1.0.12
+built by gcc 4.4.6 20110731 (Red Hat 4.4.6-3) (GCC) 
+TLS SNI support enabled
+configure arguments: --user=daemon --group=daemon --prefix=/usr/local/webserver/nginx --with-http_stub_status_module --with-http_ssl_module

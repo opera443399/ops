@@ -1,0 +1,34 @@
+【测试中，未解决】
+安装spacewalk
+
+参考：
+https://fedorahosted.org/spacewalk/wiki/HowToInstall
+http://blog.csdn.net/kongxx/article/details/43934815
+
+
+配置yum源：
+rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+rpm -Uvh http://yum.spacewalkproject.org/2.3/RHEL/6/x86_64/spacewalk-repo-2.3-4.el6.noarch.rpm
+
+yum clean all
+yum makecache
+
+
+安装PostgreSQL server, set up by Spacewalk (embedded) 
+yum install spacewalk-setup-postgresql
+
+安装Spacewalk
+yum install spacewalk-postgresql 
+安装时遇到网络问题，未能继续走下去，延期解决。
+
+spacewalk-setup --disconnected
+配置防火墙：
+INPUT放行：
+tcp
+80
+443
+5222    如要要推送给client
+5269    如果要推送给Spacewalk Proxy
+
+udp
+69      如果用tftp

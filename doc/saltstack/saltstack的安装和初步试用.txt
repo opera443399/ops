@@ -1,0 +1,159 @@
+saltstack的安装和初步试用
+
+1. 本例中，主机server200-21为salt-master，其他主机为salt-minion
+
+2. 【salt-master】
+安装：
+[root@server200-21 download]# yum install salt-master
+启动服务：
+[root@server200-21 download]# service salt-master start
+Starting salt-master daemon:                               [  OK  ]
+
+防火墙放行端口：4505:4506
+（接下来先跳转到第3步，配置一个minion）
+
+列出salt-key：
+salt-key -L
+
+最初没有需要accept的key：
+[root@server200-21 ~]# salt-key -L          
+Accepted Keys:
+Unaccepted Keys:
+Rejected Keys:
+
+有minion申请连接到master后：
+[root@server200-21 ~]# salt-key -L
+Accepted Keys:
+Unaccepted Keys:
+test230
+Rejected Keys:
+
+可以accept所有被pending的key：
+salt-key -A
+
+也可以accept指定key
+[root@server200-21 ~]# salt-key -a test230
+The following keys are going to be accepted:
+Unaccepted Keys:
+test230
+Proceed? [n/Y] y
+Key for minion test230 accepted.
+
+
+附上【salt-key】常用命令
+ Actions:
+    -l ARG, --list=ARG  List the public keys. The args "pre", "un", and
+                        "unaccepted" will list unaccepted/unsigned keys. "acc"
+                        or "accepted" will list accepted/signed keys. "rej" or
+                        "rejected" will list rejected keys. Finally, "all"
+                        will list all keys.
+    -L, --list-all      List all public keys. (Deprecated: use "--list all")
+    -a ACCEPT, --accept=ACCEPT
+                        Accept the specified public key (use --include-all to
+                        match rejected keys in addition to pending keys).
+                        Globs are supported.
+    -A, --accept-all    Accept all pending keys
+    -r REJECT, --reject=REJECT
+                        Reject the specified public key (use --include-all to
+                        match accepted keys in addition to pending keys).
+                        Globs are supported.
+    -R, --reject-all    Reject all pending keys
+    --include-all       Include non-pending keys when accepting/rejecting
+    -p PRINT, --print=PRINT
+                        Print the specified public key
+    -P, --print-all     Print all public keys
+    -d DELETE, --delete=DELETE
+                        Delete the specified key. Globs are supported.
+    -D, --delete-all    Delete all keys
+    -f FINGER, --finger=FINGER
+                        Print the specified key's fingerprint
+    -F, --finger-all    Print all keys' fingerprints
+
+
+
+
+3. 【salt-minion】
+安装：
+[root@test230 download]# yum install salt-minion
+
+配置master和自己的id：
+[root@test230 download]# cat /etc/salt/minion |grep ^[^#]
+master: 10.0.200.21
+id: test230
+
+启动服务：
+[root@test230 download]# service salt-minion start
+Starting salt-minion daemon:                               [  OK  ]
+
+注意：master的端口需要开放才能访问。
+[root@test230 download]# service salt-minion restart
+Stopping salt-minion daemon:                               [FAILED]
+Starting salt-minion daemon:                               [  OK  ]
+
+
+等待master接受minion的key
+master已接受
+
+
+
+
+4. 测试
+
+[root@server200-21 ~]# salt '*' test.ping
+test230:
+    True
+
+ 
+ 
+接下来，测试安装一个服务：
+
+配置master：
+[root@server200-21 ~]# cat /etc/salt/master |grep -v ^$|grep -v ^#
+file_roots:
+  base:
+    - /srv/salt
+    
+[root@server200-21 ~]# mkdir /srv/salt/
+[root@server200-21 ~]# cd /srv/salt/
+[root@server200-21 salt]# ls
+servers.sls  top.sls
+[root@server200-21 salt]# cat top.sls 
+base:
+    '*':
+        - servers
+[root@server200-21 salt]# cat servers.sls 
+dnsmasq:
+    pkg:
+        - installed
+
+执行：
+[root@server200-21 salt]# salt '*' state.highstate
+test230:
+----------
+          ID: dnsmasq
+    Function: pkg.installed
+      Result: True
+     Comment: Package dnsmasq is already installed.
+     Started: 16:58:12.932112
+    Duration: 1153.556 ms
+     Changes:   
+
+Summary
+------------
+Succeeded: 1
+Failed:    0
+------------
+Total states run:     1
+
+[root@server200-21 salt]# salt '*' cmd.run 'rpm -qa |grep dns'
+test230:
+    dnsmasq-2.48-13.el6.x86_64
+    
+    
+    
+
+查看：
+[root@test230 ~]# which dnsmasq
+/usr/sbin/dnsmasq
+
+

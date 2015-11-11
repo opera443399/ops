@@ -1,0 +1,702 @@
+原文：软RAID 0的技术概要及实现 v0.1b (正在修订之中)
+
+
+1 什么是RAID，RAID的级别和特点 ；
+
+什么是RAID呢？全称是 “A Case for Redundant Arrays of Inexpensive Disks (RAID)”，在1987年，由加州大学伯克利大学发表的论文而来，其实就是这个标题的缩写就是RAID;中译为“磁盘阵列”；
+
+RAID就是把几个物理磁盘组合在一起成为一个大的虚拟物理磁盘，主要目的和用途主要有：把若干小容量物理磁盘组成一个大容量虚拟存储设备（以前的物理磁盘的容量都比较小）；提高物理存储效率（读、写），或提供冗余以提高数据存储的安全性。
+
+根据应用方向的不同，RAID也分不不同级别 ，有LINEAR、RAID0、RAID1、RAID5、RAID10、RAID4、RAID6、MULTIPATH。常用的有RAID0、RAID1、RAID5、RAID10(其实就是0+1)、LINEAR
+
+
+1.1 什么是硬件RAID和软RAID；
+
+RAID 还分为硬件RAID 和软件RAID，硬件RAID是通过RAID 卡来实现的，而软件RAID是通过软件来实现的；在企业级应用领域，大部份都是硬件RAID。而软件RAID由于性价比高，大多被中小型企业所采用；
+
+硬件RAID是通过RAID卡把若干同等容量大小的硬盘，根据使用方向的不同，聚合起来成为一个大的虚拟RAID设备（或RAID0，或RAID1,或者RAID5，或RAID10……），如果每个硬盘容量不一致，以最小容量的硬盘为基础；它的成员是整个硬盘；
+
+软RAID是软把若干同等容量大小的硬盘或分区，根据使用方向的不同，聚合起来成为一个大的虚拟RAID设备（或RAID0，或RAID1,或者RAID5，或RAID10……），如果每个硬盘或分区容量不一致，以最小容量的硬盘或分区为基础。软RAID的成员是整个硬盘或分区；
+
+RAID 总的来说还是应用在生产型项目领域中，一般在商用办公或个人娱乐应用并未被大规模采用。应有领域大多要求性价比级的低端服务器或PC-SERVER；
+
+
+1.2 RAID 的级别及特点；
+
+RAID 有几种级别，LINEAR，RAID0 (striping), RAID1 (mirroring), RAID4, RAID5, RAID6, RAID10, MULTIPATH, and FAULTY.其中我们常用有RAID0、RAID1、RAID5、RAID10。
+
+下面我们说说常用的RAID0、RAID1、RAID5以及RAID10；
+
+
+1.21 什么是软RAID0及特点；
+
+RAID0 是把两个或两个以上的容量相同的硬盘或分区，通过RAID控制器（硬RAID是通过RAID卡来实现的，软RAID 是通过软件来实现的），结合为一个在容量上是RAID0下成员的容量的总和，在写入时，要向每个硬盘或分区同时写入数据。
+
+在硬RAID中，RAID0的成员是以整个硬盘为单位的，把两个硬盘或两个以上的硬盘通过RAID卡绑定成为一个虚拟的磁盘设备，而每个硬盘就是RAID0的成员；
+
+在软RAID0中，RAID0的成员是整个硬盘或分区，容量是加入RAID0的所有成员容量的总和。在RAID0中每个成员的容量都是相同一致的。比如我们把 /dev/sdb 、/dev/sdc、/dev/sdd 三个容量大小为80G的硬盘做成RAID0，这时RAID0设备的容量就是三个硬盘的总和 80x3=240G。当然我们也可以，在写入数据时，系统要向每个硬盘同时写入数据，是以条块的形式写入。比如我们存一份数据linuxsir.tar.gz 到RAID0的设备中，这份数据是分拆成若干份被分散的写入到RAID0中的每个成员中。只有RAID0中的每个成员正常运行，并且RAID0也正常运行的情况下，这份数据才是完整的。RAID0中任何一个成员（硬盘分区）有有问题时，RAID0便不能运行，同时数据也不是完整的；
+
+RAID0 在读写速度上是比较快的，是普通不做RAID的两倍左右（注：实际速度和机器的硬件配置有关），所以RAID0常被用于对存储效率要求较高，但对数据安全性要求不高的应用解决方案中；
+
+安全性：RAID0中有任何一个成员出现故障，整个RAID0就不能被激活。数据不能保障；
+
+
+1.22 什么是软RAID1及特点；
+
+RAID1就是把若干相同容量的硬盘或分区，成员与成员之间是镜像关系。在容量上，RAID1设备是单个成员的容量。比如两个80G的硬盘做成RAID1,这个RAID1的设备容量仍是80G。比如我们写入一个份数据linuxsir.tar.bz2 到RAID1设备时，其实是向RAID的每个成员都写了一份。比如RAID1设备下有两个成员/dev/sdb和/dev/sdc ，我们写入linuxsir.tar.bz2 到RAID1时，/dev/sdb和/dev/sdc都有一份完整的linuxsir.tar.bz2。 所以RAID1是冗余的阵列，一般被用于安全性要求比较高的应用中。
+
+因为RAID1在由于镜像冗余，所以磁盘利用效率并不高，或者说是“浪费”。这种方案相对来说性价比并不高，一般很少应用。数据读写效率要比RAID0慢。
+
+安全性：RAID1 中只要有一个成员是健康的，RAID1完全可以激活，而且数据绝对是完整安全的。如果所有的成员有故障，RAID1也就报废了。哈哈，这不是废话吗？
+
+
+1.23 什么是软RAID5及特点；
+
+软RAID5也是冗余安全的，RAID5是把至少三个硬盘或分区通过软件虚拟成为一个大的存储设备。在容量上是(n-1)x单个硬盘（分区）容量 ，比如我们用三块80G硬盘做成RAID5,容量就是两块容量的和160G。在写入上，数据被分拆成若干份，分别向RAID5的每个成员下写入。比如把linuxsir.tar.bz2写入RAID5时， 要先把linuxsir.tar.bz2分拆成若干份，分别写入RAID5成员中。因为涉及到冗余，所以数据在读入速度上并不是很快，没办法和RAID0相比，但RAID5的写入数据速度没有RAID1和RAID0快，也没有不做RAID的磁盘写入速度要快；
+
+因为RAID5在容量损失比较小，有冗余安全保障，另外写入速度比较快，从整体上来看，性价比比较高，所以被大范围内采用；
+
+安全性：当RAID5中的成员中有一个发生故障时，RAID5一样能启动和正常运行，只要n-1（注n>3)块硬盘或分区的不出故障，RAID5上的数据就是安全，对于一个文件存到RAID5设备中，只有成员是n-1（注n>3)无故障时，这份文件才是完整的。 比如RAID5有四个硬盘（或分区）做的，当一个硬盘或分区挂掉了，并不影响整个RAID5上数据的完整性和安全性。
+
+
+1.24 什么是软RAID10及特点；
+
+软RAID10也是冗余安全阵列，是RAID0+1的集成，RAID10是把至少四个硬盘或分区通过软件虚拟成为一个大的存储设备。在容量是：n/2x单个硬盘（分区）容量 ，比如我们用四块80G硬盘做成RAID5,容量就是两块容量的和4/2x80=160G。做RAID10所需要的硬盘或分区个数是偶数的。
+
+RAID10,有RAID1的镜像特点，还有RAID0的速度。可以这么理解RAID10,比如有四个硬盘做成的RAID10,过程是先把每两个硬盘做成RAID1,然后再两个RAID1的基础上再做成RAID0。从理论上来说，RAID10应该继承RAID0的速度和RAID1的冗余安全。但经过我在软RAID0、RAID1、RAID5、RAID10的测试过程中发现RAID10的写入速度是最慢的，测试方法是用超过1G的大文件几盘复制。结果发现速度由高低的顺序是：RAID0> 不做RAID>RAID1>RAID5>RAID10
+
+
+2 在Linux中，软RAID的创建和管理；
+
+在Linux中，软RAID是通mdadm来创建和管理的，mdadm 是一个专用创建和管理RAID的软件，在Linux中，大多发行版本已经默认安装，mdadm能创建任何级别的软RAID；
+
+在本节中，RAID创建并不是目的，我们还要查看学会RAID的状态，启动、停止RAID。还要学会使用RAID。所以RAID的使用应该包括创建、管理和使用。 RAID的使用就是在RAID设备上创建文件系统，然后供存储应用；
+
+流程是：
+
+[RAID创建]->[RAID管理]->[RAID的使用]
+                            |
+                  [RAID的维护]
+
+2.1 RAID的创建方法；
+
+创建RAID有两个方法 ，
+
+第一种方法 ：用mdadm 通过-C或--create 参数来创建RAID。这种方法 ，是把RAID信息写到每个RAID成员的 superblocks（超级块）中，在每个RAID成员的超级块中，都会记录RAID的级别、成员、RAID的UUID等…… 这种方法把RAID的信息记录在各个成员的 superblocks（超级块）中。这种方法对于重装系统或系统发生灾难来来说，有利于现有RAID的恢复；这种方法是最常用的；
+
+第二种方法：用mdadm 通过-B或--build 参数来创建RAID。这种方法并不把RAID的信息写入RAID成员的 superblocks（超级块中），所以我们无法通过查看RAID成员信息来获得RAID的级别，以及RAID的成员等；这种方法对于重装系统或系统发生灾难来来说，不利于现有RAID的恢复；如果你想用第二种方法来创建RAID，可以在下面的语法中，把-C或--create 换成 -B或--build 。
+
+
+语法：创建把RAID信息写入RAID每个成员的superblocks（超级块）中；
+
+mdadm -C   -v  /dev/mdX   -lY   -nZ  RAID成员
+或
+mdadm  --create  --verbose  /dev/mdX   --level=Y    --RAID-devices=Z    RAID成员
+注：
+
+-C 是--create 的缩写，表示创建的意思；这种方法是创建把RAID信息写入每个RAID成员superblocks（超级块）的方法。这是最常用的方法。
+-v 和--verbose， 显示创建过程中详细的事件；
+
+如果把-C或--create 换成-B或--build，就是创建RAID的另一种方法，不把RAID信息写入RAID成员的superblocks（超级块）中，如果您试用，请自己尝试；
+
+RAID设备： /dev/mdX,RAID设备在Linux中，大多是/dev/md0，/dev/md1…… 第一个设备从/dev/md0开始。 比如你已经有RAID0设备是/dev/md0，你再想做一个RAID5，那就是/dev/md1，以此类推；
+
+RAID级别 ： 用-lY或--level=Y表示，Y是RAID的级别。RAID的级别有RAID0就用0表示，RAID1就用1表示，RAID5就用RAID5表示，RAID10就用10表示。RAID的级别是根据自己的使用方向和现有磁盘和分区个数来定位。如果你就想高速读写、大容量，对数据安全性要求不高，那就用RAID0，如果对数据要求较高，可以用RAID1或RAID5，再者就是RAID10。比如-l0或--level=0表示RAID0，-l5或--level=5表示RAID5, -l1或--level=1表示RAID1，-l10或--level=10表示RAID10；
+
+-nZ或--RAID-devices=Z 表示RAID成员的个数，比如我们把三个硬盘分分区做成一个RAID，那就是3个设备。就要写成这样 -n3或 --RAID-devices=3；值得注意的是RAID0和RAID1至少需要两个设置，RAID5至少需要三个设备，RAID10至少四个设备；
+
+RAID成员：也就是RAID的组成设备，要一个一个的列出来，每个设备后要用空格来隔开；比如我们把/dev/sdb、/dev/sdc、/dev/sdd三个硬盘做成RAID0，在RAID设备这块，我们要写成 /dev/sdb /dev/sdc /dev/sdd ； 软件RAID的成员还可以是分区，比如 /dev/sdb1、/dev/sdc1 ……
+
+举例一：我们要做一个RAID0,成员是 /dev/sdb、/dev/sdc 两个硬盘设备。 我们要运行如下命令；
+
+mdadm  -C  --verbose  /dev/md0 -l0 -n2 /dev/sdb /dev/sdc
+或
+mdadm -C  --verbose   /dev/md0   --level=0  --RAID-devices=2  /dev/sdb /dev/sdc
+如果我们想把/dev/sdb1 、/dev/sdc1和/dev/sdd1三个分区做成RAID0呢？
+
+mdadm  -C  -v  /dev/md0 -l0 -n3 /dev/sd[bcd]1
+或
+mdadm -C  --verbose   /dev/md0   --level=0  --RAID-devices=3  /dev/sdb1 /dev/sdc1  /dev/sdd1
+举例二：我们要做一个RAID5 ，成员是/dev/sdb、/dev/sdc、/dev/sdd 三个设备，我们要运行如下命令；
+
+mdadm  -C  -v  /dev/md0 -l5 -n3 /dev/sd[bcd]
+或
+mdadm -C  --verbose   /dev/md0   --level=5  --RAID-devices=3  /dev/sdb /dev/sdc  /dev/sdd 
+如果我们想把/dev/sdb1 、/dev/sdc1和/dev/sdd1三个分区做成RAID5呢？
+
+mdadm  -C  -v  /dev/md0 -l5 -n3 /dev/sd[bcd]1 
+或
+mdadm -C  --verbose   /dev/md0   --level=5  --RAID-devices=3  /dev/sdb1 /dev/sdc1  /dev/sdd1
+创建完成后，RAID也就立即启动了。我们会发现有类似如下一行的提示信息：
+
+mdadm: array /dev/md0 started.
+我们要可以通过下面的命令来查看RAID的信息；
+
+mdadm -Ds /dev/md0
+mdadm -D /dev/md0
+
+2.2 RAID管理工具；
+
+RAID的管理包括创建、启动、状态查看等一系列工具；我们只说常用的使用方法；
+
+
+2.21 RAID的启动方法；
+
+RAID的启动有两种方法，一种是指定RAID设备和RAID成员的办法来启动RAID，另一种办法是通过加载RAID默认的配置文件来启动。
+
+
+第一种方法：不通过读取mdadm.conf来启动RAID；适用情况是你没有配置 /etc/mdadm.conf 文件；
+
+语法：
+
+mdadm -A RAID设备   RAID成员
+注：
+
+-A 同 --assemble ，意思是激活一个已经存在的RAID；
+RAID设备 ，就是/dev/md0 或/dev/md1 …… 根据你所创建的RAID设备为准；
+RAID成员，就是你要启动的RAID，其下属设备有哪些，要一个一个的列出来，中间以空格分开；
+
+举例：比如我要启动一个RAID，设备是/dev/md0，其下有成员是 /dev/sdb和/dev/sdc；所以我要用下面的办法；
+
+[root@linuxsir:~] mdadm  -A /dev/md0  /dev/sdb /dev/sdc
+注： 这种情况，是没有配置RAID的配置文件/etc/mdadm.conf 时，所使用的启动方法；如果您已经配置好了/etc/mdadm.conf文件，就可以用 mdadm -As 来启动；
+
+
+第二种方法：利用配置好的/etc/mdadm.conf 来启动RAID；
+
+mdadm -A RAID设备   
+或
+mdadm -As
+注： 这种启动方法的前提是要配置 /etc/mdadm.conf文件，要把您系统中所有的RAID，都写入这个文件，然后就可以简单的用这个命令来启动了；
+
+-A 同 --assemble ，意思是激活一个已经存在的RAID；
+RAID设备 ，就是/dev/md0 或/dev/md1 …… 根据你所创建的RAID设备为准；
+
+
+举例：
+
+[root@linuxsir:~] mdadm  -A /dev/md0
+[root@linuxsir:~] mdadm -As
+注： 比如我配置好/etc/mdadm.conf 后，启动RAID设备/dev/md0，就用上面的办法。具体mdadm.conf的写法，请参见 RAID的配置文件一节；
+
+
+2.22 RAID管理工具一些常用参数说明；
+
+mdadm 参数  [RAID设备]  [RAID成员]
+
+-A 或  --assemble  激活一个RAID；
+-S 和--stop  停止正在运行的设备；
+-s 或 --scan  扫描RAID设备;
+-D 或 --detail 查看RAID的详细信息;
+--examine  查看RAID成员的详细信息；
+注：其中[]中的选项是可选的。
+
+举例：
+
+[root@linuxsir:~]# mdadm -As  
+[root@linuxsir:~]# mdadm -Ss
+[root@linuxsir:~]# mdadm -Ds
+[root@linuxsir:~]# mdadm --examine /dev/sdb
+注：上面的些标例， 都是在配置好/etc/mdadm.conf 的情况下，运行的，如果您没配置好mdadm.conf文件，请指定RAID设备及其成员；其中，--As 是搜索/etc/mdadm.conf ，然后根据 mdadm.conf 配置好的RAID信息来启动RAID。 -Ss 是搜索正在运行的RAID，然后停止。-Ds 搜索RAID，查看RAID信息； --examine /dev/sdb 是查看其中一块硬盘的RAID信息，这个很有用。比如你忘记了RAID的成员和UUID，想恢复现有的RAID，就要用这个来查看，然后重新让RAID启动起来。
+
+比如系统有一个RAID，但在/etc/mdadm.conf 中没有相应的记录RAID信息。我不知道这个RAID是哪个类型的，是RAID0，还是RAID1，还是RAID5？？到底机器中有几个RAID？如果您是一个新接手的管理员，应该想知道这些信息。那就一个一个硬盘，一个一个的分区查看过去。从中找出系统中所有的RAID。然后一个一个的恢复。这时就要用到 --examine这个参数了；
+
+[root@linuxsir:~]# fdisk -l 
+
+[root@linuxsir:~]# # mdadm   --examine   /dev/sdb
+/dev/sdb:
+          Magic : a92b4efc
+        Version : 00.90.00
+           UUID : 35e1a3e6:ed59c368:e5bc9166:5004fe52
+  Creation Time : Wed Aug  1 07:11:43 2007
+     RAID Level : RAID0
+  Used Dev Size : 0
+   RAID Devices : 2
+  Total Devices : 2
+Preferred Minor : 0
+
+    Update Time : Thu Aug  2 07:43:30 2007
+          State : active
+Active Devices : 2
+Working Devices : 2
+Failed Devices : 0
+  Spare Devices : 0
+       Checksum : 8f8a235e - correct
+         Events : 0.29
+
+     Chunk Size : 64K
+
+      Number   Major   Minor   RAIDDevice State
+this     0       8       16        0      active sync   /dev/sdb
+
+   0     0       8       16        0      active sync   /dev/sdb
+   1     1       8       32        1      active sync   /dev/sdc
+注：
+
+首先：我们用fdisk -l 查看一下机器中所有硬盘和分区，如果不能完全列出，请指定具体硬盘。
+其次：我们查看一下某个硬盘或分区上是否有RAID信息，比如我查看的是/dev/sdb ，结果显示出，/dev/sdb是RAID0设备的一个成员，/dev/sdb和/dev/sdc 共同组成的RAID0；
+
+得到这些信息有何用呢？我们就可以激活RAID，或重写/etc/mdadm.conf ，让RAID重新运行起来。在此过程中， 千万不要用-C或--create 参数来重新创建RAID，否则你以前存在的RAID就被破坏，里面的数据当然也会一无所有！！！切记。在一个有数据的RAID中，不能随便用-C 参数。如果用了-C或--create 就是创建一个新的RAID设备！
+
+
+2.3 RAID的配置文件；
+
+RAID并不是一定要配置文件，但有配置文件，会方便管理，比如RAID最精简的方法执行、状态查看………… 也需要RAID的配置文件。如果不没有配置文件，还要指定RAID成员；
+
+RAID的配置文件是mdadm.conf 位于/etc目录，如果你没有这个文件，可以自己创建一个；当我们做好RAID后，首先要配置这个文件；把你所有的RAID配置信息都写入这个文件。 我们可以自己手工编写。参照mdadm.conf 配置文件的示例就比较方便。
+
+你也可以用下面的办法，要先做好/etc/mdamd.conf的备份；
+
+[root@linuxsir~] mv  /etc/mdadm.conf /etc/mdadm.conf.bak
+
+第一步：搜索RAID；
+
+搜索RAID是以激活RAID为前掉条件，否则下面的命令不会有什么作用；请参见激活RAID的办法；
+
+语法：
+
+mdadm -Ds
+注： 其中-D 表示 --detail ，-s 表示--scan ，两者结合起来就-Ds；
+提示：运行查询RAID的时，要首先激活RAID；
+
+举例：
+
+[root@linuxsir~] mdadm -Ds 
+ARRAY /dev/md0 level=RAID0 num-devices=2 UUID=35e1a3e6:ed59c368:e5bc9166:5004fe52
+第二步：查询RAID的详细信息；主要是查看RAID的成员有哪些；
+
+语法：
+
+mdadm -D RAID设备
+举例：
+
+下面查询已经启动了的RAID设备/dev/md0的详细信息；
+
+[root@linuxsir~] mdadm -D  /dev/md0  
+
+/dev/md0:
+        Version : 00.90.03
+  Creation Time : Wed Aug  1 07:11:43 2007
+     RAID Level : RAID0
+     Array Size : 156249856 (149.01 GiB 160.00 GB)
+   RAID Devices : 2
+  Total Devices : 2
+Preferred Minor : 0
+    Persistence : Superblock is persistent
+
+    Update Time : Thu Aug  2 07:22:27 2007
+          State : clean
+Active Devices : 2
+Working Devices : 2
+Failed Devices : 0
+  Spare Devices : 0
+
+     Chunk Size : 64K
+
+           UUID : 35e1a3e6:ed59c368:e5bc9166:5004fe52
+         Events : 0.21
+
+    Number   Major   Minor   RAIDDevice State
+       0       8       16        0      active sync   /dev/sdb
+       1       8       32        1      active sync   /dev/sdc
+注：通过查询详细信息，我们得到 /dev/md0是RAID0，下面两个成员/dev/sdb和/dev/sdc ；UUID为 35e1a3e6:ed59c368:e5bc9166:5004fe52 ；这个RAID是有超级块的；
+
+第三步：书写RAID的配置文件mdadm.conf；
+
+[root@linuxsir~] mdadm -Ds  >> /etc/mdadm.conf   注：把查询出来的RAID信息写到mdadm.conf中；
+[root@linuxsir~]more /etc/mdadm.conf  注：看看有没有内容写进来？
+ARRAY /dev/md0 level=RAID0 num-devices=2 UUID=35e1a3e6:ed59c368:e5bc9166:5004fe52
+因为我们在前面已经通过mdadm -D /dev/md0 得知其下有成员/dev/sdb 和 /dev/sdc 两块硬盘。所以我们要修改一下mdamd.conf的内容。要在加上/dev/md0的成员/dev/sdb和/dev/sdc；用编辑器打开/etc/mdadm.conf；
+
+在下面类似的一行；
+
+ARRAY /dev/md0 level=RAID0 num-devices=2 UUID=35e1a3e6:ed59c368:e5bc9166:5004fe52
+修改成
+
+ARRAY /dev/md0 level=RAID0 num-devices=2 UUID=35e1a3e6:ed59c368:e5bc9166:5004fe52 devices=/dev/sdb,/dev/sdc
+其实也就是把/dev/md0这个RAID设备的成员指定出来，每个设备之间要用,号隔开。或者写成 devices=/dev/sd[bc]类似的写法也行；
+
+我们来看一下/dev/md0这行，其中/dev/md0这行是一个RAID0设备，由两个成员组成，/dev/md0的UUID为 UUID=35e1a3e6:ed59c368:e5bc9166:5004fe52 ，两个成员分别是/dev/sdb和/dev/sdc两个硬盘；
+
+其实我们无论添加多少RAID设备，都可以通过这种方法写入RAID配置文件/etc/mdadm.conf中，每个RAID设备一行；写好后，我们要重启一下RAID；
+
+[root@linuxsir~] mdadm -Ss
+或
+[root@linuxsir~] mdadm --stop --scan
+mdadm: stopped /dev/md0
+
+
+[root@linuxsir~] mdadm -As 
+或
+[root@linuxsir~] mdadm  --assemble --scan 
+
+mdadm: /dev/md0 has been started with 2 drives.
+注： -S 和--stop相同，表示停止RAID。而-s和 --scan相同，表示扫描RAID。-A和--assemble表示激活RAID；这些参数都比较简单，查查man和help就知道了；
+
+激活RAID后，我们要通过查看RAID的状态来判断RAID是否正常和健康……
+
+
+3 RAID设备的使用：RAID设备分区、文件系统初始化，挂载方法；
+
+既然我们已经把RAID设备做好了，我们就要使用这个设备。RAID做好后，类似一个没有格式化的新硬盘。如果我们拿到新硬盘时第一步是做什么？对，是分区和格式化，安装操作系统。RAID做好后，没有文件系统，一样是没办法用的，所以我们做好RAID后，要来创建文件系统；RAID只不过是把几个硬盘或分区绑定在一起成为一个大的虚拟物理存储设备。如果我们要对这个大的虚拟设备进行使用，就要在这个设备上创建文件系统才行。Linux 目前可用的文件系统有reiserfs、xfs、ext3，我推荐reiserfs和xfs，感觉这个比较安全点。虽然现在有超强的zfs，但我认为还是处于小白鼠阶段。对于重量级应用来说，我们还是观察一段时间再说。
+
+RAID做好后，我们要为它进行文件系统初始化，当初始化完成后，我们就可以挂载使用了。在一般情况下，我们可以把做好的RAID挂载到/home，我们可以把所有的存储性文件。
+
+在Linux中,创建文件系统的工具有 mkfs.xfs（创建xfs文件系统）， mkfs.jfs（创建JFS文件系统）， mkfs.reiserfs （创建reiserfs文件系统）， mkfs.ext3 （创建ext3文件系统）…… 。我们推荐的是reiserfs和xfs，不推荐ext2或ext3，为什么不推荐？因为实践是检验真理的唯一标准，性能不如人、安全性不如人，怎么用？我不是ext文件系统的专家，我只用最方便，维护起来比较容易的文件系统。
+
+RAID也可以分区来使用，但以我看来，大可不必，凡是能用到RAID的，大多是服务器领域。我们可以把RAID做成后，挂载到/home目录上。有关数据存储的都放在RAID上。操作系统并不安装在RAID上，当操作系统发生故障的时候，我们仅仅是修复或重装操作系统，对数据存储的RAID没有任何影响。就是重装操作系统，我们也能在几分钟之内恢复RAID。
+
+如果您想把RAID再进进行分区使用，可以用fdisk 、parted或cfdisk 来进行分区工作，也可以尝试LVM的来对分区进行管理，LVM能自动调整分区的大小。当然，我不会推荐RAID+LVM，或对RAID进行分区操作。
+
+RAID做好后，我们就像使用物理硬盘一样使用它，比如根据前面的例子，把/dev/sdb和/dev/sdc两个硬盘做成RAID0，其设备为/dev/md0，我们就可以对/dev/md0进行和物理硬盘一样的操作。如果我们不分区，只是进行创建文件系统，那就比较简单了。
+
+比如我们在/dev/md0上创建reiserfs文件系统，我们可以用mkfs.reiserfs命令来完成。
+
+
+第一步：查看/dev/md0设备是否存在，以及它的容量；
+
+[root@linuxsir:~]# fdisk -l /dev/md0
+
+Disk /dev/md0: 159.9 GB, 159999852544 bytes
+2 heads, 4 sectors/track, 39062464 cylinders
+Units = cylinders of 8 * 512 = 4096 bytes
+
+Disk /dev/md0 doesn't contain a valid partition table
+注：我们可以看到/dev/md0设备有 158.0GB的容量，不包含有效分区。如果您想要用分区操作，请用fdisk /dev/md0 、或cfdisk /dev/md0 或parted /dev/md0来操作；
+
+
+第二步：创建文件系统；
+
+在这里我们是计划用 reiserfs 文件系统；
+
+[root@linuxsir:~]# mkfs.reiserfs  /dev/md0 
+
+mkfs.reiserfs 3.6.19 (2003 www.namesys.com)
+
+A pair of credits:
+Nikita Danilov  wrote  most of the core  balancing code, plugin infrastructure,
+and directory code. He steadily worked long hours, and is the reason so much of
+the Reiser4 plugin infrastructure is well abstracted in its details.  The carry 
+function, and the use of non-recursive balancing, are his idea.
+
+Oleg Drokin was the debugger for  V3 during most of the time that  V4 was under
+development,  and was quite  skilled and fast at it.  He wrote  the large write
+optimization of V3.
+
+
+Guessing about desired format.. Kernel 2.6.21.5-smp is running.
+Format 3.6 with standard journal
+Count of blocks on the device: 39062464
+Number of blocks consumed by mkreiserfs formatting process: 9404
+Blocksize: 4096
+Hash function used to sort names: "r5"
+Journal Size 8193 blocks (first block 18)
+Journal Max transaction length 1024
+inode generation number: 0
+UUID: 2b06b743-8a4e-4421-b857-68eb2176bc50
+ATTENTION: YOU SHOULD REBOOT AFTER FDISK!
+        ALL DATA WILL BE LOST ON '/dev/md0'!
+Continue (y/n):y  注：在这里输入y ，就进行创建文件系统了；
+Initializing journal - 0%....20%....40%....60%....80%....100%
+Syncing..ok
+
+Tell your friends to use a kernel based on 2.4.18 or later, and especially not a
+kernel based on 2.4.9, when you use reiserFS. Have fun.
+
+ReiserFS is successfully created on /dev/md0.
+这样文件系统 reiserfs 就创建成功了。如果您想创建xfs文件系统，就用mkfs.xfs /dev/md0 ，其它文件系统也类似 ……
+
+
+第三步：挂载文件系统并使用；
+
+[root@linuxsir:~]# mkdir /mnt/data
+[root@linuxsir:~]# mount /dev/md0 /mnt/data 
+[root@linuxsir:~]# df -lh /dev/md0
+
+文件系统              容量  已用 可用 已用% 挂载点
+/dev/md0              150G   33M  149G   1% /mnt/RAID0
+注： 这样就就/dev/md0 设备挂载到/mnt/RAID0上了。可以看到设备大小为150G。已使用33M，挂载点为/mnt/RAID0。我们可以向设备里存储文件；
+
+其实根据Linux文件系统的结构，以及最新Linux软件方便易用的特点。我们完全可以把/home独立出来。把RAID设备挂载到/home目录上。凡是涉及用户或数据存储的，都可以放在/home中，比如数据库，网络服务器有关数据存储的，都指定到 /home中的文件夹中。所有的一切都是根据方便管理为前提。
+
+如果您的RAID是在安装系统后创建的，如果挂载到Linux现有目录下，要先做好相应目录的数据迁移到RAID设备中，然后再把RAID挂载到Linux目录中。比如你想把RAID挂载到/home目录中，可以先创建一个临时的目录，把RAID挂到这个临时的目录上，接着再把/home目录下的文件都移到 RAID上，然后再把RAID卸载，再重新挂载到/home中，这样/home的数据就完迁移了。
+
+至于如何把操作系统安装或移到RAID上，不同的Linux发行版有不同的方法。Fedora或Redhat在安装的过程中，就为我们提供了在RAID1上安装系统。其它的发行版是否支持，不太知道，Slackware是不支持。如果您想把系统移植到RAID1中，可能需要安装好系统后，再进行移植。 感觉软RAID1在一块硬盘上做，没太大的必要，如果要做RAID1,也要在两个硬盘上（或两个属于不同硬盘的分区上来做）。
+
+如何开机挂载RAID设备，不同的发行版也有自己的方法，流程是先激活RAID，然后才是挂载。
+
+
+4 软RAID的高级进阶及维护；
+
+RAID做好以后，并不是万事大吉了，还要进行日常维护；比如某个硬盘（或分区）坏掉，我们可以在不停机的情况下换上。或者我们为RAID做一个冗余的硬盘或分区，当RAID发生故障时，冗余硬盘或分区自动推上工作，能实现零停机任务。
+
+
+4.1 如何向已存在的RAID中，添加一块硬盘或分区；
+
+RAID有几种模式，比如创建、管理。下面我们所说的就是RAID的管理模式Manage，也可以说是RAID的进阶应用。管理模式的目的，仅仅是为了把有问题的RAID成员换掉，或者为了管理的需要把其中一个RAID成员由另一个来替换，也可能是为了安全需要，让新增加的硬盘或分区当做RAID的备用(spare)成员；在管理模式中， RAID的真正成员个数并不改变。比如我们做RAID5是，用的是三个硬盘或分区。在增加RAID成员时，RAID5仍是三个成员，容量还是保持不变，如果三个RAID成员完全正常健康，新增加的成员，仅仅是备用(spare)成员。备用成员的用途就是当RAID的真正成员发生问题时，备用成员会马上启动，仅仅是起到安全的冗余的作用；
+
+我们要向一个既已存在RAID中，添加或移除一个硬盘或分区，我们要用到mdadm 工具的 -f 和-r 以及-a 参数；
+
+mdadm /dev/mdX -f RAID成员
+mdadm /dev/mdX -r RAID成员
+mdadm /dev/mdX -a RAID成员
+注：
+
+-f 同 --fail 表示把一个设备列为有问题的设备，以便用-r或--remove参数移除；
+-r 同 --remove 表示把RAID中的一个成员移出RAID；
+-a 同 --add 表示向一个RAID中添加一个成员；
+--re-add 重新把最近移除的RAID成员重新添加到RAID中；
+
+值得一提的是，这些参数的运用，必须是在RAID正常运行的情况下进行。其中RAID设备是/dev/mdX，X是一个大于0的整数，RAID成员是一个硬盘或分区。添加设备并不会把RAID的容量扩大，仅仅是为了添加备用成员，比如在RAID1、RAID5和RAID10中特加有用。当一个RAID成员发生故障的时候，要用这种办法来让新成员顶替工作；
+
+举例：
+
+[root@linuxsir:~]# mdadm /dev/md0 -f /dev/sdb3 
+[root@linuxsir:~]# mdadm /dev/md0 -r /dev/sdb3
+[root@linuxsir:~]# mdadm /dev/md0 -a /dev/sdb5
+注：当我们想把一个RAID的成员/dev/sdb3移除 RAID设备/dev/md0时，要首先标注它为有问题的（也可能是完全正常的，为了管理需要）。然后 用-r参数移除，接着用-a 参数再添加一个设备/dev/sdb5到RAID设备/dev/md0中；
+
+当我们用mdadm -D /dev/md0查看RAID的状态时，我们会看到RAID的详细信息。比如是否正常、RAID成员…… 下面是我们需要掌握的；
+
+
+Raid Level : 注：阵列级别；比如Raid5
+Array Size : 注：阵列容量大小；
+Used Dev Size : 注：RAID单位成员容量大小，也就是构成RAID的成员硬盘或分区的容量的大小；
+Raid Devices : 注：RAID成员的个数；
+Total Devices : RAID中下属成员的总计个数，因为还有冗余硬盘或分区，也就是spare，为了RAID的正常运珩，随时可以推上去加入RAID的；
+State : clean, degraded, recovering 注：状态，包括三个状态，clean表示正常， degraded 表示有问题， recovering 表示正在恢复或构建；
+Active Devices : 被激活的RAID成员个数；
+Working Devices : 注：正常的工作的RAID成员个数；
+Failed Devices : 出问题的RAID成员；
+Spare Devices : 备用RAID成员个数，当一个RAID的成员出问题时，用其它硬盘或分区来顶替时，RAID要进行构建，在没构建完成时，这个成员也会被认为是spare设备；
+Rebuild Status : 注:RAID的构建进度，比如 38% complete ，表示构建到 38%；
+UUID : 注：RAID的UUID值，在系统中是唯一的；
+
+Number Major Minor RaidDevice State
+0 8 17 0 active sync /dev/sdb1 注：表示这个成员是激活的；
+1 8 18 1 active sync /dev/sdb2 注：表示这个成员是激活的；
+4 8 19 2 spare rebuilding /dev/sdb3 注：未被激活，正在构建中的成页，正在传输数据；
+
+3 8 49 - spare /dev/sdd1
+
+注：spare /dev/sdd1 表示/dev/sdd1是RAID的备用成员，当RAID的正式成员/dev/sdb1、/dev/sdb2或/dev/sdb3中有一个出问题的时候，这个备用成员会自动进行工作的。这个并不是必须的，可以用添加RAID成员的办法来添加，也可以在创建的RAID的时候添加；
+
+
+4.2 如何为一个现有RAID扩充容量；
+
+在RAID的管理模式中，我们提到增加RAID成员的办法，如果RAID所有真正成员都是健康的，这个成员就进入备用(spare)状态。只有当真正成员有问题时，这个备用成员才启用顶替出问题的成员来工作。
+
+但我们能不能向RAID添加一个新成员，并且让他成为RAID的真正成员，并且达到为RAID扩充容量呢？比如有一个RAID5，用的是3个20G 的分区做的，其总容量是(3-1)x20=40G，我们能否为这个RAID5新增加一个20G的分区，并且让其成为这个RAID5真正的成员，并且达到扩充容量的目的，也就是说让这个RAID5有四个真正的成员，其容量为(4-1)x20=60G。
+
+在硬RAID中，这个工作比较容易，但在软RAID中，是否能实现呢？答案是肯定的，这种情况仅针对已经做好的RAID，并且已经在存储过程中发现RAID容易不足的情况下使用。如果是一个新做的RAID，我们发现计划错了，我们重新做一次就行了，没必要用扩容的办法。
+
+我们为现有的RAID扩充容量，利用的就是RAID的Grow模式，中译为RAID的增长模式；应用范围是RAID1、RAID4、RAID5、RAID6。
+
+RAID扩容流程：
+
+向一个已经存在的RAID中添加一个成员->执行扩容指令
+注： 在这里我们要用到RAID的管理模式中的添加成员的办法。也就是用到mdadm 中的-a 参数，请参考上一节的内容。这时添加的成员是备用(spare)成员，我们要把备用成员“推”到位置上。这时我们要用到mdadm的Grow模式；
+
+举例说明：
+
+比如我们做的RAID5,由三个硬盘分区/dev/sdb1、/dev/sdc1、/dev/sdd1构成，这时的RAID5真正成员就是3个。当我们添加一个分区/dev/sdb2到这个RAID5时，新增加的这个sdb2就是这个RAID5R 的备用(spare)成员。比如已有的RAID5的设备是/dev/md0；
+
+·  首先，查看RAID状态；
+[root@linuxsir:~]# mdadm -D /dev/md0 
+/dev/md0:
+        Version : 00.90.03
+  Creation Time : Tue Aug  7 01:55:23 2007
+     Raid Level : raid5  注：RAID级别；
+     Array Size : 39069824 (37.26 GiB 40.01 GB) 注：RAID容量是 39069824
+  Used Dev Size : 19534912 (18.63 GiB 20.00 GB) 注：RAID中每个成员的容量是19534912 
+   Raid Devices : 3 注：RAID真正成员是3个设备构成；
+  Total Devices : 3  注： 总共设备是3个；
+Preferred Minor : 0
+    Persistence : Superblock is persistent
+
+    Update Time : Tue Aug  7 02:02:33 2007
+          State : clean  注：状态正常；
+Active Devices : 3   注：激活的设备是3个；其实就是RAID真正成员正常激活的个数；
+Working Devices : 3   注：正常工作的设备是3个；
+Failed Devices : 0  注：有问题的设备是0个；
+  Spare Devices : 0 注：备用设备是0个；
+
+         Layout : left-symmetric
+     Chunk Size : 64K
+
+           UUID : faea1758:0e2cf8e0:800ae4b7:b26f181d  注：RAID的UUID；
+         Events : 0.16
+
+    Number   Major   Minor   RaidDevice State
+       0       8       17        0      active sync   /dev/sdb1  注：RAID真正成员/dev/sdb1
+       1       8       33        1      active sync   /dev/sdc1  注：RAID真正成员/dev/sdc1
+       2       8       49        2      active sync   /dev/sdd1  注：RAID真正成员/dev/sdd1
+·  其次，我们为这个RAID5添加一个成员；
+把/dev/sdb2添加到RAID设备/dev/md0，然后查看RAID的状态及详细信息；
+
+[root@linuxsir:~]# mdadm /dev/md0 -a /dev/sdb2  注：添加分区/dev/sdb2到/dev/md0中；
+mdadm: added /dev/sdb2  
+
+
+[root@linuxsir:~]# mdadm -D /dev/md0   注：查看/dev/md0的详细信息；
+/dev/md0:
+        Version : 00.90.03
+  Creation Time : Tue Aug  7 01:55:23 2007
+     Raid Level : raid5   注：RAID级别；raid5 
+     Array Size : 39069824 (37.26 GiB 40.01 GB)   注：RAID容量是 39069824
+  Used Dev Size : 19534912 (18.63 GiB 20.00 GB)  注：RAID中每个成员的容量是19534912 
+   Raid Devices : 3  注：RAID真正成员是3个设备构成；
+  Total Devices : 4  注： 总共设备是4个；
+Preferred Minor : 0
+    Persistence : Superblock is persistent
+
+    Update Time : Tue Aug  7 02:14:13 2007
+          State : clean  注：状态正常；
+Active Devices : 3 注：激活的设备是3个；其实就是RAID真正成员正常激活的个数；
+Working Devices : 4   注：正常工作的设备是4个；
+Failed Devices : 0
+  Spare Devices : 1
+
+         Layout : left-symmetric
+     Chunk Size : 64K
+
+           UUID : faea1758:0e2cf8e0:800ae4b7:b26f181d
+         Events : 0.18
+
+    Number   Major   Minor   RaidDevice State
+       0       8       17        0      active sync   /dev/sdb1  注：RAID真正成员/dev/sdb1
+       1       8       33        1      active sync   /dev/sdc1  注：RAID真正成员/dev/sdc1
+       2       8       49        2      active sync   /dev/sdd1  注：RAID真正成员/dev/sdd1
+
+       3       8       18        -      spare   /dev/sdb2  注：注：RAID备用成员/dev/sdb2
+添加/dev/sdb2到/dev/md0后，我们发现RAID的组成设备总数由3个变成了4个，但真正成员个数并没有变化，多出了一个备用成员/dev/sdb2。但/dev/md0的容量并没有变大。 所以这时我们要为RAID来扩容，解决办法就是让/dev/sdb2成为RAID的真正成员，RAID的容易由 40G扩展到 60G；
+
+·  第三，为RAID进行扩充容量；
+在这里我们要用到RAID的Grow模式，也就是增长模式。扩充模式，极为简单，有--size参数，-n参数 --size是指大定RAID的大小，这个可以省略，具体由你所做的RAID级别而定。 -n 代表RAID真正成员的个数。在这个例子中，RAID5真正成员是3个，后来我们又添加了一个备用成员/dev/sdb2进去。我们所做的就是把这个备用成员“推”到真正成员的位置上。也就是说RAID的真正成员由3个变成4个。只是这一简单的指令，就可以让RAID5容量增加起来。
+
+[root@linuxsir:~] # mdadm -G /dev/md0   -n4 
+
+mdadm: Need to backup 384K of critical section..
+mdadm: ... critical section passed.
+然后我们查看RAID的详细信息；
+
+[root@linuxsir:~] # mdadm -D /dev/md0
+/dev/md0:
+        Version : 00.91.03
+  Creation Time : Tue Aug  7 01:55:23 2007
+     Raid Level : raid5
+     Array Size : 39069824 (37.26 GiB 40.01 GB)  注：RAID的容量，我们发现RAID的容量并没有增大，这是因为构建没有完成；等构建完成时就会改变过来；
+  Used Dev Size : 19534912 (18.63 GiB 20.00 GB)
+   Raid Devices : 4
+  Total Devices : 4
+Preferred Minor : 0
+    Persistence : Superblock is persistent
+
+    Update Time : Tue Aug  7 02:36:06 2007
+          State : clean, recovering  注：正常，恢复中；
+Active Devices : 4  注：RAID的正式成员已经变到4个；
+Working Devices : 4
+Failed Devices : 0
+  Spare Devices : 0 注：备用成员由1个，减少到0个；说明已经把RAID备用成员推到了RAID的正式成员中；
+
+         Layout : left-symmetric
+     Chunk Size : 64K
+
+Reshape Status :  17% complete  注：RAID重新构建状态，已经完成17%；目前并未完成构建；
+  Delta Devices : 1, (3->4) 注：RAID的正式成员增加一个，由3个到4个；
+
+           UUID : faea1758:0e2cf8e0:800ae4b7:b26f181d
+         Events : 0.100
+
+    Number   Major   Minor   RaidDevice State
+       0       8       17        0      active sync   /dev/sdb1
+       1       8       33        1      active sync   /dev/sdc1
+       2       8       49        2      active sync   /dev/sdd1
+       3       8       18        3      active sync   /dev/sdb2 注：/dev/sdb2已经由spare改变到 active ，也就是说由备用
+当执行完增容后，我们发现RAID的容量并没有增大，这是因为构建没有完成，等RAID完成构建后，RAID的容量就会改变为 19534912x(4-1)=58604736K=60G；构建进度也可以cat /proc/mdstat 来查看。
+
+新增加一个RAID正式成员的办法，不会让RAID原有的数据丢失，也不会破坏原有的数据。所以这种办法对RAID已经存储大量数据，当容量发生危机时而不损失原有数据的前提下，所采用的一种安全可行的扩容办法； 当然扩容后，你要修改 /etc/mdadm.conf；
+
+
+4.3 RAID正式成员个数达不到RAID启动要求时，如何启动RAID；
+
+可能存在这样一种状况，当RAID的一个正式成员挂掉后，这时RAID按以前说的常规办法是不能启动的。这时我们要强制启动，要用到--run 参数；比如当做RAID5时，我们用到了三个硬盘或分区，当其中有一个挂掉，按RAID5的特点来说，数据一样是安全完整的，但RAID5启动按常规办法是必须要达到做RAID时所指定的正式成员个数，这时按常规启动办法是不行的，我们要用到--run参数；
+
+我们举个例子。比如RAID5正式成员有3个/dev/sdb1，/dev/sdb2，/dev/sdb3，我们只用/dev/sdb1和/dev/sdb2来启动RAID5；
+
+[root@linuxsir:~] # mdadm -A --run /dev/md0  /dev/sdb1 /dev/sdb2
+
+5 软RAID设备使用方向的探讨；
+
+对于软RAID是把几个同容量的物理磁盘或分区组成一个大的虚拟设备来用，我们应用方向是什么呢？通过RAID的定义，我们可以知道RAID是为了解决容量、读写效率以及磁盘冗余安全而提出来的。
+
+
+5.1 仅仅是为了扩充存储可用空间，是否必需做RAID；
+
+如果是仅仅解决容量问题，我看大可不必用RAID。因为LVM比RAID更为灵活，无论怎么做，都不会带来容易上的损失。而只有RAID0和 LINEAR 级别才不会带来容量上的损失，RAID1、RAID5和RAID10由于要有安全冗余，所以RAID的容量必然减少；
+
+LVM 技术能把所有空闲硬盘或分区结合在一起来使用，并不要求每个分区或硬盘大小容易是一致的，而RAID必须要求每个RAID成员容量大小相同，如果不相同，以最小的成员的容易计算，这个损失还不算，还要有安全冗余带来的容量损失，比如把两块80G的硬盘做成RAID1,这时的RAID1是一块硬盘的容量。LVM做好后，也相当于一个空白的虚拟设备，可以在上面划成一个分区来使用，也可以划分几个，如果划成几个，我们还可以自动调整分区的大小。而RAID一但做好，如果再进行分区，分区的容量是没办法自由调整的；
+
+有的弟兄会问，我是不是做好RAID，然后在RAID上再做LVM，也就是RAID+LVM模式。这种方案实现起来并不困难，但对于软RAID来说，这种方案是否真的价值？ 我们用RAID的目的无非是“容量+读写效率+安全”。我们有必要把做好的RAID再分割的四分五裂吗？ 我感觉没必要，因为对于存储设备来说，每增强一项管理技术，就意味着风险，这种风险一是来自于管理员技术水平，二是来自于设备老化。另外集中于不分区的存储设备，也能为数据迁移和系统管理带来方便；
+
+
+5.2 在同一个硬盘做RAID是否有必要；
+
+在同一块硬盘上做RAID是否有必要，如果您是想提高数据读写速度，还是有必要的。RAID0就能为你带来这种高速存储的快感。如果您想在同一块硬盘上做软RAID，想同时兼顾效率和安全，我看大可以免了。因为硬盘一坏掉，什么重要的数据都会一锅烂；
+
+
+5.3 软RAID的合理使用方向；
+
+目前支持SATA主板的机器只能技术最多四块硬盘。比如四个80G的SATA硬盘，IDE硬盘也同理；我们要根据自己的使用方向来做RAID。下面我根据一个示例来说明RAID的合理使用方向；
+
+第一个硬盘分区情况：
+
+/dev/sda1  20G大小     
+/dev/sda2  20G大小     
+/dev/sda3  20G大小    
+-----/dev/sda5  swap 分区  -内存两倍大小
+-----/dev/sda6   用于/tmp  2G大小；
+-----/dev/sda7 
+注：我们首先把操作系统安装到第一个分区/dev/sda1 ，交换分区是/dev/sda5，/dev/sda6为临时/tmp的目录；那/dev/sda1和 sda2、sda3、sda7是用做什么的呢？可以用来安装系统。我们设计的是仅安装系统，涉及数据保存的，都放到RAID上。比如我把sda1和sda2安装同样的系统，把由第二三四块硬盘做好的RAID挂在/home上，所有应用数据都存在RAID上。当sda1系统被破坏时，我们可以用最短的时间启用sda2的系统，并在sda2上装载由第二三四块硬盘上做的RAID。
+
+第二三四个硬盘，我们可以用来整块硬盘来做RAID， 不必为每块硬盘分区。比如为了读写效率，我们可以做成RAID0,为了安全，你可以做RAID5。 如果做RAID0设备的容量是3x80G=240G，如果做RAID5，RAID5设备的容量是(3-1)x80=160G。有的弟兄可能会说，为什么我不能把磁盘进行分区，然后做RAID0呢？RAID10也就是RAID0+RAID1的组合，安全和效率都有。这种方案也是可以的，但您必须做到，当有一个硬盘坏掉时，不会影响数据的整体安全性。也就是说，当一个硬盘坏掉时，另外两块硬盘组合起来，仍能组成一份完整的数据。当RAID中的一块硬盘坏掉时，我们能通过更换硬盘，简单的修复，就能让RAID正常运行起来，而且数据是完整的。如果您对数据安全极为重视的，在做软RAID的过程中，能做到这点，这个RAID方案就属于你。
+
+所以在做软RAID时，首先要明白自己的目的是什么，然后再来根据目的判断自己的所要达到的效果。如果是简单追求的是读写效率，我们就不必考虑数据的安全性。如果是数据的安全性对我们来说极为重要，我们就要判断，当一块硬盘坏掉时，是否影响数据的完整性！比如，我们用两块硬盘来做RAID5或RAID10，可以这样说，没有一点安全性的。无论您怎么分区和组合，也不会为您带来一点安全感。
+
+
+6 常见问题及处理；
+
+涉及一些补充和增订的内容，我们在这里一一列出；
+
+
+6.1 如何清除一个RAID成员的超级块存储存的RAID信息；
+
+RAID成员在 superblock中所存储的RAID信息是极为重要的，我们可以根据这个信息轻松恢复RAID。
+
+mdadm --zero-superblock RAID成员；
+如果你确认RAID成员这个成员对你没任何用处，你已经把这个成员移除RAID，并且您想把这个设备另作他用。这时你可以清除其 superblock的信息。比如；
+
+[root@linuxsir:~] # mdadm --zero-superblock /dev/sdd3
+这个示例就是清除/dev/sdd3中的超级块中所存储的RAID信息；
+
+
+7 关于本文；
+
+其实软RAID使用起来比较简单，难点在于后期的管理和维护。软RAID的使用教程，其实用几个命令足以能说的清楚。但一想到初学Linux的弟兄也可能象我当初学习Linux一样，总想找一个Step By Step的教程看着实现自己想要做的东西，基于这个大多数初学者的想法，我就写了这么一个看起来相对复杂的文章。
+
+这篇文章看起来条理不够清晰，另外mdadm的模式也没有给大家说，而是把模式分拆开来放在具体的应用中。
+
+我仅仅是用自己从新手理解的角度来写这篇文章，文中大量存在不规范的用语，这也是在情理之中的。最主要的是有些专业束语我不知道如何翻译才好。
+
+欢迎弟兄们指正，还是那句话“看北南写的文档，要一分为二，看着批，批着看！”
+
+
+8 参考文档；
+
+man mdadm 和 mdadm --help
+《The Software-RAID HOWTO》
+《实例解说 fdisk 使用方法》
+
+9 相关文档；
+
+《Raid的学习和基础知识》

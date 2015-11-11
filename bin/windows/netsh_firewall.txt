@@ -1,0 +1,58 @@
+Everyone has probably heard that Windows Server 2012 will add around 2,300 new Windows PowerShell commands. Today, however, PowerShell still works with just a subset of the Windows Server management functions. One area that it doesn't directly touch is the ability to configure Windows Server networking and firewall functions, for which you need to use the venerable netsh commands. Even with the advent of PowerShell, netsh has continued to evolve, and it's particularly useful for configuring Windows Server Core.
+
+Related: Network Configuration Tasks with Netsh
+
+In this column, I'll show you 10 handy netsh commands you can use to query and configure your Windows Firewall settings. It's worth noting that you can call these netsh commands from within your PowerShell scripts.
+
+10. Query firewall rules: One of the first things you'll probably need to use netsh for is to discover Windows Firewall's current configuration properties. You can query Windows Firewall settings using the following netsh command:
+
+ 
+
+netsh advfirewall firewall show rule name=all
+9. Enable and disable Windows Firewall: It's typically a best practice to leave Windows Firewall enabled, but sometimes when you're performing testing or setting up new applications, you need to turn Windows Firewall off for a period. The following commands illustrate how to turn Windows Firewall off and then back on:
+
+ 
+
+netsh advfirewall set allprofiles state on
+netsh advfirewall set allprofiles state off
+8. Reset Windows Firewall: If you make a mistake configuring Windows Firewall, you might want to use the following netsh command to reset it back to its default settings:
+
+ 
+
+netsh advfirewall reset
+7. Set logging: The default path for the Windows Firewall log files is \Windows\system32\LogFiles\Firewall\pfirewall.log. The netsh command below changes the location of the log file to the C:\temp directory:
+
+ 
+
+netsh advfirewall set currentprofile logging filename "C:\temp\pfirewall.log"
+6. Allow and prevent ping: You can use netsh to control how and if a given system responds to ping requests. The following two netsh commands show how you can block and then open Windows Firewall to ping requests:
+
+ 
+
+netsh advfirewall firewall add rule name="All ICMP V4" dir=in action=block protocol=icmpv4
+netsh advfirewall firewall add rule name="All ICMP V4" dir=in action=allow protocol=icmpv4
+5. Enable and delete a port: One of the most common things you need to do with Windows Firewall is open ports that are used by different programs. The following examples show how to use netsh to create a rule to open and then close port 1433, which is used by Microsoft SQL Server:
+
+ 
+
+netsh advfirewall firewall add rule name="Open SQL Server Port 1433" dir=in action=allow protocol=TCP localport=1433
+netsh advfirewall firewall delete rule name="Open SQL Server Port 1433" protocol=tcp localport=1433
+4. Enable a program: Another common task is opening Windows Firewall for a given program. The following example illustrates how to add a rule that enables Windows Live Messenger to work through Windows Firewall:
+
+ 
+
+netsh advfirewall firewall add rule name="Allow Messenger" dir=in action=allow program="C:\programfiles\messenger\msnmsgr.exe"
+3. Enable remote management: Another common requirement, especially when you're setting up new systems, is to enable remote management so that tools such as the Microsoft Management Console can connect to remote systems. To open Windows Firewall for remote management, you can use the following command:
+
+ 
+
+netsh advfirewall firewall set rule group="remote administration" new enable=yes
+2. Enable Remote Desktop Connection: One of the first things I do with most of the server systems I set up is enable Remote Desktop Connection for easy remote systems management. The following command shows how to use netsh to open Windows Firewall for Remote Desktop Connections:
+
+ 
+
+netsh advfirewall firewall set rule group="remote desktop" new enable=Yes
+1. Export and import firewall settings: After you get Windows Firewall configured, it's a good idea to export your settings so that you can easily reapply them later or import them into another system. In the following netsh commands, you can see how to export and then import your Windows Firewall configuration:
+
+netsh advfirewall export "C:\temp\WFconfiguration.wfw"  
+netsh advfirewall import "C:\temp\WFconfiguration.wfw" 

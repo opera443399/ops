@@ -1,0 +1,161 @@
+1）下载安装
+wget ftp://ftp.proftpd.org/distrib/source/proftpd-1.3.4c.tar.gz
+tar zxvf proftpd-1.3.4c.tar.gz
+cd proftpd-1.3.4c
+
+(启用配额模块，限制上传大小，如果重新configure，则需要先make distclean)
+./configure --with-modules=mod_quotatab:mod_quotatab_file
+make
+make install
+
+默认将安装在/usr/local/sbin 和/usr/local/bin目录下。
+
+2）配置
+开机启动：
+
+cp contrib/dist/rpm/proftpd.init.d /etc/rc.d/init.d/proftpd
+
+vim /etc/init.d/proftpd
+找到下列内容：
+# Make sure the binary is present.
+[ -x /usr/sbin/proftpd ] || exit 5
+
+更换为：
+[ -x /usr/local/sbin/proftpd ] || exit 5
+
+增加权限：
+chmod 755 /etc/init.d/proftpd
+
+chkconfig --add proftpd
+chkconfig proftpd on
+
+
+
+
+增加用户和组：
+groupadd ftpuser1
+useradd ftpuser1 -g ftpuser1 -d /home/ftpuser1 -s /sbin/nologin
+passwd ftpuser1
+
+增加上传目录：
+mkdir -p /home/ftpuser1/upload
+chown ftpuser1:ftpuser1 /home/ftpuser1/upload
+
+检查IPTABLES是否开放FTP端口
+
+修改配置文件：
+vi /usr/local/etc/proftpd.conf 
+[root@test120 ~]# cat /usr/local/etc/proftpd.conf
+
+ServerName                      "ec-ftp-server"
+ServerType                      standalone
+DefaultServer                   on
+
+Port                            21
+UseIPv6                         off
+Umask                           022
+User                            ftpuser1
+Group                           ftpuser1
+DefaultRoot                     ~/upload
+
+
+AllowOverwrite                  on
+#AllowForeignAddress            on
+#AllowRetrieveRestart           on
+#AllowStoreRestart              on
+
+MaxInstances                    30
+#MAXConnectionRate              4
+#MaxClients                     10 "Sorry, the maximum number of clients (%m) are already connected."
+#MaxClientsPerUser              1 "Sorry, the maximum number of clients (%m) for this user are already connected." 
+#MaxClientsPerHost              1 "Sorry, one client per host, please."
+#MaxHostsPerUser                1
+
+ServerIdent                     off
+USEReverseDNS                   off
+IDentLookups                    off
+DirFakeUser                     on
+DirFakeGroup                    on
+DeferWelcome                    on
+
+<IfModule mod_quotatab.c>
+    QuotaEngine                 on
+    QuotaLog                    /var/log/quota.log
+
+    <IfModule mod_quotatab_file.c>
+        QuotaLimitTable         file:/usr/local/etc/ftpquota.limittab
+        QuotaTallyTable         file:/usr/local/etc/ftpquota.tallytab
+    </IfModule>
+    QuotaDirectoryTally         on
+    QuotaDisplayUnits           Mb
+    QuotaShowQuotas             on
+    QuotaOptions                ScanOnLogin
+</IfModule>
+
+SystemLog                       /var/log/proftpd.log
+
+
+<Limit SITE_CHMOD>
+    DenyAll
+</Limit>
+
+<Limit LOGIN>
+    AllowUser ftpuser1
+    DenyAll
+</Limit>
+
+<Limit SITE_QUOTA>
+    AllowUser ftpuser1
+    DenyAll
+</Limit>
+
+
+<Directory "/home/ftpuser1/upload">
+     <Limit ALL>
+        DenyAll
+    </Limit>   
+    <Limit STOR>
+        AllowUser ftpuser1
+        DenyAll
+    </Limit>
+</Directory>
+
+
+
+用户上传文件配额设置（限额5GB）：
+ftpquota -create -type=tally -table-path=/usr/local/etc/ftpquota.tallytab
+ftpquota -create -type=limit -table-path=/usr/local/etc/ftpquota.limittab
+ftpquota --type=limit --table-path=/usr/local/etc/ftpquota.limittab --add-record --quota-type=user --name=ftpuser1 --units=Gb --bytes-upload=5
+
+
+
+启动proftpd：
+
+service proftpd start
+（如果是重新编译模块再安装，则要重启该服务以获得新功能，service proftpd restart）
+
+
+3. 测试
+ftp> open 1.2.3.4
+连接到 1.2.3.4。
+220 1.2.3.4 FTP server ready
+用户(1.2.3.4:(none)): ftpuser1
+331 Password required for ftpuser1
+密码:
+230 User ftpuser1 logged in
+ftp> quote SITE QUOTA
+200-The current quota for this session are [current/limit]:
+ Name: ftpuser1
+ Quota Type: User
+ Per Session: False
+ Limit Type: Hard
+   Uploaded Mb:         0.00/5120.00
+   Downloaded Mb:       unlimited
+   Transferred Mb:      unlimited
+   Uploaded files:      unlimited
+   Downloaded files:    unlimited
+   Transferred files:   unlimited
+200 Please contact root@2.3.4.5 if these entries are inaccurate
+ftp>
+
+任务完成。

@@ -1,0 +1,223 @@
+saltstack的深入-highstate概念
+
+一、初识
+1、HIGHSTATE 数据结构的定义
+
+1）salt状态树（THE SALT STATE TREE）
+状态树（state tree） 指的是在file_roots中定义的目录下分类保存，供模块（module）调用的那些sls文件。
+
+2）入口文件（TOP FILE）
+一个入口状态（state）文件 可以在state执行时指示 minions 在什么环境（env）和模块（module）下使用
+
+3）包含申明（INCLUDE DECLARATION）
+定义一个列表，包括要引用的模块名称。
+生效：位于highstate的顶层（top level）
+举例：
+include:
+  - edit.vim
+  - http.server
+
+4）模块引用（MODULE REFERENCE）
+sls模块名称。例如模块名“edit.vim”代表 salt://edit/vim.sls 这个sls文件，位于Salt Master上file_roots下定义的路径（默认是/srv/salt/）/srv/salt/edit/vim.sls
+
+5）ID申明（ID DECLARATION）
+定义一个独立的 highstate 组件（component），包括State declaration 和 Requisite declaration中的key-value，可以被Name declaration 或 Names declaration覆盖。
+
+生效：位于顶层或在Extend declaration下面一层
+要求：在整个state tree中是唯一的，如果有多个同样的的id，则第一个被匹配的生效。
+
+6）扩展申明（EXTEND DECLARATION）
+扩展某个要include的sls模块中的 Name declaration，这个扩展模块中的key和要include的那个sls模块中的ID declaration关联一致。
+
+生效：位于顶层，定义了一个字典
+注意：在一个单独的state运行时只能被扩展一次。
+
+7）状态申明（STATE DECLARATION）
+一个列表，包括一个字符串代表了函数申明（Function declaration），和多个函数的参数申明（Function arg declaration）的字典（dict）
+可以包括许多附加组件（component），例如名称覆盖组件（name和names），必要条件申明（requisite declarations）
+生效：位于ID declaration下面一层
+
+8）必要条件申明（REQUISITE DECLARATION）
+包括一系列的必要条件，用来建立行为依赖树（the action dependency tree）。
+Salt的状态同步执行时是有一个明确的顺序，这个顺序的确定，需要依赖和观察（ requiring and watching ）其他的状态（Salt states）
+生效：位于ID declaration下面一层，作为一个组件列表或者一个key
+Occurs as a list component under a State declaration or as a key under an ID declaration.
+
+9）必要条件引用（REQUISITE REFERENCE）
+一个单独的字典，key和State declaration一致，value和ID declaration一致
+生效：位于Requisite declaration下面一层
+
+10）函数申明（FUNCTION DECLARATION）
+要调用的函数名称。
+生效：
+注意：一个状态申明（state declaration）只能包括一个函数申明
+举例：在状态模块（state module）pkg中调用函数“installed”：
+httpd:
+  pkg.installed: []
+  
+函数和状态在一行（inline）被简短的申明。实际上，数据结构被编译成这样：
+httpd:
+  pkg:
+    - installed
+函数是状态申明（state declaration）中的一个字符串。
+从技术上而言，当函数以圆点记法“.”的方式申明时，编译器会转换成状态申明列表（state declaration list）中的一个字符串。
+
+如下是错误的申明：
+httpd:
+  pkg.installed
+  service.running
+当没有传参给函数， 且后续还有其他的状态申明，则要使用标准格式，否则将不是一个有效的数据结构。
+
+这才是正确的：
+httpd:
+  pkg.installed: []
+  service.running: []
+生效：位于State declaration下面一层
+
+11）函数参数申明（FUNCTION ARG DECLARATION）
+一个字典传递给函数
+生效：位于Function declaration下面一层
+举例：在下面的状态申明中， user, group, and mode 作为参数传递给函数“managed”：
+
+/etc/http/conf/http.conf:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: 644
+
+12）name申明（NAME DECLARATION）
+重写一个状态申明中的name参数，如果未指定name，则“ID declaration”将作为name参数
+举例：重写name的用法很多，如避免ID申明冲突，例如下面的例子中，2个状态申明不能同时将/etc/motd作为ID申明：
+
+motd_perms:
+  file.managed:
+    - name: /etc/motd
+    - mode: 644
+
+motd_quote:
+  file.append:
+    - name: /etc/motd
+    - text: "Of all smells, bread; of all tastes, salt."
+
+另一个通常的原因是，如果ID申明很长，又需要在多个地方引用。例如下面的例子，用mywebsite 来替代 /etc/apache2/sites-available/mywebsite.com即可：
+mywebsite:
+  file.managed:
+    - name: /etc/apache2/sites-available/mywebsite.com
+    - source: salt://mywebsite.com
+
+a2ensite mywebsite.com:
+  cmd.wait:
+    - unless: test -L /etc/apache2/sites-enabled/mywebsite.com
+    - watch:
+      - file: mywebsite
+
+apache2:
+  service.running:
+    - watch:
+      - file: mywebsite
+
+13）names申明（NAMES DECLARATION）
+将状态申明的内容展开为多个状态申明，每个都有自己的name
+举例：有这样一个申明：
+python-pkgs:
+  pkg.installed:
+    - names:
+      - python-django
+      - python-crypto
+      - python-yaml
+转换成lowstate data structure 则变成：
+
+python-django:
+  pkg.installed
+
+python-crypto:
+  pkg.installed
+
+python-yaml:
+  pkg.installed
+  
+通过一个附加的字典，可以在展开时改写一些值，例如：
+New in version 2014.7.0.
+
+ius:
+  pkgrepo.managed:
+    - humanname: IUS Community Packages for Enterprise Linux 6 - $basearch
+    - gpgcheck: 1
+    - baseurl: http://mirror.rackspace.com/ius/stable/CentOS/6/$basearch
+    - gpgkey: http://dl.iuscommunity.org/pub/ius/IUS-COMMUNITY-GPG-KEY
+    - names:
+        - ius
+        - ius-devel:
+            - baseurl: http://mirror.rackspace.com/ius/development/CentOS/6/$basearch
+
+2、LARGE EXAMPLE
+这是一个yaml的布局：
+
+<Include Declaration>:
+  - <Module Reference>
+  - <Module Reference>
+
+<Extend Declaration>:
+  <ID Declaration>:
+    [<overrides>]
+
+
+# 标准申明（standard declaration）
+
+<ID Declaration>:
+  <State Module>:
+    - <Function>
+    - <Function Arg>
+    - <Function Arg>
+    - <Function Arg>
+    - <Name>: <name>
+    - <Requisite Declaration>:
+      - <Requisite Reference>
+      - <Requisite Reference>
+
+
+# 函数内嵌（inline function and names）
+
+<ID Declaration>:
+  <State Module>.<Function>:
+    - <Function Arg>
+    - <Function Arg>
+    - <Function Arg>
+    - <Names>:
+      - <name>
+      - <name>
+      - <name>
+    - <Requisite Declaration>:
+      - <Requisite Reference>
+      - <Requisite Reference>
+
+
+# multiple states for single id
+
+<ID Declaration>:
+  <State Module>:
+    - <Function>
+    - <Function Arg>
+    - <Name>: <name>
+    - <Requisite Declaration>:
+      - <Requisite Reference>
+  <State Module>:
+    - <Function>
+    - <Function Arg>
+    - <Names>:
+      - <name>
+      - <name>
+    - <Requisite Declaration>:
+      - <Requisite Reference>
+
+
+
+
+
+
+
+ZYXW、参考
+1、doc
+http://docs.saltstack.com/en/latest/ref/states/highstate.html
+
+

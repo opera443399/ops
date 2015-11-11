@@ -1,0 +1,23 @@
+# mv /home/web/upload/phonerecord/2012 /home/backup/
+# mount -t nfs 10.0.200.75:/home/phonerecord/2012 /home/web/upload/phonerecord/2012
+提示文件夹不存在（此时应该是建立一个2012的文件夹）
+# mount -t nfs 10.0.200.75:/home/phonerecord/2012 /home/web/upload/phonerecord/
+但不小心做了上述操作后，导致2014新的录音文件都被上传到10.0.200.75:/home/phonerecord/2012
+想umount，提示device is busy
+接下来怎么办？找到使用目录的程序
+
+fuser -m -v /home/web/upload/phonerecord
+有2块：1）shell使用了这个目录 2）filesvr在使用
+解决方案：1）退出该目录 2）联系server余涛，请求kill filesvr 3）umount操作 4）告知可以启动filesvr 5）mount操作
+
+
+[root@s72 bin]# fuser -m -v /home/web/upload/phonerecord/2012
+Cannot stat file /proc/1612/fd/104: No such file or directory
+Cannot stat file /proc/4199/fd/201: No such file or directory
+[root@s72 bin]# ps -ef|grep 1612
+daemon    1612  4002  0 Apr30 ?        03:42:42 nginx: worker process                
+root     10896  2664  0 10:37 pts/1    00:00:00 grep 1612
+[root@s72 bin]# ps -ef|grep 4199
+root      4199     1 27 May15 ?        4-00:05:55 ./webimsvr.exe -daemon
+root     10940  2664  0 10:37 pts/1    00:00:00 grep 4199
+

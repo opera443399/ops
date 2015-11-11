@@ -1,0 +1,10 @@
+安装：
+yum install lrzsz
+
+
+使用rz命令直接从本地机器上传文件到内网服务器报错？请使用rz -be 命令。
+单独用rz上传可能发生上传中断、上传文件变化（md5不同）等问题，使用rz -be可避免：
+-b：binary 用binary的方式上传下载，不解释字符为ASCII
+-e：强制escape 所有控制字符，比如Ctrl+x，DEL等
+注意：
+1. 如果使用SecureCRT客户端时，使用rz -be命令后会弹出上传文件对话框，请不要勾选对话框中“Upload files as ASCII”。

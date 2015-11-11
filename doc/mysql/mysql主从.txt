@@ -1,0 +1,89 @@
+
+一、规则
+1）slave主机连接到master用的帐号命名
+slave[主机IP最后一位][端口]
+
+
+实例：
+一台主机1个mysql实例：
+slave7813308 -> 13306(s77)
+slave7913308 -> 13306(s77)
+slave1413306 -> 13306(s77)
+slave7513307 -> 13306(s77)
+
+一台主机2个mysql实例：
+slave8113378 -> 13308(s78)
+slave8113379 -> 13308(s79)
+
+
+
+2）mysql配置文件中的server-id命名
+主：
+设置server-id = 1
+
+从：
+设置server-id = n (n > 1，不重复，例如IP最后一位)
+从库：[主机IP最后一位][端口]
+
+13306(s77): 1
+13308(s78): 7813308
+13308(s79): 7913308
+13306(s14): 1413306
+13307(s75): 7513307
+
+13378(s81): 8113378
+13379(s81): 8113379
+
+
+二、配置
+1）帐号：
+mysql> grant replication slave on *.* to 'slave7813308'@'192.168.5.%' identified by 'xxx';
+...其他类似；
+mysql> flush privileges; 
+
+
+2）日期清理
+可以设置log文件的过期时间，让mysql自动清理：
+expire_logs_days = n
+
+手动清理：
+PURGE {MASTER | BINARY} LOGS TO 'log_name'
+PURGE {MASTER | BINARY} LOGS BEFORE 'date'
+
+mysql> purge binary logs to 'mysql-bin.000200';
+mysql> purge binary logs before '2014-06-01 00:00:00';
+
+3）重置slave
+重置slave：
+mysql> stop slave;
+mysql> reset slave;
+重置master：
+mysql> reset master;
+mysql> show master status;
+mysql> exit
+
+4）同步
+主从同步步骤：
+a）主上增加slave帐号：
+略
+
+b）从上配置master信息：
+mysql> change master to master_host='192.168.5.77', master_port=13306, master_user='slave7813308', master_password='xxx', master_log_file='mysql-bin.000671', master_log_pos=1046575869;
+
+c）启动slave：
+mysql> start slave;
+
+d）查看状态：
+mysql> show slave status\G
+
+e）主查看连接上来的slave：
+show slave hosts;
+
+
+5）主从同步异常，跳过方式
+mysql> stop slave;SET GLOBAL SQL_SLAVE_SKIP_COUNTER = 1;start slave;
+仅停止sql_thread
+mysql> stop slave SQL_THREAD;SET GLOBAL SQL_SLAVE_SKIP_COUNTER = 1;start slave SQL_THREAD;
+
+
+

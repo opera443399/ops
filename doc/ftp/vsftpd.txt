@@ -1,0 +1,42 @@
+
+
+1. 在root权限下，通过如下命令安装Vsftp。
+[root@test240 ~]# yum install vsftpd
+设置FTP用户的账号，例如账号为ftp_public，目录为/home/ftproot/public，且设置不允许通过ssh登录。
+[root@test240 ~]# useradd -d /home/ftproot/ftpsecure -s /sbin/nologin ftpsecure
+[root@test240 ~]# useradd -d /home/ftproot/public -s /sbin/nologin ftp_public
+passwd ftp_public
+[root@test240 ~]# useradd -d /home/ftproot/RD -s /sbin/nologin ftp_RD
+passwd ftp_RD
+
+2. 在启动vsftpd服务之前，修改配置文件，将匿名登录禁用掉。
+[root@test240 ~]# cat /etc/vsftpd/vsftpd.conf |grep ^[^#] 
+anonymous_enable=NO
+local_enable=YES
+write_enable=YES
+local_umask=022
+dirmessage_enable=YES
+xferlog_enable=YES
+connect_from_port_20=YES
+xferlog_std_format=YES
+nopriv_user=ftpsecure
+chroot_list_enable=YES
+chroot_list_file=/etc/vsftpd/chroot_list
+listen=YES
+pam_service_name=vsftpd
+userlist_enable=NO
+tcp_wrappers=YES
+
+[root@test240 vsftpd]# cat /etc/vsftpd/chroot_list
+ftp_public
+ftp_RD
+
+3. 启动vsftpd服务。
+[root@test240 ~]# service vsftpd start
+增加到启动项
+[root@test240 ~]# chkconfig --list |grep ftp
+vsftpd          0:off   1:off   2:off   3:off   4:off   5:off   6:off
+[root@test240 ~]# chkconfig vsftpd on
+
+1）通过“FileZilla”连接到ftp服务器  192.168.1.240
+2）通过“我的电脑”的地址栏打开  ftp://192.168.1.240

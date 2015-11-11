@@ -1,0 +1,288 @@
+启动关闭mysql 使用   mysqld_mult  [start|stop|report]  [3306|3307|3308] ，如下所示：
+   [root@10-0-201-2 ~]# mysqld_multi report 3306
+Reporting MySQL servers
+MySQL server from group: mysqld3306 is running
+[root@10-0-201-2 ~]#
+[root@10-0-201-2 ~]#
+[root@10-0-201-2 ~]# mysqld_multi stop 3306  
+[root@10-0-201-2 ~]# mysqld_multi report 3306
+Reporting MySQL servers
+MySQL server from group: mysqld3306 is not running
+[root@10-0-201-2 ~]# mysqld_multi start 3306
+[root@10-0-201-2 ~]# mysqld_multi report 3306
+Reporting MySQL servers
+MySQL server from group: mysqld3306 is running
+[root@10-0-201-2 ~]# cat /etc/my.cnf
+
+[mysqld_multi]
+mysqld		=/home/mariadb-10.0.11/bin/mysqld_safe
+mysqladmin	=/home/mariadb-10.0.11/bin/mysqladmin
+user		= root           # 指定用于启动、停止mysql实例的用户
+password=xxx
+log		= /var/log/mysqld_multi.log	
+#[client]
+#password       = your_password
+#port            = 13306
+#socket          = /var/lib/mysql/mysql.sock
+[mysqld3306]
+port            = 3306
+socket          = /home/mariadb-10.0.11/data/3306/mysql.sock
+basedir=/home/mariadb-10.0.11
+datadir=/home/mariadb-10.0.11/data/3306
+skip-external-locking
+key_buffer_size = 512M
+max_allowed_packet = 4M
+table_open_cache = 1024 
+sort_buffer_size = 12M
+read_buffer_size = 12M
+read_rnd_buffer_size = 8M
+net_buffer_length = 8K
+myisam_sort_buffer_size = 128M
+thread_cache_size = 64
+query_cache_size = 512M
+open_files_limit = 10240
+character_set_server=utf8
+#default-character-set=utf8
+back_log=500
+skip-name-resolve
+# Try number of CPU's*2 for thread_concurrency
+thread_concurrency = 8
+plugin_dir=/home/mariadb-10.0.11/lib/plugin
+max_connections=1500
+interactive_timeout=120
+wait_timeout=120
+###############LOG#############################
+slow_query_log
+long_query_time = 3
+slow_query_log_file= /home/mariadb-10.0.11/data/3306/slow_query.log
+log_queries_not_using_indexes=1
+##############repl##############################
+log-bin=mysql-bin
+expire_logs_days=7
+binlog_format=mixed
+max-binlog-size=128M
+relay-log=test229-relay-bin
+relay_log_purge = 1
+server-id       = 3306
+#replicate-ignore-db=mysql,performance_schema,information_schema
+#replicate-ignore-db=mysql,d_ec_seq,d_ec_crm,performance_schema,information_schema
+#replicate_wild_ignore_table=d_ec_seq.%
+#replicate_wild_ignore_table=d_ec_analytics.%
+#replicate_wild_ignore_table=d_ec_crm.%
+#replicate_wild_ignore_table=d_ec_crmstatic.%
+#replicate-ignore-table=d_ec_qq.t_qq_class_info
+
+
+##########performance_schema#########
+performance_schema
+performance_schema_max_table_instances=12500
+table_definition_cache=1024
+table_open_cache=1024
+event_scheduler=0
+
+#使用线程池处理连接
+thread_handling=pool-of-threads
+thread_pool_oversubscribe=30
+thread_pool_size=16
+
+[mysqldump]
+quick
+max_allowed_packet = 16M
+[mysql]
+no-auto-rehash
+# Remove the next comment character if you are not familiar with SQL
+#safe-updates
+#character-set-server=utf8
+#default-character-set=utf8
+
+
+[myisamchk]
+key_buffer_size = 256M
+sort_buffer_size = 256M
+read_buffer = 2M
+write_buffer = 2M
+
+[isamchk]
+key_buffer_size = 256M
+sort_buffer_size = 256M
+read_buffer = 2M
+write_buffer = 2M
+
+
+[mysqlhotcopy]
+interactive-timeout
+###################3307###############################
+[mysqld3307]
+#skip-grant-tables
+port            = 3307
+socket          = /home/mariadb-10.0.11/data/3307/mysql.sock
+basedir=/home/mariadb-10.0.11
+datadir=/home/mariadb-10.0.11/data/3307
+skip-external-locking
+key_buffer_size = 512M
+max_allowed_packet = 4M
+table_open_cache = 1024 
+sort_buffer_size = 12M
+read_buffer_size = 12M
+read_rnd_buffer_size = 8M
+net_buffer_length = 8K
+myisam_sort_buffer_size = 128M
+thread_cache_size = 64
+query_cache_size = 512M
+open_files_limit = 10240
+character_set_server=utf8
+#default-character-set=utf8
+back_log=500
+skip-name-resolve
+# Try number of CPU's*2 for thread_concurrency
+thread_concurrency = 8
+plugin_dir=/home/mariadb-10.0.11/lib/plugin
+max_connections=1500
+interactive_timeout=120
+wait_timeout=120
+###############LOG#############################
+slow_query_log
+long_query_time = 3
+slow_query_log_file= /home/mariadb-10.0.11/data/3307/slow_query.log
+log_queries_not_using_indexes=1
+##############repl##############################
+log-bin=mysql-bin
+expire_logs_days=7
+binlog_format=mixed
+max-binlog-size=128M
+relay-log=test229-relay-bin
+relay_log_purge = 1
+server-id       = 3307
+replicate-ignore-db=mysql,performance_schema,information_schema
+#replicate-ignore-db=mysql,d_ec_seq,d_ec_crm,performance_schema,information_schema
+replicate_wild_ignore_table=d_ec_seq.%
+replicate_wild_ignore_table=d_ec_analytics.%
+replicate_wild_ignore_table=d_ec_crm.%
+replicate_wild_ignore_table=d_ec_crmstatic.%
+#replicate-ignore-table=d_ec_qq.t_qq_class_info
+
+##########performance_schema#########
+performance_schema
+performance_schema_max_table_instances=12500
+table_definition_cache=1024
+table_open_cache=1024
+event_scheduler=0
+
+#使用线程池处理连接
+thread_handling=pool-of-threads
+thread_pool_oversubscribe=30
+thread_pool_size=16
+
+[mysqldump]
+quick
+max_allowed_packet = 16M
+[mysql]
+no-auto-rehash
+# Remove the next comment character if you are not familiar with SQL
+#safe-updates
+#character-set-server=utf8
+#default-character-set=utf8
+
+
+[myisamchk]
+key_buffer_size = 256M
+sort_buffer_size = 256M
+read_buffer = 2M
+write_buffer = 2M
+
+[isamchk]
+key_buffer_size = 256M
+sort_buffer_size = 256M
+read_buffer = 2M
+write_buffer = 2M
+
+
+[mysqlhotcopy]
+interactive-timeout
+#######################3308####################
+[mysqld3308]
+port            = 3308
+socket          = /home/mariadb-10.0.11/data/3308/mysql.sock
+basedir=/home/mariadb-10.0.11
+datadir=/home/mariadb-10.0.11/data/3308
+skip-external-locking
+key_buffer_size = 512M
+max_allowed_packet = 4M
+table_open_cache = 1024 
+sort_buffer_size = 12M
+read_buffer_size = 12M
+read_rnd_buffer_size = 8M
+net_buffer_length = 8K
+myisam_sort_buffer_size = 128M
+thread_cache_size = 64
+query_cache_size = 512M
+open_files_limit = 10240
+character_set_server=utf8
+#default-character-set=utf8
+back_log=500
+skip-name-resolve
+# Try number of CPU's*2 for thread_concurrency
+thread_concurrency = 8
+plugin_dir=/home/mariadb-10.0.11/lib/plugin
+max_connections=1500
+interactive_timeout=120
+wait_timeout=120
+###############LOG#############################
+slow_query_log
+long_query_time = 3
+slow_query_log_file= /home/mariadb-10.0.11/data/3308/slow_query.log
+log_queries_not_using_indexes=1
+##############repl##############################
+log-bin=mysql-bin
+expire_logs_days=7
+binlog_format=mixed
+max-binlog-size=128M
+relay-log=test229-relay-bin
+relay_log_purge = 1
+server-id       = 3308
+replicate-ignore-db=mysql,performance_schema,information_schema
+#replicate-ignore-db=mysql,d_ec_seq,d_ec_crm,performance_schema,information_schema
+replicate_wild_ignore_table=d_ec_seq.%
+replicate_wild_ignore_table=d_ec_analytics.%
+replicate_wild_ignore_table=d_ec_crm.%
+replicate_wild_ignore_table=d_ec_crmstatic.%
+#replicate-ignore-table=d_ec_qq.t_qq_class_info
+
+##########performance_schema#########
+performance_schema
+performance_schema_max_table_instances=12500
+table_definition_cache=1024
+table_open_cache=1024
+event_scheduler=0
+
+#使用线程池处理连接
+thread_handling=pool-of-threads
+thread_pool_oversubscribe=30
+thread_pool_size=16
+
+[mysqldump]
+quick
+max_allowed_packet = 16M
+[mysql]
+no-auto-rehash
+# Remove the next comment character if you are not familiar with SQL
+#safe-updates
+default-character-set=utf8
+#default-character-set=utf8
+
+
+[myisamchk]
+key_buffer_size = 256M
+sort_buffer_size = 256M
+read_buffer = 2M
+write_buffer = 2M
+
+[isamchk]
+key_buffer_size = 256M
+sort_buffer_size = 256M
+read_buffer = 2M
+write_buffer = 2M
+
+
+[mysqlhotcopy]
+interactive-timeout

@@ -1,0 +1,170 @@
+django初识-基本命令
+
+一、环境
+1、新建一个virtual项目
+[root@tvm-test ~]# mkproject dj-test
+New python executable in dj-test/bin/python
+Installing setuptools, pip, wheel...done.
+Creating /root/.pyprojects/dj-test
+Setting project for dj-test to /root/.pyprojects/dj-test
+
+2、安装django
+(dj-test)[root@tvm-test dj-test]# pip install django==1.6.0
+
+
+
+二、写项目
+1、startproject
+(dj-test)[root@tvm-test dj-test]# django-admin.py startproject mercury
+(dj-test)[root@tvm-test dj-test]# tree mercury/
+mercury/
+├── manage.py
+└── mercury
+    ├── __init__.py
+    ├── settings.py
+    ├── urls.py
+    └── wsgi.py
+
+1 directory, 5 files
+
+
+2、startapp
+(dj-test)[root@tvm-test dj-test]# cd mercury
+(dj-test)[root@tvm-test mercury]# python manage.py startapp football
+(dj-test)[root@tvm-test mercury]# ls
+football  manage.py  mercury
+(dj-test)[root@tvm-test mercury]# tree football/
+football/
+├── admin.py
+├── __init__.py
+├── models.py
+├── tests.py
+└── views.py
+
+0 directories, 5 files
+
+django主要有这几块构成：
+1）【urls.py】
+匹配url，然后传递给【views.py】中定义的方法来处理
+2）【views.py】
+定义方法处理【urls.py】传过来的请求, 通过渲染页面模版来展示网页内容
+3）【models.py】
+和数据相关的操作在【models.py】中定义处理
+4）【admin.py】
+django自带的后台
+5）【settings.py】
+django的设置
+
+
+3、syncdb
+(dj-test)[root@tvm-test mercury]# python manage.py syncdb
+Creating tables ...
+Creating table django_admin_log
+Creating table auth_permission
+Creating table auth_group_permissions
+Creating table auth_group
+Creating table auth_user_groups
+Creating table auth_user_user_permissions
+Creating table auth_user
+Creating table django_content_type
+Creating table django_session
+
+You just installed Django's auth system, which means you don't have any superusers defined.
+Would you like to create one now? (yes/no): yes
+Username (leave blank to use 'root'): 
+Email address: root@office.test
+Password: 
+Password (again): 
+Superuser created successfully.
+Installing custom SQL ...
+Installing indexes ...
+Installed 0 object(s) from 0 fixture(s)
+
+
+4、runserver
+(dj-test)[root@tvm-test mercury]# python manage.py runserver 0.0.0.0:8000
+Validating models...
+
+0 errors found
+August 14, 2015 - 09:55:48
+Django version 1.6, using settings 'mercury.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CONTROL-C.
+
+注意打开防火墙对应的端口。
+
+访问页面，出现如下字样：
+
+It worked!
+Congratulations on your first Django-powered page.
+
+Of course, you haven't actually done any work yet. Next, start your first app by running python manage.py startapp [appname].
+You're seeing this message because you have DEBUG = True in your Django settings file and you haven't configured any URLs. Get to work!
+
+
+5、【settings.py】
+(dj-test)[root@tvm-test mercury]# ls
+db.sqlite3  football  manage.py  mercury
+我们编辑一下“mercury/settings.py”，找到INSTALLED_APPS，注册我们的应用“football”
+(dj-test)[root@tvm-test mercury]# vim mercury/settings.py
+# Application definition
+
+INSTALLED_APPS = (
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+
+    'football',
+)
+
+在这里注册后，django可以根据app的名称来找对应的模版和静态文件。
+
+6、【views.py】
+(dj-test)[root@tvm-test mercury]# cat football/views.py   
+#coding:utf-8 
+from django.shortcuts import render
+
+# Create your views here.
+
+from django.http import HttpResponse
+
+def index(request):
+    return HttpResponse(u'这个app的名称是：football')
+
+这里因为涉及到中午，环境是python2而不是python3，因此要申明页面编码为utf-8，，py接触一点的应该都知道这个细节，略过。
+    
+7、【urls.py】
+(dj-test)[root@tvm-test mercury]# cat mercury/urls.py
+from django.conf.urls import patterns, include, url
+
+from django.contrib import admin
+admin.autodiscover()
+
+urlpatterns = patterns('',
+    # Examples:
+    # url(r'^$', 'mercury.views.home', name='home'),
+    # url(r'^blog/', include('blog.urls')),
+    url(r'^football/', 'football.views.index', name='home'), ## newline added here
+
+    url(r'^admin/', include(admin.site.urls)),
+)
+
+
+8、再次runserver看看效果
+(dj-test)[root@tvm-test mercury]# python manage.py runserver 0.0.0.0:8000
+
+在另一个窗口测试：
+[root@tvm-test ~]# curl http://127.0.0.1:8000/football/
+这个app的名称是：football
+
+
+三、小结
+大致上的功能，先过一遍体验了一下，细节后续再探讨。
+
+
+ZYXW、参考
+1、Django 基础教程
+http://www.ziqiangxuetang.com/django/django-tutorial.html

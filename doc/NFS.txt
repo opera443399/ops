@@ -1,0 +1,155 @@
+NFS服务
+本处以配置ovirt用到的NFS服务为例，示例如何配置NFS服务，或有不对，后续将更新。
+2015/10/26 10:14
+
+一、配置NFS服务
+1）安装服务
+[root@n86 ~]# yum install nfs-utils -y
+chkconfig rpcbind on
+chkconfig nfs on
+service rpcbind start
+service nfs start
+mkdir -p /data/ovirt/{data,export,iso} \
+&& chown -R 36:36 /data/ovirt  \
+&& chmod -R 0755 /data/ovirt  \
+&& cat <<'_EOF' >>/etc/exports
+/data/ovirt/data  *(rw,sync,no_subtree_check,all_squash,anonuid=36,anongid=36)
+/data/ovirt/export  *(rw,sync,no_subtree_check,all_squash,anonuid=36,anongid=36)
+/data/ovirt/iso  *(rw,sync,no_subtree_check,all_squash,anonuid=36,anongid=36)
+_EOF
+exportfs -arv
+
+2）调整nfs端口
+nfs服务可以自定义配置，例如我们看下那些启动脚本用到了/etc/sysconfig/nfs：
+[root@n86 ~]# grep 'sysconfig/nfs' /etc/init.d/*
+/etc/init.d/nfs:# config: /etc/sysconfig/nfs
+/etc/init.d/nfs:[ -f /etc/sysconfig/nfs ] && . /etc/sysconfig/nfs
+/etc/init.d/nfslock:[ -f /etc/sysconfig/nfs ] && . /etc/sysconfig/nfs
+/etc/init.d/rpcgssd:[ -f /etc/sysconfig/nfs ] && . /etc/sysconfig/nfs
+/etc/init.d/rpcidmapd:[ -f /etc/sysconfig/nfs ] && . /etc/sysconfig/nfs
+/etc/init.d/rpcsvcgssd:[ -f /etc/sysconfig/nfs ] && . /etc/sysconfig/nfs
+
+接下来，我们调整一下配置：
+[root@n86 ~]# mv /etc/sysconfig/nfs /etc/sysconfig/nfs.bak`date +%Y%m%d%H%M%S` \
+&& cat <<'_EOF' >>/etc/sysconfig/nfs
+RPCRQUOTADOPTS="-p 875"
+LOCKD_TCPPORT=32803
+LOCKD_UDPPORT=32769
+RPCNFSDCOUNT=8
+RPCMOUNTDOPTS="-p 892"
+STATDARG="-p 662 -o 2020"
+_EOF
+service rpcbind restart
+service nfs restart
+
+3）最后调整防火墙的配置：
+[root@n86 ~]# sed -i.backup '/-A INPUT -i lo -j ACCEPT/a\## NFS related \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 111 -j ACCEPT \
+-A INPUT -p udp -m state --state NEW -m udp --dport 111 -j ACCEPT \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 662 -j ACCEPT \
+-A INPUT -p udp -m state --state NEW -m udp --dport 662 -j ACCEPT \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 875 -j ACCEPT \
+-A INPUT -p udp -m state --state NEW -m udp --dport 875 -j ACCEPT \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 892 -j ACCEPT \
+-A INPUT -p udp -m state --state NEW -m udp --dport 892 -j ACCEPT \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 2049 -j ACCEPT \
+-A INPUT -p udp -m state --state NEW -m udp --dport 32769 -j ACCEPT \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 32803 -j ACCEPT \
+# \
+' /etc/sysconfig/iptables
+[root@n86 ~]# service iptables reload
+
+先从外边的其他机器访问来测试一下：
+【调整前】
+[root@e01 ~]# showmount -e 10.50.100.86
+rpc mount export: RPC: Unable to receive; errno = No route to host
+
+【调整后】
+[root@e01 ~]# showmount -e 10.50.100.86
+Export list for 10.50.100.86:
+/data/ovirt/iso    *
+/data/ovirt/export *
+/data/ovirt/data   *
+
+符合预期。
+
+
+五、FAQ
+1、mount时，要建立对应的目录，例如2013
+2、umount时，可能被占用，busy，此时，先找到进程：
+fuser -mv /home/web/upload/phonerecord
+通知对应的同事结束该进程然后再umount
+
+或者：
+umount -l，在空闲时会自动umount掉。
+
+如果挂载时，在客户端和服务端都出现所有者为nobody或者4294967294 的情况，则需要启动nfs相关服务，重点是rpcidmapd这个服务。
+
+3、对比调整前后端口的变化。
+【调整前】
+# rpcinfo -p localhost
+   program vers proto   port  service
+    100000    4   tcp    111  portmapper
+    100000    3   tcp    111  portmapper
+    100000    2   tcp    111  portmapper
+    100000    4   udp    111  portmapper
+    100000    3   udp    111  portmapper
+    100000    2   udp    111  portmapper
+    100024    1   udp  38557  status
+    100024    1   tcp  54219  status
+    100005    1   udp  47978  mountd
+    100005    1   tcp  38427  mountd
+    100005    2   udp  48299  mountd
+    100005    2   tcp  45243  mountd
+    100005    3   udp  43376  mountd
+    100005    3   tcp  54444  mountd
+    100003    2   tcp   2049  nfs
+    100003    3   tcp   2049  nfs
+    100003    4   tcp   2049  nfs
+    100227    2   tcp   2049  nfs_acl
+    100227    3   tcp   2049  nfs_acl
+    100003    2   udp   2049  nfs
+    100003    3   udp   2049  nfs
+    100003    4   udp   2049  nfs
+    100227    2   udp   2049  nfs_acl
+    100227    3   udp   2049  nfs_acl
+    100021    1   udp  39553  nlockmgr
+    100021    3   udp  39553  nlockmgr
+    100021    4   udp  39553  nlockmgr
+    100021    1   tcp  39147  nlockmgr
+    100021    3   tcp  39147  nlockmgr
+    100021    4   tcp  39147  nlockmgr
+
+【调整后】
+# rpcinfo -p localhost   
+   program vers proto   port  service
+    100000    4   tcp    111  portmapper
+    100000    3   tcp    111  portmapper
+    100000    2   tcp    111  portmapper
+    100000    4   udp    111  portmapper
+    100000    3   udp    111  portmapper
+    100000    2   udp    111  portmapper
+    100005    1   udp    892  mountd
+    100005    1   tcp    892  mountd
+    100005    2   udp    892  mountd
+    100005    2   tcp    892  mountd
+    100005    3   udp    892  mountd
+    100005    3   tcp    892  mountd
+    100003    2   tcp   2049  nfs
+    100003    3   tcp   2049  nfs
+    100003    4   tcp   2049  nfs
+    100227    2   tcp   2049  nfs_acl
+    100227    3   tcp   2049  nfs_acl
+    100003    2   udp   2049  nfs
+    100003    3   udp   2049  nfs
+    100003    4   udp   2049  nfs
+    100227    2   udp   2049  nfs_acl
+    100227    3   udp   2049  nfs_acl
+    100021    1   udp  32769  nlockmgr
+    100021    3   udp  32769  nlockmgr
+    100021    4   udp  32769  nlockmgr
+    100021    1   tcp  32803  nlockmgr
+    100021    3   tcp  32803  nlockmgr
+    100021    4   tcp  32803  nlockmgr
+
+

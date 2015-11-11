@@ -1,0 +1,51 @@
+docker深入1-安装使用docker服务
+
+安装使用docker服务
+注1： 建议linux内核>3.8.0，尝试过在2.6.32这个版本安装，无法启动服务，有如下提示：
+level="info" msg="WARNING: You are running linux kernel version 2.6.32-431.el6.x86_64, which might be unstable running docker. Please upgrade your kernel to 3.8.0." 
+
+注2： 需要epel源的支持，解决方法如下：
+rpm -ivh http://mirrors.ustc.edu.cn/epel/epel-release-latest-6.noarch.rpm
+yum makecache
+
+注3： 可能启动服务失败，提示：
+/usr/bin/docker: relocation error: /usr/bin/docker: symbol dm_task_get_info_with_deferred_remove, version Base not defined in file libdevmapper.so.1.02 with link time reference
+解决方法如下：
+yum upgrade device-mapper-libs
+
+1、安装和启动服务
+[root@server200-20 ~]# yum install -y docker-io
+[root@server200-20 ~]# service docker start
+Starting docker:                                           [  OK  ]
+[root@server200-20 ~]# service docker status
+docker (pid  14900) is running...
+
+[root@server200-20 ~]# docker version
+Client version: 1.5.0
+Client API version: 1.17
+Go version (client): go1.3.3
+Git commit (client): a8a31ef/1.5.0
+OS/Arch (client): linux/amd64
+Server version: 1.5.0
+Server API version: 1.17
+Go version (server): go1.3.3
+Git commit (server): a8a31ef/1.5.0
+
+2、将某个用户加入到docker组，以便以非root用户来运行docker命令。
+[root@server200-20 ~]# useradd Jack
+[root@server200-20 ~]# usermod -a -G docker Jack
+配置sudo权限，此处略过
+[root@server200-20 ~]# cat <<_EOF >>/etc/sudoers
+Jack ALL=(ALL) NOPASSWD: ALL
+_EOF
+
+切换到用户目录
+[root@server200-20 ~]# su Jack
+[Jack@server200-20 root]$ 
+
+
+
+
+
+
+

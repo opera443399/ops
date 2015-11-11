@@ -1,0 +1,4 @@
+# cd /home/download
+# wget percona.com/get/percona-toolkit.rpm
+# yum -y install perl-DBD-MySQL perl-IO-Socket-SSL
+# rpm -ivh percona-toolkit-2.2.11-1.noarch.rpm 

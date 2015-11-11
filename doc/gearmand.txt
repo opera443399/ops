@@ -1,0 +1,37 @@
+【时间】2013-10-23 ~ 2013-10-23
+【主机】IP:192.168.1.118, 192.168.1.222
+【目的】gearman的安装和配置
+【操作记录】
+1. web组罗凯反馈需要安装gearman和php的对应扩展。参考http://gearman.org/getting_started
+2. 下载安装
+# wget https://launchpad.net/gearmand/1.0/1.0.6/+download/gearmand-1.0.6.tar.gz
+# tar zxvf gearmand-1.0.6.tar.gz
+# cd gearmand-1.0.6
+# ./configure
+报错：cannot find Boost headers version >= 1.39.0
+参考：http://www.chenstep.com/?p=186
+# yum install boost-devel
+# ./configure
+# make
+# make install
+
+
+# wget http://pecl.php.net/get/gearman-0.8.0.tgz
+# tar zxvf gearman-0.8.0.tgz
+# cd gearman-0.8.0
+# /home/ec/php/bin/phpize
+# ./configure --with-php-config=/home/ec/php/bin/php-config 
+# make
+# make install
+
+Installing shared extensions:     /home/ec/php/lib/php/extensions/no-debug-non-zts-20060613/
+# vi /home/ec/php/etc/php.ini
+增加：
+extension=gearman.so
+
+重新加载php-fpm
+# /home/ec/php/sbin/php-fpm reload
+
+
+# gearmand -d
+# echo "/usr/local/sbin/gearmand -d" >> /etc/rc.local

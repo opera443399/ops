@@ -1,0 +1,111 @@
+使用SecureCRT这个ssh工具
+
+
+直接上图：
+一、基本配置
+图00-08
+二、配置ssh key
+图09-14
+
+
+待续。
+
+SecureCRT有个小功能，单个命令能同时对多个session执行，自己研究下可好？
+
+
+
+SecureCRT
+
+1）使用ZModem
+
+SecureCRT支持ZModem协议，可以直接通过终端发送和接收文件，只要对方终端支持ZModem协议。
+
+例如：在Centos下面，执行yum -y install lrzsz，安装ZModem
+
+在终端输入：rz，可以接收SecureCRT端的文件，这个时候SecureCRT会弹出一个对话框，让你选择文件。
+
+在终端输入：sz 文件名，就可以发送文件到SecureCRT端，文件会自动的传送到SecureCRT设置的Download目录。
+
+注意：rz和sz不会覆盖重名的文件，要覆盖的话都需要加一个参数-y
+
+
+2）中文显示，乱码问题：
+
+1. 修改/etc/sysconfig/i18n，将第一行的LANG="en_US.UTF-8"改为LANG="zh_CN.UTF-8"
+2. 修改vimrc文件，前几行原来是
+if v:lang =~ "utf8$" || v:lang =~ "UTF-8$"
+   set fileencodings=ucs-bom,utf-8,latin1
+endif
+
+将其修改为：
+set encoding=utf-8
+set fileencodings=utf-8,chinese,latin-1
+set fileencoding=utf-8
+3. 修改ssh终端的设置：编码选择"UTF-8"
+
+3）终端不显示颜色
+解决vim没有颜色的办法
+问题起因，在两台host上用同样的方法编译了同样的vim73包，可是运行的时候，一台host上vim有颜色，而另一台却没有颜色。于是开始侦查。
+
+首先打开vim，输入命令 scriptnames看看vim加载了哪些脚本。
+
+:scriptnames
+输出入下
+
+
+  1: /home/users/xxx/.vimrc
+  2: /home/users/xxx/tools/share/vim/vim73/colors/darkblue.vim
+  3: /home/users/xxx/tools/share/vim/vim73/syntax/syntax.vim
+  4: /home/users/xxx/tools/share/vim/vim73/syntax/synload.vim
+  5: /home/users/xxx/tools/share/vim/vim73/syntax/syncolor.vim
+  6: /home/users/xxx/tools/share/vim/vim73/filetype.vim
+  7: /home/users/xxx/tools/share/vim/vim73/plugin/getscriptPlugin.vim
+  8: /home/users/xxx/tools/share/vim/vim73/plugin/gzip.vim
+  9: /home/users/xxx/tools/share/vim/vim73/plugin/matchparen.vim
+ 10: /home/users/xxx/tools/share/vim/vim73/plugin/netrwPlugin.vim
+ 11: /home/users/xxx/tools/share/vim/vim73/plugin/rrhelper.vim
+ 12: /home/users/xxx/tools/share/vim/vim73/plugin/spellfile.vim
+ 13: /home/users/xxx/tools/share/vim/vim73/plugin/tarPlugin.vim
+ 14: /home/users/xxx/tools/share/vim/vim73/plugin/tohtml.vim
+ 15: /home/users/xxx/tools/share/vim/vim73/plugin/vimballPlugin.vim
+ 16: /home/users/xxx/tools/share/vim/vim73/plugin/zipPlugin.vim
+
+可见所有和语法及颜色相关的脚本都已经加载了，应该不是它们的问题。
+
+在看.vimrc配置文件
+
+
+  1 set nocompatible        " Vim settings, not Vi settings.  must be first
+  2 set autoindent          " Auto align when insert new line, for instance, when using o or O to insert new line.
+  3 set ruler               " Show ruler at the bottom-right of vim window
+  4 set showcmd
+  5 set backspace=indent,eol,start          " Enable delete for backspace under insert mode"
+  6 colorscheme darkblue
+  7 set number              " Show line number
+  8 syntax on
+  9 if &term =~ "xterm"
+ 10   if has("terminfo")
+ 11     set t_Co=8
+ 12     set t_Sf=^[[3%p1%dm
+ 13     set t_Sb=^[[4%p1%dm
+ 14   else
+ 15     set t_Co=8
+ 16     set t_Sf=^[[3%dm
+ 17     set t_Sb=^[[4%dm
+ 18   endif
+ 19 endif
+
+从第9行开始，如果用的是xterm，那就就进行下面的颜色设置，那么如果系统用的不是xterm呢？于是赶紧查看，在shell终端输入如下命令
+
+echo $TERM
+结果如下
+
+vt100+
+
+果然不是xterm，怪不得没有颜色。
+
+解决办法：打开shell配置文件，.bash_profile或.bashrc加入下面一行
+
+TERM=xterm
+export TERM
+重新敲一下bash，再次运行vim，颜色来啦！兴奋！

@@ -1,0 +1,69 @@
+【yum和rpm】个人用到的方法记录
+yum和rpm博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
+
+1、搜索和查询
+yum search zabbix
+使用指定的repo源来搜索：
+yum search --disablerepo='*' --enablerepo=office zabbix   
+
+查询系统安装的rpm包：
+rpm -qa |grep mysql
+查询rpm包是否有bugfix：
+rpm -q --changelog openssl |more
+查询某个rpm内的文件列表：
+[root@tvm-saltmaster pkgs]# rpm -qpl office-repo-latest-6-1.el6.x86_64.rpm 
+/etc/yum.repos.d/local-office.repo
+查询某个rpm内的信息：
+[root@tvm-saltmaster pkgs]# rpm -qpi office-repo-latest-6-1.el6.x86_64.rpm  
+Name        : office-repo-latest           Relocations: / 
+Version     : 6                                 Vendor: pc@office
+Release     : 1.el6                         Build Date: Thu 06 Aug 2015 04:53:26 PM CST
+Install Date: (not installed)               Build Host: tvm-saltmaster
+Group       : default                       Source RPM: office-repo-latest-6-1.el6.src.rpm
+Size        : 2392                             License: unknown
+Signature   : (none)
+Packager    : PC
+URL         : http://example.com/no-uri-given
+Summary     : provide file: [local-office.repo] for local users. include: centos-base, eple, user-define rpms
+Description :
+provide file: [local-office.repo] for local users. include: centos-base, eple, user-define rpms
+
+2、安装
+yum install lrzsz screen
+yum groupinstall "Development Tools"
+yum --enablerepo=epel install iftop
+安装本地的rpm文件：
+rpm -ivh xxx.rpm  
+--nodeps参数，不检查软件间的依赖关系：
+rpm -ivh --nodeps xxx.rpm 
+
+
+3、更新
+yum -y update openssl
+
+若yum udpate时，提示超时，
+Errno 12 
+然后再update时提示没有可用的升级包，
+No Packages marked for Update
+不妨试试：
+yum clean all
+yum makecache
+
+更新某个rpm包：
+rpm -Uvh xxx.rpm  
+
+
+4、卸载
+yum remove lrzsz
+
+若遇到依赖关系，也可以强制删除：
+rpm -e --nodeps xxx 
+
+
+
+5、其他
+repoquery的用法：
+[root@tvm-zabbix ~]# repoquery --plugins --queryformat '%{NAME}_|-%{VERSION}_|-%{RELEASE}_|-%{ARCH}_|-%{REPOID}' --disablerepo='*' --enablerepo='office,base,repo'  --all --quiet --whatprovides php
+php_|-5.3.3_|-40.el6_6_|-x86_64_|-base
+php_|-5.3.3_|-40.el6_6_|-x86_64_|-base
+

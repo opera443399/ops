@@ -1,0 +1,41 @@
+性能测试-disk-使用fio
+
+一、简介
+1、结果评价
+大文件，顺序读写: KBps
+小文件，随机读写: IOps
+
+2、安装
+yum -y install fio
+
+二、测试方法
+1、写 吞吐率 4M 
+fio --filename=1111 --direct=1 --ioengine=libaio --rw=write --bs=4M --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-w-4M
+2、读 吞吐率 4M 
+fio --filename=1111 --direct=1 --ioengine=libaio --rw=read --bs=4M --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-r-4M
+3、写 IOps 4k   
+fio --filename=2222 --direct=1 --ioengine=libaio --rw=randwrite --bs=4k --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-randw-4M
+4、读 IOps 4k 
+fio --filename=2222 --direct=1 --ioengine=libaio --rw=randread --bs=4k --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-randr-4M
+
+
+
+三、样例 - 测试glustefs性能（未优化）
+1、写 吞吐率 4M 
+fio --filename=1111 --direct=1 --ioengine=libaio --rw=write --bs=4M --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-w-4M
+56388KB/s
+
+2、读 吞吐率 4M 
+fio --filename=1111 --direct=1 --ioengine=libaio --rw=read --bs=4M --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-r-4M
+64643KB/s
+
+3、写 IOps 4k   
+fio --filename=2222 --direct=1 --ioengine=libaio --rw=randwrite --bs=4k --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-randw-4M
+3823
+
+4、读 IOps 4k 
+fio --filename=2222 --direct=1 --ioengine=libaio --rw=randread --bs=4k --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-randr-4M
+95
+
+
+

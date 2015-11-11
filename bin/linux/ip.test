@@ -1,0 +1,4 @@
+subnet=192.168.20; for i in {30..40}; 
+do 
+    ping -c 1 -w 1 ${subnet}.${i} >/dev/null && echo "${subnet}.${i}: up" || echo "${subnet}.${i}: down"; 
+done

@@ -1,0 +1,37 @@
+http://www.yuminstall.com/zabbix-monitoring-mysql.html
+
+1）模板名称：Template App MySQL
+增加模版到对应的主机。
+
+2）客户端：
+创建一个msyql账户用于zabbix agent 获取mysql状态。账户不需要任何权限
+
+GRANT USAGE ON *.* TO 'zabbix'@'127.0.0.1' IDENTIFIED BY 'xxx';
+FLUSH PRIVILEGES;
+
+
+在zabbix用户的home目录/var/lib/zabbix下新建文件：
+.my.cnf
+用于Zabbix Agent访问数据库，内容如下：
+
+# Zabbix Agent
+[mysql]
+host = 127.0.0.1
+port = 3306
+user = zabbix
+password = xxx
+
+[mysqladmin]
+host = 127.0.0.1
+port = 3306
+user = zabbix
+password = xxx
+
+
+检查：/etc/zabbix/zabbix_agentd.d/userparameter_mysql.conf
+默认的HOME是：/var/lib/zabbix
+若对应的目录是其他目录，要修改此处。
+
+
+重启Zabbix Agent
+service zabbix-agent restart

@@ -1,0 +1,3 @@
+dev:
+  'tvm-mysql':
+    - web

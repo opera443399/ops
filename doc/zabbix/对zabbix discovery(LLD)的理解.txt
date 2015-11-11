@@ -1,0 +1,72 @@
+对zabbix discovery(LLD)的理解
+
+一、主要用法，请参考官网文档
+https://www.zabbix.com/documentation/2.2/manual/discovery/low_level_discovery
+
+理解：
+1、server和agent或者snmp固定时间沟通1次获取数据。
+2、处理返回值，通常是一个json格式的k/v词典，k/v 映射到macro上，利用macro和prototypes循环增加items,triggers等内容。
+3、通常是在一个template上定义好，直接创建一个host套用模版，等待LLD自动发现。
+4、zabbix自带了3种macro的定义：
+discovery of file systems:          {#FSNAME}, {#FSTYPE}
+discovery of network interfaces:    {#IFNAME}
+discovery of SNMP OIDs:             {#SNMPINDEX}, {#SNMPVALUE}
+
+
+二、QA
+【Q】：zabbix是如何使用LLD中的SNMP OIDs来获取数据的
+A：仔细阅读官网文档可以发现，zabbix针对SNMP已经内部定义了相关MACRO，直接使用即可。
+（查看：3.3 Discovery of SNMP OIDs）
+LLD在获取snmp的entity时，可以生成2个macros: {#SNMPINDEX} 和 {#SNMPVALUE}
+以这个为例：
+# snmpwalk -v 2c -c public 10.10.10.109 1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.2  
+SNMPv2-SMI::enterprises.674.10892.5.5.1.20.130.4.1.2.1 = STRING: "Physical Disk 0:1:0"
+SNMPv2-SMI::enterprises.674.10892.5.5.1.20.130.4.1.2.2 = STRING: "Physical Disk 0:1:1"
+SNMPv2-SMI::enterprises.674.10892.5.5.1.20.130.4.1.2.3 = STRING: "Physical Disk 0:1:2"
+
+{#SNMPINDEX}会获取1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.2这串OID中最后一个值；
+{#SNMPVALUE}会取得对应的值。
+也就是说，
+{#SNMPINDEX} -> 1，{#SNMPVALUE} -> "Physical Disk 0:1:0"
+{#SNMPINDEX} -> 2，{#SNMPVALUE} -> "Physical Disk 0:1:1"
+{#SNMPINDEX} -> 3，{#SNMPVALUE} -> "Physical Disk 0:1:2"
+
+然后我们通过item prototypes来得到获取到的每个值，例如：
+KEY: DiskStatus.[{#SNMPINDEX}]
+SNMP OID: 1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.24.{#SNMPINDEX}
+对应的数据是：
+# snmpwalk -v 2c -c public 10.10.10.109 1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.24.1
+SNMPv2-SMI::enterprises.674.10892.5.5.1.20.130.4.1.24.1 = INTEGER: 3
+
+
+三、应用
+1、监控交换机
+直接套用模版【Template SNMP Interfaces】即可。
+其中，LLD使用了这个OID（IF-MIB::ifDescr）来获取网卡信息，例如:
+# snmpwalk -v 2c -c public 10.0.200.1 IF-MIB::ifDescr
+IF-MIB::ifDescr.1 = STRING: GigabitEthernet1/0/1
+IF-MIB::ifDescr.2 = STRING: GigabitEthernet1/0/2
+IF-MIB::ifDescr.3 = STRING: GigabitEthernet1/0/3
+IF-MIB::ifDescr.4 = STRING: GigabitEthernet1/0/4
+（略）
+
+结合{#SNMPVALUE}来取值，例如：
+【Item prototype】中，【Outgoing traffic on interface $1】我们注意到
+Key: ifOutOctets[{#SNMPVALUE}]
+SNMP OID: IF-MIB::ifOutOctets.{#SNMPINDEX}
+
+对应的是结果是：
+# snmpwalk -v 2c -c public 10.0.200.1 ifOutOctets.1
+IF-MIB::ifOutOctets.1 = Counter32: 305669896
+
+即：
+ifOutOctets[1] = 305669896
+
+
+
+
+2、监控dell的idrac
+参考：https://github.com/endersonmaia/zabbix-templates
+
+
+

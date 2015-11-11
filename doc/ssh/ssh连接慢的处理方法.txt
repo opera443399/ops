@@ -1,0 +1,12 @@
+ssh连接慢的处理方法
+最近遇到ssh连接很慢的问题，A机器连接B机器的时候，通常需要30多秒的等待时间才会出现密码输入提示， 咨询同事之后，顺着域名解析的思路去找答案，顺利解决了这个问题。
+之所以会有这样的问题，是因为ssh服务器端为了安全性，会对连接过来的客户端ip进行域名反解析的过程，大部分的机器当然是没有在DNS上做过 ip反解析记录了，所以查询过程变得缓慢而没有结果，导致很长时间的等待。既然知道这个原理，那就好办了，第一种方法是把客户端ip跟主机名写到服务器端 的/etc/hosts文件中。第二种方法是，关闭ssh服务器的dns查询功能。vi /etc/ssh/sshd_config。确认以下参数：UseDNS no。重启ssh服务看看～
+
+最近发现ssh连接的时候却很慢，ping的速度非常好，让人误以为是ssh连接不上。
+分析结果，主要原因为：DNS的解析IP导致，可分别使用以下几种分析处理方式
+1、在server上/etc/hosts文件中把你本机的ip和hostname加入　
+2、在server上/etc/ssh/sshd_config文件中修改或加入UseDNS=no　
+3、注释掉server上/etc/resolv.conf中不使用的IP所有行　
+4、修改server上/etc/nsswitch.conf中hosts为hosts：files
+5、 authentication gssapi-with-mic也有可能出现问题，在server上/etc/ssh/sshd_config文件中修改 GSSAPIAuthentication no。/etc/init.d/sshd restart重启sshd进程使配置生效。
+如之前为服务器配置了双网卡，使的在/etc/resolv.conf文件中多了一行目前不使用的IP地址。注释或者删除该行即可。

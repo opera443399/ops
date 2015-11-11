@@ -1,0 +1,19 @@
+Using Git and a post-receive hook script for auto deployment
+Posted on February 23, 2010
+Set up a remote Git repositiory to automatically checkout to a working tree after a git push command. Useful for the auto deployment of web site files on a web server.
+
+Create a bare GIT repository:
+
+mkdir project.git && cd project.git
+git init --bare
+Create a detached work tree:
+
+mkdir /home/user/myproject
+git config core.worktree /home/user/myproject
+git config core.bare false
+git config receive.denycurrentbranch ignore
+Example hooks/post-receive script:
+
+#!/bin/sh
+git checkout -f
+Now when you push to your remote repository, the post-receive script will run a checkout of the latest files to you working tree.

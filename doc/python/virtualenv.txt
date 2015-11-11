@@ -1,0 +1,223 @@
+使用virtualenv来做环境隔离
+
+一、安装
+[root@tvm-test ~]# pip install virtualenvwrapper
+Successfully installed argparse-1.3.0 pbr-1.5.0 six-1.9.0 stevedore-1.7.0 virtualenv-13.1.0 virtualenv-clone-0.2.6 virtualenvwrapper-4.6.0
+
+virtualenvwrapper 依赖virtualenv，因此安装这个即可安装全部。
+
+如果你使用的是Python3，PEP-405通过venv包和pyvenv命令提供了Python原生虚拟环境的支持，在python3.3中已实现。你应该使用这个而不是前面提到的工具。
+
+2、配置
+[root@tvm-test ~]# cat /usr/bin/virtualenvwrapper.sh  |grep '^# Setup' -C 17
+# both that copyright notice and this permission notice appear in
+# supporting documentation, and that the name of Doug Hellmann not be used
+# in advertising or publicity pertaining to distribution of the software
+# without specific, written prior permission.
+#
+# DOUG HELLMANN DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+# INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
+# EVENT SHALL DOUG HELLMANN BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+# CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF
+# USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+# OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+# PERFORMANCE OF THIS SOFTWARE.
+#
+#
+# Project home page: http://www.doughellmann.com/projects/virtualenvwrapper/
+#
+#
+# Setup:
+#
+#  1. Create a directory to hold the virtual environments.
+#     (mkdir $HOME/.virtualenvs).
+#  2. Add a line like "export WORKON_HOME=$HOME/.virtualenvs"
+#     to your .bashrc.
+#  3. Add a line like "source /path/to/this/file/virtualenvwrapper.sh"
+#     to your .bashrc.
+#  4. Run: source ~/.bashrc
+#  5. Run: workon
+#  6. A list of environments, empty, is printed.
+#  7. Run: mkvirtualenv temp
+#  8. Run: workon
+#  9. This time, the "temp" environment is included.
+# 10. Run: workon temp
+# 11. The virtual environment is activated.
+#
+
+照着操作：
+[root@tvm-test ~]# mkdir ~/.virtualenvs
+[root@tvm-test ~]# echo 'export WORKON_HOME=$HOME/.virtualenvs' >>~/.bashrc 
+[root@tvm-test ~]# echo 'source /usr/bin/virtualenvwrapper.sh' >>~/.bashrc                                         
+[root@tvm-test ~]# source ~/.bashrc
+
+
+三、测试
+1、workon
+列出所有可用的环境：，当前的输出是空的：
+[root@tvm-test ~]# workon
+
+2、mkvirtualenv
+[root@tvm-test ~]# mkvirtualenv temp
+New python executable in temp/bin/python
+Installing setuptools, pip, wheel...done.
+(temp)[root@tvm-test ~]# tree ~/.virtualenvs/ -L 2
+/root/.virtualenvs/
+└── temp
+    ├── bin
+    ├── include
+    ├── lib
+    └── lib64 -> lib
+
+5 directories, 0 files
+列出所有可用的环境：
+(temp)[root@tvm-test ~]# workon
+temp
+创建并激活另一个环境testenv01：
+(temp)[root@tvm-test ~]# mkvirtualenv testenv01
+New python executable in testenv01/bin/python
+Installing setuptools, pip, wheel...done.
+(testenv01)[root@tvm-test ~]# tree ~/.virtualenvs/ -L 2
+/root/.virtualenvs/
+├── temp
+│   ├── bin
+│   ├── include
+│   ├── lib
+│   └── lib64 -> lib
+└── testenv01
+    ├── bin
+    ├── include
+    ├── lib
+    └── lib64 -> lib
+
+10 directories, 0 files
+列出所有可用的环境：
+(testenv01)[root@tvm-test ~]# workon
+temp
+testenv01
+或者：
+(testenv01)[root@tvm-test ~]# lsvirtualenv 
+temp
+====
+
+
+testenv01
+=========
+
+切换到某个环境：
+(testenv01)[root@tvm-test ~]# workon testenv01
+
+
+3、deactivate
+退出环境
+(testenv01)[root@tvm-test ~]# deactivate
+[root@tvm-test ~]# 
+
+4、rmvirtualenv
+删除环境：
+[root@tvm-test ~]# rmvirtualenv temp
+Removing temp...
+[root@tvm-test ~]# workon
+testenv01
+[root@tvm-test ~]# tree ~/.virtualenvs/ -L 2
+/root/.virtualenvs/
+└── testenv01
+    ├── bin
+    ├── include
+    ├── lib
+    └── lib64 -> lib
+
+5 directories, 0 files
+
+
+
+四、配置project相关
+[root@tvm-test ~]# mkdir ~/.pyprojects
+[root@tvm-test ~]# echo 'export PROJECT_HOME=$HOME/.pyprojects' >>~/.bashrc 
+[root@tvm-test ~]# source ~/.bashrc
+
+
+五、测试
+(testenv01)[root@tvm-test ~]# mkproject test01
+New python executable in test01/bin/python
+Installing setuptools, pip, wheel...done.
+Creating /root/.pyprojects/test01
+Setting project for test01 to /root/.pyprojects/test01
+(test01)[root@tvm-test test01]# pwd
+/root/.pyprojects/test01
+(test01)[root@tvm-test test01]# cat >hello.py <<'_EOF'
+print('hello,world')
+import sys
+print(sys.version)
+_EOF
+
+(test01)[root@tvm-test test01]# python hello.py 
+hello,world
+2.6.6 (r266:84292, Nov 22 2013, 12:16:22) 
+[GCC 4.4.7 20120313 (Red Hat 4.4.7-4)]
+
+(test01)[root@tvm-test test01]# pip freeze
+argparse==1.3.0
+wheel==0.24.0
+
+安装一个django然后退出
+(test01)[root@tvm-test test01]# pip install django==1.6.0
+Collecting django==1.6.0
+  Using cached Django-1.6-py2.py3-none-any.whl
+Installing collected packages: django
+Successfully installed django-1.6
+
+(test01)[root@tvm-test test01]# deactivate 
+
+看一下当前的环境
+[root@tvm-test test01]# workon
+test01
+testenv01
+切换环境到testenv01
+[root@tvm-test test01]# workon testenv01
+
+对比一下pip安装的包：
+(testenv01)[root@tvm-test test01]# pip freeze
+argparse==1.3.0
+wheel==0.24.0
+(testenv01)[root@tvm-test test01]# workon test01
+(test01)[root@tvm-test test01]# pip freeze   
+argparse==1.3.0
+Django==1.6
+wheel==0.24.0
+
+删除环境：
+(test01)[root@tvm-test test01]# rmvirtualenv testenv01
+Removing testenv01...
+
+删除当前环境试试：
+(test01)[root@tvm-test test01]# rmvirtualenv test01
+Removing test01...
+ERROR: You cannot remove the active environment ('test01').
+Either switch to another environment, or run 'deactivate'.
+果然如此，提示要先退出当前环境：
+(test01)[root@tvm-test test01]# deactivate 
+[root@tvm-test test01]# rmvirtualenv test01     
+Removing test01...
+[root@tvm-test test01]# pwd
+/root/.pyprojects/test01
+
+
+六、结论
+1、使用 mkproject 来创建一个项目，而不是用 virtualenv 来创建一个环境。
+前者是创建了一个项目和对应的环境，并切换到对应的目录
+
+后者是针对特点的项目来创建一个环境供其使用。
+
+
+
+
+
+
+ZYXW、参考
+1、Python 三大神器
+http://www.ziqiangxuetang.com/python/pip-virtualenv-fabric.html
+
+2、以正确的方式开源 Python 项目
+http://www.oschina.net/translate/open-sourcing-a-python-project-the-right-way?print
+

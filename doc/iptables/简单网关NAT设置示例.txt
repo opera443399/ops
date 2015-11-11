@@ -1,0 +1,45 @@
+网关服务器IP：172.16.0.1
+客户端IP：172.16.0.0/24
+
+1. 开启forward
+
+# cat /etc/sysctl.conf | grep forw
+net.ipv4.ip_forward = 1
+
+
+2. 配置转发
+
+# iptables -t nat -A POSTROUTING -s 172.16.0.0/24 -j MASQUERADE
+
+转发网段172.16.0.0/24传过来的包，你也可以指定特定的ip地址。例如：
+# iptables -t nat -A POSTROUTING -s 172.16.0.10 -j MASQUERADE
+
+
+3. 重启iptables
+
+# service iptables restart
+
+
+4. 修改网关
+以上三步都在网关服务器上操作，这步在需要连接外网的客户端操作
+
+# cat /etc/sysconfig/network-scripts/ifcfg-eth0 | grep GATEWAY
+GATEWAY=172.16.0.1
+
+
+5. 测试
+
+# ping www.ttlsa.com -c 4
+PING www.ttlsa.com (114.215.173.139) 56(84) bytes of data.
+64 bytes from ip215.hichina.com (114.215.173.139): icmp_seq=1 ttl=46 time=28.1 ms
+64 bytes from ip215.hichina.com (114.215.173.139): icmp_seq=2 ttl=46 time=27.9 ms
+64 bytes from ip215.hichina.com (114.215.173.139): icmp_seq=3 ttl=46 time=27.8 ms
+64 bytes from ip215.hichina.com (114.215.173.139): icmp_seq=4 ttl=46 time=27.8 ms
+ 
+--- www.ttlsa.com ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3032ms
+rtt min/avg/max/mdev = 27.815/27.951/28.193/0.220 ms
+
+
+另1个示例：
+http://www.2cto.com/Article/201310/250533.html

@@ -1,0 +1,108 @@
+Promot Mode
+{
+User Mode:
+Router>(input: enable)
+
+Privilege Mode:
+Router#(input:conf t)
+
+Global Config Mode:
+Router(config)#
+
+
+----Ctrl-Z -> PM, Exit -> GCM
+
+Interface:
+Router(config-if)#
+
+
+Sub-interface:
+Router(config-subif)#
+
+
+Controller:
+Router(config-controller)#
+
+
+Line:
+Router(config-line)#
+
+
+Router:
+Router(config-router)#
+
+
+IPX router :
+Router(config-ipx-router)#
+
+
+}
+
+
+
+Command
+{ 
+1)privilege
+enable  //从用户模式进入特权模式 
+
+configure terminal  //进入配置模式
+hostname R1  //配置路由器的主机名为R1 
+login  //用户要进入路由器，需要先进行登录 
+enable password yourpassword  //配置进入特权模式的密码，密码不加密 
+enable secret yourpassword  //配置进入特权模式的密码，密码加密 
+exit  //退回到上一级模式 
+end  //直接回到特权模式 
+sh run | append\begin\exclude\include\redirect\section\tee...
+
+
+
+2)interface
+show interface f0/0  //显示f0/0接口信息  
+
+interface f0/0  //进入f0/0接口 
+ip  address  192.168.10.1 255.255.255.0 //配置接口的IP 地址 
+no shutdown  //打开接口 
+
+
+
+3)router
+no ip domain-lookup  //路由器不使用DNS服务器解析主机的 IP 地址 
+
+logging synchonous  //对路由器上的提示信息进行同步，防止信息干扰我们输入命令 
+no ip routing  //关闭路由器的路由功能 
+ip default-gateway 10.1.14.254  //配置路由器访问其他网段时所需的网关 
+
+---Example:
+R1>enable
+
+R1#configure terminal
+R1(config)#hostname AtoB
+AtoB(config)#interface f0/0
+AtoB(config-if)#ip address 192.168.10.1 255.255.255.0
+AtoB(config-if)#no shutdown
+AtoB(config-if)#end
+
+R2>enable
+R2#configure terminal
+R2(config)#hostname BtoA
+BtoA(config)#interface f0/0
+BtoA(config-if)#ip address 192.168.10.2 255.255.255.0
+BtoA(config-if)#no shutdown
+BtoA(config-if)#end
+
+---
+PING
+Sending 5, 100-byte ICMP Echos to 192.168.10.2, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = 4/17/36 ms
+
+
+4)IOS
+show version  //IOS版本信息
+
+config-regiser 0x2101 //修改配置寄存器
+show flash
+copy run start
+erase start
+
+}

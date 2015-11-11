@@ -1,0 +1,97 @@
+
+
+配置pillar：
+
+[root@server200-21 salt]# cat /srv/pillar/top.sls    
+base:
+    '*':
+        - data
+[root@server200-21 salt]# cat /srv/pillar/data.sls 
+a: 1
+b: 2
+c:
+    c1: 1001
+    c2: 2001
+    c3: 3001
+
+使用yaml模版来创建一个配置文件：
+
+[root@server200-21 salt]# cat /srv/salt/top.sls 
+base:
+    '*':
+        - servers
+    'test230':
+        - appconfig
+
+模版文件路径：
+[root@server200-21 salt]# cat /srv/salt/appconfig.sls 
+/tmp/appconfig.conf:
+    file.managed:
+        - source: salt://files/appconfig.conf.yaml
+        - template: jinja
+
+模版文件内容：
+[root@server200-21 salt]# cat files/appconfig.conf.yaml 
+test hostname:  {{ grains['id'] }}
+get the value of a: {{ pillar['a'] }}
+get the value of b: {{ pillar['b'] }}
+
+{% if 'c' in pillar %}
+get the value of c:
+{% for k,v in pillar.get('c', {}).items() %}
+    {{ k }}: {{ v }}
+{% endfor %}
+{% endif %}
+
+
+执行：
+[root@server200-21 salt]# salt 'test230' state.highstate
+test230:
+----------
+          ID: dnsmasq
+    Function: pkg.installed
+      Result: True
+     Comment: Package dnsmasq is already installed.
+     Started: 15:44:55.301089
+    Duration: 1084.57 ms
+     Changes:   
+----------
+          ID: /tmp/appconfig.conf
+    Function: file.managed
+      Result: True
+     Comment: File /tmp/appconfig.conf updated
+     Started: 15:44:56.385793
+    Duration: 12.932 ms
+     Changes:   
+              ----------
+              diff:
+                  New file
+              mode:
+                  0644
+
+Summary
+------------
+Succeeded: 2 (changed=1)
+Failed:    0
+------------
+Total states run:     2
+
+
+
+
+查看生成的squid.conf文件内容：
+[root@test230 monitor_agent]# cat /tmp/appconfig.conf 
+test hostname:  test230
+get the value of a: 1
+get the value of b: 2
+
+
+get the value of c:
+
+    c3: 3001
+
+    c2: 2001
+
+    c1: 1001
+
+

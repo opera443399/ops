@@ -1,0 +1,8 @@
+
+指定时间的计划任务。
+# at 7pm + 1 day
+at> /bin/sync
+at> /bin/sync
+at> /sbin/shutdown -h now
+at> <EOT>  <-按下：<ctrl + D>
+job 3 at 2013-11-16 19:00

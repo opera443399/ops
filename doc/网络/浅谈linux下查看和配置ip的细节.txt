@@ -1,0 +1,226 @@
+浅谈linux下查看和配置ip的细节
+2015/10/16 time 13:21
+
+一、查看ip的方式有2种
+# ifconfig
+# ip a
+
+上面是简写，完整的是
+# ip a s eth0
+# ip address show eth0
+
+由于系统方面的原因（有兴趣可以深入研究），ifconfig无法显示所有的IP，此时可以用ip a来查看。
+
+二、标准的配置
+1）单网卡多个IP
+
+为eth0增加一个别名：
+# /sbin/ifconfig eth0:1 192.168.1.223 netmask 255.255.255.0 up
+
+网卡名:N[N=数字]
+
+# /sbin/ifconfig eth0:1 192.168.1.223 netmask 255.255.255.0 down
+
+或者，增加一个配置文件：
+
+虚拟网卡设置：
+# cat /etc/sysconfig/network-scripts/ifcfg-eth0:1
+DEVICE=eth0:1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=4.5.6.10
+PREFIX=25
+
+
+或者，
+通过keepalived之类的配置方式来增加一个vip，这种方式要通过ip a才能查看到ip，此处略过。
+
+
+2）多网卡配置，桥接网络，绑定网络
+[root@node72 network-scripts]# cat ifcfg-em1
+DEVICE=em1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=no
+BOOTPROTO=none
+IPADDR=10.50.200.72
+PREFIX=24
+GATEWAY=10.50.200.1
+[root@node72 network-scripts]# cat ifcfg-em2
+DEVICE=em2
+MASTER=bond1
+SLAVE=yes
+ONBOOT=yes
+MTU=1500
+NM_CONTROLLED=no
+[root@node72 network-scripts]# cat ifcfg-em3
+DEVICE=em3
+MASTER=bond1
+SLAVE=yes
+ONBOOT=yes
+MTU=1500
+NM_CONTROLLED=no
+[root@node72 network-scripts]# cat ifcfg-bond1
+DEVICE=bond1
+BONDING_OPTS='mode=5 miimon=100'
+BRIDGE=br1
+ONBOOT=yes
+MTU=1500
+NM_CONTROLLED=no
+HOTPLUG=no
+[root@node72 network-scripts]# cat ifcfg-br1
+DEVICE=br1
+TYPE=Bridge
+DELAY=0
+STP=off
+ONBOOT=yes
+IPADDR=10.60.200.72
+NETMASK=255.255.255.0
+BOOTPROTO=none
+MTU=1500
+DEFROUTE=yes
+NM_CONTROLLED=no
+HOTPLUG=no
+
+
+
+
+
+三、绑定操作
+
+如果之前配置过bond0，需要清理掉这个bond0：
+# cat /sys/class/net/bonding_masters         
+bond0 bond1
+# echo -bond0 >/sys/class/net/bonding_masters 
+# cat /sys/class/net/bonding_masters          
+bond1
+
+
+如果要管理网络绑定也可以用工具
+# ifenslave bond0 em1 em2
+
+
+
+四、样例
+[root@n86 network-scripts]# sh /data/ops/bin/bond-ctl.sh on
+Determining if ip address 10.60.200.86 is already in use for device br1...
+DONE. About 20 seconds delay to wait for testing.
+
+
+[root@n86 network-scripts]# sh /data/ops/bin/bond-ctl.sh off
+Determining if ip address 10.60.200.86 is already in use for device em2...
+RTNETLINK answers: File exists
+DONE. About 20 seconds delay to wait for testing.
+
+脚本：
+[root@n86 network-scripts]# cat /data/ops/bin/bond-ctl.sh
+#!/bin/bash
+# 
+# 2015/10/16
+
+### 调整网卡绑定和桥接的配置
+# 假设正常情况下，em2启用，em3未启用
+# 计划调整：
+# 增加br1，使用em2的ip
+# 增加bond1，成员为em2+em3，桥接到br1, 参数：'mode=5 miimon=100'
+# 即：
+# em2+em3=bond1 -> br1
+#
+
+do_on() {
+    cd /etc/sysconfig/network-scripts/ 
+    ifdown em2
+
+    cat <<'_EOF' >ifcfg-bond1
+DEVICE=bond1
+BONDING_OPTS='mode=5 miimon=100'
+BRIDGE=br1
+ONBOOT=yes
+MTU=1500
+NM_CONTROLLED=no
+HOTPLUG=no
+_EOF
+
+    cat <<'_EOF' >ifcfg-br1
+DEVICE=br1
+TYPE=Bridge
+DELAY=0
+STP=off
+ONBOOT=yes
+IPADDR=10.60.200.86
+NETMASK=255.255.255.0
+BOOTPROTO=none
+MTU=1500
+DEFROUTE=yes
+NM_CONTROLLED=no
+HOTPLUG=no
+_EOF
+
+    cat <<'_EOF' >ifcfg-em2
+DEVICE=em2
+MASTER=bond1
+SLAVE=yes
+ONBOOT=yes
+MTU=1500
+NM_CONTROLLED=no
+_EOF
+
+
+    cat <<'_EOF' >ifcfg-em3
+DEVICE=em3
+MASTER=bond1
+SLAVE=yes
+ONBOOT=yes
+MTU=1500
+NM_CONTROLLED=no
+_EOF
+
+    ifup bond1
+    ifup br1
+}
+
+do_off() {
+    cd /etc/sysconfig/network-scripts/ 
+    ifdown br1
+    ifdown bond1
+    echo -bond1 >/sys/class/net/bonding_masters
+    rm -f ifcfg-bond1 ifcfg-br1
+
+    cat <<'_EOF' >ifcfg-em2 && ifup em2
+DEVICE=em2
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=10.60.200.86
+NETMASK=255.255.255.0
+_EOF
+
+    cat <<'_EOF' >ifcfg-em3
+DEVICE=em3
+TYPE=Ethernet
+ONBOOT=no
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+_EOF
+
+    ifup em2
+}
+
+
+case $1 in
+    on|off)
+        do_$1
+        echo 'DONE. About 20 seconds delay to wait for testing.'
+        ;;
+    *)
+        echo "usage: $0 on|off"
+        ;;
+esac
+
+
+
+
+

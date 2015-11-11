@@ -1,0 +1,153 @@
+
+一、安装
+[root@vm221 ~]# yum -y install openldap openldap-clients openldap-servers
+
+二、配置slapd
+1、生成密码：
+[root@vm221 ~]# slappasswd
+New password: (passwd)
+Re-enter new password: 
+{SSHA}phFEEFqERbsIP84rONSKWpFY2jrd/rvD
+
+2、配置
+[root@vm221 ~]# cd /etc/openldap/slapd.d/cn\=config
+
+1）配置 olcDatabase\=\{2\}bdb.ldif
+[root@vm221 cn=config]# vim olcDatabase\=\{2\}bdb.ldif
+增加一列：olcRootPW（如果不存在）
+olcRootPW: {SSHA}phFEEFqERbsIP84rONSKWpFY2jrd/rvD
+
+更改值：olcSuffix  和 distinguished name (DN) 
+例如：打算使用的域名是 "ovirt.3dstore"
+olcSuffix: dc=ovirt,dc=3dstore
+...
+olcRootDN: cn=Manager,dc=ovirt,dc=3dstore
+...
+olcRootPW: {SSHA}phFEEFqERbsIP84rONSKWpFY2jrd/rvD
+
+
+新增2行：用来限制用户不许查询其他人的密码hash
+olcAccess: {0}to attrs=userPassword by self write by dn.base="cn=Manager,dc=ovirt,dc=3dstore" write by anonymous auth by * none
+olcAccess: {1}to * by dn.base="cn=Manager,dc=ovirt,dc=3dstore" write by self write by * read
+
+
+2）配置 olcDatabase\=\{1\}monitor.ldif
+[root@vm221 cn=config]# vim olcDatabase\=\{1\}monitor.ldif
+更改值：olcAccess，和上面的dc保持一致
+olcAccess: {0}to *  by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=externa
+ l,cn=auth" read  by dn.base="cn=manager,dc=ovirt,dc=3dstore" read  by * none
+
+
+3）到这里，我们配置了LDAP的管理帐号和密码
+帐号：cn=Manager,dc=ovirt,dc=3dstore
+密码：passwd
+ 
+ 
+
+3、启动服务
+[root@vm221 ~]# service slapd start
+Starting slapd:                                            [  OK  ]
+[root@vm221 ~]# chkconfig slapd on
+
+
+三、使用
+
+1、创建一个实体到LDAP树中
+[root@vm221 ~]# mkdir /data/openldap -p && cd /data/openldap
+
+1）、先创建一个文件，导入到LDAP后即可删除
+[root@vm221 openldap]# cat ovirt.ldif 
+dn: dc=ovirt,dc=3dstore
+objectClass: dcObject
+objectClass: organization
+dc: ovirt
+o : ovirt
+
+执行：
+[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=3dstore -w passwd -f ovirt.ldif 
+adding new entry "dc=ovirt,dc=3dstore"
+
+注：也可以只用-W，而不是"-w passwd"来通过提示输入密码。
+
+2）、验证
+[root@vm221 openldap]# ldapsearch -x -LLL -b dc=ovirt,dc=3dstore
+dn: dc=ovirt,dc=3dstore
+objectClass: dcObject
+objectClass: organization
+dc: ovirt
+o: ovirt
+
+其中：
+dn：(Distinguished Name)节点的识别名称
+ObjectClass：对象类别
+dc：（Domain Component）域
+o:(Organizational)组织
+
+3）、调整防火墙，放行 TCP 389 端口
+（略）
+
+
+2、新增OU
+我们加一个OU，名称为users
+[root@vm221 openldap]# cat users.ldif 
+dn: ou=Users,dc=ovirt,dc=3dstore
+objectClass: organizationalUnit
+ou: Users
+
+其中：
+ou：(Organizational Unit)组织单位
+
+执行：
+[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=3dstore -w passwd -f users.ldif 
+adding new entry "ou=Users,dc=ovirt,dc=3dstore"
+
+
+3、新增一个用户
+[root@vm221 openldap]# cat jack_lee.ldif 
+dn: cn=Jack Lee,ou=Users,dc=ovirt,dc=3dstore
+cn: Jack Lee
+sn: Lee
+objectClass: inetOrgPerson
+userPassword: pass01
+uid: jlee
+
+其中：
+cn：(Common Name)全名
+sn：（surname）姓
+uid：唯一标识
+
+执行：
+[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=3dstore -w passwd -f jack_lee.ldif  
+adding new entry "cn=Jack Lee,ou=Users,dc=ovirt,dc=3dstore"
+
+
+4、新增组
+[root@vm221 openldap]# cat engineering.ldif
+dn: cn=Engineering,ou=Users,dc=ovirt,dc=3dstore
+cn: Engineering
+objectClass: groupOfNames
+member: cn=Jack Lee,ou=Users,dc=ovirt,dc=3dstore
+
+执行：
+[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=3dstore -w passwd -f engineering.ldif 
+adding new entry "cn=Engineering,ou=Users,dc=ovirt,dc=3dstore"
+
+5、把用户加入组
+[root@vm221 openldap]# cat adduser2group.ldif 
+dn: cn=Engineering,ou=Users,dc=ovirt,dc=3dstore
+changetype: modify
+add: member
+member: cn=Jack Lee,ou=Users,dc=ovirt,dc=3dstore
+
+执行：
+[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=3dstore -w passwd -f adduser2group.ldif 
+modifying entry "cn=Engineering,ou=Users,dc=ovirt,dc=3dstore"
+
+
+四、管理
+ApacheDirectoryStudio
+http://ftp.cuhk.edu.hk/pub/packages/apache.org/directory/studio/2.0.0.v20150606-M9/ApacheDirectoryStudio-2.0.0.v20150606-M9-win32.win32.x86_64.zip
+
+
+ZYXW、参考
+http://docs.adaptivecomputing.com/viewpoint/hpc/Content/topics/1-setup/installSetup/settingUpOpenLDAPOnCentos6.htm

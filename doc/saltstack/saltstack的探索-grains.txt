@@ -1,0 +1,248 @@
+saltstack的探索-grains
+
+利用grains可以得到主机的信息
+
+[root@server200-21 salt]# salt '*' grains.items
+test230:
+    ----------
+    SSDs:
+    biosreleasedate:
+        08/14/2012
+    biosversion:
+        V1.9
+    cpu_flags:
+        - fpu
+        - vme
+        - de
+        - pse
+        - tsc
+        - msr
+        - pae
+        - mce
+        - cx8
+        - apic
+        - sep
+        - mtrr
+        - pge
+        - mca
+        - cmov
+        - pat
+        - pse36
+        - clflush
+        - mmx
+        - fxsr
+        - sse
+        - sse2
+        - ht
+        - syscall
+        - nx
+        - mmxext
+        - fxsr_opt
+        - pdpe1gb
+        - rdtscp
+        - lm
+        - constant_tsc
+        - rep_good
+        - nopl
+        - nonstop_tsc
+        - extd_apicid
+        - aperfmperf
+        - pni
+        - pclmulqdq
+        - monitor
+        - ssse3
+        - cx16
+        - sse4_1
+        - sse4_2
+        - popcnt
+        - aes
+        - xsave
+        - avx
+        - lahf_lm
+        - cmp_legacy
+        - svm
+        - extapic
+        - cr8_legacy
+        - abm
+        - sse4a
+        - misalignsse
+        - 3dnowprefetch
+        - osvw
+        - ibs
+        - xop
+        - skinit
+        - wdt
+        - lwp
+        - fma4
+        - nodeid_msr
+        - topoext
+        - perfctr_core
+        - arat
+        - cpb
+        - hw_pstate
+        - npt
+        - lbrv
+        - svm_lock
+        - nrip_save
+        - tsc_scale
+        - vmcb_clean
+        - flushbyasid
+        - decodeassists
+        - pausefilter
+        - pfthreshold
+    cpu_model:
+        AMD FX(tm)-8120 Eight-Core Processor
+    cpuarch:
+        x86_64
+    domain:
+        ec.office
+    fqdn:
+        test230.ec.office
+    fqdn_ip4:
+        - 127.0.0.1
+    fqdn_ip6:
+    gpus:
+        |_
+          ----------
+          model:
+              RV370 [Radeon X300]
+          vendor:
+              unknown
+    host:
+        test230
+    hwaddr_interfaces:
+        ----------
+        eth0:
+            d4:3d:7e:32:17:d1
+        lo:
+            00:00:00:00:00:00
+    id:
+        test230
+    ip4_interfaces:
+        ----------
+        eth0:
+            - 192.168.1.230
+            - 192.168.1.249
+        lo:
+            - 127.0.0.1
+            - 192.168.1.130
+    ip6_interfaces:
+        ----------
+        eth0:
+            - fe80::d63d:7eff:fe32:17d1
+            - 192.168.1.249
+        lo:
+            - ::1
+    ip_interfaces:
+        ----------
+        eth0:
+            - 192.168.1.230
+            - 192.168.1.249
+        lo:
+            - 127.0.0.1
+            - 192.168.1.130
+    ipv4:
+        - 127.0.0.1
+        - 192.168.1.130
+        - 192.168.1.230
+        - 192.168.1.249
+    ipv6:
+        - ::1
+        - fe80::d63d:7eff:fe32:17d1
+    kernel:
+        Linux
+    kernelrelease:
+        3.8.13-26.2.2.el6uek.x86_64
+    locale_info:
+        ----------
+        defaultencoding:
+            UTF8
+        defaultlanguage:
+            en_US
+    localhost:
+        test230.ec.office
+    machine_id:
+        c9ec7e74ec20b51a158cd26500000015
+    manufacturer:
+        MSI
+    master:
+        10.0.200.21
+    mem_total:
+        7956
+    nodename:
+        test230.ec.office
+    num_cpus:
+        8
+    num_gpus:
+        1
+    os:
+        OEL
+    os_family:
+        RedHat
+    osarch:
+        x86_64
+    oscodename:
+        
+    osfinger:
+        Oracle Linux Server-6
+    osfullname:
+        Oracle Linux Server
+    osmajorrelease:
+        6
+    osrelease:
+        6.5
+    osrelease_info:
+        - 6
+        - 5
+    path:
+        /sbin:/usr/sbin:/bin:/usr/bin
+    productname:
+        MS-7693
+    ps:
+        ps -efH
+    pythonexecutable:
+        /usr/bin/python
+    pythonpath:
+        - /usr/bin
+        - /usr/lib64/python2.6/site-packages/thrift-0.9.0-py2.6-linux-x86_64.egg
+        - /usr/lib64/python26.zip
+        - /usr/lib64/python2.6
+        - /usr/lib64/python2.6/plat-linux2
+        - /usr/lib64/python2.6/lib-tk
+        - /usr/lib64/python2.6/lib-old
+        - /usr/lib64/python2.6/lib-dynload
+        - /usr/lib64/python2.6/site-packages
+        - /usr/lib64/python2.6/site-packages/gtk-2.0
+        - /usr/lib/python2.6/site-packages
+        - /usr/lib/python2.6/site-packages/setuptools-0.6c11-py2.6.egg-info
+    pythonversion:
+        - 2
+        - 6
+        - 6
+        - final
+        - 0
+    saltpath:
+        /usr/lib/python2.6/site-packages/salt
+    saltversion:
+        2014.7.0
+    saltversioninfo:
+        - 2014
+        - 7
+        - 0
+        - 0
+    selinux:
+        ----------
+        enabled:
+            False
+        enforced:
+            Disabled
+    serialnumber:
+        To be filled by O.E.M.
+    server_id:
+        549806356
+    shell:
+        /bin/sh
+    virtual:
+        physical
+    zmqversion:
+        3.2.4

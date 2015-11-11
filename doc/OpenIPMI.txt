@@ -1,0 +1,202 @@
+OpenIPMI
+来源：闫强，盛大游戏高级研究员，目前主要负责公司数据中心规划、建设及资源管理等。十年的盛大人，从IT到IDC，对系统、硬件、运维等都有较为丰富的经验。
+本次分享主要为服务器带外管理相关技术，如有不当之处，欢迎大家随时指正。
+
+前言
+     设备管理一般可分为带外管理和带内管理。
+     
+常规远程设备管理一般通过带内完成，如服务器使用的远程桌面、ssh，交换机的telnet等，这些都是基于设备操作系统来对设备进行管理和维护。当系统出现问题时则无法进行远程维护，此时一是现场处理，另外的办法则是使用设备提供的带外管理接口。
+
+带外管理（Out-of-band management）是基于硬件的一种管理方式，使用专用硬件模块或特殊的远程管理卡提供管理接口，通过专用的数据通道对设备进行远程维护和管理，完全独立于设备操作系统之外，甚至可以在设备关机状态下进行远程监控与管理。目前绝大部分服务器提供带外管理接口，部分网络设备也提供的带外管理接口。
+
+服务器带外管理原理
+一、基本于IPMI协议的服务器带外管理
+IPMI（Intelligent Platform Management Interface）,“智通平台管理接口”是为服务器管理设计的一种工业标准。为了解决服务器远程管理标准化，最初由Intel 、HP、Dell、NEC等公司于1998年共同提出。在IPMI标准出台之前，每个服务器制造商使用自己的服务器管理方案，对用户来说难于统一管理。IPMI标准的推出，使不同产品的集中管理成为可能。
+
+
+IPMI让用户可以通过网络来监控服务器上各种硬件组件的健康状况，如CPU、风扇转速、系统温度、电压、电源、功耗等。用户可以设定传感器的临界值，当系统异常时，可以将运行状态及事件以日志方式记录。IPMI还可以检测电源状态，可以下达开、关机或重启指令。
+
+IPMI的核心是基板控制器（BMC），其完全独立于服务器的CPU、BIOS、操作系统、开关机状态之外，是一个完全独立运行的系统。IPMI功能通过向BMC发送指令完成，指令附合IPMI规范。
+我们可以理解为BMC为一个单片机，有自己的固件
+
+BMC（Baseboard Management Controller基板控制器），一般集成在服务器主板上
+BMC和相应的固件，为服务器提供带外管理功能
+BMC通过各种接口来管理整个系统
+
+IPMB接口：智能平台管理总线（Intelligent Platform Management,IPMB）,连接外围控制器，分别执行不同功能；可用于和外围的传感器、存储器沟通，以读取系统检测信息及记录相关数据（SDR、SEL）；还可以外接其他用户板，用来扩展IPMI管理平台功能；
+我们所用到的dell 的idrac卡也是挂在IPMB总线上
+
+系统接口：通过服务器内部系统获取IPMI信息（通过带内获取带外信息）；
+系统接口使通过带内获取带外信息成为可能，系统安装驱动后即可通过 system interface访问带外信息
+
+Serial/Modem接口：通过串口获取IPMI信息；
+
+LAN接口：通过网络获取IPMI信息；
+这是目前最常用的获取带外信息的接口
+
+BMC的固件及软件
+BMC有独立的FW，负责BMC初始化、外围硬件驱动、IPMI命令解析等；
+完全独立于系统的硬件部分，带外管理部分
+
+通过操作系统接口及驱动，可以同样获取带外信息
+通过带内获取带外信息，系统需要安装OpenIPMI驱动，即可使用带外管理工具ipmitool来管理带外
+
+通过BMC LAN接口访问带外信息，客户端只需要安装ipmitool工具即可，被管理端服务器不需要系统做任何配置，甚至不需要开机，即可访问服务器带外
+
+IPMI主要功能
+远程电源控制（on/off/cycle/status）
+服务器环境监测（温度、风扇、CPU电压等）
+系统日志（System event log）
+串口重定向Serial over LAN （SOL）
+
+
+二、各厂商带外管理扩展
+标准的IPMI协议可以完成对服务器常规多项参数的监控及管理，但对有些功能如vKVM、vMedia、硬盘监控等目前还不支持，且缺乏操作便捷性，因此目前多数厂商在支持标准IPMI协议上，一般都推出了自己的带外管理扩展卡，如dell的idrac、HP的ilo、IBM的imm等。扩展卡一般支持ipmi2.0规范及web接口。
+带外扩展卡挂在IPMB总线上
+
+1.	Dell的idrac卡
+iDrac卡为DELL服务器远程管理卡，一般需要单独采购，且存在许可证差异，有Express和Enterprise版本等，不同版本存在功能限制。最新版本为iDrac8.
+idrac提供ipmi接口、ssh、web接口
+
+2.	HP ilo
+HP ilo 目前常用版本有ilo2/ilo3/ilo4，直接集成在服务器主板上，vKVM/shlMedia功能需要license.
+已知所有的HP服务器，主板都直接集成带外管理卡
+
+3.	IBM IMM（IMMII）
+IBM常用的有IMM和IMMII两个版本，vKvm/shlMedia需要硬件“Virtual Media Key”
+已知所有IBM的服务器带外扩展卡都集成在服务器主板上，但有些功能，如vKVM，需要一个硬件key才能激活使用
+
+
+Ipmitool是IPMI平台常用管理工具，支持IPMI v1.5或IPMI v2.0规范，通过ipmitool可以获取服务器信息以及远程开关机等功能。其它工具还有ipmiutil、OpenIPMI、FreeIPMI等。
+Ipmitool有两种使用方式
+（1）	带外方式：通过网络接口与BMC通讯，操作系统不需要安装驱动；
+（2）	带内方式：在操作系统内部使用OS提供的接口与BMC通讯，操作系统需要安装OpenIPMI驱动；
+Ipmitools使用
+1.	工具及驱动安装
+# yum install OpenIPMI OpenIPMI-tools OpenIPMI-libs OpenIPMI-devel
+启动ipmi服务： service ipmi start
+确定是否支持ipmi设备：
+# more /proc/devices  | grep ipmidev
+*** ipmidev    #有这一行说明有IPMI设备
+如果仅使用带外方式，则只需要安装OpenIPMI-tools
+
+2.	ipmitool命令
+ipmitool [–I interface] [–H <hostname>  –U <username> –P <password>] <command>
+Interface包括open、lan、lanplus；
+Open：使用OpenIPMI通道，应用于带内（操作系统内部），可省略；
+Lan：通过网络UDP，使用RMCP协议；
+Lanplus：与Lan相同，但使用RMCP+协议，应用于IPMI v2.0版本；
+
+常用Command：
+Lan: 配置网络
+Sdr: 显示监控项、读取传感器信息
+Sensor: 显示传感器详细信息
+Fru: 显示Fru信息
+Sel: 显示System Event Log (SEL)
+User: 配置用户信息
+Mc: 查看MC（Management Contollor）信息及复位MC
+Chassis:查看chassis状态及配置
+
+例：
+（1）带内获取网络信息
+[root@localhost home]# ipmitool lan print
+Set in Progress         : Set Complete
+Auth Type Support       : NONE MD2 MD5 OEM 
+Auth Type Enable        : Callback : NONE MD2 MD5 OEM 
+                        : User     : NONE MD2 MD5 OEM 
+                        : Operator : NONE MD2 MD5 OEM 
+                        : Admin    : NONE MD2 MD5 OEM 
+                        : OEM      : 
+IP Address Source       : Static Address
+IP Address              : 192.168.106.88
+Subnet Mask             : 255.255.255.0
+MAC Address             : 00:e0:81:d7:9e:d2
+SNMP Community String   : AMI
+IP Header               : TTL=0x00 Flags=0x00 Precedence=0x00 TOS=0x00
+BMC ARP Control         : ARP Responses Disabled, Gratuitous ARP Disabled
+Gratituous ARP Intrvl   : 0.0 seconds
+Default Gateway IP      : 192.168.106.1
+Default Gateway MAC     : 00:00:00:00:00:00
+Backup Gateway IP       : 0.0.0.0
+Backup Gateway MAC      : 00:00:00:00:00:00
+802.1q VLAN ID          : Disabled
+802.1q VLAN Priority    : 0
+RMCP+ Cipher Suites     : 1,2,3,6,7,8,11,12,0,0,0,0,0,0,0,0
+Cipher Suite Priv Max   : aaaaXXaaaXXaaXX
+                        :     X=Cipher Suite Unused
+                        :     c=CALLBACK
+                        :     u=USER
+                        :     o=OPERATOR
+                        :     a=ADMIN
+                        :     O=OEM
+                        
+                     
+                        
+（2）获取SDR信息
+[root@localhost home]# ipmitool sdr
+CPU0 below Tmax  | 59 degrees C      | ok
+CPU1 below Tmax  | 59 degrees C      | ok
+System Ambient   | 21 degrees C      | ok
+DIMM0 Area (RT4) | 26 degrees C      | ok
+CPU0 VCORE       | 0.92 Volts        | ok
+CPU1 VCORE       | 0.85 Volts        | ok
+5V               | 4.90 Volts        | ok
++12V             | 11.81 Volts       | ok
+VBAT             | 2.93 Volts        | ok
+3.3V             | 3.01 Volts        | ok
+SYSTEM FAN 1     | 7290 RPM          | ok
+SYSTEM FAN 2_1   | 7830 RPM          | ok
+SYSTEM FAN 2_2   | 5760 RPM          | ok
+SYSTEM FAN 3_1   | 8280 RPM          | ok
+SYSTEM FAN 3_2   | 5490 RPM          | ok
+SYSTEM FAN 4     | 7380 RPM          | ok
+SYSTEM FAN 5     | 7110 RPM          | ok
+Interrupt_1      | 0x00              | ok
+Interrupt_2      | 0x00              | ok
+
+
+（3）获取用户信息
+[root@localhost home]# ipmitool user list 1
+ID  Name             Callin  Link Auth  IPMI Msg   Channel Priv Limit
+1   root             false   false      true       ADMINISTRATOR
+2   lenovo           false   false      true       ADMINISTRATOR
+3   three            false   false      true       ADMINISTRATOR
+
+注：HP服务器channel号一般为2
+
+
+
+通过带外：
+[root@localhost /]# ipmitool -I lanplus -H 192.168.106.88 -U lenovo -P lenovo user list 1
+ID  Name             Callin  Link Auth  IPMI Msg   Channel Priv Limit
+1   root             false   false      true       ADMINISTRATOR
+2   lenovo           false   false      true       ADMINISTRATOR
+3   three            false   false      true       ADMINISTRATOR
+
+
+[root@localhost /]# ipmitool -I lanplus -H 192.168.106.88 -U lenovo -P lenovo power status
+Chassis Power is on
+
+
+标准的IPMI2.0协议主要用于服务器的健康监控、功耗管理、远程开关机等。目前专门基于IPMI的管理平台很少，一般会基于ipmi2.0协议开发或使用ipmitool工具获取定时获取设备信息集成至自己的资源管理或监控平台。
+超微（Supermicro）提供了一个基于impi的管理工具IPMIview2.0，对各品牌服务器支持较好；
+Intel目前在做基于ipmi、snmp、ssh等数据中心管理平台Intel vKVM
+
+
+1.	IPMIView2.0 （最新版本v2.10.2）
+IPMIView是Supermicro公司为自己公司板载IPMI卡开发的基于windows系统下的管理工具。在自己的板卡上可以远程挂载ISO、img等多种格式的镜像文件，及远程管理等。
+经测试，最新版的v2.10.2支持大部分厂商的服务器，包括HP。V2.9版本不支持HP服务器。
+值得一提的是，经过测试，最新的IPMIview2.0  v2.10.2版本对多厂商服务器支持，包括HP服务器。上一个版本不支持HP服务器 
+                        
+2.  Intel vKVM
+这是Intel正在做的一款基于ipmi snmp  ssh 等多协议的数据中心管理系统
+我们也在测试过程中，这款产品提供直接访问带外KVM的功能，不用再登陆web页                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        

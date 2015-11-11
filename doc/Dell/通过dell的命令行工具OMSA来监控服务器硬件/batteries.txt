@@ -1,0 +1,16 @@
+对应的zabbix配置：
+UserParameter=hardware_battery,omreport chassis batteries|awk '/^Status/{if($NF=="Ok") {print 1} else {print 0}}'
+
+
+涉及的命令：
+[root@local ~]# omreport chassis batteries
+
+Batteries
+
+Health : Ok
+
+Individual Battery Elements
+Index      : 0
+Status     : Ok
+Probe Name : System Board CMOS Battery
+Reading    : Good

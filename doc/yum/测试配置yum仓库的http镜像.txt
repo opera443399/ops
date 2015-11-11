@@ -1,0 +1,433 @@
+测试配置yum仓库的http镜像
+
+
+
+一、基础环境
+1、在tvm-base的基础上，复制一个镜像为tvm-yum来测试。
+2、网络：
+eth0：host-only（用于虚拟内网，手动固定IP，这样从宿主机可以直接连接到这个vm）
+eth1：NAT（用于上外网，动态IP）
+[root@tvm-yum ~]# cd /etc/sysconfig/network-scripts/
+[root@tvm-yum network-scripts]# cat ifcfg-eth0
+DEVICE=eth0
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=192.168.56.254
+PREFIX=24
+GATEWAY=192.168.56.1
+
+[root@tvm-yum network-scripts]# cat ifcfg-eth1
+DEVICE=eth1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+
+[root@tvm-yum ~]# ip a s dev eth0 |grep global
+    inet 192.168.56.254/24 brd 192.168.56.255 scope global eth0
+[root@tvm-yum ~]# ip a s dev eth1 |grep global 
+    inet 10.0.3.15/24 brd 10.0.3.255 scope global eth1
+[root@tvm-yum ~]# route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+10.0.3.0        0.0.0.0         255.255.255.0   U     0      0        0 eth1
+192.168.56.0    0.0.0.0         255.255.255.0   U     0      0        0 eth0
+169.254.0.0     0.0.0.0         255.255.0.0     U     1002   0        0 eth0
+169.254.0.0     0.0.0.0         255.255.0.0     U     1003   0        0 eth1
+0.0.0.0         10.0.3.2        0.0.0.0         UG    0      0        0 eth1
+
+3、配置这台服务器为ntp和dns服务器，涉及：
+1）ntp服务（防火墙放行：udp 123）
+使用脚本配置：https://github.com/opera443399/ops/blob/master/bin/linux/init_datetime.sh
+[root@tvm-yum ~]# sh init_datetime.sh s
+
+2）dnsmasq服务 （防火墙放行：udp 53）
+[root@tvm-yum ~]# yum -y install dnsmasq
+将涉及域名写入hosts文件：
+[root@tvm-yum ~]# cat /etc/hosts |grep -v localhost
+127.0.0.1 tvm-yum
+192.168.56.254 mirrors.office.test
+192.168.56.254 ntp.office.test
+192.158.56.252 cobbler.office.test
+
+启动服务：
+[root@tvm-yum ~]# service dnsmasq start
+增加到开机启动：
+[root@tvm-yum bin]# chkconfig dnsmasq on
+
+
+
+二、配置web服务
+1、防火墙放行80端口
+2、配置httpd
+若没有禁用selinux，则应当这样配置：
+[root@tvm-yum ~]# chcon -Rv --type=httpd_sys_content_t /data/yum/repo/
+否则，直接禁用selinux
+
+[root@tvm-yum ~]# yum -y install httpd
+调整httpd的配置：
+[root@tvm-yum ~]# cat /etc/httpd/conf/httpd.conf |grep ServerName |grep ^[^#]
+ServerName 127.0.0.1
+
+虚拟主机：
+[root@tvm-yum ~]# mv /etc/httpd/conf.d/welcome.conf /tmp/
+[root@tvm-yum ~]# cat /etc/httpd/conf.d/mirrors.office.test.conf 
+<VirtualHost *:80>
+    ServerAdmin pc@office.test
+    ServerName mirrors.office.test
+    DocumentRoot /data/yum/repo
+    
+    ErrorLog logs/mirrors.office.test-error_log
+    CustomLog logs/mirrors.office.test-access_log common
+
+    <Directory /data/yum/repo>
+        options Indexes FollowSymLinks
+        AllowOverride None
+        Order allow,deny
+        Allow from all
+    </Directory>
+</VirtualHost>
+
+
+
+3、启动httpd服务
+[root@tvm-yum ~]# chown -R apache:apache /data/yum/repo
+[root@tvm-yum ~]# service httpd start
+
+接下来需要：
+1）配置一个local yum 镜像，并定时从公网的mirrors同步数据。
+注1：不需要i386目录，此处只用x86_64的版本。
+注2：不需要isos目录，里面存放的是iso文件。
+注3：不需要ppc64目录，里面是powerpc架构的。
+2）提供local-office.repo文件，供客户端用。
+
+
+三、配置目录和脚本，制作本地的yum镜像
+[root@tvm-yum ~]# mkdir -p /data/yum/repo/{centos,epel}/6 /data/download/ /data/ops/bin/
+1、从iso文件拷贝内容。本机目前只有CentOS-6.5的版本，当然，应该用6.6的更佳。
+2种方式：
+1）上传iso文件到/data/download/
+
+2）也可以直接挂载光碟
+
+[root@tvm-yum ~]# ls /data/download/
+CentOS-6.5-x86_64-bin-DVD1.iso  CentOS-6.5-x86_64-bin-DVD2.iso
+
+[root@tvm-yum ~]# mkdir -p /data/yum/repo/centos/6/os/x86_64
+
+2、同步iso文件中的内容：
+[root@tvm-yum ~]# mount -ro loop /data/download/CentOS-6.5-x86_64-bin-DVD1.iso /mnt
+[root@tvm-yum ~]# rsync -avHPS /mnt/ /data/yum/repo/centos/6/os/x86_64/
+[root@tvm-yum ~]# umount /mnt
+[root@tvm-yum ~]# mount -ro loop /data/download/CentOS-6.5-x86_64-bin-DVD2.iso /mnt
+[root@tvm-yum ~]# rsync -avHPS /mnt/ /data/yum/repo/centos/6/os/x86_64/
+[root@tvm-yum ~]# umount /mnt
+
+3、测试httpd服务的访问
+访问：
+http://mirrors.office.test/centos
+
+抓包信息：
+[root@tvm-yum ~]# curl -o /dev/null -v -I http://mirrors.office.test/centos/
+* About to connect() to mirrors.office.test port 80 (#0)
+*   Trying 192.168.56.254... connected
+* Connected to mirrors.office.test (192.168.56.254) port 80 (#0)
+> HEAD /centos/ HTTP/1.1
+> User-Agent: curl/7.19.7 (x86_64-redhat-linux-gnu) libcurl/7.19.7 NSS/3.14.0.0 zlib/1.2.3 libidn/1.18 libssh2/1.4.2
+> Host: mirrors.office.test
+> Accept: */*
+> 
+< HTTP/1.1 200 OK
+< Date: Tue, 14 Jul 2015 02:32:14 GMT
+< Server: Apache/2.2.15 (CentOS)
+< Connection: close
+< Content-Type: text/html;charset=UTF-8
+< 
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0* Closing connection #0
+
+
+
+chrome抓包信息：
+Remote Address:192.168.56.254:80
+Request URL:http://mirrors.office.test/centos/
+Request Method:GET
+Status Code:200 OK
+Remote Address:192.168.56.254:80
+Request URL:http://mirrors.office.test/centos/
+Request Method:GET
+Status Code:200 OK
+
+
+4、选一个mirrors，通过脚本从mirrors同步。
+这里我选择了一个支持rsync协议的镜像：
+http://mirrors.ustc.edu.cn/centos/
+
+可以在搜索引擎搜索“rsync epel  6/x86_64/”这类关键词来找mirros，当然这里也有一个centos的列表：
+http://www.centos.org/download/mirrors/
+
+配置脚本同步，并放到crontab中定时执行
+----------------------------------------
+[root@tvm-yum bin]# cat repo_update.sh 
+#!/bin/bash
+#
+# 2015/7/17
+
+f_log='/tmp/repo_update_run.log'
+
+if [ -f /var/lock/subsys/repo_update ]; then
+    echo "[`date`] 同步任务已经在执行中。" >>${f_log}
+    exit 0
+fi
+
+d_centos='/data/yum/repo/centos/6'
+d_epel='/data/yum/repo/epel/6'
+-d ${d_centos} ||mkdir -p ${d_centos}
+-d ${d_epel} ||mkdir -p ${d_epel}
+
+
+touch /var/lock/subsys/repo_update
+
+### centos ###
+echo "[`date`] 开始同步centos"  >>${f_log} 
+rsync -avzP --delete --delete-excluded --exclude "isos" --exclude "i386" rsync://mirrors.ustc.edu.cn/centos/6/ /data/yum/repo/centos/6/ 2>>${f_log}
+echo "[`date`] 操作结束。"  >>${f_log} 
+### epel ###
+echo "[`date`] 开始同步epel"  >>${f_log} 
+rsync -avzP --delete  --delete-excluded --exclude "i386" --exclude "ppc64" rsync://mirrors.ustc.edu.cn/epel/6/ /data/yum/repo/epel/6/ 2>>${f_log}
+echo "[`date`] 操作结束。"  >>${f_log} 
+
+rm /var/lock/subsys/repo_update
+echo "[`date`] 完成本次任务。"  >>${f_log} 
+
+chown -R apache:apache /data/yum/repo
+
+----------------------------------------
+
+放到crontab中
+[root@tvm-yum ~]# cat <<_NTP >>/var/spool/cron/root
+# repo update
+0 4 * * * /bin/bash /data/ops/bin/repo_update.sh >/tmp/repo.log 2>&1 &
+_NTP
+
+
+
+先手动执行一次：
+[root@tvm-yum ~]# /bin/bash /data/ops/bin/repo_update.sh >/tmp/repo.log 2>&1 &
+
+5、提供一个office源，供自定义的安装，包含企业定制rpm包，新版本的开源软件的rpm包
+[root@tvm-yum ~]# yum install createrepo
+[root@tvm-yum ~]# mkdir -p /data/yum/repo/office/centos/6/x86_64
+[root@tvm-yum ~]# cd /data/yum/repo/office/6/x86_64
+[root@tvm-yum ~]# wget http://nginx.org/packages/centos/6/x86_64/RPMS/nginx-1.8.0-1.el6.ngx.x86_64.rpm
+
+还可以一次下载多个rpm包：
+[root@tvm-yum ~]# wget --execute robots=off -nc -nd -r -l1 -A'*.rpm' http://download.gluster.org/pub/gluster/glusterfs/3.6/LATEST/CentOS/epel-6/x86_64/
+
+使用createrepo工具：
+[root@tvm-yum ~]# createrepo .
+[root@tvm-yum ~]# cd -
+[root@tvm-yum ~]# chown -R apache:apache /data/yum/repo              
+              
+6、提供local-office.repo文件
+现有的目录：
+[root@tvm-yum ~]# tree /data/yum/repo/ -L 3
+/data/yum/repo/
+├── centos
+│   ├── 6
+│   │   ├── centosplus
+│   │   ├── cloud
+│   │   ├── contrib
+│   │   ├── cr
+│   │   ├── extras
+│   │   ├── fasttrack
+│   │   ├── os
+│   │   ├── SCL
+│   │   ├── updates
+│   │   └── xen4
+│   └── RPM-GPG-KEY-CentOS-6
+├── epel
+│   ├── 6
+│   │   ├── SRPMS
+│   │   └── x86_64
+│   └── RPM-GPG-KEY-EPEL-6
+├── local-office.repo
+└── office
+    └── 6
+        └── x86_64
+
+制作文件：local-office.repo
+-----------------------------------
+[root@tvm-yum ~]# cat /data/yum/repo/local-office.repo 
+#
+# local-office.repo
+# 2015/8/6
+# 包含：Centos-Base, epel, office源。
+#
+
+# ------------------ 包含基础的os里面的rpm包
+[base]
+name=CentOS-$releasever - Base
+baseurl=http://mirrors.office.test/centos/$releasever/os/$basearch/
+gpgcheck=1
+gpgkey=http://mirrors.office.test/centos/RPM-GPG-KEY-CentOS-$releasever
+
+#released updates - 包含可以更新的包
+[updates]
+name=CentOS-$releasever - Updates
+baseurl=http://mirrors.office.test/centos/$releasever/updates/$basearch/
+gpgcheck=1
+gpgkey=http://mirrors.office.test/centos/RPM-GPG-KEY-CentOS-$releasever
+
+#additional packages that may be useful - 包含额外的包
+[extras]
+name=CentOS-$releasever - Extras
+baseurl=http://mirrors.office.test/centos/$releasever/extras/$basearch/
+gpgcheck=1
+gpgkey=http://mirrors.office.test/centos/RPM-GPG-KEY-CentOS-$releasever
+
+#additional packages that extend functionality of existing packages - 包含功能扩展的包
+[centosplus]
+name=CentOS-$releasever - Plus
+baseurl=http://mirrors.office.test/centos/$releasever/centosplus/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=http://mirrors.office.test/centos/RPM-GPG-KEY-CentOS-$releasever
+
+#contrib - packages by Centos Users - 包含用户贡献的包
+[contrib]
+name=CentOS-$releasever - Contrib
+baseurl=http://mirrors.office.test/centos/$releasever/contrib/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=http://mirrors.office.test/centos/RPM-GPG-KEY-CentOS-$releasever
+
+# ------------------ epel - 包含额外的包
+[epel]
+name=Extra Packages for Enterprise Linux 6 - $basearch
+baseurl=http://mirrors.office.test/epel/6/$basearch
+failovermethod=priority
+enabled=1
+gpgcheck=1
+gpgkey=http://mirrors.office.test/epel/RPM-GPG-KEY-EPEL-$releasever
+
+[epel-debuginfo]
+name=Extra Packages for Enterprise Linux 6 - $basearch - Debug
+baseurl=http://mirrors.office.test/epel/6/$basearch/debug
+failovermethod=priority
+enabled=0
+gpgkey=http://mirrors.office.test/epel/RPM-GPG-KEY-EPEL-$releasever
+gpgcheck=1
+
+[epel-source]
+name=Extra Packages for Enterprise Linux 6 - $basearch - Source
+baseurl=http://mirrors.office.test/epel/6/SRPMS
+failovermethod=priority
+enabled=0
+gpgkey=http://mirrors.office.test/epel/RPM-GPG-KEY-EPEL-$releasever
+gpgcheck=1
+
+# ------------------ office - 包含企业定制rpm包，新版本的开源软件的rpm包
+[office]
+name=enterprise office repo
+baseurl=http://mirrors.office.test/office/$releasever/$basearch/
+gpgcheck=0
+enabled=1
+
+-----------------------------------
+
+注意：
+/etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6 这个key一开始是不存在的，这里由http服务来提供，在repo文件中指向到对应的URL：
+gpgkey=http://mirrors.office.test/epel/RPM-GPG-KEY-EPEL-$releasever
+
+GPG-KEY在这里：
+[root@tvm-yum ~]# cp /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6 /data/yum/repo/centos/
+[root@tvm-yum ~]# cp /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6 /data/yum/repo/epel/
+默认安装centos后已经有了RPM-GPG-KEY-CentOS-6，RPM-GPG-KEY-EPEL-6可以通过安装公网的epel源来获取：
+# rpm -Uvh http://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+
+当然了，我们应该移除现有的repo文件，仅使用上面提供的自己的repo配置即可：
+【在本地】
+[root@tvm-yum ~]# mv /etc/yum.repos.d/*.repo /tmp/
+[root@tvm-yum ~]# cp /data/yum/repo/local-office.repo /etc/yum.repos.d/local-office.repo
+【在客户端】
+[root@tvm-rpm ~]# mv /etc/yum.repos.d/*.repo /tmp/ \
+&& wget http://mirrors.office.test/local-office.repo -O /etc/yum.repos.d/local-office.repo \
+&& yum clean all \
+&& yum makecache
+
+
+
+
+
+四、等mirros同步完成后，开始测试
+1、本机测试
+先清除缓存：
+[root@tvm-yum ~]# yum clean all
+Loaded plugins: fastestmirror, security
+Cleaning repos: base extras updates
+Cleaning up Everything
+Cleaning up list of fastest mirrors
+
+试着更新下系统：
+[root@tvm-yum ~]# yum update
+（略）
+(369/369): yum-utils-1.1.30-30.el6.noarch.rpm                                 | 110 kB     00:00     
+-----------------------------------------------------------------------------------------------------
+Total                                                                 16 MB/s | 430 MB     00:26     
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+（略）
+  yum.noarch 0:3.2.29-60.el6.centos                                                                  
+  yum-plugin-fastestmirror.noarch 0:1.1.30-30.el6                                                    
+  yum-plugin-security.noarch 0:1.1.30-30.el6                                                         
+  yum-utils.noarch 0:1.1.30-30.el6                                                                   
+
+Replaced:
+  libsss_autofs.x86_64 0:1.9.2-129.el6                                                               
+
+Complete!
+[root@tvm-yum ~]# 
+[root@tvm-yum ~]# cat /etc/issue
+CentOS release 6.6 (Final)
+Kernel \r on an \m
+
+2、瞧，已经升级到6.6的版本，建议reboot一下先。
+reboot前，先将httpd服务加入开机启动。
+[root@tvm-yum centos]# chkconfig httpd on
+[root@tvm-yum centos]# chkconfig --list |grep httpd
+httpd           0:off   1:off   2:on    3:on    4:on    5:on    6:off
+
+
+用update升级系统后，在/etc/yum.repos.d/里面更新了CentOS相关的repo文件，因此在重启后可以考虑移除
+[root@tvm-yum ~]# mv -f CentOS-* /etc/yum.repos.d/ /tmp/
+
+
+五、客户端使用local-office.repo文件
+[root@tvm-rpm ~]# yum update
+符合预期。
+[root@tvm-rpm ~]# yum install nginx
+[root@tvm-test conf.d]# nginx -v
+nginx version: nginx/1.8.0
+符合预期。
+
+
+
+ZYXW、参考
+1、Creating a local repo (Mirror) with CentOS 6.2+
+http://darktraining.com/93/
+
+2、Creating Local Mirrors for Updates or Installs
+https://wiki.centos.org/HowTos/CreateLocalMirror
+
+3、List of CentOS Mirrors
+http://www.centos.org/download/mirrors/
+
+4、How To Set Up and Use Yum Repositories on a CentOS 6 VPS
+https://www.digitalocean.com/community/tutorials/how-to-set-up-and-use-yum-repositories-on-a-centos-6-vps
+

@@ -1,0 +1,22 @@
+TCP状态变迁
+
+开始：
+传说中的3次握手。
+1.CLOSED：起始点。在超时或者连接关闭的时候进入此状态。
+2.LISTEN：Server 端在等待连接过来的时候所处的状态，Server 端为此要调用 socket，bind，listen 函数，进入此状态。这称为应用程序被动打开（等待 Client 端来连接）。
+3.SYN_SENT: Client 端发起连接，发送 SYN J 给 Server 端。如果 Server 端不能连接，则直接进入 CLOSED 状态。
+4.SYN_RCVD：跟3对应，Server 端接收到 Client 端的 SYN J 请求，则 Server 端由 LISTEN 状态进入 SYN_RCVD 状态。同时 Server 端要回应一个 ACK J+1 ，同时发送一个 SYN K 给 Client 端；另外一种情况，Client 端在发送 SYN 请求的同时接收到 Server 端发送的 SYN 请求， Client 端就会由 SYN_SENT 进入到 SYN_RCVD 状态。
+5.ESTABLISHED：跟4对应，Client 端收到 SYN K 和 ACK J+1 后，将发送 ACK K+1 给 Server 端，并进入 ESTABLISHED 状态；而 Server 端 在收到 ACK K+1 后也进入 ESTABLISHED 状态；至此双方完成3次握手进入状态，已经可以开始传输数据。
+
+关闭：
+关闭需要进行4次交互，这里主动关闭的一方或被动关闭的一方不是指特指 Server 端或者 Client 端，是相对于谁先发起关闭请求来说的。
+
+6.FIN_WAIT_1: 主动关闭的一方，由状态5进入此状态。此处具体的动作是：发送 FIN M 给对方。
+7.FIN_WAIT_2: 主动关闭的一方，接收到对方的 ACK M+1 ，进入此状态。
+8.CLOSE_WAIT：跟6对应，接收到 FIN M 以后，被动关闭的一方进入此状态。此处具体的动作是：接收到 FIN M，同时发送 ACK M+1。
+9.LAST_ACK：被动关闭的一方，发起关闭请求，由状态8进入此状态。此处具体的动作是：发送 FIN N 给对方，接下来在接收到 ACK N+1 时进入 CLOSED 状态。
+10.CLOSING：两边同时发起关闭请求时，会由FIN_WAIT_1进入此状态。此处具体的动作是：FIN N，同时发送 ACK N+1。
+11.TIME_WAIT：有3个状态可以转化成它：
+a.跟7对应：主动关闭的一方在接收到被动关闭一方的 FIN N 后，回应ACK N+1，然后进入该状态。
+b.跟10对应: 双方同时发起关闭，都接收到了 FIN N，并回应了ACK N+1，然后进入该状态。
+c.跟6对应：同时接收到 FIN N 和 ACK N+1，与b的区别在于本身发起的 FIN N 回应的 ACK N+1 先于对方的 FIN N 请求到达，而b是 FIN N 先到达。这种情况概率最小。

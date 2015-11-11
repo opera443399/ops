@@ -1,0 +1,183 @@
+﻿挂载点和目录介绍
+
+Linux管理-挂载点介绍 
+/bin       	存放最常用的命令，此目录下的命令所有用户都有执行的权限
+/boot		Linux系统引导目录，此目录保存系统启动时的内核文件和内核映像文件及启动时所需的其它文件
+/dev		设备文件，保存所有的硬件设备文件，如硬盘设备文件，软驱、光驱设备文件等等
+/etc  		存放各种服务的配置文件，相当于Windows 2000的winnt目录
+/home		各用宿主目录，相当于Windows 2000的“我的文档”
+/lib    	该目录用来存放系统动态链接共享库，几乎所用的应该程序都会用到该目录下的共享库/mnt		挂载目录，用来临时挂载别的文件系统或者别的硬件设备（如光驱、软驱）
+/proc    	此目录信息是在内存中由系统自行产生的，存储了一些当前的进程ID号和CPU、内存的映射等
+/sbin   	系统管理员命令存放目录
+/usr  		最大的目录，用户的很多应该程序和文件都存放在此目录下
+/usr/X1186   	X-Windows目录，存放一些X-Windows的配置文件
+/usr/include   	系统头文件，存储一些C语言的头文件
+/usr/src  	Linux内核源代码，Linux系统所安装的内核源代码都保存在此
+/usr/bin   	对/bin目录的一些补充
+/usr/sbin      	对/sbin目录的一些补充
+/var       	大多数的日志存储目录和ftp,www服务的匿名访问目录的根，在Linux工作一段时间后，此目录会比较大，应即时对此目录进行删除
+/misc     	autofs服务的目
+/opt      	用于存储第三方软件的目录
+/tmp     	临时文件的目录，用来存放不同程序执行时产生的临时文件
+/lost+found   	该目录在大多数情况下都是空的，但当实然停电或者非正常关机后，有些文件临时存入在此
+/root     	管理员的根目录，一般只有管理员才可以访问此目录 
+ 
+ 
+
+/bin 引导启动所需要的命令及启动后普通用户可能用到的命令
+
+/sbin 类似/bin，但未经允许不给普通用户使用
+/etc 特定机器的配置文件
+/root root用户的家目录
+/lib 根文件系统上的程序所需的共享库
+/lib/modules 内核加载模块，特别是那些恢复损坏系统时引导所需的
+/dev 设备文件
+/tmp 临时文件
+/boot 引导加载器使用的文件
+/mnt 系统管理员临时mount的安装点
+/proc , /usr , /var , /home 其他文件系统的安装点
+
+/etc/rc 和 /etc/rc.d 启动或改变运行级时运行的scripts或scripts的目录
+/etc/passwd 用户数据库，其中的域给出了用户名、真实姓名、家目录、加密的口令和用户其他信息
+/etc/fdprm 软盘参数表
+/etc/group 类似/etc/passwd，但说明的不是用户而是组
+/etc/inittab init的配置文件
+/etc/issue getty在登陆提示符前的输出信息
+/etc/magic file的配置文件
+/etc/motd 成功登陆后自动输出的消息
+/etc/mtab 当前安装的文件系统列表
+/etc/shadow 在安装了影子口令软件的系统上的影子口令文件
+/etc/login.defs login命令的配置文件
+/etc/printcap 类似/etc/termcap，但针对打印机。
+/etc/profile , /etc/csh.login , /etc/csh.cshrc 登陆或启动时Bourne或Cshells执行的文件
+/etc/securetty 确认安全终端
+/etc/shells 列出可信任的shell
+/etc/termcap 终端性能数据库
+
+/usr/X11R6 X Windows系统的所有文件
+/usr/X386 类似/usr/X11R6,但是给X11R5的
+/usr/bin 几乎所有用户命令
+/usr/sbin 根文件系统不必要的系统管理命令
+/usr/man , /usr/info , /usr/doc 手册页、GNU信息文档和给中其他文档文件
+/usr/include C编程语言的头文件
+/usr/lib 程序或字系统的不变数据文件，包括一些site-wide配置文件
+/usr/local 本地安装的软件和其他文件的目录
+
+/var/catman 当man页要求格式化时的缓存区
+/var/lib 系统正常运行是要改变的文件
+/var/local /usr/local中安装的程序的可变数据，系统管理员安装的程序
+/var/lock 锁定文件
+/var/log 各种程序的Log文件
+/var/run 保存到下次引导前有效的关于系统的信息文件
+/var/spool mail、news、打印队列和其他队列工作的目录
+/var/tmp 存放比/tmp允许的大或需要存在较长时间的临时文件
+
+/proc/1 关于进程的信息目录
+/proc/cpuinfo 处理器信息
+/proc/devices 当前运行的内核配置的设备驱动的列表
+/proc/dma 显示当前使用的DMA通道
+/proc/filesystems 内核配置的文件系统
+/proc/interrupts 显示使用的中断
+/proc/ioports 当前使用的I/O端口
+/proc/kcore 系统物理内存映象
+/proc/kmsg 内核输出的消息
+/proc/ksyms 内核符号表
+/proc/loadavg 系统“平均负荷”
+/proc/meminfo 存储器使用信息，包括物理内存和swap
+/proc/modules 当前加载了哪些内核模块
+/proc/net 网络协议状态信息
+/proc/self 查看/proc的程序的进程目录的符号连接
+/proc/stat 系统的不同状态
+/proc/uptime 系统启动的时间长度
+/proc/version 内核版本
+
+
+
+/bin是超级用户和一般用户都可以使用的命令；/usr/bin是安装的软件的命令  usr表示的是unix software source
+
+/bin 二进制可执行命令
+/sbin 系统管理命令，这里存放的是系统管理员使用的管理程序
+/usr/bin 众多的应用程序
+/usr/sbin 超级用户的一些管理程序
+
+According to the FHS, the / directory must contain, or have
+links to, the following directories:
+
+bin — This directory contains command files for use by the
+system administrator or other users. The bin directory can
+not contain subdirectories.
+
+boot — On Red Hat systems, this is the directory
+containing the kernel, the core of the operating system. Also
+in this directory are files related to booting the system, such
+as the bootloader.
+
+dev — This directory contains files with information about
+devices, either hardware or software devices, on the system.
+
+etc — This directory and its subdirectories contain most of
+the system configuration files. If you have the X Window
+System installed on your system, the X11 subdirectory is
+located here. Networking related files are in the subdirectory
+sysconfig.
+Another subdirectory of etc is the skel directory, which is
+used to create files in users’ home directories when the users
+are created.
+
+home — This directory contains the directories of users on
+the system. Subdirectories of home will be named for the
+user to whom they belong.
+
+lib — The shared system files and kernel modules are
+contained in this directory and its subdirectories.
+
+mnt — This directory is the location of the mount point for
+temporary file systems, such as a floppy or CD.
+
+opt — This directory and its subdirectories are often used
+to hold applications installed on the system.
+
+proc — Information about system processes is included in
+this directory.
+
+root — This is the home directory of the root user. Don’t
+confuse this with the / directory, which has the same name.
+
+sbin — Contained in this directory are system binaries
+used by the system administrator or the root user.
+
+tmp — This directory contains temporary files used by the
+system.
+
+usr — This directory is often mounted on its own partition.
+It contains shareable, read-only data. Subdirectories can be
+used for applications,
+typically under /usr/local.
+
+var — Subdirectories and files under var contain variable
+information, such as system logs and print queues
+
+【Some important /proc files are】：
+/proc/cpuinfo — contains info about the CPU
+/proc/interrupts — tells you what interrupts are in use
+/proc/scsi — tells you what kind of SCSI adapter is installed
+/proc/parport — contains info about the parallel ports on
+your system
+/proc/tty — contains info about ttys that are available and in
+use
+/proc/apm — contains advanced power management
+information
+/proc/bus — a directory that contains bus-specific
+information
+/proc/devices — lists available character and block devices
+/proc/dma — lists used DMS channels
+/proc/filesystems — lists supported file systems
+/proc/fs — contains file system parameters
+/proc/ide — directory that contains information about the IDE
+subsystem
+/proc/ioports — contains information about system I/O port
+usage
+/proc/modules — contains a list of currently loaded modules
+/proc/net — contains networking information
+/proc/uptime — contains the system uptime
+/proc/version — contains the system version

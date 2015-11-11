@@ -1,0 +1,521 @@
+saltstack的深入-配置zabbix所需的server,web,agent
+
+
+操作内容：
+一、基础环境
+1、使用tvm-cobbler安装一个tvm-zabbix虚拟机来做实验。在“配置zabbix所需的mysql-server”的基础上继续操作
+2、网络：
+eth0：host-only（用于虚拟内网，手动固定IP，这样从宿主机可以直接连接到这个vm）
+eth1：NAT（用于上外网，动态IP）
+[root@tvm-zabbix ~]# cd /etc/sysconfig/network-scripts/
+[root@tvm-zabbix network-scripts]# cat ifcfg-eth0
+DEVICE=eth0
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=192.168.56.200
+PREFIX=24
+GATEWAY=192.168.56.1
+DNS1=192.168.56.254
+
+[root@tvm-zabbix network-scripts]# cat ifcfg-eth1
+DEVICE=eth1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+DNS1=192.168.56.254
+
+[root@tvm-zabbix ~]# df -h
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda3        36G  1.8G   32G   6% /
+tmpfs           499M   12K  499M   1% /dev/shm
+/dev/sda1       194M   29M  155M  16% /boot
+/dev/sdb1        99G  188M   94G   1% /data
+
+
+使用域名：
+[root@tvm-yum ~]# cat /etc/dnsmasq.d/office.conf |grep zbx-m
+address=/zbx-m.office.test/192.168.56.200
+
+3、repo
+我们在自己的office这个repo中已经增加了几个rpm包：
+[root@tvm-zabbix ~]# yum search --disablerepo='*' --enablerepo='office' zabbix                      
+Loaded plugins: fastestmirror, security
+Loading mirror speeds from cached hostfile
+======================================================================================= N/S Matched: zabbix ========================================================================================
+percona-zabbix-templates.noarch : Percona Monitoring Plugins for Zabbix
+zabbix-agent.x86_64 : Zabbix Agent
+zabbix-get.x86_64 : Zabbix Get
+zabbix-java-gateway.x86_64 : Zabbix java gateway
+zabbix-sender.x86_64 : Zabbix Sender
+zabbix-server.x86_64 : Zabbix server common files
+zabbix-server-mysql.x86_64 : Zabbix server compiled to use MySQL database
+zabbix-web.noarch : Zabbix Web Frontend
+zabbix-web-mysql.noarch : Zabbix web frontend for MySQL
+zabbix.x86_64 : Enterprise-class open source distributed monitoring solution.
+
+  Name and summary matches only, use "search all" for everything.
+  
+  
+二、配置
+1、文件结构
+[root@tvm-saltmaster base]# tree zabbix/
+zabbix/
+├── agent.sls
+├── server.sls
+└── web.sls
+
+0 directories, 3 files
+
+[root@tvm-saltmaster base]# tree conf.d/zabbix/
+conf.d/zabbix/
+├── httpd_zabbix.conf
+├── php_zabbix.ini
+├── README.txt
+├── scripts
+│?? ├── check_conn.py
+│?? └── nginx_status
+├── tpl.zabbix_agentd.conf
+├── tpl.zabbix_server.conf
+├── zabbix_agentd.conf
+├── zabbix_agentd.d
+│?? ├── userparameter_default.conf
+│?? ├── userparameter_dell.conf
+│?? ├── userparameter_nginx.conf
+└── zabbix_server.conf
+
+2 directories, 12 files
+
+
+2、sls配置
+1）init
+===================================================init
+[root@tvm-saltmaster base]# cat zabbix/init.sls 
+include:
+  - agent
+===================================================init end
+
+2）server
+===================================================server
+[root@tvm-saltmaster base]# cat zabbix/server.sls 
+## 安装mysql db for zabbix, zabbix-server
+# 
+# via pc @ 2015/8/13
+
+zabbix-server-mysql-create:
+  cmd.run:
+## for zabbix db
+# mysql> create database zabbix character set utf8 collate utf8_bin;
+# msyql> grant all privileges on zabbix.* to zabbix@localhost identified by 'zabbix';
+    - onlyif: s_zbx_pwd='zabbix'; zbx_tables=$(mysql -uzabbix -p${s_zbx_pwd} -e 'use zabbix;show tables;' |wc -l); test $zbx_tables -eq 0;
+    - name: cd /usr/share/doc/zabbix-server-mysql-2.4.6/create/;
+        s_zbx_pwd='zabbix';
+        mysql -uzabbix -p${s_zbx_pwd} zabbix <schema.sql;
+        mysql -uzabbix -p${s_zbx_pwd} zabbix <images.sql;
+        mysql -uzabbix -p${s_zbx_pwd} zabbix <data.sql;
+
+
+zabbix-server-mysql:
+  pkg.installed:
+## for local-office.repo
+#
+    - fromrepo: office,epel,base
+    - name: zabbix-server-mysql
+    - skip_verify: True
+    - refresh: True
+    - require_in:
+      - file: /etc/zabbix/zabbix_server.conf
+  service.running:
+    - name: zabbix-server
+    - enable: True
+    - restart: True
+    - watch:
+      - file: zabbix-server-conf
+    - require:
+      - pkg: zabbix-server-mysql
+
+
+zabbix-server-conf:
+  file.managed:
+    - name: /etc/zabbix/zabbix_server.conf
+    - source: salt://conf.d/zabbix/zabbix_server.conf
+    - template: jinja
+
+
+## for iptables
+zabbix-10051:
+  cmd.run:
+    - unless: grep 'zabbix-server added' /etc/sysconfig/iptables
+    - name:
+        sed -i
+        '/-A INPUT -i lo -j ACCEPT/a\## zabbix-server added.
+        \n-A INPUT -p tcp -m state --state NEW -m tcp --dport 10051 -j ACCEPT
+        \n-A INPUT -p udp -m state --state NEW -m udp --dport 10051 -j ACCEPT
+        ' /etc/sysconfig/iptables
+
+zabbix-10051-tcp:
+  cmd.run:
+    - unless: /sbin/iptables -nL |grep 'tcp dpt:10051'
+    - name: /sbin/iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 10051 -j ACCEPT
+
+zabbix-10051-udp:
+  cmd.run:
+    - unless: /sbin/iptables -nL |grep 'udp dpt:10051'
+    - name: /sbin/iptables -I INPUT -p udp -m state --state NEW -m udp --dport 10051 -j ACCEPT
+
+===================================================server end
+
+3）web
+===================================================web
+[root@tvm-saltmaster base]# cat zabbix/web.sls 
+## 安装zabbix-web-mysql
+# 
+# via pc @ 2015/8/13
+
+zabbix-web-mysql:
+  pkg.installed:
+## for local-office.repo
+#
+    - fromrepo: office,epel,base
+    - name: zabbix-web-mysql
+    - skip_verify: True
+    - refresh: True
+  service.running:
+    - name: httpd
+    - enable: True
+    - reload: True
+    - watch:
+      - file: zabbix-web-conf
+      - file: zabbix-web-php
+    - require:
+      - pkg: zabbix-web-mysql
+
+zabbix-web-conf:
+  file.managed:
+    - name: /etc/httpd/conf.d/zabbix.conf
+    - source: salt://conf.d/zabbix/httpd_zabbix.conf
+    - require:
+      - pkg: zabbix-web-mysql
+
+zabbix-web-php:
+  file.managed:
+    - name: /etc/php.ini
+    - source: salt://conf.d/zabbix/php_zabbix.ini
+    - require:
+      - pkg: zabbix-web-mysql
+
+## for iptables
+zabbix-80:
+  cmd.run:
+    - unless: grep 'zabbix-web added' /etc/sysconfig/iptables
+    - name:
+        sed -i
+        '/-A INPUT -i lo -j ACCEPT/a\## zabbix-web added.
+        \n-A INPUT -p tcp -m state --state NEW -m tcp --dport 80 -j ACCEPT
+        ' /etc/sysconfig/iptables
+    - require:
+      - pkg: zabbix-web-mysql
+
+zabbix-80-tcp:
+  cmd.run:
+    - unless: /sbin/iptables -nL |grep 'tcp dpt:80'
+    - name: /sbin/iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 80 -j ACCEPT
+    - require:
+      - pkg: zabbix-web-mysql
+      
+===================================================web end
+
+4）agent
+===================================================agent
+[root@tvm-saltmaster base]# cat zabbix/agent.sls 
+## 安装zabbix-agent
+# 
+# via pc @ 2015/8/17
+
+zabbix-agent:
+  pkg.installed:
+## for local-office.repo
+#
+    - fromrepo: office
+    - name: zabbix-agent
+    - skip_verify: True
+    - refresh: True
+    - version: 2.4.6-1.el6
+
+userparameter_mysql.conf:
+  file.absent:
+    - name: /etc/zabbix/zabbix_agentd.d/userparameter_mysql.conf
+    - require:
+      - pkg: zabbix-agent
+
+zabbix-agent-start:
+  service.running:
+    - name: zabbix-agent
+    - enable: True
+    - restart: True
+    - watch:
+      - file: /etc/zabbix/zabbix_agentd.conf
+      - file: /etc/zabbix/zabbix_agentd.d
+    - require:
+      - pkg: zabbix-agent
+
+zabbix-agent-conf:
+  file.managed:
+    - name: /etc/zabbix/zabbix_agentd.conf
+    - source: salt://conf.d/zabbix/zabbix_agentd.conf
+    - template: jinja
+    - require:
+      - pkg: zabbix-agent
+
+zabbix-agent-dir:
+  file.recurse:
+    - name: /etc/zabbix/zabbix_agentd.d
+    - source: salt://conf.d/zabbix/zabbix_agentd.d/
+    - mkdirs: True
+    - require:
+      - pkg: zabbix-agent
+
+zabbix-agent-scripts:
+  file.recurse:
+    - name: /etc/zabbix/scripts
+    - source: salt://conf.d/zabbix/scripts/
+    - mkdirs: True
+    - require:
+      - pkg: zabbix-agent
+
+zabbix-agent-conf-monit:
+  file.managed:
+    - name: /etc/monit.d/zabbix-agent.conf
+    - source: salt://conf.d/monit/zabbix-agent.conf
+    - require:
+      - pkg: zabbix-agent
+
+
+
+## for iptables
+zabbix-10050:
+  cmd.run:
+    - unless: grep 'zabbix-agent added' /etc/sysconfig/iptables
+    - name:
+        sed -i
+        '/-A INPUT -i lo -j ACCEPT/a\## zabbix-agent added.
+        \n-A INPUT -p tcp -m state --state NEW -m tcp --dport 10050 -j ACCEPT
+        \n-A INPUT -p udp -m state --state NEW -m udp --dport 10050 -j ACCEPT
+        ' /etc/sysconfig/iptables
+    - require:
+      - pkg: zabbix-agent
+
+zabbix-10050-tcp:
+  cmd.run:
+    - unless: /sbin/iptables -nL |grep 'tcp dpt:10050'
+    - name: /sbin/iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 10050 -j ACCEPT
+    - require:
+      - pkg: zabbix-agent
+
+zabbix-10050-udp:
+  cmd.run:
+    - unless: /sbin/iptables -nL |grep 'udp dpt:10050'
+    - name: /sbin/iptables -I INPUT -p udp -m state --state NEW -m udp --dport 10050 -j ACCEPT
+    - require:
+      - pkg: zabbix-agent
+
+
+===================================================agent end
+
+3、conf配置
+1）README.txt
+===================================================README.txt
+[root@tvm-saltmaster base]# cat conf.d/zabbix/README.txt 
+# 简化配置文件：
+grep ^[^#] tpl.zabbix_agentd.conf >zabbix_agentd.conf
+grep ^[^#] tpl.zabbix_server.conf >zabbix_server.conf
+===================================================README.txt end
+2）httpd_zabbix.conf
+对比默认文件，仅修改了timezone这行：
+php_value date.timezone Asia/Shanghai
+附上完整的配置：
+===================================================httpd_zabbix.conf
+[root@tvm-saltmaster base]# cat conf.d/zabbix/httpd_zabbix.conf 
+#
+# Zabbix monitoring system php web frontend
+#
+
+Alias /zabbix /usr/share/zabbix
+
+<Directory "/usr/share/zabbix">
+    Options FollowSymLinks
+    AllowOverride None
+    Order allow,deny
+    Allow from all
+
+    php_value max_execution_time 300
+    php_value memory_limit 128M
+    php_value post_max_size 16M
+    php_value upload_max_filesize 2M
+    php_value max_input_time 300
+    php_value date.timezone Asia/Shanghai
+</Directory>
+
+<Directory "/usr/share/zabbix/conf">
+    Order deny,allow
+    Deny from all
+    <files *.php>
+        Order deny,allow
+        Deny from all
+    </files>
+</Directory>
+
+<Directory "/usr/share/zabbix/api">
+    Order deny,allow
+    Deny from all
+    <files *.php>
+        Order deny,allow
+        Deny from all
+    </files>
+</Directory>
+
+<Directory "/usr/share/zabbix/include">
+    Order deny,allow
+    Deny from all
+    <files *.php>
+        Order deny,allow
+        Deny from all
+    </files>
+</Directory>
+
+<Directory "/usr/share/zabbix/include/classes">
+    Order deny,allow
+    Deny from all
+    <files *.php>
+        Order deny,allow
+        Deny from all
+    </files>
+</Directory>
+===================================================httpd_zabbix.conf end
+
+3）php_zabbix.ini
+和昨天配置mysql时用到的一致。
+===================================================php_zabbix.ini end
+[root@tvm-saltmaster base]# cat conf.d/zabbix/php_zabbix.ini |grep -E 'timezone|mysql.sock' |grep -v ';'
+date.timezone = Asia/Shanghai
+mysql.default_socket = /data/mysql/mysql.sock
+mysqli.default_socket = /data/mysql/mysql.sock
+===================================================php_zabbix.ini end
+
+4）zabbix_agentd.conf
+===================================================zabbix_agentd.conf
+[root@tvm-saltmaster base]# cat conf.d/zabbix/zabbix_agentd.conf 
+PidFile=/var/run/zabbix/zabbix_agentd.pid
+LogFile=/var/log/zabbix/zabbix_agentd.log
+LogFileSize=5
+Server=zbx-m.office.test
+ListenIP={{ grains['ip_interfaces']['eth0'][0] }}
+ServerActive=zbx-m.office.test
+Hostname={{ grains['id'] }}
+Include=/etc/zabbix/zabbix_agentd.d/
+UnsafeUserParameters=1
+===================================================zabbix_agentd.conf end
+
+5）zabbix_server.conf
+===================================================zabbix_server.conf
+[root@tvm-saltmaster base]# cat conf.d/zabbix/zabbix_server.conf 
+LogFile=/var/log/zabbix/zabbix_server.log
+LogFileSize=10
+PidFile=/var/run/zabbix/zabbix_server.pid
+DBHost=localhost
+DBName=zabbix
+DBUser=zabbix
+DBPassword=zabbix
+DBSocket=/data/mysql/mysql.sock
+DBPort=3306
+SNMPTrapperFile=/var/log/snmptt/snmptt.log
+AlertScriptsPath=/usr/lib/zabbix/alertscripts
+ExternalScripts=/usr/lib/zabbix/externalscripts
+===================================================zabbix_server.conf end
+
+
+
+三、执行
+[root@tvm-saltmaster base]# salt 'tvm-zabbix' state.sls zabbix.server --output-file='/tmp/z1.log' 
+[root@tvm-saltmaster base]# salt 'tvm-zabbix' state.sls zabbix.web --output-file='/tmp/z2.log' 
+[root@tvm-saltmaster base]# salt 'tvm-zabbix' state.sls zabbix.agent --output-file='/tmp/z3.log' 
+
+
+
+四、配置zabbix-web
+1、访问：
+http://192.168.56.200/zabbix
+根据引导一步步操作，然后登录web页面。
+
+2、我们来使用下“Active agent auto-registration”的功能
+1）configuration-action页面，找到右上方“Create action”下面有个下拉框“Event Source”，选择：“Auto registration”
+2）点击“Create action”创建一个动作
+3）在“Action”选项卡输入一个“Name”：test auto registration
+4）在“Conditions”选项卡新增一个条件：Host name like tvm
+5）在“Operations”选项卡新增操作：
+Add to host groups: Linux servers
+Link to templates: Template OS Linux
+
+保存。
+
+3、配置zabbix-web报警
+1）脚本（调用在“saltstack的深入-管理python-pip”这篇提到的发送邮件的脚本：sendEmail）
+[root@tvm-zabbix ~]# cat /usr/lib/zabbix/alertscripts/mailman.sh 
+#!/bin/bash
+# 
+# 2015/8/18
+export LANG="en_US.UTF-8"
+
+echo -e "`date +%F' '%T` \n$1 $2 $3 \n\n"  >>/var/log/zabbix/mail_send.log
+
+/usr/bin/sendEmail -o message-charset=utf8 \
+-s smtp.xxx.com \
+-xu username \
+-xp password \
+-f from@company.com \
+-t "$1" \
+-u "$2" \
+-m "$3" >>/var/log/zabbix/mail_detail.log 2>&1 &
+
+[root@tvm-zabbix ~]# chown zabbix:zabbix /usr/lib/zabbix/alertscripts/mailman.sh \
+&& chmod 700 /usr/lib/zabbix/alertscripts/mailman.sh \
+&& ls -l /usr/lib/zabbix/alertscripts/mailman.sh
+-rwx------ 1 zabbix zabbix 240 Aug 18 17:08 /usr/lib/zabbix/alertscripts/mailman.sh
+
+2）在web上操作：增加Media types
+Administrator-Media types-Email
+选择 
+Type: Script
+Script name: mailman.sh
+
+3）在web上操作：给用户增加media
+Administrator-Users-user-Media
+新增一个邮箱。
+
+4）增加action
+1）configuration-action页面，找到右上方“Create action”下面有个下拉框“Event Source”，选择：“Triggers”
+2）创建一个，注意operations中增加操作时，
+Operation type: Send message
+Send to Users: 选择用户
+Send only to: Email
+
+
+测试符合预期。
+
+
+
+五、Q&A
+【Q】：当某个主机的hostname被更改后，此时salt通过grains获取的id会变化吗？如果会，多久才产生变化呢？对zabbix-agent的配置管理和zabbix-agent的自动注册如何改进？
+A：使用{{ grains['id'] }}来取minion的值，而不是fqdn或host，这样得到的值不会产生变化，除非这个minion的配置做了变更。
+
+
+ZYXW、参考
+1、老大提供的saltstack相关资料。
+2、zabbix doc
+https://www.zabbix.com/documentation/2.4/manual/installation/install_from_packages#red_hat_enterprise_linux_centos
+https://www.zabbix.com/documentation/2.4/manual/discovery/auto_registration
+3、salt doc
+http://docs.saltstack.com/en/latest/ref/states/all/salt.states.pkg.html
+

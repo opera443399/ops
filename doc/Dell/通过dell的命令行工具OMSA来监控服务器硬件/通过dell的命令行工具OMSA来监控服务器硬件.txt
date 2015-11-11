@@ -1,0 +1,47 @@
+通过dell的命令行工具OMSA来监控服务器硬件
+
+Dell OpenManage™ Server Administrator
+
+salt的配置：
+[root@saltmaster base]# cat dell/init.sls       
+{% if grains['virtual'] == 'physical' or (grains['virtual'] == 'xen' and grains['virtual_subtype'] == 'Xen Dom0') %}
+dellpkgs:
+  pkg.installed:
+    - pkgs:
+      - srvadmin-all
+    - refresh: True
+
+/usr/bin/omreport:
+  file.symlink:
+    - target: /opt/dell/srvadmin/sbin/omreport
+    - requires:
+      - pkg: dellpkgs
+
+/usr/bin/omconfig:
+  file.symlink:
+    - target: /opt/dell/srvadmin/sbin/omconfig
+    - requires:
+      - pkg: dellpkgs
+
+{% for ss in 'dataeng','instsvcdrv' %}
+{{ ss }}:
+  service:
+    - running
+    - enable: True
+    - watch:
+      - pkg: dellpkgs
+{% endfor %}
+
+sblim-sfcb:
+  service.dead:
+    - enable: False
+
+{% endif %} 
+
+
+参考
+1、现有正在使用的配置
+2、Zabbix企业应用之服务器硬件信息监控
+http://os.51cto.com/art/201404/437164.htm
+3、服务器硬件监控之OMSA
+http://www.tuicool.com/articles/AbABZrY

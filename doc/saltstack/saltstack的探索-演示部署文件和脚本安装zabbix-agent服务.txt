@@ -1,0 +1,287 @@
+saltstack的探索-演示部署文件和脚本安装zabbix-agent服务
+
+1. 配置salt-master
+# yum  -y install salt-master
+# service salt-master start
+
+防火墙放行端口：4505:4506
+
+
+2. 配置其他主机test1-test9为minion
+# yum  -y install salt-minion
+
+调整配置文件
+# vim /etc/salt/minion
+master: ip
+id: hostname
+
+以其中一个minion为例：
+# cp -a /etc/salt/minion /etc/salt/minion.bak && s_ip=10.10.10.1 && s_host=$(hostname) && sed -i -e "s/#master: salt/master: ${s_ip}/"  -e "s/#id:/id: ${s_host}/" /etc/salt/minion && cat /etc/salt/minion |grep ^[^#]
+master: 10.10.10.1
+id: test1.company.com
+
+# service salt-minion start
+
+
+
+3. master接受minion
+[root@master ~]# salt-key -L
+Accepted Keys:
+Unaccepted Keys:
+test1.company.com
+test2.company.com
+test3.company.com
+test4.company.com
+test5.company.com
+test6.company.com
+test7.company.com
+test8.company.com
+test9.company.com
+Rejected Keys:
+[root@master ~]# salt-key -a *.company.com
+The following keys are going to be accepted:
+Unaccepted Keys:
+test1.company.com
+test2.company.com
+test3.company.com
+test4.company.com
+test5.company.com
+test6.company.com
+test7.company.com
+test8.company.com
+test9.company.com
+Proceed? [n/Y] y
+Key for minion test1.company.com accepted.
+Key for minion test2.company.com accepted.
+Key for minion test3.company.com accepted.
+Key for minion test4.company.com accepted.
+Key for minion test5.company.com accepted.
+Key for minion test6.company.com accepted.
+Key for minion test7.company.com accepted.
+Key for minion test8.company.com accepted.
+Key for minion test9.company.com accepted.
+
+
+[root@master ~]# salt "*.company.com" test.ping
+test1.company.com:
+    True
+test2.company.com:
+    True
+test3.company.com:
+    True
+test4.company.com:
+    True
+test5.company.com:
+    True
+test6.company.com:
+    True
+test7.company.com:
+    True
+test8.company.com:
+    True
+test9.company.com:
+    True
+    
+
+4. 【更新vim配置】
+[root@master salt]# salt '*.company.com' state.sls edit.vim
+
+salt的配置如下：
+-----------
+[root@master srv]# ls
+pillar  salt
+[root@master srv]# pwd
+/srv
+[root@master srv]# cat salt/edit/vim.sls 
+vim:
+    pkg:
+      - installed
+      - name: {{ pillar['pkgs']['vim'] }}
+ 
+/root/.vimrc:
+    file.managed:
+        - source: salt://edit/conf/vimrc
+        - mode: 644
+        - uesr: root
+        - group: root
+        - require:
+          - pkg: vim
+[root@master srv]# ls salt/edit/conf/
+vimrc
+[root@master srv]# cat pillar/top.sls 
+base:
+  '*':
+    - pkg
+[root@master srv]# cat pillar/pkg/init.sls 
+pkgs:
+  {% if grains['os_family'] == 'RedHat' %}
+  vim: vim-enhanced
+  {% elif grains['os_family'] == 'Debian' %}
+  vim: vim
+  {% elif grains['os'] == 'Arch' %}
+  vim: vim
+  {% endif %}
+-----------
+
+
+
+5. 【增加zabbix-agent】
+目录和脚本：
+[root@master salt]# ls zabbix/
+agent.sls  bin/       sbin/      
+[root@master salt]# ls zabbix/bin/
+install_agent.sh  zabbix-agent
+[root@master salt]# ls zabbix/sbin/
+zabbix_agent  zabbix_agentd
+[root@master salt]# cat zabbix/bin/install_agent.sh 
+#!/bin/bash
+#
+# 2015/4/10
+
+cip=$(ip a s dev em2  |grep "global" |awk '{print $2}' |cut -d '/' -f1)
+sip='10.10.10.10'
+
+#cp ./zabbix-agent /etc/init.d/
+#cp ../sbin/zabbix* /usr/sbin/
+mkdir -p /etc/zabbix/zabbix_agentd.conf.d
+cat <<_CFG >>/etc/zabbix/zabbix_agentd.conf
+PidFile=/tmp/zabbix_agentd.pid
+LogFile=/tmp/zabbix_agentd.log
+SourceIP=$cip
+Server=$sip
+ListenIP=$cip
+ServerActive=$sip
+Hostname=$cip
+Timeout=30
+Include=/etc/zabbix/zabbix_agentd.conf.d/
+_CFG
+
+useradd -s /sbin/nologin -d /var/lib/zabbix -c "Zabbix Monitoring System" zabbix
+chmod +x /etc/init.d/zabbix-agent
+service zabbix-agent start
+chkconfig zabbix-agent on
+chkconfig --list |grep zabbix
+
+
+salt配置：
+[root@master salt]# cat zabbix/agent.sls 
+/usr/sbin/zabbix_agent:
+  file.managed:
+    - source: salt://zabbix/sbin/zabbix_agent
+    - mode: 755
+
+/usr/sbin/zabbix_agentd:
+  file.managed:
+    - source: salt://zabbix/sbin/zabbix_agentd
+    - mode: 755
+
+/etc/rc.d/init.d/zabbix-agent:
+  file.managed:
+    - source: salt://zabbix/bin/zabbix-agent
+    - mode: 755
+
+/data/ops/bin/install_agent.sh:
+  file.managed:
+    - source: salt://zabbix/bin/install_agent.sh
+    - mode: 755
+  require:
+    - file: /etc/rc.d/init.d/zabbix-agent
+
+install-agent:
+  cmd.run:
+    - require:
+      - file: /data/ops/bin/install_agent.sh
+    - name: /bin/bash /data/ops/bin/install_agent.sh
+
+
+在其中一台上测试执行这个sls：
+[root@master salt]# salt 'test1.company.com' state.sls zabbix.agent
+test1.company.com:
+----------
+          ID: /usr/sbin/zabbix_agent
+    Function: file.managed
+      Result: True
+     Comment: File /usr/sbin/zabbix_agent updated
+     Started: 17:01:15.356802
+    Duration: 352.254 ms
+     Changes:   
+              ----------
+              diff:
+                  New file
+              mode:
+                  0755
+----------
+          ID: /usr/sbin/zabbix_agentd
+    Function: file.managed
+      Result: True
+     Comment: File /usr/sbin/zabbix_agentd updated
+     Started: 17:01:15.709238
+    Duration: 93.603 ms
+     Changes:   
+              ----------
+              diff:
+                  New file
+              mode:
+                  0755
+----------
+          ID: /etc/rc.d/init.d/zabbix-agent
+    Function: file.managed
+      Result: True
+     Comment: File /etc/rc.d/init.d/zabbix-agent updated
+     Started: 17:01:15.802999
+    Duration: 8.472 ms
+     Changes:   
+              ----------
+              diff:
+                  New file
+              mode:
+                  0755
+----------
+          ID: /data/ops/bin/install_agent.sh
+    Function: file.managed
+      Result: True
+     Comment: File /data/ops/bin/install_agent.sh updated
+     Started: 17:01:15.811627
+    Duration: 7.134 ms
+     Changes:   
+              ----------
+              diff:
+                  New file
+              mode:
+                  0755
+----------
+          ID: install-agent
+    Function: cmd.run
+        Name: /bin/bash /data/ops/bin/install_agent.sh
+      Result: True
+     Comment: Command "/bin/bash /data/ops/bin/install_agent.sh" run
+     Started: 17:01:15.819710
+    Duration: 118.255 ms
+     Changes:   
+              ----------
+              pid:
+                  3524
+              retcode:
+                  0
+              stderr:
+                  
+              stdout:
+                  Starting Zabbix agent: [  OK  ]
+                  zabbix-agent          0:off   1:off   2:on    3:on    4:on    5:on    6:off
+
+Summary
+------------
+Succeeded: 5 (changed=5)
+Failed:    0
+------------
+Total states run:     5
+
+
+确认无误后，批量执行。
+[root@master salt]# salt '*.company.com' state.sls zabbix.agent
+
+注：后续再采用rpm包来安装，此处只是简单的做法，演示部署文件和脚本。
+
+
+
+

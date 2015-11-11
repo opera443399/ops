@@ -1,0 +1,23 @@
+#!/usr/bin/python
+#
+# 2015/8/14
+
+import os
+import sys
+
+def gen_pw():
+# yum -y install python-pip
+# pip install pwgen
+    p = os.popen('/usr/bin/pwgen -1 -B -n 10')
+    p = p.read().strip('\n')
+    p = p[:5].upper() + p[5:].lower()
+    return p
+
+def print_msg():
+    p1 = gen_pw()
+    p2 = gen_pw()
+    #msg = 'root:{0}  root1:{1}'.format(p1,p2)
+    msg = '{0} {1}'.format(p1,p2)
+    print msg
+if __name__ == '__main__':
+    print_msg()

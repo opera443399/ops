@@ -1,0 +1,304 @@
+8. xamp
+----------
+
+---apache
+（之前在配置vsftpd时，因为要使用htpasswd，已经安装过apache，方法如下）
+# apt-get install apache2.2
+
+修改: /etc/apache2/apache2.conf
+# vim /etc/apache2/apache2.conf
+
+
+---在第174行后增加：
+AddType application/x-httpd-php .php
+AddType application/x-httpd-php-source .phps
+
+---用以提供对php的支持。
+
+
+重启服务：
+# /etc/init.d/apache2 restart
+
+
+---mysql
+
+安装：
+# apt-get install mysql-server-5.0 mysql-common mysql-client
+
+
+
+备份：
+具体参考脚本实例：【mysqlbackup】
+----
+#!/bin/bash
+
+#mysql daily backup
+#
+#before use this, add new mysql user: backupadmin, like this:
+#mysql > grant SELECT, LOCK TABLES on *.* to backupadmin@localhost identifed by 'backupadmin';
+#
+#
+
+ori_dir="/home/backup/db/"
+targ_dir="/mnt/win7share/backup-debian/db/"
+filename="mysqldb_"
+num=`date +%Y%m%d%H%M%S`
+mysqldump -ubackupadmin -pbackupadmin --single-transaction --all-databases > ${ori_dir}${filename}${num}.sql
+find $ori_dir -mtime +14 | xargs rm -f --
+cp ${ori_dir}* $targ_dir
+----
+
+
+
+---php
+# apt-get install php5-common php5-mysql php5-cgi php5-gd php5-mcrypt libapache2-mod-php5 php5-memcache php5-imagick php5-suhosin php5-xmlrpc
+
+
+测试：
+新建文件：/var/www/index.php
+# vim /var/www/index.php
+
+<?php
+phpinfo();
+?>
+
+此时刷新主页，应该能显示phpinfo。
+
+
+
+---phpmyadmin
+
+# apt-get install phpmyadmin
+
+# cp -rf /usr/share/phpmyadmin /var/www/phpmyadmin
+
+
+
+---ZendGuardLoader
+---下载：
+# cd /usr/local/src
+
+# wget http://downloads.zend.com/guard/5.5.0/ZendGuardLoader-php-5.3-linux-glibc23-i386.tar.gz
+# tar zxvf ZendGuardLoader-php-5.3-linux-glibc23-i386.tar.gz
+# cd ZendGuardLoader-php-5.3-linux-glibc23-i386
+# mkdir /usr/local/zend
+# cp php-5.3.x/ZendGuardLoader.so /usr/local/zend
+
+配置php.ini：
+# vim /etc/php5/apache/php.ini
+
+
+---文末加上：
+-----
+zend_extension=/usr/zend/ZendGuardLoader.so
+zend_loader.enable=1
+zend_loader.disable_licensing=0
+zend_loader.obfuscation_level_support=3
+zend_loader.license_path=
+-----
+---重启apache。
+
+
+---eaccrelerator
+---下载：
+# mkdir /tmp/eaccelerator
+
+# chmod 0777 /tmp/eaccelerator
+# wget http://bbs.linuxtone.org/docs/soft/lemp/packages/eaccelerator-0.9.6.1.tar.bz2
+# tar xvjf eaccelerator-0.9.6.1.tar.bz2
+# cd eaccelerator-0.9.6.1
+# phpize
+# ./configure --enable-eaccelerator=shared
+# make
+# make install
+
+
+【如果phpize, make 无法使用，则需要安装phpize,make等环境】
+# apt-get install php5-dev 
+
+# apt-get install make
+
+配置：/etc/php5/apache2/php.ini
+# vim /etc/php5/apache2/php.ini
+
+
+---文末加入：
+-----
+zend_extension="/usr/lib/php5/20090626+lfs/eaccelerator.so"
+eaccelerator.shm_size="16"
+eaccelerator.cache_dir="/tmp/eaccelerator"
+eaccelerator.enable="1"
+eaccelerator.optimizer="1"
+eaccelerator.check_mtime="1"
+eaccelerator.debug="0"
+eaccelerator.filter=""
+eaccelerator.shm_max="0"
+eaccelerator.shm_ttl="0"
+eaccelerator.shm_prune_period="0"
+eaccelerator.compress="1"
+eaccelerator.compress_level="9"
+eaccelerator.allowed_admin_path="/var/www/control.php"
+-----
+重启apache。
+
+(DONE)
+可通过页面访问eAccelerator control panel:  
+username : admin
+password : eAccelerator
+
+
+9. mediawiki
+
+---安装
+# apt-get install mediawiki
+
+
+
+---在/etc/mediawiki/apache.conf总添加这一行，或取消该行的注释：Alias /mediawiki /usr/lib/mediawiki
+
+# vim /etc/mediawiki/apache.conf
+
+(...)
+;Alias /mediawiki /usr/lib/mediawiki
+(...)
+
+在网站目录下建立wiki文件夹，软连接到mediawiki目录下的文件
+# mkdir /var/www/wiki
+
+# cd /var/www/wiki
+# ln -s /var/lib/mediawiki/* .
+
+# chown -R www-data /var/www/wiki
+
+
+---访问：http://pc.world/wiki 开始安装。安装完成后，注意将配置文件拷贝：
+# mv /var/www/wiki/config/LocalSettings.php /etc/mediawiki/
+
+
+
+---为了安全因素，删除wiki/config目录：
+# rm /var/www/wiki/config
+
+
+---wiki语言版本修过：
+# vim /etc/mediawiki/LocalSettings.php
+(...)
+$wgLanguageCode = "zh";
+
+
+
+10. apache 目录权限，别名，虚拟主机，子目录型网页。
+
+---修改权限，禁止浏览/var/www/这个根目录下的文件
+# vim /etc/apache2/sites-available/default
+
+
+---找到这段：
+---
+        <Directory /var/www>
+                Options Indexes FollowSymLinks MultiViews
+                AllowOverride None
+                Order allow,deny
+                allow from all
+        </Directory>
+---
+---修改Options 为 “Options -Indexes FollowSymLinks MultiViews”
+
+个人理解，这里的意思是去掉访问首页的目录，链接，和多人浏览的权限。
+---重启服务：
+# /etc/init.d/apache2 restart
+
+
+(DONE)
+
+
+---添加别名：
+# vim /etc/apache2/httpd.conf
+
+-----
+Alias /main    "/var/www/web/html"
+-----
+
+
+(DONE)
+
+
+
+---子目录型网页
+# vim /etc/apache2/httpd.conf
+
+-----
+Alias /nosmo "/home/nosmo/html"
+
+<Directory /home/*/html>
+        AllowOverride All
+        Options MultiViews Indexes Includes FollowSymLinks
+        <IfModule mod_access.c>
+                Order allow, deny
+                Allow from all
+        </IfModule>
+</Directory>
+-----
+
+(DONE)
+
+
+
+---新增虚拟主机。（域名型网页）
+
+---先修改DNS，新增A记录。
+# vim /etc/bind/db.pc.world
+
+-----
+phpmyadmin      IN      A       192.168.1.234
+-----
+---重启服务
+# /etc/init.d/bind9 restart
+
+
+
+
+---修改ports.conf，注释掉NameVirtualHost：
+# vim /etc/apache2/ports.conf
+
+(...)
+#NameVirtualHost *:80
+(...)
+
+
+
+---修改sites-available/default前面几行的内容：
+# vim /etc/apache2/sites-available/default
+
+-----
+---新增
+NameVirtualHost 192.168.1.234
+
+---修改
+<VirtualHost 192.168.1.234>
+
+---新增
+ServerName 192.168.1.234
+-----
+
+
+---假设要通过phpmyadmin.pc.world访问：www.pc.world/phpmyadmin，则新增文件phpmyadmin
+# vim /etc/apache2/sites-available/phpmyadmin
+
+-----
+<VirtualHost phpmyadmin.pc.world>
+    ServerName 192.168.1.234
+    ServerAdmin webmaster@localhost
+    DocumentRoot /var/www/phpmyadmin/
+    ErrorLog "/var/log/apache2/phpmyadmin_error.log"
+    CustomLog "/var/log/apache2/phpmyadmin_access.log" common
+</VirtualHost>
+-----
+
+
+---将sites-available中的phpmyadmin文件链接到sites-enable：
+# a2ensite /etc/apache2/sites-available/phpmyadmin
+
+
+---重启apahce服务。
+/etc/init.d/apache2 restart

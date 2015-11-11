@@ -1,0 +1,170 @@
+使用fdisk格式化硬盘
+
+增加数据盘
+
+1）查看磁盘：
+[root@test231 ~]# fdisk -l
+
+Disk /dev/sda: 1000.2 GB, 1000204886016 bytes
+255 heads, 63 sectors/track, 121601 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 4096 bytes
+I/O size (minimum/optimal): 4096 bytes / 4096 bytes
+Disk identifier: 0x00000000
+
+
+Disk /dev/sdb: 80.0 GB, 80026361856 bytes
+255 heads, 63 sectors/track, 9729 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0xc001c001
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sdb1   *           1          64      512000   83  Linux
+Partition 1 does not end on cylinder boundary.
+/dev/sdb2              64        9730    77637632   8e  Linux LVM
+
+Disk /dev/mapper/VolGroup-lv_root: 53.7 GB, 53687091200 bytes
+255 heads, 63 sectors/track, 6527 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+
+
+Disk /dev/mapper/VolGroup-lv_swap: 3607 MB, 3607101440 bytes
+255 heads, 63 sectors/track, 438 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+
+
+Disk /dev/mapper/VolGroup-lv_home: 22.2 GB, 22204645376 bytes
+255 heads, 63 sectors/track, 2699 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+
+
+2）分区：
+[root@test231 ~]# fdisk /dev/sda 
+Device contains neither a valid DOS partition table, nor Sun, SGI or OSF disklabel
+Building a new DOS disklabel with disk identifier 0xc841df40.
+Changes will remain in memory only, until you decide to write them.
+After that, of course, the previous content won't be recoverable.
+
+Warning: invalid flag 0x0000 of partition table 4 will be corrected by w(rite)
+
+The device presents a logical sector size that is smaller than
+the physical sector size. Aligning to a physical sector (or optimal
+I/O) size boundary is recommended, or performance may be impacted.
+
+WARNING: DOS-compatible mode is deprecated. It's strongly recommended to
+         switch off the mode (command 'c') and change display units to
+         sectors (command 'u').
+
+Command (m for help): n
+Command action
+   e   extended
+   p   primary partition (1-4)
+p
+Partition number (1-4): 1
+First cylinder (1-121601, default 1): 
+Using default value 1
+Last cylinder, +cylinders or +size{K,M,G} (1-121601, default 121601): 
+Using default value 121601
+
+Command (m for help): wq
+The partition table has been altered!
+
+Calling ioctl() to re-read partition table.
+Syncing disks.
+
+3）再查看分区后：
+[root@test231 ~]# fdisk -l
+
+Disk /dev/sda: 1000.2 GB, 1000204886016 bytes
+255 heads, 63 sectors/track, 121601 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 4096 bytes
+I/O size (minimum/optimal): 4096 bytes / 4096 bytes
+Disk identifier: 0xc841df40
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1               1      121601   976760001   83  Linux
+Partition 1 does not start on physical sector boundary.
+
+Disk /dev/sdb: 80.0 GB, 80026361856 bytes
+255 heads, 63 sectors/track, 9729 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0xc001c001
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sdb1   *           1          64      512000   83  Linux
+Partition 1 does not end on cylinder boundary.
+/dev/sdb2              64        9730    77637632   8e  Linux LVM
+
+Disk /dev/mapper/VolGroup-lv_root: 53.7 GB, 53687091200 bytes
+255 heads, 63 sectors/track, 6527 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+
+
+Disk /dev/mapper/VolGroup-lv_swap: 3607 MB, 3607101440 bytes
+255 heads, 63 sectors/track, 438 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+
+
+Disk /dev/mapper/VolGroup-lv_home: 22.2 GB, 22204645376 bytes
+255 heads, 63 sectors/track, 2699 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+
+
+4）格式化文件系统：
+[root@test231 /]# mkfs.ext4 /dev/sda1 
+mke2fs 1.43-WIP (20-Jun-2013)
+/dev/sda1 alignment is offset by 512 bytes.
+This may result in very poor performance, (re)-partitioning suggested.
+Filesystem label=
+OS type: Linux
+Block size=4096 (log=2)
+Fragment size=4096 (log=2)
+Stride=0 blocks, Stripe width=0 blocks
+61054976 inodes, 244190000 blocks
+12209500 blocks (5.00%) reserved for the super user
+First data block=0
+Maximum filesystem blocks=4294967296
+7453 block groups
+32768 blocks per group, 32768 fragments per group
+8192 inodes per group
+Superblock backups stored on blocks: 
+        32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208, 
+        4096000, 7962624, 11239424, 20480000, 23887872, 71663616, 78675968, 
+        102400000, 214990848
+
+Allocating group tables: done                            
+Writing inode tables: done                            
+Creating journal (32768 blocks): done
+Writing superblocks and filesystem accounting information: done 
+
+
+5）挂载分区
+[root@test231 /]# mkdir /data
+[root@test231 /]# mount /dev/sda /data
+
+
+6）增加到fstab中：
+echo '/dev/sda1               /data                   ext4    defaults        0 0' >>/etc/fstab

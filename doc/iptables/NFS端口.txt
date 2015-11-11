@@ -1,0 +1,12 @@
+NFS端口解释
+
+NFSv4
+TCP port 2049 for NFS.
+NFSv3
+TCP and UDP port 2049 for NFS.
+TCP and UDP port 111 (rpcbind/sunrpc).
+TCP and UDP port specified with MOUNTD_PORT="port"
+TCP and UDP port specified with STATD_PORT="port"
+TCP port specified with LOCKD_TCPPORT="port"
+UDP port specified with LOCKD_UDPPORT="port"
+The MOUNTD_PORT, STATD_PORT, LOCKD_TCPPORT, and LOCKD_UDPPORT ports are configured in the /etc/sysconfig/nfs file.

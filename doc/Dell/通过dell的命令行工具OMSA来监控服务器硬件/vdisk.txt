@@ -1,0 +1,46 @@
+对应的zabbix配置：
+UserParameter=hardware_virtual_health,awk -v hardware_virtual_disk_number=`omreport storage vdisk controller=0|grep -c "^ID"` -v hardware_virtual_disk=`omreport storage vdisk controller=0|awk '/^Status/{if($NF=="Ok") count+=1}END{print count}'` 'BEGIN{if(hardware_virtual_disk_number==hardware_virtual_disk) {print 1} else {print 0}}'
+
+
+涉及的命令：
+[root@local ~]# omreport storage vdisk controller=0
+List of Virtual Disks on Controller PERC H710 Mini (Embedded)
+
+Controller PERC H710 Mini (Embedded)
+ID                                : 0
+Status                            : Ok
+Name                              : Virtual Disk 0
+State                             : Ready
+Hot Spare Policy violated         : Not Assigned
+Encrypted                         : No
+Layout                            : RAID-5
+Size                              : 300.00 GB (322122547200 bytes)
+T10 Protection Information Status : No
+Associated Fluid Cache State      : Not Applicable
+Device Name                       : /dev/sda
+Bus Protocol                      : SATA
+Media                             : HDD
+Read Policy                       : Adaptive Read Ahead
+Write Policy                      : Write Back
+Cache Policy                      : Not Applicable
+Stripe Element Size               : 64 KB
+Disk Cache Policy                 : Enabled
+
+ID                                : 1
+Status                            : Ok
+Name                              : Virtual Disk 1
+State                             : Ready
+Hot Spare Policy violated         : Not Assigned
+Encrypted                         : No
+Layout                            : RAID-5
+Size                              : 3,425.00 GB (3677565747200 bytes)
+T10 Protection Information Status : No
+Associated Fluid Cache State      : Not Applicable
+Device Name                       : /dev/sdb
+Bus Protocol                      : SATA
+Media                             : HDD
+Read Policy                       : Adaptive Read Ahead
+Write Policy                      : Write Back
+Cache Policy                      : Not Applicable
+Stripe Element Size               : 64 KB
+Disk Cache Policy                 : Enabled

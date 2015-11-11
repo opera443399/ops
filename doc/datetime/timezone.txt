@@ -1,0 +1,27 @@
+
+date
+时区修改：
+mv /etc/localtime /etc/localtime.old
+ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+# cat /etc/sysconfig/clock 
+ZONE="Asia/Shanghai"
+
+
+GMT Greenwich Mean Time 格林尼治标准时间
+UT Universal Time 世界时间
+UTC Coordinated Universal Time UTC+0:00 协调世界时
+HKT Hong Kong Time UTC+8:00 香港标准时间
+Linux下用date命令都能看到当前的时区。
+Linux下中国时区都是用CST表示的。
+但是这个表示方法非常不合理。因为CST同时代表了下面4个时区。
+CST Central Standard Time (USA) UTC-6:00
+CST Central Standard Time (Australia) UTC+9:30
+CST China Standard Time UTC+8:00
+CST Cuba Standard Time UTC-4:00
+
+
+
+
+如果安装系统时，选择的是默认的UTC时间，则，在系统启动后，可能会比正确时间多8个小时。（系统误认为你的CMOS是UTC时间，而你又选择了＋8的时区，所以Linux在CMOS时间上加了8小时作为系统的时间）
+处理方式：调整了/etc/sysconfig/clock，增加UTC=false，表示CMOS不是UTC时间。

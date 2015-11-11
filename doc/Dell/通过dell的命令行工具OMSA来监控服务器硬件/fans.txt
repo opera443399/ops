@@ -1,0 +1,66 @@
+对应的zabbix配置：
+UserParameter=hardware_fan_health,awk -v hardware_fan_number=`omreport chassis fans|grep -c "^Index"` -v hardware_fan=`omreport chassis fans|awk '/^Status/{if($NF=="Ok") count+=1}END{print count}'` 'BEGIN{if(hardware_fan_number==hardware_fan) {print 1} else {print 0}}'
+
+
+涉及的命令：
+[root@local ~]# omreport chassis fans  
+
+Fan Probes Information
+
+Fan Redundancy
+Redundancy Status : Full
+
+Probe List
+Index                     : 0
+Status                    : Ok
+Probe Name                : System Board Fan1 RPM
+Reading                   : 1680 RPM
+Minimum Warning Threshold : 840 RPM
+Maximum Warning Threshold : [N/A]
+Minimum Failure Threshold : 600 RPM
+Maximum Failure Threshold : [N/A]
+
+Index                     : 1
+Status                    : Ok
+Probe Name                : System Board Fan2 RPM
+Reading                   : 1560 RPM
+Minimum Warning Threshold : 840 RPM
+Maximum Warning Threshold : [N/A]
+Minimum Failure Threshold : 600 RPM
+Maximum Failure Threshold : [N/A]
+
+Index                     : 2
+Status                    : Ok
+Probe Name                : System Board Fan3 RPM
+Reading                   : 1560 RPM
+Minimum Warning Threshold : 840 RPM
+Maximum Warning Threshold : [N/A]
+Minimum Failure Threshold : 600 RPM
+Maximum Failure Threshold : [N/A]
+
+Index                     : 3
+Status                    : Ok
+Probe Name                : System Board Fan4 RPM
+Reading                   : 2280 RPM
+Minimum Warning Threshold : 840 RPM
+Maximum Warning Threshold : [N/A]
+Minimum Failure Threshold : 600 RPM
+Maximum Failure Threshold : [N/A]
+
+Index                     : 4
+Status                    : Ok
+Probe Name                : System Board Fan5 RPM
+Reading                   : 2760 RPM
+Minimum Warning Threshold : 840 RPM
+Maximum Warning Threshold : [N/A]
+Minimum Failure Threshold : 600 RPM
+Maximum Failure Threshold : [N/A]
+
+Index                     : 5
+Status                    : Ok
+Probe Name                : System Board Fan6 RPM
+Reading                   : 2760 RPM
+Minimum Warning Threshold : 840 RPM
+Maximum Warning Threshold : [N/A]
+Minimum Failure Threshold : 600 RPM
+Maximum Failure Threshold : [N/A]

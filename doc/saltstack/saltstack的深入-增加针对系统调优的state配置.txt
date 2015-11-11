@@ -1,0 +1,132 @@
+saltstack的深入-增加针对系统调优的state配置
+
+
+
+一、基础环境
+1、在tvm-saltmaster的基础上操作。
+2、网络：
+eth0：host-only（用于虚拟内网，手动固定IP，这样从宿主机可以直接连接到这个vm）
+eth1：NAT（用于上外网，动态IP）
+[root@tvm-saltmaster ~]# cd /etc/sysconfig/network-scripts/
+[root@tvm-saltmaster network-scripts]# cat ifcfg-eth0
+DEVICE=eth0
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=192.168.56.253
+PREFIX=24
+GATEWAY=192.168.56.1
+DNS1=192.168.56.254
+
+[root@tvm-saltmaster network-scripts]# cat ifcfg-eth1
+DEVICE=eth1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+DNS1=192.168.56.254
+
+
+二、针对limits，sysctl，rc.local，modprobe做一些配置
+1、sls文件
+[root@tvm-saltmaster base]# cat abc/init.sls 
+include:
+  - abc.hosts
+  - abc.resolv
+  - abc.yum
+  - abc.packages
+  - abc.systemtuning
+[root@tvm-saltmaster base]# cat abc/systemtuning.sls 
+## update sysctl
+# 
+# via pc @ 2015/8/12
+
+basic-limits:
+  file.managed:
+    - name: /etc/security/limits.d/my-limits.conf
+    - source: salt://conf.d/systemtuning/my-limits.conf
+
+basic-sysctl:
+  file.append:
+    - name: /etc/sysctl.conf
+    - source: salt://conf.d/systemtuning/sysctl.conf
+
+basic-rc-local:
+  file.append:
+    - name: /etc/rc.local
+    - source: salt://conf.d/systemtuning/rc-local.conf
+
+basic-modprobe-dist:
+  file.append:
+    - name: /etc/modprobe.d/dist.conf
+    - source: salt://conf.d/systemtuning/modprobe-dist.conf
+    
+    
+2、conf文件 
+[root@tvm-saltmaster base]# tail -n 100 conf.d/systemtuning/*      
+==> conf.d/systemtuning/modprobe-dist.conf <==
+
+## user define
+alias net-pf-10 off
+alias ipv6 off
+
+==> conf.d/systemtuning/my-limits.conf <==
+
+## user define
+*          soft    nofile    65535
+*          hard    nofile    65535
+*          soft    nproc     unlimited
+*          hard    nproc     unlimited
+*          soft    core      unlimited
+
+==> conf.d/systemtuning/rc-local.conf <==
+
+## user define
+ulimit -SHn 65535
+
+==> conf.d/systemtuning/sysctl.conf <==
+
+## user define
+fs.file-max = 51200
+
+net.core.rmem_max = 8388608
+net.core.wmem_max = 8388608
+net.core.rmem_default = 65536
+net.core.wmem_default = 65536
+net.core.netdev_max_backlog = 250000
+net.core.somaxconn = 4096
+
+net.ipv4.ip_local_port_range = 10000 65000
+net.ipv4.tcp_syncookies = 1
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_tw_recycle = 0
+net.ipv4.tcp_fin_timeout = 30
+net.ipv4.tcp_keepalive_time = 1200
+
+net.ipv4.tcp_max_syn_backlog = 8192
+net.ipv4.tcp_max_tw_buckets = 5000
+net.ipv4.tcp_rmem = 4096 87380 8388608
+net.ipv4.tcp_wmem = 4096 65536 8388608
+net.ipv4.tcp_mem = 8388608 8388608 8388608
+
+
+三、总结
+此处用到了以下方法：
+file.managed
+file.append
+
+执行：
+[root@tvm-saltmaster base]# salt 'tvm-test' state.sls abc.systemtuning --output-file='/tmp/salt.log'  
+或者：
+[root@tvm-saltmaster base]# salt '*' state.highstate --output-file='/tmp/salt.log' 
+查看结果：
+[root@tvm-saltmaster base]# more /tmp/salt.log 
+
+
+备注：上述所谓调优参数仅做参考，根据实际的业务场景来配置，切忌直接套用。
+
+ZYXW、参考
+1、官网doc
+http://docs.saltstack.com/en/latest/ref/states/all/salt.states.file.html
+

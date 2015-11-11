@@ -1,0 +1,53 @@
+grep博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
+另，附上几个blog的文章，后续可能会更新这个列表：
+linux grep命令详解  http://www.cnblogs.com/ggjucheng/archive/2013/01/13/2856896.html
+
+获取不是空行和注释的内容：
+grep ^[^#]  file1
+grep -v "^#"|grep -v "^$" file1
+grep -Ev "^#|^$" file1
+
+获取指定内容：
+grep "05/Mar/2013" origin.log > 0305.log
+
+颜色显示：
+grep --color
+
+grep -E 
+
+提取统计日志中，关于http code的4xx，5xx和0结尾的行
+awk '{count[$2]+=$1};END{for (c in count) print c, count[c]}' *.stat |sort |uniq |sort -nr |awk '$1>100 {print $0}' |grep -E '(^[0-9]+ [4-5][0-9][0-9]$)|(^[0-9]+ 0$)' |more
+46255 0
+967 504
+218 502
+2 403
+1 503
+
+grep -o  仅显示匹配的字符
+获取IP
+grep -o -E "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}"
+
+打印文件名：
+grep --color -H "^wget" /home/web/task/crontab_*.sh 
+
+
+获取url的最右一列的名字
+for i in $(grep "^wget" /home/web/task/crontab_*.sh |cut -d' ' -f2); do echo ${i##*/};done |sort -n |uniq
+
+
+查找某个目录下包含某个字符文件：
+
+# grep 'svn_url_port_filter' -nr .
+./lib/svn.php:21:  $url = svn_url_port_filter($url);    
+./lib/svn.php:71:    $url = svn_url_port_filter($url);
+./lib/svn.php:80:    $url = svn_url_port_filter($url);
+./lib/svn.php:229:function svn_url_port_filter($url) 
+
+或者
+# find . -exec grep -nH 'svn_url_port_filter' {} \;
+./lib/svn.php:21:  $url = svn_url_port_filter($url);    
+./lib/svn.php:71:    $url = svn_url_port_filter($url);
+./lib/svn.php:80:    $url = svn_url_port_filter($url);
+./lib/svn.php:229:function svn_url_port_filter($url) 
+
+

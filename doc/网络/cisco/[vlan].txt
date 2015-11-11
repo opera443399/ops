@@ -1,0 +1,53 @@
+VLAN
+{
+ISL(Inter-Switch Link)
+802.1q
+VTP(VLAN Trunking Protocol): Server, Client, Transparent
+
+#建立Vlan
+S1(config)#vlan 2
+
+S1(config-vlan)#name Sales
+S1(config)#vlan 3
+S1(config-vlan)#name Marketing
+
+
+#分配接口
+S1(config)#int f0/1
+
+S1(config-if)#switchport mode access
+S1(config-if)#switchport access vlan 2
+
+switchport mode 
+/access    永久性的非trunk模式
+/dynamic auto    默认模式
+/dynamic desirable    如果邻居接口是trunk,auto,desirable，则该接口将变成trunk
+/trunk     永久性的非trunk模式
+/nonegotiate    阻止产生DTP(Dynamic Trunking Protocol)帧，必须手工将邻居接口配置为trunk，以建立trunk链接
+
+#VTP
+S1(config)#vtp mode server
+
+S1(config)#vtp domain DomainName
+S1(config)#vtp password VtpPwd
+S1#sh vtp password
+S1#sh vtp status
+
+S2(config)#vtp mode client
+S2(config)#vtp domain DomainName
+S2(config)#vtp password VtpPwd
+S2#sh vlan brief
+
+
+#Voice Vlan
+S1(config)#mls qos
+
+S1(config)#int f0/1
+S1(config-if)#switchport priority extend trust
+S1(config-if)#mls qos trust cos
+S1(config-if)#switchport voice vlan dot1p
+S1(config-if)#switchport mode access
+S1(config-if)#switchport access vlan 3
+S1(config-if)#switchport voice vlan 10
+
+}

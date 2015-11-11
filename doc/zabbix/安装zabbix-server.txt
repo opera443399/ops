@@ -1,0 +1,66 @@
+安装配置zabbix-server
+
+
+配置zabbix-web
+[root@zbxsvr download]# wget http://sourceforge.net/projects/zabbix/files/ZABBIX%20Latest%20Stable/2.4.1/zabbix-2.4.1.tar.gz/download
+[root@zbxsvr download]# tar zxvf zabbix-2.4.1.tar.gz && cd zabbix-2.4.1/frontends/php
+[root@zbxsvr php]# cp -a . /data/www/zabbix/
+
+[root@zbxsvr download]# cat /etc/nginx/conf.d/zabbix.conf 
+server {
+    listen       80;
+    server_name  zbx.company.com;
+    root   /data/www/zabbix;
+    charset utf-8;
+
+    access_log  /data/log/www/zabbix/access.log  main;
+    location / {
+        index  index.php;
+     }
+
+    location ~ \.php$ {
+        fastcgi_pass   127.0.0.1:9000;
+        fastcgi_index  index.php;
+        fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+        include        fastcgi_params;
+    }
+
+}
+
+[root@zbxsvr download]# mkdir -p /data/log/www/zabbix
+[root@zbxsvr download]# service nginx restart
+
+
+安装新版本zabbix server
+[root@zbxsvr download]# rpm -ivh http://repo.zabbix.com/zabbix/2.4/rhel/6/x86_64/zabbix-release-2.4-1.el6.noarch.rpm
+[root@zbxsvr download]# yum install zabbix-server-mysql zabbix-agent
+
+配置数据库
+[root@zbxsvr download]# mysql -h127.0.0.1 -P3306 -uroot -p
+mysql> create database zabbix character set utf8 collate utf8_bin;
+Query OK, 1 row affected (0.00 sec)
+mysql> grant all privileges on zabbix.* to zabbix@127.0.0.1 identified by 'xxx';
+mysql> exit
+[root@zbxsvr download]# cd /usr/share/doc/zabbix-server-mysql-2.4.1/create/
+[root@zbxsvr create]# ls
+data.sql  images.sql  schema.sql
+[root@zbxsvr create]# mysql -h127.0.0.1 -P3306 -uroot -p zabbix < schema.sql
+Enter password: 
+[root@zbxsvr create]# mysql -h127.0.0.1 -P3306 -uroot -p zabbix < images.sql 
+Enter password: 
+[root@zbxsvr create]# mysql -h127.0.0.1 -P3306 -uroot -p zabbix < data.sql 
+Enter password: 
+
+
+
+
+
+3. 配置报警脚本
+[root@zbxsvr download]# ll /usr/lib/zabbix/alertscripts/
+total 12
+-rwxr-x--x 1 root root 3587 Oct 26 10:55 mailman.py
+
+4. 修改字体为中文，可以从windows中找一个字体，替换为同名文件。
+[root@zbxsvr download]# ll /data/www/zabbix/fonts/
+total 16400
+-rw-r--r-- 1 ecweb ecweb 16791251 Dec 18  2013 DejaVuSans.ttf

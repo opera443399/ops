@@ -1,0 +1,81 @@
+注：如果没有phpize，这样安装：
+# yum install php-devel
+
+一、使用pecl安装
+
+# wget http://pear.php.net/go-pear.phar
+# php go-pear.phar
+
+php模块和对应的服务的安装
+增加php模块：
+memcache:   libmemcached-devel
+imagick:    ImageMagick-devel
+gearman:    libgearman-devel
+sphinx:     libsphinxclient-devel
+redis:      hiredis-devel
+
+1）使用pecl安装模块
+示例：
+
+【memcache】
+# yum install libmemcached-devel
+# pecl install memcache
+
+【imagick】
+# yum install ImageMagick-devel
+# pecl install imagick
+
+【gearman】
+# yum install libgearman-devel
+# pecl install gearman
+
+【sphinx】
+# yum install libsphinxclient-devel
+# pecl install sphinx    
+
+【redis】
+# yum install hiredis-devel
+# pecl install redis
+
+
+
+二、编译安装
+示例：
+
+【memcached】
+# yum install libmemcached-devel
+ 
+============ php插件memcache
+ 
+# wget http://pecl.php.net/get/memcache -O memcache-3.0.8.tar.gz
+# tar zxvf memcache-3.0.8.tar.gz && cd memcache-3.0.8/
+# /usr/local/php/bin/phpize
+# ./configure --enable-memcache  --with-php-config=/usr/local/php/bin/php-config
+# make && make install
+# cd ..
+ 
+
+【ImageMagick】 
+# yum install ImageMagick-devel
+ 
+============ php插件imagick
+# wget http://pecl.php.net/get/imagick -O imagick.tar.gz
+# tar zxvf imagick.tar.gz && cd imagick-3.3.0RC1/
+# /usr/local/php/bin/phpize
+# ./configure --with-php-config=/usr/local/php/bin/php-config
+# make && make install
+# cd ..
+ 
+ 
+【gearmand】
+安装gearmand
+# yum -y install libgearman-devel
+ 
+============ php插件gearman
+# wget http://pecl.php.net/get/gearman-1.1.2.tgz
+# tar zxvf gearman-1.1.2.tgz && cd gearman-1.1.2
+# /usr/local/php/bin/phpize 
+# ./configure --with-php-config=/usr/local/php/bin/php-config 
+# make && make install
+# cd ..
+

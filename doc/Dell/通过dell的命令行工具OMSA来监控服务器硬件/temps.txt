@@ -1,0 +1,47 @@
+对应的zabbix配置：
+UserParameter=hardware_temp,omreport chassis temps|awk '/^Status/{if($NF=="Ok") {print 1} else {print 0}}'|head -n 1
+
+
+涉及的命令：
+[root@local ~]# omreport chassis temps
+Temperature Probes Information
+
+------------------------------------
+Main System Chassis Temperatures: Ok
+------------------------------------
+
+Index                     : 0
+Status                    : Ok
+Probe Name                : System Board Inlet Temp
+Reading                   : 26.0 C
+Minimum Warning Threshold : 3.0 C
+Maximum Warning Threshold : 42.0 C
+Minimum Failure Threshold : -7.0 C
+Maximum Failure Threshold : 47.0 C
+
+Index                     : 1
+Status                    : Ok
+Probe Name                : System Board Exhaust Temp
+Reading                   : 31.0 C
+Minimum Warning Threshold : 8.0 C
+Maximum Warning Threshold : 70.0 C
+Minimum Failure Threshold : 3.0 C
+Maximum Failure Threshold : 75.0 C
+
+Index                     : 2
+Status                    : Ok
+Probe Name                : CPU1 Temp
+Reading                   : 48.0 C
+Minimum Warning Threshold : 8.0 C
+Maximum Warning Threshold : 86.0 C
+Minimum Failure Threshold : 3.0 C
+Maximum Failure Threshold : 91.0 C
+
+Index                     : 3
+Status                    : Ok
+Probe Name                : CPU2 Temp
+Reading                   : 42.0 C
+Minimum Warning Threshold : 8.0 C
+Maximum Warning Threshold : 86.0 C
+Minimum Failure Threshold : 3.0 C
+Maximum Failure Threshold : 91.0 C

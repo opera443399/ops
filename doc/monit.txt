@@ -1,0 +1,271 @@
+测试使用monit监控服务
+
+
+
+一、基础环境
+1、在tvm-rpm的基础上测试。
+2、网络：
+eth0：host-only（用于虚拟内网，手动固定IP，这样从宿主机可以直接连接到这个vm）
+eth1：NAT（用于上外网，动态IP）
+[root@tvm-rpm ~]# cd /etc/sysconfig/network-scripts/
+[root@tvm-rpm network-scripts]# cat ifcfg-eth0
+DEVICE=eth0
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=192.168.56.253
+PREFIX=24
+GATEWAY=192.168.56.1
+DNS1=192.168.56.254
+
+[root@tvm-rpm network-scripts]# cat ifcfg-eth1
+DEVICE=eth1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+DNS1=192.168.56.254
+
+
+二、配置monit环境
+1、已经配置过salt-master服务，且在配置中，启用了pid。
+[root@tvm-rpm ~]# vim /etc/salt/master 
+pidfile: /var/run/salt-master.pid
+
+2、安装monit
+[root@tvm-rpm ~]# yum -y install monit
+
+安装后默认的log文件在：
+/var/log/monit
+
+滚动压缩也已经配置好：
+[root@tvm-rpm ~]# cat /etc/logrotate.d/monit    
+/var/log/monit {
+    missingok
+    notifempty
+    size 100k
+    create 0644 root root
+    postrotate
+        /sbin/service monit condrestart > /dev/null 2>&1 || :
+    endscript
+
+}
+
+3、个性化配置
+1）配置文件在
+/etc/monit.conf
+/etc/monit.d
+
+2）默认已经自带了针对log的配置：
+[root@tvm-rpm ~]# cat /etc/monit.d/logging 
+# log to monit.log
+set logfile /var/log/monit
+
+
+3）邮件相关：
+[root@tvm-rpm ~]# vim /etc/monit.d/monit-mail.conf
+# mail server
+set mailserver smtp.xxx.com port 25
+    username "test@xxx.com" password "xxx"
+
+# later delivery retry
+set eventqueue
+    basedir /var/monit
+    slots 100
+
+# mail format
+set mail-format {
+        from: test@xxx.com
+        subject: [monit Alter][test from xxx] $HOST $SERVICE $EVENT
+        message: $EVENT Service $SERVICE
+                Date:        $DATE
+                Action:      $ACTION
+                Host:        $HOST
+                Description: $DESCRIPTION
+
+               Your faithful employee,
+               monit
+    }
+
+# mail recipients
+set alert admin@xxx.com
+
+
+4）针对指定服务的监控：
+[root@tvm-rpm ~]# vim /etc/monit.d/salt-master.conf 
+check process salt-master with pidfile /var/run/salt-master.pid
+  start program = "/etc/init.d/salt-master start"
+  stop program = "/etc/init.d/salt-master stop"
+
+注1：监控方式多样，这个可以查阅配置文件和官网的示例。
+注2：告警对象也可以指定事件范围。
+  
+4、启动服务
+[root@tvm-rpm ~]# service monit start
+Starting monit: monit: generated unique Monit id 5701f8ce7fd7a6a69c713ec2b1b5f22e and stored to '/root/.monit.id'
+                                                           [  OK  ]
+查看log：无异常。
+
+加入开机启动：
+[root@tvm-rpm ~]# chkconfig monit on
+
+
+5. 查看邮件
+[monit Alter][test from xxx] tvm-rpm tvm-rpm Monit instance changed  
+发件人：test <test@xxx.com>  
+时   间：2015年7月21日(星期二) 下午2:42
+收件人：admin <admin@xxx.com> 
+Monit instance changed Service tvm-rpm
+                Date:        Tue, 21 Jul 2015 14:42:47 +0800
+                Action:      start
+                Host:        tvm-rpm
+                Description: Monit started
+
+               Your faithful employee,
+               monit
+
+6、继续测试停止salt-master服务，看看效果
+[root@tvm-rpm ~]# service salt-master stop
+Stopping salt-master daemon:                               [  OK  ]
+[root@tvm-rpm ~]# tail -f /var/log/monit
+[CST Jul 21 14:42:47] info     : 'tvm-rpm' Monit started
+[CST Jul 21 14:48:49] error    : 'salt-master' process is not running
+[CST Jul 21 14:48:50] info     : 'salt-master' trying to restart
+[CST Jul 21 14:48:50] info     : 'salt-master' start: /etc/init.d/salt-master
+
+
+查看邮件有2封：
+[monit Alter][test from xxx] tvm-rpm salt-master Does not exist
+Does not exist Service salt-master
+                Date:        Tue, 21 Jul 2015 14:48:49 +0800
+                Action:      restart
+                Host:        tvm-rpm
+                Description: process is not running
+
+               Your faithful employee,
+               monit
+               
+[monit Alter][test from xxx] tvm-rpm salt-master Exists
+Exists Service salt-master
+                Date:        Tue, 21 Jul 2015 14:49:51 +0800
+                Action:      alert
+                Host:        tvm-rpm
+                Description: process is running with pid 8380
+
+               Your faithful employee,
+               monit
+               
+查看salt-master服务：
+[root@tvm-rpm ~]# service salt-master status
+salt-master (pid  8380) is running...  
+
+7、查看monit自带的web服务
+[root@tvm-rpm ~]# vim /etc/monit.d/monit-web.conf 
+set httpd port 2812 and
+    use address 192.168.56.253
+    allow localhost
+    allow 192.168.56.0/24
+    allow admin:monit
+重启服务：
+[root@tvm-rpm ~]# service monit restart
+
+浏览器输入用户名admin，密码monit即可访问：
+http://192.168.56.253:2812/
+
+
+8. 给monit的web服务加上ssl
+1）生成证书
+[root@tvm-rpm ~]# ls /etc/pki/tls
+cert.pem  certs  misc  openssl.cnf  private
+
+自定义一个ssl证书生成的配置文件：
+[root@tvm-rpm ~]# echo 'abc' >/tmp/openssl.rnd
+[root@tvm-rpm ~]# cat /tmp/monit.ssl.conf 
+# create RSA certs - Server
+
+  RANDFILE = /tmp/openssl.rnd
+
+  [ req ]
+  default_bits = 2048
+  default_md = sha256
+  encrypt_key = yes
+  distinguished_name = req_dn
+  x509_extensions = cert_type
+
+  [ req_dn ]
+  countryName = Country Name (2 letter code)
+  countryName_default = ZH
+
+  stateOrProvinceName             = State or Province Name (full name)
+  stateOrProvinceName_default     = TESTPROV
+
+  localityName                    = Locality Name (eg, city)
+  localityName_default            = TESTCITY
+
+  organizationName                = Organization Name (eg, company)
+  organizationName_default        = TESTCOMP
+
+  organizationalUnitName          = Organizational Unit Name (eg, section)
+  organizationalUnitName_default  = TESTSVR
+
+  commonName                      = Common Name (FQDN of your server)
+  commonName_default              = server.office.com
+
+  emailAddress                    = Email Address
+  emailAddress_default            = test@office.com
+
+  [ cert_type ]
+  nsCertType = server
+  
+生成私钥和证书：
+[root@tvm-rpm ~]# openssl req -new -x509 -days 365 -nodes \
+-config /tmp/monit.ssl.conf -out /etc/pki/tls/certs/monit.pem \
+-keyout /etc/pki/tls/certs/monit.pem
+
+查看文件/etc/pki/tls/certs/monit.pem可以看到：
+-----BEGIN PRIVATE KEY-----
+-----END PRIVATE KEY-----
+-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----
+
+生成Diffie-Hellman参数：
+[root@tvm-rpm ~]# openssl gendh 1024 >> /etc/pki/tls/certs/monit.pem
+
+查看文件/etc/pki/tls/certs/monit.pem可以看到：
+-----BEGIN DH PARAMETERS-----
+-----END DH PARAMETERS-----
+
+设置权限：
+[root@tvm-rpm ~]# chmod 600 /etc/pki/tls/certs/monit.pem
+
+输出证书信息：
+[root@tvm-rpm ~]# openssl x509 -text -noout -in /etc/pki/tls/certs/monit.pem
+
+
+2）调整monit配置
+[root@tvm-rpm ~]# vim /etc/monit.d/monit-web.conf 
+set httpd port 2812 and
+    use address 192.168.56.253
+    allow localhost
+    allow 192.168.56.0/24
+    allow admin:monit
+    SSL ENABLE
+    PEMFILE /etc/pki/tls/certs/monit.pem
+
+3）访问
+https://192.168.56.253:2812/
+
+
+ZYXW、参考
+1、Real-world configuration examples
+https://mmonit.com/wiki/Monit/ConfigurationExamples
+2、Enable SSL In Monit
+https://mmonit.com/wiki/Monit/EnableSSLInMonit
+3、初识Openssl
+http://blog.csdn.net/jiangwlee/article/details/7724274
+
+
+
+
+

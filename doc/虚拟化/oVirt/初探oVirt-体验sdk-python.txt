@@ -1,0 +1,243 @@
+日期：2015/10/20 - 2015/11/9 time 12:04
+主机：n86
+目的：初探oVirt-测试sdk-python
+操作内容：
+一、说明
+使用sdk-python
+通过pip安装 ovirt-engine-sdk-python
+# pip install ovirt-engine-sdk-python
+
+二、示例
+[root@n86 bin]# cat ovirt_sdk.py 
+#!/bin/env python
+# -*- coding:utf-8 -*-
+# for ovirt-engine-sdk-python-3.5.4
+# 2015/11/9
+
+from __future__ import print_function
+from time import sleep
+
+from ovirtsdk.api import API
+from ovirtsdk.xml import params
+
+__version__ = '0.2.7'
+
+OE_URL = 'https://e01.test/api'
+OE_USERNAME = 'admin@internal'
+OE_PASSWORD = 'TestVM'
+# curl -k https://e01.test/ca.crt -o ca.crt
+OE_CA_FILE = 'ca.crt'  # ca.crt 在当前目录下
+
+
+def vm_list(oe_api):
+    """
+        List VM
+    """
+    try:
+        print('[I] List vms: ')
+        for vm_online in oe_api.vms.list():
+            print('{0}'.format(vm_online.name))
+    except Exception as err:
+        print('[E] List VM: {0}'.format(str(err)))
+
+
+def vm_start(oe_api, vm_name):
+    """
+        start vm by name
+    """
+    try:
+        if vm_name not in [vm_online.name for vm_online in oe_api.vms.list()]:
+            print("[E] VM not found: {0}".format(vm_name))
+            return 1
+        if oe_api.vms.get(vm_name).status.state != 'up':
+            print('[I] Starting VM.')
+            oe_api.vms.get(vm_name).start()
+            print('[I] Waiting for VM to reach Up status... ', end='')
+            while oe_api.vms.get(vm_name).status.state != 'up':
+                print('.', end='')
+                sleep(1)
+            print('VM {0} is up!'.format(vm_name))
+        else:
+            print('[E] VM already up.')
+    except Exception as err:
+        print('[E] Failed to Start VM: {0}'.format(str(err)))
+
+
+def vm_stop(oe_api, vm_name):
+    """
+        stop vm by name
+    """
+    try:
+        if vm_name not in [vm_online.name for vm_online in oe_api.vms.list()]:
+            print("[E] VM not found: {0}".format(vm_name))
+            return 1
+        if oe_api.vms.get(vm_name).status.state != 'down':
+            print('[I] Stop VM.')
+            oe_api.vms.get(vm_name).stop()
+            print('[I] Waiting for VM to reach Down status... ', end='')
+            while oe_api.vms.get(vm_name).status.state != 'down':
+                print('.', end='')
+                sleep(1)
+            print('VM {0} is down!'.format(vm_name))
+        else:
+            print('[E] VM already down: {0}'.format(vm_name))
+    except Exception as err:
+        print('[E] Stop VM: {0}'.format(str(err)))
+
+
+def vm_delete(oe_api, vm_name):
+    """
+        delete vm by name
+    """
+    try:
+        if vm_name not in [vm_online.name for vm_online in oe_api.vms.list()]:
+            print("[E] VM not found: {0}".format(vm_name))
+            return 1
+        oe_api.vms.get(vm_name).delete()
+        print('[I] Waiting for VM to be deleted... ', end='')
+        while vm_name in [vm_online.name for vm_online in oe_api.vms.list()]:
+            print('.', end='')
+            sleep(1)
+        print('VM was removed successfully.')
+    except Exception as err:
+        print('[E] Failed to remove VM: {0}'.format(str(err)))
+
+
+def vm_run_once(oe_api, vm_name, vm_password, vm_nic_info):
+    """
+        vm run once with cloud-init
+    """
+    try:
+        if vm_name not in [vm_online.name for vm_online in oe_api.vms.list()]:
+            print("[E] VM not found: {0}".format(vm_name))
+            return 1
+        elif vm_nic_info is None:
+            print('[E] VM nic info is needed: "name_of_nic, ip_address, net_mask, gateway"')
+            return 2
+        elif oe_api.vms.get(vm_name).status.state == 'down':
+            print('[I] Starting VM with cloud-init.')
+            p_host = params.Host(address="{0}".format(vm_name))
+            p_users = params.Users(user=[params.User(user_name="root", 
+                                                     password=vm_password)])
+            vm_nic = [nic for nic in vm_nic_info.split(', ')]
+            if len(vm_nic) != 4:
+                print('[E] VM nic info need 4 args: "name_of_nic, ip_address, net_mask, gateway"')
+                return 3
+            p_nic = params.Nics(nic=[params.NIC(name=vm_nic[0],
+                                                boot_protocol="STATIC",
+                                                on_boot=True,
+                                                network=params.Network(ip=params.IP(address=vm_nic[1],
+                                                                                    netmask=vm_nic[2],
+                                                                                    gateway=vm_nic[3])))])
+            p_network = params.NetworkConfiguration(nics=p_nic)
+            p_cloud_init = params.CloudInit(host=p_host,
+                                            users=p_users,
+                                            regenerate_ssh_keys=True,
+                                            network_configuration=p_network)
+            p_initialization = params.Initialization(cloud_init=p_cloud_init)
+            vm_params = params.VM(initialization=p_initialization)
+            vm_action = params.Action(vm=vm_params)
+            oe_api.vms.get(vm_name).start(vm_action)
+            
+            print('[I] Waiting for VM to reach Up status... ', end='')
+            while oe_api.vms.get(vm_name).status.state != 'up':
+                print('.', end='')
+                sleep(1)
+            print('VM {0} is up!'.format(vm_name))
+        else:
+            print('[E] VM already up.')
+            
+    except Exception as err:
+        print('[E] Failed to Start VM with cloud-init: {0}'.format(str(err)))
+
+
+def vm_create_from_tpl(oe_api, vm_name, tpl_name, cluster_name):
+    """
+        create vm from template.
+        notice: not (Clone/Independent), but (Thin/Dependent)
+    """
+    try:
+        vm_params = params.VM(name=vm_name, 
+                              template=oe_api.templates.get(tpl_name),
+                              cluster=oe_api.clusters.get(cluster_name))
+        oe_api.vms.add(vm_params)
+        print('[I] VM was created from Template successfully.\nWaiting for VM to reach Down status... ', end='')
+        while oe_api.vms.get(vm_name).status.state != 'down':
+            print('.', end='')
+            sleep(1)
+        print('VM {0} is down!'.format(vm_name))
+    except Exception as err:
+        print('[E] Failed to create VM from template: {0}'.format(str(err)))
+
+
+if __name__ == '__main__':
+    import optparse
+    p = optparse.OptionParser()
+    p.add_option("-a", "--action", action="store", type="string", dest="action",
+                 help="list|init|start|stop|delete|create[-list]")
+    p.add_option("-n", "--vm-name", action="store", type="string", dest="vm_name",
+                 help="provide the name of vm. eg: -a create -n vm01")
+    p.add_option("-c", "--vm-cluster", action="store", type="string", dest="vm_cluster",
+                 help="provide cluster name")
+    p.add_option("-t", "--vm-template", action="store", type="string", dest="vm_template",
+                 help="provide template name. eg: -a create -n vm01 -t tpl01 -c cluster01")
+    p.add_option("-p", "--vm-password", action="store", type="string", dest="vm_password",
+                 help="-a init -p password_of_vm -i vm_nic_info")
+    p.add_option("-i", "--vm-nic-info", action="store", type="string", dest="vm_nic_info",
+                 help='nic info: "name_of_nic, ip_address, net_mask, gateway". '
+                      'eg: -a init -n vm01 -p 123456 -i "eth0, 10.0.100.101, 255.255.255.0, 10.0.100.1"')
+    p.add_option("-L", "--vm-list", action="store", type="string", dest="vm_list",
+                 help='a list of vms. eg: -a stop-list -L "vm01, vm02, vm03"')
+    p.set_defaults(action='list',
+                   vm_cluster='Host-Only',
+                   vm_template='tpl-s1')
+    opt, args = p.parse_args()
+    oe_conn = None
+    try:
+        oe_conn = API(url=OE_URL, username=OE_USERNAME, password=OE_PASSWORD, ca_file=OE_CA_FILE)
+        if opt.action == 'list':
+            vm_list(oe_conn)
+        elif opt.action == 'start':
+            vm_start(oe_conn, opt.vm_name)
+        elif opt.action == 'stop':
+            vm_stop(oe_conn, opt.vm_name)
+        elif opt.action == 'delete':
+            vm_delete(oe_conn, opt.vm_name)
+        elif opt.action == 'create':
+            vm_create_from_tpl(oe_conn, opt.vm_name, opt.vm_template, opt.vm_cluster)
+        elif opt.action == 'init':
+            vm_run_once(oe_conn, opt.vm_name, opt.vm_password, opt.vm_nic_info)
+        elif opt.action == 'start-list':
+            for vm in opt.vm_list.replace(' ', '').split(','):
+                print('[I] try to start vm: {0}'.format(vm))
+                vm_start(oe_conn, vm)
+        elif opt.action == 'stop-list':
+            for vm in opt.vm_list.replace(' ', '').split(','):
+                print('[I] try to stop vm: {0}'.format(vm))
+                vm_stop(oe_conn, vm)
+        elif opt.action == 'delete-list':
+            for vm in opt.vm_list.replace(' ', '').split(','):
+                print('[I] try to delete: {0}'.format(vm))
+                vm_delete(oe_conn, vm)
+        elif opt.action == 'create-list':
+            for vm in opt.vm_list.replace(' ', '').split(','):
+                print('[I] try to create: {0}'.format(vm))
+                vm_create_from_tpl(oe_conn, vm, opt.vm_template, opt.vm_cluster)
+    except Exception as e:
+        print('[E] Failed to init API: {0}'.format(str(e)))
+    finally:
+        if oe_conn is not None:
+            oe_conn.disconnect()
+
+
+
+
+
+
+ZYXW、参考
+1、docs
+http://www.ovirt.org/Python-sdk
+http://www.ovirt.org/Testing/PythonApi
+http://www.ovirt.org/Features/Cloud-Init_Integration
+https://access.redhat.com/documentation/zh-CN/Red_Hat_Enterprise_Virtualization/3.5/html-single/Technical_Guide/index.html#chap-REST_API_Quick_Start_Example
+

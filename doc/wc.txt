@@ -1,0 +1,15 @@
+计算行数、字数以及字符数:
+
+    Linux提供了一个简单的工具wc用于完成该功能，见如下用例：
+    /> echo This is a test of the emergency broadcast system | wc
+    1    9    49                              #1行，9个单词，49个字符
+    /> echo Testing one two three | wc -c
+    22                                         #22个字符
+    /> echo Testing one two three | wc -l
+    1                                           #1行
+    /> echo Testing one two three | wc -w
+    4                                           #4个单词
+    /> wc /etc/passwd /etc/group    #计算两个文件里的数据。
+    39   71  1933  /etc/passwd
+    62   62  906    /etc/group
+    101 133 2839  总用量

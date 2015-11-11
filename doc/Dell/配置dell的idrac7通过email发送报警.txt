@@ -1,0 +1,63 @@
+配置dell的idrac7通过email发送报警
+
+一、登录到idrac
+https://ip_of_idrac
+
+ip，登录帐号和密码的配置请参考：
+利用ipmi设置本机自带的idrac
+
+
+二、配置网络
+菜单：iDRAC设置-网络
+
+【通用设置】
+DNS DRAC 名称： test
+静态 DNS 域名： company.com
+
+（上述2个值将组合成发件人：test@company.com）
+
+【IPv4】
+确保配置的静态IP、网关和DNS等信息能够正常访问到email服务器。
+
+
+【】点击“应用”，保存配置
+
+
+三、配置电子邮件
+菜单：服务器-警报-SNMP 陷阱和电子邮件设置
+
+【目标电子邮件地址】
+电子邮件警报 1：勾选， test@company.com
+【】点击“应用”，保存配置
+【】点击“测试”，发送测试邮件
+
+
+
+【SMTP（电子邮件）服务器地址设置】
+SMTP（电子邮件）服务器 IP 地址或 FQDN/DNS 名称：smtp.company.com
+启用验证：勾选
+用户名： test@company.com
+密码：xxx
+SMTP 端口号：25
+【】点击“应用”，保存配置
+
+
+四、配置警报
+菜单：服务器-警报-警报
+
+警报：已启用
+警报筛选器：根据类别，筛选出对应的警报，设置是否通过“电子邮件”报警。
+
+
+五、尝试拔掉一块硬盘，测试系统报警，符合预期。
+
+
+ZYXW、参考
+1、How to Setup Simple SMTP Alerts for Dell’s iDRAC
+http://techstat.net/how-to-setup-simple-smtp-alerts-for-dells-idrac/
+
+
+
+
+
+

@@ -1,0 +1,540 @@
+日期：2015/11/4 - 2015/11/11 time 16:15
+主机：e01, n33, n34
+目的：再探oVirt-配置一个2节点的ovirt环境
+操作内容：
+一、基础操作
+1、资源
+ovirt engine: engine
+ovirt node: n33, n34
+
+2、hosts
+10.50.200.1 e01.test
+10.50.200.33 n33.test
+10.50.200.34 n34.test
+
+3、防火墙放行同一个局域网内的访问限制
+后续配置ovirt的engine和node时，将不会选择让ovirt来“自动配置防火墙”，因为ovirt很暴力，直接覆盖了iptables的配置。
+例如，当前的配置是：
+[root@n33 ~]# cat /etc/sysconfig/iptables
+# Firewall configuration written by system-config-firewall
+# Manual customization of this file is not recommended.
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -i lo -j ACCEPT
+## ovirt LAN
+-A INPUT -s 10.50.200.0/24 -j ACCEPT
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 22 -j ACCEPT
+-A INPUT -j REJECT --reject-with icmp-host-prohibited
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited
+COMMIT
+
+
+二、配置engine
+1、使用本地yum源
+[root@engine ~]# wget http://my_office/ovirt/ovirt-3.5.repo -O /etc/yum.repos.d/ovirt-3.5.repo && yum makecache
+
+【后记：关于升级ovirt版本】
+20151104
+ovirt 从3.5.4 升级为 3.6.0，由于大量的 bugfix，考虑后决定直接升级为新版本，正好最近官网访问速度还挺快，直接从官网下载即可，后续有空再把rpm包缓存到本地。
+下述3个步骤是在 engine-setup 操作之后的补充操作。
+yum install http://resources.ovirt.org/pub/yum-repo/ovirt-release36.rpm
+yum update "ovirt-engine-setup*"
+engine-setup 
+
+20151110
+缓存了3.6的rpm包后发现，诸如vdsm这类包，还是在3.5的版本中提供，因此，建议以3.5的作为基础版本，加上3.6的源，组合在一起提供服务。后续官方可能会将旧版本的rpm包整合到新版，待关注。
+
+
+2、安装配置
+[root@engine ~]# yum install ovirt-engine
+
+注：选择不让engine自动配置防火墙
+[root@engine ~]# engine-setup 
+[ INFO  ] Stage: Initializing
+[ INFO  ] Stage: Environment setup
+          Configuration files: ['/etc/ovirt-engine-setup.conf.d/10-packaging-jboss.conf', '/etc/ovirt-engine-setup.conf.d/10-packaging.conf']
+          Log file: /var/log/ovirt-engine/setup/ovirt-engine-setup-20151104164530-kpazjp.log
+          Version: otopi-1.3.2 (otopi-1.3.2-1.el6)
+[ INFO  ] Stage: Environment packages setup
+[ INFO  ] Stage: Programs detection
+[ INFO  ] Stage: Environment setup
+[ INFO  ] Stage: Environment customization
+         
+          --== PRODUCT OPTIONS ==--
+         
+          Configure Engine on this host (Yes, No) [Yes]: 
+          Configure WebSocket Proxy on this host (Yes, No) [Yes]: 
+         
+          --== PACKAGES ==--
+         
+[ INFO  ] Checking for product updates...
+[ INFO  ] No product updates found
+         
+          --== ALL IN ONE CONFIGURATION ==--
+         
+         
+          --== NETWORK CONFIGURATION ==--
+         
+          Setup can automatically configure the firewall on this system.
+          Note: automatic configuration of the firewall may overwrite current settings.
+          Do you want Setup to configure the firewall? (Yes, No) [Yes]: no
+          Host fully qualified DNS name of this server [localhost.localdomain]: e01.test
+[WARNING] Failed to resolve e01.test using DNS, it can be resolved only locally
+[WARNING] Failed to resolve e01.test using DNS, it can be resolved only locally
+         
+          --== DATABASE CONFIGURATION ==--
+         
+          Where is the Engine database located? (Local, Remote) [Local]: 
+          Setup can configure the local postgresql server automatically for the engine to run. This may conflict with existing applications.
+          Would you like Setup to automatically configure postgresql and create Engine database, or prefer to perform that manually? (Automatic, Manual) [Automatic]: 
+         
+          --== OVIRT ENGINE CONFIGURATION ==--
+         
+          Engine admin password: 
+          Confirm engine admin password: 
+          Application mode (Virt, Gluster, Both) [Both]: virt
+         
+          --== PKI CONFIGURATION ==--
+         
+          Organization name for certificate [ovirt]: 
+         
+          --== APACHE CONFIGURATION ==--
+         
+          Setup can configure the default page of the web server to present the application home page. This may conflict with existing applications.
+          Do you wish to set the application as the default page of the web server? (Yes, No) [Yes]: 
+          Setup can configure apache to use SSL using a certificate issued from the internal CA.
+          Do you wish Setup to configure that, or prefer to perform that manually? (Automatic, Manual) [Automatic]: 
+         
+          --== SYSTEM CONFIGURATION ==--
+         
+          Configure an NFS share on this server to be used as an ISO Domain? (Yes, No) [Yes]: 
+          Local ISO domain path [/var/lib/exports/iso]: /data/ovirt/iso
+          Local ISO domain ACL - note that the default will restrict access to e01.test only, for security reasons [e01.test(rw)]: 
+          Local ISO domain name [ISO_DOMAIN]: 
+         
+          --== MISC CONFIGURATION ==--
+         
+         
+          --== END OF CONFIGURATION ==--
+         
+[ INFO  ] Stage: Setup validation
+[WARNING] Cannot validate host name settings, reason: resolved host does not match any of the local addresses
+[WARNING] Less than 16384MB of memory is available
+         
+          --== CONFIGURATION PREVIEW ==--
+         
+          Application mode                        : virt
+          Update Firewall                         : False
+          Host FQDN                               : e01.test
+          Engine database name                    : engine
+          Engine database secured connection      : False
+          Engine database host                    : localhost
+          Engine database user name               : engine
+          Engine database host name validation    : False
+          Engine database port                    : 5432
+          Engine installation                     : True
+          NFS setup                               : True
+          PKI organization                        : ovirt
+          NFS mount point                         : /data/ovirt/iso
+          NFS export ACL                          : e01.test(rw)
+          Configure local Engine database         : True
+          Set application as default page         : True
+          Configure Apache SSL                    : True
+          Configure WebSocket Proxy               : True
+          Engine Host FQDN                        : e01.test
+         
+          Please confirm installation settings (OK, Cancel) [OK]: 
+[ INFO  ] Stage: Transaction setup
+[ INFO  ] Stopping engine service
+[ INFO  ] Stopping ovirt-fence-kdump-listener service
+[ INFO  ] Stopping websocket-proxy service
+[ INFO  ] Stage: Misc configuration
+[ INFO  ] Stage: Package installation
+[ INFO  ] Stage: Misc configuration
+[ INFO  ] Initializing PostgreSQL
+[ INFO  ] Creating PostgreSQL 'engine' database
+[ INFO  ] Configuring PostgreSQL
+[ INFO  ] Creating/refreshing Engine database schema
+[ INFO  ] Upgrading CA
+[ INFO  ] Creating CA
+[ INFO  ] Configuring WebSocket Proxy
+[ INFO  ] Generating post install configuration file '/etc/ovirt-engine-setup.conf.d/20-setup-ovirt-post.conf'
+[ INFO  ] Stage: Transaction commit
+[ INFO  ] Stage: Closing up
+[ INFO  ] Restarting nfs services
+         
+          --== SUMMARY ==--
+         
+[WARNING] Less than 16384MB of memory is available
+          SSH fingerprint: 42:A9:E9:9F:FF:5E:D3:99:31:22:0E:E4:96:F4:8F:10
+          Internal CA 7B:2D:9E:99:BF:5E:11:87:01:CD:58:EB:09:34:AF:5D:2B:BF:86:14
+          Web access is enabled at:
+              http://e01.test:80/ovirt-engine
+              https://e01.test:443/ovirt-engine
+          Please use the user "admin" and password specified in order to login
+          In order to configure firewalld, copy the files from
+              /etc/ovirt-engine/firewalld to /etc/firewalld/services
+              and execute the following commands:
+              firewall-cmd -service ovirt-postgres
+              firewall-cmd -service ovirt-https
+              firewall-cmd -service ovirt-fence-kdump-listener
+              firewall-cmd -service ovirt-websocket-proxy
+              firewall-cmd -service ovirt-nfs
+              firewall-cmd -service ovirt-http
+          The following network ports should be opened:
+              tcp:111
+              tcp:2049
+              tcp:32803
+              tcp:443
+              tcp:5432
+              tcp:6100
+              tcp:662
+              tcp:80
+              tcp:875
+              tcp:892
+              udp:111
+              udp:32769
+              udp:662
+              udp:7410
+              udp:875
+              udp:892
+          An example of the required configuration for iptables can be found at:
+              /etc/ovirt-engine/iptables.example
+         
+          --== END OF SUMMARY ==--
+         
+[ INFO  ] Starting engine service
+[ INFO  ] Restarting httpd
+[ INFO  ] Stage: Clean up
+          Log file is located at /var/log/ovirt-engine/setup/ovirt-engine-setup-20151104164530-kpazjp.log
+[ INFO  ] Generating answer file '/var/lib/ovirt-engine/setup/answers/20151104165227-setup.conf'
+[ INFO  ] Stage: Pre-termination
+[ INFO  ] Stage: Termination
+[ INFO  ] Execution of setup completed successfully
+
+
+
+3、访问
+https://e01.test
+
+
+
+
+三、加入主机
+注：选择不让engine配置防火墙。
+手动在node上安装软件包
+# yum install vdsm vdsm-cli
+
+然后在 ovirt 页面新建主机
+n33.test
+n34.test
+
+新建网络ovirtwan，附加到主机的em1
+默认网络ovirtmgmt，附加到主机的em2
+
+
+四、存储域（glustefs）
+1、由2个副本组成的集群，节点包括：
+n33.test
+n34.test
+
+
+2、数据盘分区
+如果分区所在设备已经挂载，要先卸载并删掉现有系统。
+（所有节点操作）
+yum install lvm2 xfsprogs -y
+pvcreate /dev/sdb
+vgcreate vg0 /dev/sdb 
+lvcreate -l 100%FREE -n lv01 vg0
+mkfs.xfs -f -i size=512 /dev/vg0/lv01 
+mkdir /data
+cat <<_EOF >>/etc/fstab
+UUID=$(blkid /dev/vg0/lv01 |cut -d'"' -f2) /data                   xfs     defaults        0 0
+_EOF
+
+mount -a
+# df -h |grep data
+/dev/mapper/vg0-lv01  16T   33M  16T   1% /data
+
+
+3、配置 glusterfs 服务
+1）数据域
+建立2副本的卷：ovirt-data
+（所有节点操作）
+mkdir /data/ovirt/
+
+yum install glusterfs-server
+service glusterd start
+chkconfig glusterd on
+
+[root@n33 ~]# gluster peer probe n34.test
+[root@n33 ~]# gluster volume create ovirt-data replica 2 transport tcp \
+n33.test:/data/ovirt/data \
+n34.test:/data/ovirt/data
+[root@n33 ~]# gluster volume start ovirt-data
+【配置参数】
+gluster volume set ovirt-data diagnostics.count-fop-hits on
+gluster volume set ovirt-data diagnostics.latency-measurement on
+gluster volume set ovirt-data storage.owner-gid 36
+gluster volume set ovirt-data storage.owner-uid 36 
+gluster volume set ovirt-data cluster.server-quorum-type server
+gluster volume set ovirt-data cluster.quorum-type auto
+gluster volume set ovirt-data network.remote-dio enable
+gluster volume set ovirt-data cluster.eager-lock enable
+gluster volume set ovirt-data performance.stat-prefetch off
+gluster volume set ovirt-data performance.io-cache off
+gluster volume set ovirt-data performance.read-ahead off
+gluster volume set ovirt-data performance.quick-read off
+gluster volume set ovirt-data auth.allow \*
+gluster volume set ovirt-data user.cifs enable
+gluster volume set ovirt-data nfs.disable off
+
+
+在 engine 页面选择菜单：“数据中心-Default-存储-新建域”
+名称：data
+域功能/存储类型：Data/GlusterFS
+使用主机：n33.test
+路径：n33.test:/ovirt-data
+挂载选项：backupvolfile-server=n34.test
+
+
+2）iso域
+先删除 ovirt 页面的 ISO_DOMAIN，然后调整 engine 配置 engine 时部署的 nfs 服务使外边主机能访问。
+然后在 ovirt 页面重新添加一个 ISO 域。
+最后上次一个 iso 文件到这个 ISO 域 如下位置：
+[root@engine 11111111-1111-1111-1111-111111111111]# pwd
+/data/ovirt/iso/a0f12884-7840-42a9-b58b-280e3f4f6aba/images/11111111-1111-1111-1111-111111111111
+
+
+
+3）导出域
+[root@n33 ~]# gluster volume create ovirt-export replica 2 transport tcp \
+n33.test:/data/ovirt/export \
+n34.test:/data/ovirt/export
+[root@n33 ~]# gluster volume start ovirt-export
+
+【配置参数】
+gluster volume set ovirt-export diagnostics.count-fop-hits on
+gluster volume set ovirt-export diagnostics.latency-measurement on
+gluster volume set ovirt-export storage.owner-gid 36
+gluster volume set ovirt-export storage.owner-uid 36 
+gluster volume set ovirt-export cluster.server-quorum-type server
+gluster volume set ovirt-export cluster.quorum-type auto
+gluster volume set ovirt-export network.remote-dio enable
+gluster volume set ovirt-export cluster.eager-lock enable
+gluster volume set ovirt-export performance.stat-prefetch off
+gluster volume set ovirt-export performance.io-cache off
+gluster volume set ovirt-export performance.read-ahead off
+gluster volume set ovirt-export performance.quick-read off
+gluster volume set ovirt-export auth.allow \*
+gluster volume set ovirt-export user.cifs enable
+gluster volume set ovirt-export nfs.disable off
+
+在 engine 页面选择菜单：“数据中心-Default-存储-新建域”
+名称：export
+域功能/存储类型：Data/GlusterFS
+使用主机：n33.test
+路径：n33.test:/ovirt-export
+挂载选项：backupvolfile-server=n34.test
+
+
+
+
+
+
+四、创建模版
+1、设置 实例
+【选择右上角菜单：“配置-类型”】
+调整 Medium 的定义为：4核，2-4G，HA
+
+
+2、新建vm
+【选择菜单：“数据中心-Default-虚拟机-新建虚拟机”】
+集群：host-only/GZ
+操作系统：Red Hat Enterprise Linux 6.x x84
+名称：vm4tpl-m1
+注释：centos6u5x64-c4-m2to4g-d80g-if2
+
+网卡：2个，名称从nic变更为eth，以便和vm里面的名称对应。
+eth0：ovirtwan
+eth1：ovirtmgmt
+
+时区：GMT+0
+确定。
+
+配置虚拟磁盘
+大小：80
+描述：os
+
+激活：勾选
+可引导：勾选
+确定。
+
+【选择菜单：“数据中心-Default-虚拟机-只运行一次”】
+【引导选项】
+附加CD：勾选之前上传的iso文件
+调整引导序列，从CD-ROM引导。
+确定。
+
+【选择菜单：“数据中心-Default-虚拟机-控制台”】
+打开spice窗口安装系统（请参考前文）。
+--- 配置系统 ---
+网卡：开机启动，DHCP
+root密码
+时区：Shanghai
+UTC：不勾选
+分区：
+/boot   200 M
+/swap   4096 M（同内存大小）
+/       all
+软件包：basic server
+安装完成后，vm关机，再正常开机
+
+
+
+
+3、制作快照
+快照 s01 ： OS安装完并检查网络正常后关机。
+快照 s02 ： 安装 ovirt-guest-agent 和 cloud-init 并测试通过后，封装系统， 准备制作模版（待后续3个步骤操作完毕后再执行快照）
+
+操作的耗时为：
+创建快照： 1 秒
+删除快照： 8 分钟
+此时，这个VM是 80G 的虚拟磁盘。
+
+
+4、配置 ovirt-guest-agent
+yum -y install http://resources.ovirt.org/pub/yum-repo/ovirt-release36.rpm
+yum -y install ovirt-guest-agent
+service ovirt-guest-agent start
+chkconfig ovirt-guest-agent on
+
+重启vm后查看效果：符合预期。
+
+
+5、配置 cloud-init
+yum -y install cloud-init
+echo 'datasource_list: ["NoCloud", "ConfigDrive"]' >>/etc/cloud/cloud.cfg
+
+关闭vm后验证：符合预期。
+
+6、封装为模版
+手动清理在创建虚拟机时可能导致冲突的配置
+--- 清理cloud-init ---
+rm /var/lib/cloud -fr
+
+--- 清理hostname ---
+cat <<'_EOF' >/etc/sysconfig/network
+NETWORKING=yes
+HOSTNAME=localhost.localdomain
+_EOF
+
+--- 清理网卡相关 ---
+sed -i -e '/UUID/d' -e '/HWADDR/d' -e '/ONBOOT/d' -e '/BOOTPROTO/d' \
+-e '/IPADDR/d' -e '/NETMASK/d' -e '/GATEWAY/d' \
+-e '/TYPE=Ethernet/a\ONBOOT=no\nBOOTPROTO=dhcp' /etc/sysconfig/network-scripts/ifcfg-eth*
+
+--- 清理ssh相关 ---
+rm -f /etc/ssh/ssh_host_*
+rm /root/.ssh -fr 
+
+--- 清理log ---
+find /var/log -type f -delete
+find /root -type f ! -name ".*" -delete
+
+
+--- 最后一步 ---
+手动配置（不想重置root密码和其他服务，如果通过sys-unconfig将会这样操作）
+--- 清理 udev 和history ---
+rm /etc/udev/rules.d/*-persistent-*.rules -f
+echo> /root/.bash_history
+history -c
+
+--- 关机 ---
+# poweroff
+
+
+
+7、创建模版
+【选择菜单：“数据中心-Default-虚拟机-创建模版”】
+名称：tpl-m1
+描述：centos6u5x64-c4-m2to4g-d80g-if2
+
+操作的耗时为：
+创建模版： 8.5 分钟
+
+
+
+五、测试和导出
+1、测试新建虚拟机
+【选择菜单：“数据中心-Default-虚拟机-新建虚拟机”】
+基于模版：tpl-m1
+名称：a01
+确定。
+
+【选择菜单：“数据中心-Default-虚拟机-只运行一次”】
+【初识运行】
+使用 Cloud-Init：勾选
+设定vm名称等项目后，确定。
+
+
+2、导出
+【选择菜单：“数据中心-Default-虚拟机（选择指定的虚拟机）-导出”】
+操作的耗时为：
+创建模版： 9 分钟
+【选择菜单：“数据中心-Default-模版（选择指定的模版）-导出”】
+操作的耗时为：
+创建模版： 0.5 分钟
+
+
+3、调整vm
+【选择菜单：“数据中心-Default-虚拟机”】
+名称：vm4tpl-s1
+选中vm，选择下方菜单：“磁盘-取消激活”
+目的：将这个制作模版的vm的磁盘设置成未激活的状态，以免误操作启动了这个vm
+
+
+
+
+
+六、讨论
+1、关于vm的OS盘的虚拟磁盘大小
+通过上述操作可以发现，OS盘设置为80G时，则快照、克隆、导出等操作耗时在8分钟左右；
+之前也测试过20G的磁盘空间，耗时在3分钟左右；
+因此，这一块的容量，建议根据实际需求来配置。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

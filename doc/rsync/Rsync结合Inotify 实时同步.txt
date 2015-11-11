@@ -1,0 +1,124 @@
+  Rsync结合Inotify 实时同步
+                                                                                                                ——志在千里
+ http://blog.chinaunix.net/uid-25266990-id-3522465.html
+今天一位CU的友友根据之前介绍过 通过rsync+inotify-tools+ssh实现触发式远程实时同步  配置分发系统，但是由于认证繁琐，很容易出错，我今天重新整理了下，用rsync密码文件pas认证的方式进行同步。
+ 
+系统环境：
+                   10.10.10.20  （发布文件服务器）  源目录：/home/httpd/20dir
+                  
+                   10.10.10.21   (同步镜像文件服务器)                   目标目录：/home/httpd/21dir
+ 
+实现目标：目录/home/httpd/20dir 通过Rysnc实时同步到/home/httpd/21dir目录
+ 
+软件下载
+rysnc的主页地址为：
+http://rsync.samba.org/
+目前最新版本为Rsync version 3.0.9。
+ 
+一、配置Rysnc服务 ，实现文件密码文件认证传输。
+首先在10.10.10.21上搭建rsync服务，设置同步的目录
+1、在10.10.10.21上下载、安装rsync：
+#tar zxvf rsync-3.0.9.tar.gz
+#cd rsync-3.0.9
+#./configure --prefix=/usr/local/rsync
+#make 
+#make install 
+2、配置rsync server服务：
+#vim /etc/rsyncd.conf
+uid = root                             //运行RSYNC守护进程的用户
+gid = root                             //运行RSYNC守护进程的组
+use chroot = no                  //不使用chroot
+max connections=0          // 最大连接数无限制
+log file=/var/log/rsyncd.log               //日志记录文件的存放位置
+pid file=/var/run/rsyncd.pid              //锁文件的存放位置
+lock file=/var/run/rsyncd.lock           //pid文件的存放位置
+ 
+[21dir]                                  //这里是认证的模块名，在client端需要指定
+path = /home/httpd/21dir/  //需要做镜像的目录,不可缺少
+comment = rsync from 10.10.10.20
+read only = no                              // 非只读
+list = on                                         //不允许列文件
+auth users = rsyncuser             //认证的用户名，如果没有这行则表明是匿名，此用户与系统无关
+secrets file = /etc/21.pas                  //密码和用户名对比表，密码文件自己生成
+ 
+ 
+         3、设置密码文件secrets file ，编辑/etc/21.pas
+         #vim  /etc/21.pas
+         rsyncuser:123456   //用户名和密码，用”/” 隔开
+并且设置600文件属性：
+#chomd 600 /etc/21.pas
+ 
+4、启动Rsync服务：
+         #/usr/local/rsync/bin/rsync --port=873 --address=10.10.10.21 –daemon
+ 
+         其次在10.10.10.20分发服务器上测试同步：
+1、添加密码文件认证：
+#vim /etc/21.pas
+123456   //对应10.10.10.21 密码即可
+         并且设置600文件属性：
+         #chomd 600 /etc/21.pas
+ 
+2、测试
+/usr/bin/rsync -avH --delete  --progress --password-file=/etc/21.pas  /home/httpd/21dir rsyncuser @10.10.10.21::21dir
+ 
+二、安装配置inotify 服务
+在10.10.10.20 上搭建inotify 服务
+1、下载安装
+# wget http://nchc.dl.sourceforge.net/project/inotify-tools/inotify-tools/3.13/inotify-tools-3.13.tar.gz
+# tar xzvf inotify-tools-3.14.tar.gz
+# cd inotify-tools-3.13
+# ./configure  --prefix=/usr/local/inotify
+# make
+# make install
+ 
+2、创建inotify_rsync.sh脚本
+# vim inotify_rsync.sh
+#!/bin/sh
+#date:2013-1-11
+#function:rysnc 10.10.10.20  to  10.10.10.21
+if [ ! -f /etc/21.pas ];then
+        echo "123456">/etc/21.pas
+        /bin/chmod 600 /etc/1.pas
+fi
+log=/usr/local/inotify/logs/rsync.log
+src="/home/httpd/20dir/"
+host="10.10.10.21"
+module="21dir"
+ 
+/usr/local/inotify/bin/inotifywait -mr --timefmt '%d/%m/%y %H:%M' --format '%T %w %f' -e close_write,modify,delete,create,attrib $src |  while read DATE TIME DIR FILE; do
+ 
+       FILECHANGE=${DIR}${FILE}
+ 
+       /usr/bin/rsync -avH --delete  --progress --password-file=/etc/21.pas $src  --exclude-from="/usr/local/inotify/logs/rules.txt" rsyncuser@$host::$module &
+       echo "At ${TIME} on ${DATE}, file $FILECHANGE was backed up via rsync" >> $log
+done
+
+
+相关注解如下：
+/usr/local/bin/inotifywait -mrq -e modify,delete,create,attrib ${src}
+-m 是保持一直监听
+-r 是递归查看目录
+-q 是打印出事件
+
+-e close_write,modify,delete,create,attrib 是指 “监听 创建 移动 删除 写入 权限” 事件
+
+/usr/bin/rsync -avH --delete  --progress --password-file
+-a 存档模式
+-H 保存硬连接
+-delete 删除于多余文件
+--password-file 密码文件
+今天参数可以man rsync
+
+要排除同步某个目录时，为rsync添加--exculde=PATTERN参数，注意，路径是相对路径，具体查看man rsync。
+要排除某个目录的事件监听的处理时，为inotifywait添加--exclude或--excludei参数，具体查看man inotifywait。
+--exclude-from="/usr/local/inotify/logs/rules.txt" 可以匹配过滤文件：
+如排除包括 .svn的文件：
+#cat /usr/local/inotify/logs/rules.txt
+- *.svn*
+
+inotifywait 命令产生三个返回值，分别是“日期，时间，文件” 这3个返回值会做为参数传给read，因此脚本中的“while read D E F” 写法细化了返回值。
+
+赋予脚本可执行权限
+#chmod +x   inotify_rsync.sh
+运行
+#./ inotify_rsync.sh &

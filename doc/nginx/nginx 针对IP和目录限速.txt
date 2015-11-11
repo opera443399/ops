@@ -1,0 +1,61 @@
+http://developer.51cto.com/art/201007/209322.htm
+
+在Nginx下针对IP和目录限速
+2010-07-05 10:05 TOM ZHENG TOM ZHENG'Blog 我要评论(0) 字号：T | T
+一键收藏，随时查看，分享好友！
+在某种应用场景下，我们需要在Nginx下对IP和目录进行限速；本文通过Nginx的limit_zone和limit_rate等方式实现对IP和目录的限速。
+AD：
+从Nginx配置与应用详解专题的投票结果来看，Nginx已经是目前仅次于APache和MS IIS的Web服务器。Nginx优秀的高并发支持和高效的负载均衡是我们选择它的理由。但有时我们希望它能做的更多。本文将向您介绍如何在Nginx下对IP和目录进行限速，在某种应用场景下，这也是个常见需求。
+
+Nginx可以通过HTTPLimitZoneModule和HTTPCoreModule两个目录来限速。
+
+示例:
+
+limit_zone one $binary_remote_addr 10m;  
+ 
+location / {   
+        limit_conn one 1;   
+        limit_rate 100k;   
+} 
+说明:
+
+limit_zone，是针对每个IP定义一个存储session状态的容器。这个示例中定义了一个10m的容器，按照32bytes/session，可以处理320000个session。
+
+然后针对目录进行设定。
+
+limit_conn one 1; 
+是限制每个IP只能发起一个连接。
+
+limit_rate 100k; 
+是对每个连接限速100k. 注意，这里是对连接限速，而不是对IP限速。如果一个IP允许两个并发连接，那么这个IP就是限速limit_rate x 2。
+
+关于limit_zone的原始文档，请见 http://wiki.Nginx.org/NginxHttpLimitZoneModule
+
+关于limit_rate和limit_conn的原始文档，请见 http://wiki.Nginx.org/NginxHttpCoreModule
+
+
+nginx自从1.1.8版本发布后将limit_conn更换为limit_conn_zone 。对应则需要修改配置文件。
+官方公告：
+syntax:  limit_zone name $variable size;
+default:  —
+context:  http
+This directive is made obsolete in version 1.1.8, an equivalent limit_conn_zone directive with a changed syntax should be used instead:
+limit_conn_zone $variable zone=name:size;
+limit_conn_zone的描述：
+When several limit_conn directives are specified, any configured limit will apply. For example, the following configuration will limit the number of connections to the server per client IP and at the same time will limit the total number of connections to the virtual host:
+limit_conn_zone $binary_remote_addr zone=perip:10m;
+limit_conn_zone $server_name zone=perserver:10m;
+server {
+…
+limit_conn perip 10;
+limit_conn perserver 100;
+}
+These directives are inherited from the previous level if and only if there are no limit_conn directives on the current level.
+ 
+对应conf文件夹中的nginx.conf文件，将limit_conn替换为limit_conn_zone。使用于http
+示例：
+limit_conn_zone $binary_remote_addr zone=perip:10m;  #容器共使用10M的内存来对于IP传输开销
+ 
+对应的虚拟主机文件，将原来的limit_conn one 替换为 limit_conn perip。使用于server
+示例：
+limit_conn perip 10;  # 每个IP使用10个连接。

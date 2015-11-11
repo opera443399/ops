@@ -1,0 +1,133 @@
+docker深入1-使用supervisor来管理服务
+目的：
+a) 提供ssh登录；
+b) 提供supervisor来管理其他服务；
+
+
+一、制作一个基础镜像
+[Jack@test101 base]$ pwd
+/home/Jack/base
+[Jack@test101 base]$ ls
+bin  conf  Dockerfile  README
+
+
+1）【Dockerfile】
+[Jack@test101 base]$ cat Dockerfile 
+FROM centos
+MAINTAINER pcnk
+
+# yum
+RUN yum -y update; yum clean all
+
+# epel & supervisor & sshd
+RUN rpm -ivh http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm \
+      && yum -y install openssh-server passwd python-pip \
+      && yum clean all \
+      && /usr/bin/pip install supervisor
+
+# update config
+ADD ./bin/start.sh /root/start.sh
+RUN set -x \
+        && /bin/sed -i 's/.*session.*required.*pam_loginuid.so.*/session optional pam_loginuid.so/g' /etc/pam.d/sshd \
+        && ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N '' \
+        && mkdir /var/run/sshd  /etc/supervisor.d \
+        && /usr/bin/echo_supervisord_conf >/etc/supervisord.conf  \
+        && sed -i 's/nodaemon=false/nodaemon=true/' /etc/supervisord.conf \
+        && echo -e '[include]\nfiles=/etc/supervisor.d/*.ini' >>/etc/supervisord.conf \
+        && grep ^[^\;] /etc/supervisord.conf \
+        && chmod 755 /root/start.sh \
+        && ./root/start.sh
+COPY ./conf/supervisor.d/sshd.ini /etc/supervisor.d/sshd.ini
+
+# EXPOSE 22
+ENTRYPOINT ["/usr/bin/supervisord"]
+
+
+2）【启动脚本】
+[Jack@test101 base]$ cat bin/start.sh 
+#!/bin/bash
+#
+# 2015/5/5
+
+# Update public key for root
+__update_root() {
+  SSH_USERPASS=toortoor
+  echo -e "$SSH_USERPASS\n$SSH_USERPASS" | (passwd --stdin root)
+  echo ssh user password: $SSH_USERPASS
+
+  d_root='/root/.ssh'
+  [ -d ${d_root} ] || mkdir ${d_root}
+
+  cat <<_PUBKEY > /${d_root}/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA+kdRTFU8zzzypY7BF1vfjk00ECGruUTWVILVcAVKX2FlUa0MVgXuX8auaqcl7mU3jq8DCKXUpJE4zywDQh0v6+b7/x3K+LTascPLRrdoZRMyc3B9F8F6buJWUjkvcosvRRp4rtymngLHczOeH9v9yK+xIc32xJiQv0apjyUA8ZXqNx8QAOlZYoGTi8AISzcf+lMgWUcbm8Y7cjZSOG3GjzGuJWWjBUnLGxgIZXDLF/qXYHxqYzac9uHRjG8gXrO2zawNKlq18m50pKF12P5eYlvGoYqYDwVR+mk9wte4+MPgiUi/nA43FHTp57LToUc0AE64fQelsyh2fCOU50Jgkw== Jack@test
+_PUBKEY
+
+  chmod 700 ${d_root}
+  chmod 600 ${d_root}/authorized_keys
+}
+
+# Call all functions
+__update_root
+
+
+3）【supervisor配置】
+[Jack@test101 base]$ cat conf/supervisor.d/sshd.ini    
+[program:sshd]
+command=/usr/sbin/sshd -D
+
+
+4）【build一个image】
+[Jack@test101 base]$ docker build --rm -t pcnk/base:v2 .
+
+
+二、启动一个container来验证
+【查看images】
+[Jack@test101 base]$ docker images 
+REPOSITORY          TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+pcnk/base           v2                  064aa35dfcef        2 minutes ago       251.3 MB
+
+
+5）【启动一个container】
+[Jack@test101 base]$ docker run -d --name app_test -p 10022:22 pcnk/base:v2
+85df9a7ce698f69f5e14bb0bfdda5f8e16baf215315d7b2254bb86b52bc91f32
+[Jack@test101 base]$ docker ps -l
+CONTAINER ID        IMAGE               COMMAND                CREATED             STATUS              PORTS                   NAMES
+85df9a7ce698        pcnk/base:v2        "/usr/bin/supervisor   5 seconds ago       Up 4 seconds        0.0.0.0:10022->22/tcp   app_test 
+
+登录测试：
+[Jack@test101 base]$ echo> /home/Jack/.ssh/known_hosts 
+上边先清理一下，因为之前的测试有保留其他的key的信息。
+
+先测试用passwd方式登录： 
+[Jack@test101 base]$ ssh -p 10022 root@127.0.0.1
+The authenticity of host '[127.0.0.1]:10022 ([127.0.0.1]:10022)' can't be established.
+RSA key fingerprint is 15:18:db:44:ed:03:ca:ac:15:a3:d0:ea:ac:01:7e:27.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '[127.0.0.1]:10022' (RSA) to the list of known hosts.
+root@127.0.0.1's password: 
+[root@85df9a7ce698 ~]# exit
+logout
+Connection to 127.0.0.1 closed.
+
+
+在测试用public key方式登录：
+[Jack@test101 base]$ ssh -p 10022 root@127.0.0.1 -i /home/Jack/.ssh/Jack
+Last login: Wed May  6 01:37:11 2015 from 172.17.42.1
+[root@85df9a7ce698 ~]# exit
+logout
+Connection to 127.0.0.1 closed.
+
+
+
+6）【删除镜像的方式】
+先停止用到这个image的container：
+[Jack@test101 base]$ docker stop app_test
+[Jack@test101 base]$ docker rm app_test
+
+再删掉image：
+[Jack@test101 base]$ docker rmi `docker images |grep 'pcnk/base' |awk '{print $3}'`
+
+
+
+
+

@@ -1,0 +1,114 @@
+http://www.woqutech.com/?p=1200
+
+LINUX上MYSQL优化三板斧
+2014 年 1 月 11 日, 上午 9:17
+现在MySQL运行的大部分环境都是在Linux上的，如何在Linux操作系统上根据MySQL进行优化，我们这里给出一些通用简单的策略。这些方法都有助于改进MySQL的性能。 
+闲话少说，进入正题。
+ 
+
+一、CPU
+
+首先从CPU说起。 
+你仔细检查的话，有些服务器上会有的一个有趣的现象：你cat /proc/cpuinfo时，会发现CPU的频率竟然跟它标称的频率不一样：
+    #cat /proc/cpuinfo 
+    processor : 5
+    model name : Intel(R) Xeon(R) CPU E5-2620 0 @2.00GHz
+    ...
+    cpu MHz : 1200.000
+这个是Intel E5-2620的CPU，他是2.00G * 24的CPU，但是，我们发现第5颗CPU的频率为1.2G。 
+这是什么原因列？ 
+这些其实都源于CPU最新的技术：节能模式。操作系统和CPU硬件配合，系统不繁忙的时候，为了节约电能和降低温度，它会将CPU降频。这对环保人士和抵制地球变暖来说是一个福音，但是对MySQL来说，可能是一个灾难。 
+为了保证MySQL能够充分利用CPU的资源，建议设置CPU为最大性能模式。这个设置可以在BIOS和操作系统中设置，当然，在BIOS中设置该选项更好，更彻底。由于各种BIOS类型的区别，设置为CPU为最大性能模式千差万别，我们这里就不具体展示怎么设置了。
+ 
+二、内存
+
+然后我们看看内存方面，我们有哪些可以优化的。
+i)我们先看看numa 
+非一致存储访问结构 (NUMA ： Non-Uniform Memory Access) 也是最新的内存管理技术。它和对称多处理器结构 (SMP ： Symmetric Multi-Processor) 是对应的。简单的队别如下：
+Smp numa
+如图所示，详细的NUMA信息我们这里不介绍了。但是我们可以直观的看到：SMP访问内存的都是代价都是一样的；但是在NUMA架构下，本地内存的访问和非本地内存的访问代价是不一样的。对应的根据这个特性，操作系统上，我们可以设置进程的内存分配方式。目前支持的方式包括：
+--interleave=nodes 
+ --membind=nodes 
+ --cpunodebind=nodes 
+ --physcpubind=cpus 
+ --localalloc 
+ --preferred=node
+简而言之，就是说，你可以指定内存在本地分配，在某几个CPU节点分配或者轮询分配。除非是设置为--interleave=nodes轮询分配方式，即内存可以在任意NUMA节点上分配这种方式以外。其他的方式就算其他NUMA节点上还有内存剩余，Linux也不会把剩余的内存分配给这个进程，而是采用SWAP的方式来获得内存。有经验的系统管理员或者DBA都知道SWAP导致的数据库性能下降有多么坑爹。 
+所以最简单的方法，还是关闭掉这个特性。 
+关闭特性的方法，分别有：可以从BIOS，操作系统，启动进程时临时关闭这个特性。 
+a)由于各种BIOS类型的区别，如何关闭NUMA千差万别，我们这里就不具体展示怎么设置了。 
+b)在操作系统中关闭，可以直接在/etc/grub.conf的kernel行最后添加numa=off，如下所示： 
+kernel /vmlinuz-2.6.32-220.el6.x86_64 ro root=/dev/mapper/VolGroup-root rd_NO_LUKS LANG=en_US.UTF-8 rd_LVM_LV=VolGroup/root rd_NO_MD quiet SYSFONT=latarcyrheb-sun16 rhgb crashkernel=auto rd_LVM_LV=VolGroup/swap rhgb crashkernel=auto quiet KEYBOARDTYPE=pc KEYTABLE=us rd_NO_DM  numa=off  
+
+另外可以设置 vm.zone_reclaim_mode=0尽量回收内存。 
+c)启动MySQL的时候，关闭NUMA特性： 
+  numactl --interleave=all  mysqld &
+当然，最好的方式是在BIOS中关闭。
+ 
+ii)我们再看看vm.swappiness。
+vm.swappiness是操作系统控制物理内存交换出去的策略。它允许的值是一个百分比的值，最小为0，最大运行100，该值默认为60。vm.swappiness设置为0表示尽量少swap，100表示尽量将inactive的内存页交换出去。 
+具体的说：当内存基本用满的时候，系统会根据这个参数来判断是把内存中很少用到的inactive 内存交换出去，还是释放数据的cache。cache中缓存着从磁盘读出来的数据，根据程序的局部性原理，这些数据有可能在接下来又要被读取；inactive 内存顾名思义，就是那些被应用程序映射着，但是“长时间”不用的内存。 
+我们可以利用vmstat看到inactive的内存的数量： 
+#vmstat -an 1 
+ procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu----- 
+ r b swpd free  inact  active si so bi bo in cs us sy id wa st 
+ 1 0 0 27522384 326928 1704644 0 0 0 153 11 10 0 0 100 0 0 
+ 0 0 0 27523300 326936 1704164 0 0 0 74 784 590 0 0 100 0 0 
+ 0 0 0 27523656 326936 1704692 0 0 8 8 439 1686 0 0 100 0 0 
+ 0 0 0 27524300 326916 1703412 0 0 4 52 198 262 0 0 100 0 0
+通过/proc/meminfo 你可以看到更详细的信息： 
+#cat /proc/meminfo | grep -i inact 
+ Inactive: 326972 kB 
+ Inactive(anon): 248 kB 
+ Inactive(file): 326724 kB
+这里我们对不活跃inactive内存进一步深入讨论。Linux中，内存可能处于三种状态：free，active和inactive。众所周知，Linux Kernel在内部维护了很多LRU列表用来管理内存，比如LRU_INACTIVE_ANON, LRU_ACTIVE_ANON, LRU_INACTIVE_FILE , LRU_ACTIVE_FILE, LRU_UNEVICTABLE。其中LRU_INACTIVE_ANON, LRU_ACTIVE_ANON用来管理匿名页，LRU_INACTIVE_FILE , LRU_ACTIVE_FILE用来管理page caches页缓存。系统内核会根据内存页的访问情况，不定时的将活跃active内存被移到inactive列表中，这些inactive的内存可以被交换到swap中去。 
+一般来说，MySQL，特别是InnoDB管理内存缓存，它占用的内存比较多，不经常访问的内存也会不少，这些内存如果被Linux错误的交换出去了，将浪费很多CPU和IO资源。 InnoDB自己管理缓存，cache的文件数据来说占用了内存，对InnoDB几乎没有任何好处。 
+所以，我们在MySQL的服务器上最好设置vm.swappiness=0。
+我们可以通过在sysctl.conf中添加一行： 
+echo "vm.swappiness = 0" >>/etc/sysctl.conf
+并使用sysctl -p来使得该参数生效。
+ 
+三、文件系统
+
+最后，我们看一下文件系统的优化 
+i)我们建议在文件系统的mount参数上加上noatime，nobarrier两个选项。
+用noatime mount的话，文件系统在程序访问对应的文件或者文件夹时，不会更新对应的access time。一般来说，Linux会给文件记录了三个时间，change time, modify time和access time。 
+我们可以通过stat来查看文件的三个时间： 
+stat libnids-1.16.tar.gz 
+ File: `libnids-1.16.tar.gz' 
+ Size: 72309 Blocks: 152 IO Block: 4096 regular file 
+ Device: 302h/770d Inode: 4113144 Links: 1 
+ Access: (0644/-rw-r--r--) Uid: ( 0/ root) Gid: ( 0/ root) 
+  Access  : 2008-05-27 15:13:03.000000000 +0800 
+ Modify: 2004-03-10 12:25:09.000000000 +0800 
+ Change: 2008-05-27 14:18:18.000000000 +0800
+其中access time指文件最后一次被读取的时间，modify time指的是文件的文本内容最后发生变化的时间，change time指的是文件的inode最后发生变化(比如位置、用户属性、组属性等)的时间。一般来说，文件都是读多写少，而且我们也很少关心某一个文件最近什么时间被访问了。 
+所以，我们建议采用noatime选项，这样文件系统不记录access time，避免浪费资源。 
+现在的很多文件系统会在数据提交时强制底层设备刷新cache，避免数据丢失，称之为write barriers。但是，其实我们数据库服务器底层存储设备要么采用RAID卡，RAID卡本身的电池可以掉电保护；要么采用Flash卡，它也有自我保护机制，保证数据不会丢失。所以我们可以安全的使用nobarrier挂载文件系统。设置方法如下： 
+对于ext3, ext4和 reiserfs文件系统可以在mount时指定barrier=0；对于xfs可以指定nobarrier选项。
+ 
+ii)文件系统上还有一个提高IO的优化万能钥匙，那就是deadline。
+在Flash技术之前，我们都是使用机械磁盘存储数据的，机械磁盘的寻道时间是影响它速度的最重要因素，直接导致它的每秒可做的IO(IOPS)非常有限，为了尽量排序和合并多个请求，以达到一次寻道能够满足多次IO请求的目的，Linux文件系统设计了多种IO调度策略，已适用各种场景和存储设备。 
+Linux的IO调度策略包括：Deadline scheduler，Anticipatory scheduler，Completely Fair Queuing(CFQ)，NOOP。每种调度策略的详细调度方式我们这里不详细描述，这里我们主要介绍CFQ和Deadline，CFQ是Linux内核2.6.18之后的默认调度策略，它声称对每一个 IO 请求都是公平的，这种调度策略对大部分应用都是适用的。但是如果数据库有两个请求，一个请求3次IO，一个请求10000次IO，由于绝对公平，3次IO的这个请求都需要跟其他10000个IO请求竞争，可能要等待上千个IO完成才能返回，导致它的响应时间非常慢。并且如果在处理的过程中，又有很多IO请求陆续发送过来，部分IO请求甚至可能一直无法得到调度被“饿死”。而deadline兼顾到一个请求不会在队列中等待太久导致饿死，对数据库这种应用来说更加适用。 
+实时设置，我们可以通过 
+echo deadline >/sys/block/sda/queue/scheduler
+来将sda的调度策略设置为deadline。
+我们也可以直接在/etc/grub.conf的kernel行最后添加elevator=deadline来永久生效。
+ 
+ 
+总结 
+
+CPU方面 
+    关闭电源保护模式
+内存： 
+    vm.swappiness = 0 
+    关闭numa
+文件系统： 
+    用noatime，nobarrier挂载系统 
+    IO调度策略修改为deadline。
+ 
+参考文档： 
+http://www.gentoo-wiki.info/FAQ_Linux_Memory_Management 
+http://bbs.gfan.com/android-4165836-1-1.html 
+https://wiki.archlinux.org/index.php/CPU_Frequency_Scaling_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)
+http://www.mysqlperformanceblog.com/2013/12/07/linux-performance-tuning-tips-mysql/

@@ -1,0 +1,408 @@
+初探glusterfs-gluster的默认配置
+2015/10/28 time 15:38
+
+1、gluster的默认配置
+gluster> volume set help
+Option: cluster.lookup-unhashed
+Default Value: on
+Description: This option if set to ON, does a lookup through all the sub-volumes, in case a lookup didn't return any result from the hash subvolume. If set to OFF, it does not do a lookup on the remaining subvolumes.
+
+Option: cluster.min-free-disk
+Default Value: 10%
+Description: Percentage/Size of disk space, after which the process starts balancing out the cluster, and logs will appear in log files
+
+Option: cluster.min-free-inodes
+Default Value: 5%
+Description: after system has only N% of inodes, warnings starts to appear in log files
+
+Option: cluster.rebalance-stats
+Default Value: off
+Description: This option if set to ON displays and logs the  time taken for migration of each file, during the rebalance process. If set to OFF, the rebalance logs will only display the time spent in each directory.
+
+Option: cluster.subvols-per-directory
+Default Value: (null)
+Description: Specifies the directory layout spread.
+
+Option: cluster.readdir-optimize
+Default Value: off
+Description: This option if set to ON enables the optimization that allows DHT to requests non-first subvolumes to filter out directory entries.
+
+Option: cluster.entry-change-log
+Default Value: on
+Description: Entry fops like create/unlink will not perform pre/post fop changelog operations in afr transaction if this option is disabled
+
+Option: cluster.read-subvolume
+Default Value: (null)
+Description: inode-read fops happen only on one of the bricks in replicate. Afr will prefer the one specified using this option if it is not stale. Option value must be one of the xlator names of the children. Ex: <volname>-client-0 till <volname>-client-<number-of-bricks - 1>
+
+Option: cluster.read-subvolume-index
+Default Value: -1
+Description: inode-read fops happen only on one of the bricks in replicate. AFR will prefer the one specified using this option if it is not stale. allowed options include -1 till replica-count - 1
+
+Option: cluster.read-hash-mode
+Default Value: 0
+Description: inode-read fops happen only on one of the bricks in replicate. AFR will prefer the one computed using the method specified using this option0 = first responder, 1 = hash by GFID of file (all clients use same subvolume), 2 = hash by GFID of file and client PID
+
+Option: cluster.background-self-heal-count
+Default Value: 16
+Description: This specifies the number of self-heals that can be  performed in background without blocking the fop
+
+Option: cluster.metadata-self-heal
+Default Value: on
+Description: Using this option we can enable/disable metadata i.e. Permissions, ownerships, xattrs self-heal on the file/directory.
+
+Option: cluster.data-self-heal
+Default Value: on
+Description: Using this option we can enable/disable data self-heal on the file. "open" means data self-heal action will only be triggered by file open operations.
+
+Option: cluster.entry-self-heal
+Default Value: on
+Description: Using this option we can enable/disable entry self-heal on the directory.
+
+Option: cluster.self-heal-daemon
+Default Value: off
+Description: This option applies to only self-heal-daemon. Index directory crawl and automatic healing of fileswill not be performed if this option is turned off.
+
+Option: cluster.heal-timeout
+Default Value: 600
+Description: time interval for checking the need to self-heal in self-heal-daemon
+
+Option: cluster.self-heal-window-size
+Default Value: 1
+Description: Maximum number blocks per file for which self-heal process would be applied simultaneously.
+
+Option: cluster.data-change-log
+Default Value: on
+Description: Data fops like write/truncate will not perform pre/post fop changelog operations in afr transaction if this option is disabled
+
+Option: cluster.metadata-change-log
+Default Value: on
+Description: Metadata fops like setattr/setxattr will not perform pre/post fop changelog operations in afr transaction if this option is disabled
+
+Option: cluster.data-self-heal-algorithm
+Default Value: (null)
+Description: Select between "full", "diff". The "full" algorithm copies the entire file from source to sink. The "diff" algorithm copies to sink only those blocks whose checksums don't match with those of source. If no option is configured the option is chosen dynamically as follows: If the file does not exist on one of the sinks or empty file exists or if the source file size is about the same as page size the entire file will be read and written i.e "full" algo, otherwise "diff" algo is chosen.
+
+Option: cluster.eager-lock
+Default Value: on
+Description: Lock phase of a transaction has two sub-phases. First is an attempt to acquire locks in parallel by broadcasting non-blocking lock requests. If lock aquistion fails on any server, then the held locks are unlocked and revert to a blocking locked mode sequentially on one server after another.  If this option is enabled the initial broadcasting lock request attempt to acquire lock on the entire file. If this fails, we revert back to the sequential "regional" blocking lock as before. In the case where such an "eager" lock is granted in the non-blocking phase, it gives rise to an opportunity for optimization. i.e, if the next write transaction on the same FD arrives before the unlock phase of the first transaction, it "takes over" the full file lock. Similarly if yet another data transaction arrives before the unlock phase of the "optimized" transaction, that in turn "takes over" the lock as well. The actual unlock now happens at the end of the last "optimzed" transaction.
+
+Option: cluster.quorum-type
+Default Value: none
+Description: If value is "fixed" only allow writes if quorum-count bricks are present.  If value is "auto" only allow writes if more than half of bricks, or exactly half including the first, are present.
+
+Option: cluster.quorum-count
+Default Value: (null)
+Description: If quorum-type is "fixed" only allow writes if this many bricks or present.  Other quorum types will OVERWRITE this value.
+
+Option: cluster.choose-local
+Default Value: true
+Description: Choose a local subvolume(i.e. Brick) to read from if read-subvolume is not explicitly set.
+
+Option: cluster.self-heal-readdir-size
+Default Value: 1KB
+Description: readdirp size for performing entry self-heal
+
+Option: cluster.readdir-failover
+Default Value: on
+Description: readdir(p) will not failover if this option is off
+
+Option: cluster.stripe-block-size
+Default Value: 128KB
+Description: Size of the stripe unit that would be read from or written to the striped servers.
+
+Option: cluster.stripe-coalesce
+Default Value: false
+Description: Enable coalesce mode to flatten striped files as stored on the server (i.e., eliminate holes caused by the traditional format).
+
+Option: diagnostics.latency-measurement
+Default Value: off
+Description: If on stats related to the latency of each operation would be tracked inside GlusterFS data-structures. 
+
+Option: diagnostics.dump-fd-stats
+Default Value: off
+Description: If on stats related to file-operations would be tracked inside GlusterFS data-structures.
+
+Option: diagnostics.brick-log-level
+Default Value: INFO
+Description: Changes the log-level of the bricks
+
+Option: diagnostics.client-log-level
+Default Value: INFO
+Description: Changes the log-level of the clients
+
+Option: diagnostics.brick-sys-log-level
+Default Value: CRITICAL
+Description: Gluster's syslog log-level
+
+Option: diagnostics.client-sys-log-level
+Default Value: CRITICAL
+Description: Gluster's syslog log-level
+
+Option: performance.cache-max-file-size
+Default Value: 0
+Description: Maximum file size which would be cached by the io-cache translator.
+
+Option: performance.cache-min-file-size
+Default Value: 0
+Description: Minimum file size which would be cached by the io-cache translator.
+
+Option: performance.cache-refresh-timeout
+Default Value: 1
+Description: The cached data for a file will be retained till 'cache-refresh-timeout' seconds, after which data re-validation is performed.
+
+Option: performance.cache-priority
+Default Value: 
+Description: Assigns priority to filenames with specific patterns so that when a page needs to be ejected out of the cache, the page of a file whose priority is the lowest will be ejected earlier
+
+Option: performance.cache-size
+Default Value: 32MB
+Description: Size of the read cache.
+
+Option: performance.io-thread-count
+Default Value: 16
+Description: Number of threads in IO threads translator which perform concurrent IO operations
+
+Option: performance.high-prio-threads
+Default Value: 16
+Description: Max number of threads in IO threads translator which perform high priority IO operations at a given time
+
+Option: performance.normal-prio-threads
+Default Value: 16
+Description: Max number of threads in IO threads translator which perform normal priority IO operations at a given time
+
+Option: performance.low-prio-threads
+Default Value: 16
+Description: Max number of threads in IO threads translator which perform low priority IO operations at a given time
+
+Option: performance.least-prio-threads
+Default Value: 1
+Description: Max number of threads in IO threads translator which perform least priority IO operations at a given time
+
+Option: performance.enable-least-priority
+Default Value: on
+Description: Enable/Disable least priority
+
+Option: performance.least-rate-limit
+Default Value: 0
+Description: Max number of least priority operations to handle per-second
+
+Option: performance.cache-size
+Default Value: 128MB
+Description: Size of the read cache.
+
+Option: performance.flush-behind
+Default Value: on
+Description: If this option is set ON, instructs write-behind translator to perform flush in background, by returning success (or any errors, if any of previous  writes were failed) to application even before flush FOP is sent to backend filesystem. 
+
+Option: performance.write-behind-window-size
+Default Value: 1MB
+Description: Size of the write-behind buffer for a single file (inode).
+
+Option: performance.strict-o-direct
+Default Value: off
+Description: This option when set to off, ignores the O_DIRECT flag.
+
+Option: performance.strict-write-ordering
+Default Value: off
+Description: Do not let later writes overtake earlier writes even if they do not overlap
+
+Option: performance.read-ahead-page-count
+Default Value: 4
+Description: Number of pages that will be pre-fetched
+
+Option: performance.md-cache-timeout
+Default Value: 1
+Description: Time period after which cache has to be refreshed
+
+Option: performance.lazy-open
+Default Value: yes
+Description: Perform open in the backend only when a necessary FOP arrives (e.g writev on the FD, unlink of the file). When option is disabled, perform backend open right after unwinding open().
+
+Option: network.frame-timeout
+Default Value: 1800
+Description: Time frame after which the (file) operation would be declared as dead, if the server does not respond for a particular (file) operation.
+
+Option: network.ping-timeout
+Default Value: 42
+Description: Time duration for which the client waits to check if the server is responsive.
+
+Option: network.tcp-window-size
+Default Value: (null)
+Description: Specifies the window size for tcp socket.
+
+Option: features.lock-heal
+Default Value: off
+Description: Enables or disables the lock heal.
+
+Option: features.grace-timeout
+Default Value: (null)
+Description: Sets the grace-timeout value. Valid range 10-1800.
+
+Option: network.remote-dio
+Default Value: disable
+Description: If enabled, in open() and creat() calls, O_DIRECT flag will be filtered at the client protocol level so server will still continue to cache the file. This works similar to NFS's behavior of O_DIRECT
+
+Option: network.tcp-window-size
+Default Value: (null)
+Description: Specifies the window size for tcp socket.
+
+Option: network.inode-lru-limit
+Default Value: 16384
+Description: Specifies the maximum megabytes of memory to be used in the inode cache.
+
+Option: auth.allow
+Default Value: (null)
+Description: Allow a comma separated list of addresses and/or hostnames to connect to the server. By default, all connections are allowed.
+
+Option: auth.reject
+Default Value: (null)
+Description: Reject a comma separated list of addresses and/or hostnames to connect to the server. By default, all connections are allowed.
+
+Option: server.root-squash
+Default Value: off
+Description: Map  requests  from  uid/gid 0 to the anonymous uid/gid. Note that this does not apply to any otheruids or gids that might be equally sensitive, such asuser bin or group staff.
+
+Option: server.statedump-path
+Default Value: /var/run/gluster
+Description: Specifies directory in which gluster should save its statedumps. By default it is the /tmp directory
+
+Option: performance.write-behind
+Default Value: on
+Description: enable/disable write-behind translator in the volume.
+
+Option: performance.read-ahead
+Default Value: on
+Description: enable/disable read-ahead translator in the volume.
+
+Option: performance.io-cache
+Default Value: on
+Description: enable/disable io-cache translator in the volume.
+
+Option: performance.quick-read
+Default Value: on
+Description: enable/disable quick-read translator in the volume.
+
+Option: performance.open-behind
+Default Value: on
+Description: enable/disable open-behind translator in the volume.
+
+Option: performance.stat-prefetch
+Default Value: on
+Description: enable/disable meta-data caching translator in the volume.
+
+Option: performance.client-io-threads
+Default Value: off
+Description: enable/disable io-threads translator in the client graph of volume.
+
+Option: performance.force-readdirp
+Default Value: true
+Description: Convert all readdir requests to readdirplus to collect stat info on each entry.
+
+Option: features.quota-timeout
+Default Value: 0
+Description: quota caches the directory sizes on client. Timeout indicates the timeout for the cache to be revalidated.
+
+Option: nfs.enable-ino32
+Default Value: (null)
+Description: For nfs clients or apps that do not support 64-bit inode numbers, use this option to make NFS return 32-bit inode numbers instead. Disabled by default, so NFS returns 64-bit inode numbers.
+
+Option: nfs.mem-factor
+Default Value: (null)
+Description: Use this option to make NFS be faster on systems by using more memory. This option specifies a multiple that determines the total amount of memory used. Default value is 15. Increase to use more memory in order to improve performance for certain use cases.Please consult gluster-users list before using this option.
+
+Option: nfs.export-dirs
+Default Value: (null)
+Description: By default, all subvolumes of nfs are exported as individual exports. There are cases where a subdirectory or subdirectories in the volume need to be exported separately. Enabling this option allows any directory on a volumes to be exported separately. Directory exports are enabled by default.
+
+Option: nfs.export-volumes
+Default Value: (null)
+Description: Enable or disable exporting whole volumes, instead if used in conjunction with nfs3.export-dir, can allow setting up only subdirectories as exports. On by default.
+
+Option: nfs.addr-namelookup
+Default Value: (null)
+Description: Users have the option of turning on name lookup for incoming client connections using this option. Use this option to turn on name lookups during address-based authentication. Turning this on will enable you to use hostnames in rpc-auth.addr.* filters. In some setups, the name server can take too long to reply to DNS queries resulting in timeouts of mount requests. By default,  name lookup is off
+
+Option: nfs.dynamic-volumes
+Default Value: (null)
+Description: Internal option set to tell gnfs to use a different scheme for encoding file handles when DVM is being used.
+
+Option: nfs.register-with-portmap
+Default Value: (null)
+Description: For systems that need to run multiple nfs servers, only one registration is possible with portmap service. Use this option to turn off portmap registration for Gluster NFS. On by default
+
+Option: nfs.port
+Default Value: (null)
+Description: Use this option on systems that need Gluster NFS to be associated with a non-default port number.
+
+Option: nfs.rpc-auth-unix
+Default Value: (null)
+Description: Disable or enable the AUTH_UNIX authentication type for a particular exported volume overriding defaults and general setting for AUTH_UNIX scheme. Must always be enabled for better interoperability.However, can be disabled if needed. Enabled bydefault.
+
+Option: nfs.rpc-auth-null
+Default Value: (null)
+Description: Disable or enable the AUTH_NULL authentication type for a particular exported volume overriding defaults and general setting for AUTH_NULL. Must always be enabled. This option is here only to avoid unrecognized option warnings.
+
+Option: nfs.rpc-auth-allow
+Default Value: (null)
+Description: Allow a comma separated list of addresses and/or hostnames to connect to the server. By default, all connections are allowed. This allows users to define a rule for a specific exported volume.
+
+Option: nfs.rpc-auth-reject
+Default Value: (null)
+Description: Reject a comma separated list of addresses and/or hostnames from connecting to the server. By default, all connections are allowed. This allows users todefine a rule for a specific exported volume.
+
+Option: nfs.ports-insecure
+Default Value: (null)
+Description: Allow client connections from unprivileged ports. By default only privileged ports are allowed. Use this option to enable or disable insecure ports for a specific subvolume and to override the global setting  set by the previous option.
+
+Option: nfs.transport-type
+Default Value: tcp
+Description: Specifies the nfs transport type. Valid transport types are 'tcp' and 'rdma'.
+
+Option: nfs.trusted-sync
+Default Value: (null)
+Description: All writes and COMMIT requests are treated as async. This implies that no write requests are guaranteed to be on server disks when the write reply is received at the NFS client. Trusted sync includes  trusted-write behaviour. Off by default.
+
+Option: nfs.trusted-write
+Default Value: (null)
+Description: On an UNSTABLE write from client, return STABLE flag to force client to not send a COMMIT request. In some environments, combined with a replicated GlusterFS setup, this option can improve write performance. This flag allows user to trust Gluster replication logic to sync data to the disks and recover when required. COMMIT requests if received will be handled in a default manner by fsyncing. STABLE writes are still handled in a sync manner. Off by default.
+
+Option: nfs.volume-access
+Default Value: (null)
+Description: Type of access desired for this subvolume:  read-only, read-write(default)
+
+Option: nfs.export-dir
+Default Value: (null)
+Description: By default, all subvolumes of nfs are exported as individual exports. There are cases where a subdirectory or subdirectories in the volume need to be exported separately. This option can also be used in conjunction with nfs3.export-volumes option to restrict exports only to the subdirectories specified through this option. Must be an absolute path.
+
+Option: nfs.disable
+Default Value: (null)
+Description: This option is used to start or stop NFS serverfor individual volume.
+
+Option: nfs.nlm
+Default Value: (null)
+Description: This option, if set to 'off', disables NLM server by not registering the service with the portmapper. Set it to 'on' to re-enable it. Default value: 'on'
+
+Option: nfs.mount-udp
+Default Value: (null)
+Description: set the option to 'on' to enable mountd on UDP. Required for some Solaris and AIX NFS clients. The need for enabling this option often depends on the usage of NLM.
+
+Option: storage.linux-aio
+Default Value: off
+Description: Support for native Linux AIO
+
+Option: storage.owner-uid
+Default Value: -1
+Description: Support for setting uid of brick's owner
+
+Option: storage.owner-gid
+Default Value: -1
+Description: Support for setting gid of brick's owner
+
+Option: cluster.server-quorum-type
+Default Value: (null)
+Description: If set to server, enables the specified volume to participate in quorum.
+
+Option: cluster.server-quorum-ratio
+Default Value: (null)
+Description: Sets the quorum percentage for the trusted storage pool.

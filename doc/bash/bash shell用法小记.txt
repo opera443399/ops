@@ -1,0 +1,319 @@
+bash shell用法小记
+2015/10/26
+
+shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，具体的请因需求自行研究。
+
+1. 计算
+# echo $((1+2))
+3
+# echo $((1+2+3))
+6
+# echo 3+2+5 |bc
+10
+
+
+
+2. if的用法
+if [ $i -eq 0 ]; then
+    xxx
+else
+    xxx
+fi
+
+整数比较：
+-eq 等于,如:if [ "$a" -eq "$b" ]   
+-ne 不等于,如:if [ "$a" -ne "$b" ]   
+-gt 大于,如:if [ "$a" -gt "$b" ]   
+-ge 大于等于,如:if [ "$a" -ge "$b" ]   
+-lt 小于,如:if [ "$a" -lt "$b" ]   
+-le 小于等于,如:if [ "$a" -le "$b" ]   
+<   小于(需要双括号),如:(("$a" < "$b"))   
+<=  小于等于(需要双括号),如:(("$a" <= "$b"))   
+>   大于(需要双括号),如:(("$a" > "$b"))   
+>=  大于等于(需要双括号),如:(("$a" >= "$b")) 
+
+字符串比较：
+通常是这样做的：
+if [ X"$test" = X"test" ]
+
+= 等于,如:if [ "$a" = "$b" ]   
+
+-d 目录
+-e 存在
+-f 文件
+-n 非空字符串
+-z 空字符串
+
+
+来点儿复杂的：
+have_program() {
+    hash "$1" >/dev/null 2>&1
+}
+# 下面if语句中调用的have_program若为真，则判断为假，反之则进入if语句执行错误提示
+dep_check() {
+    if ! have_program "$1"; then
+        exit_message "'${1}' command not found. Please install or add it to your PATH and try again."
+    fi
+}
+# 判断用户的权限
+if [ `id -u` -ne 0 ]; then
+    echo "You must run this script as root."
+    if [ -x /usr/bin/sudo ]; then
+        echo "Try running 'sudo ${0}'."
+    fi
+    exit 1
+fi >&2
+# 判断几个命令是否可用
+echo "Checking for required packages..."
+for pkg in rpm yum python curl; do
+    dep_check "$pkg"
+done
+
+ 
+
+3. for的用法
+array1=("d.com" "e.com" "f.com")
+len=${#array1[@]}
+
+for ((i=0;i<$len;i++))
+do
+    echo ${array1[$i]}
+done
+
+for a in $(seq 1 100);do
+    echo $a
+    sleep 1s
+done
+
+
+4. case的用法
+case $1 in
+    start|stop|reload)
+        $1
+        ;;
+    *)
+        echo "Usage: $0 [start|stop|reload]"
+        ;;
+esac
+
+
+5. while的用法
+while true
+do
+    echo "abc"
+    read -p "请输入: " abc
+    ddd="$abc"
+    if [ ${#ddd} -ne 5 ]; then
+        echo "请重新输入！！！"
+    else
+        break
+    fi
+done
+
+和case结合的用法:
+while getopts "h" option; do
+    case "$option" in
+        h) usage ;;
+        *) usage ;;
+    esac
+done
+
+和read结合的用法:
+while read reposdir; do
+    if [ -d "$reposdir" ]; then
+        cd "$reposdir"
+        break;
+    fi
+done < reposdir_list
+
+
+和read ignore结合的用法：
+# echo 'a b c d e' |while read ignore args; do echo $args; done        
+b c d e
+# echo 'a b c d e' |while read ignore ignore args; do echo $args; done
+c d e
+# cat /etc/init.d/network |grep static-routes --color -A 3                    
+        # Add non interface-specific static-routes.
+        if [ -f /etc/sysconfig/static-routes ]; then
+           grep "^any" /etc/sysconfig/static-routes | while read ignore args ; do
+              /sbin/route add -$args
+           done
+        fi 
+其实，这里的ignore也是一个变量：
+# echo 'a b c d e' |while read ignore args; do echo "$ignore $args"; done 
+a b c d e
+# echo 'a b c d e' |while read ignore ignore args; do echo "$ignore $args"; done 
+b c d e
+
+read后可以跟多个变量，依次接收传递过来的值。
+
+6. 参数
+#
+#  $0 是这个bash文件的名称；
+#  $? 是上一指令的返回值；
+#  $* 是该脚本调用的所有参数；
+#  $@ 基本与上面的$*相同。区别是：
+#      $* 返回的是一个字符串，字符串中用空格分隔开，而 $@ 则返回多个字符串；
+#  $# 是所有位置参数的个数；
+#
+#
+ab=($(ls))
+echo "1: "${ab[@]}
+echo "2: "${#ab[@]}
+
+echo "3: "$@
+echo "4: "$#
+echo "5: "$?
+
+
+7. 正则
+ 正则表达式匹配"=~"
+ [[ $XX =~ ^$XXX ]] 
+The =~ Regular Expression matching operator within a double brackets test expression.
+
+$ [[ "# test2" =~ ^# ]] && echo yes || echo no
+yes
+
+
+8. 截取字符串
+
+假设有：
+f="/a/b/c/d/e.name.ext"
+
+则：
+# basename $f
+e.name.ext
+# dirname $f    
+/a/b/c/d
+
+特殊用法：利用${}中的#,%,*来输出指定的内容
+1）去掉第一个/，以及左边的字符串 
+# echo ${f#*/}
+a/b/c/d/e.name.ext
+
+2）去掉最后1个/，以及左边的字符串
+# echo ${f##*/}
+e.name.ext
+
+3）去掉最后一个/，以及右边的字符串
+# echo ${f%/*} 
+/a/b/c/d
+
+4）去掉第一个/，以及右边的字符串
+# echo ${f%%/*} 
+（空）
+
+上面，是根据“/”来做分割，也可以用“."来分隔，不妨一试。
+# echo ${f#*.} 
+name.ext
+# echo ${f##*.}
+ext
+# echo ${f%.*} 
+/a/b/c/d/e.name
+# echo ${f%%.*}
+/a/b/c/d/e
+
+
+9. 脚本放入后台，输出到日志
+sh test.sh >1.log 2>&1 &
+sh test.sh >/dev/null 2>&1 &
+这里需要理解几个小东西的作用：
+/dev/null   理解成空设备，这是一个特殊的文件，这里的作用是丢弃输出的内容
+2>&1        0 输入  1 输出  2 错误 这里是将2重定向到1
+&           将test.sh放入后台执行，请思考，还有其他的什么方式也可以将程序放入后台？
+
+
+10. 管道
+通过“|” 把输出导入到另一个程序的输入中去处理，例如：
+echo 'abc, def' |cut -d ',' -f 1
+
+
+11. 命令跟踪调试
+sh -x test.sh
+
+
+12. 快捷键
+Ctrl + a 切换到命令行开始
+Ctrl + b - Move back a char
+Ctrl + c 终止命令
+Ctrl + d 退出shell,logout
+Ctrl + e 切换到命令行末尾
+Ctrl + l 清除屏幕内容
+Ctrl + k 剪切清除光标之后的内容
+ctrl + q 恢复刷屏
+Ctrl + r 在历史命令中查找
+ctrl + s 可用来停留在当前
+Ctrl + u 清除剪切光标之前的内容
+Ctrl + y 粘贴刚才所删除的字符
+Ctrl + z 转入后台运行
+!! 重复执行最后一条命令
+↑（Ctrl+p） 显示上一条命令
+↓（Ctrl+n） 显示下一条命令
+!$ 显示系统最近的一条参数
+
+
+13. 在shell中调用python的方法
+# python <<'_EOF'        
+import sys
+
+print(sys.version)  
+_EOF
+
+2.6.6 (r266:84292, Jan 22 2014, 09:42:36) 
+[GCC 4.4.7 20120313 (Red Hat 4.4.7-4)]
+
+shell传递中文到python出现异常时：
+export LANG="en_US.UTF-8";
+/usr/local/bin/python3  xxx.py
+
+
+14. 创建临时目录的方法
+tempdir=`mktemp -d`
+cd "$tempdir"
+
+15. 一个简单的密码生成方法
+pw=`date +%N|cut -c1-8`
+man date查看：
+%N     nanoseconds (000000000..999999999)
+man cut查看：
+?-c, --characters=LIST
+              select only these characters
+ 
+16. 简单ping一下C段的IP
+subnet=192.168.1; for i in {1..254}; 
+do 
+    ping -c 1 -w 1 ${subnet}.${i} >/dev/null && echo "${subnet}.${i}: up" || echo "${subnet}.${i}: down"; 
+done
+
+17. 字符串反转
+# echo 'abcde' |rev
+edcba
+
+18. crontab的用法
+1）格式不清楚可以这样：
+cat /etc/crontab 或者 man 5 crontab
+
+2）注意：用户权限，是否需要特殊的环境变量。
+3）注意：特殊符合，例如：% 在 crontab 中是特殊的意义（换行）
+Percent-signs (%) in the command, unless escaped with backslash (\), will be changed into new-line characters, and all data after the first % will be sent to the command as standard input.
+举例：
+【错误】
+0 2 * * * echo 'test' >/tmp/test_$(date +%Y%m%d).log 2>&1 &
+【正确】
+0 2 * * * echo 'test' >/tmp/test_$(date +\%Y\%m\%d).log 2>&1 &
+
+
+19. 在 shell 中使用 Here Document 的使用注意
+常见写法，可以使用变量：
+test=$(blkid /dev/vg0/lv01 |cut -d'"' -f2)
+cat <<_EOF >>/etc/fstab
+UUID=$test /data                   xfs     defaults        0 0
+_EOF
+
+换一种，则无法使用变量：
+cat <<'_EOF' >>/etc/fstab
+UUID=$test /data                   xfs     defaults        0 0
+_EOF
+
+
+

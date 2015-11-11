@@ -1,0 +1,241 @@
+saltstack的深入-管理python-pip
+
+
+操作内容：
+一、基础环境
+1、使用tvm-saltmaster操作
+2、网络：
+eth0：host-only（用于虚拟内网，手动固定IP，这样从宿主机可以直接连接到这个vm）
+eth1：NAT（用于上外网，动态IP）
+[root@tvm-zabbix ~]# cd /etc/sysconfig/network-scripts/
+[root@tvm-zabbix network-scripts]# cat ifcfg-eth0
+DEVICE=eth0
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=192.168.56.253
+PREFIX=24
+GATEWAY=192.168.56.1
+DNS1=192.168.56.254
+
+[root@tvm-zabbix network-scripts]# cat ifcfg-eth1
+DEVICE=eth1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+DNS1=192.168.56.254
+
+
+二、配置
+1、文件结构
+[root@tvm-saltmaster base]# tree ops/
+ops/
+└── bin.sls
+
+0 directories, 1 file
+[root@tvm-saltmaster base]# tree conf.d/ops/
+conf.d/ops/
+└── bin
+    ├── pw
+    ├── randchars.py
+    └── sendEmail
+
+1 directory, 3 files
+
+2、sls配置
+[root@tvm-saltmaster base]# cat ops/bin.sls 
+
+## 此处列出需要的软件包
+#
+python-pip:
+  pkg.installed:
+    - name: python-pip
+    - require_in:
+      -file: pip-pkgs
+
+pip-pkgs:
+  pip.installed:
+    - names: 
+      - virtualenvwrapper
+      - pwgen
+
+/usr/bin/sendEmail:
+  file.managed:
+    - source: salt://conf.d/ops/bin/sendEmail
+    - mode: 755
+
+/usr/bin/pw:
+  file.managed:
+    - source: salt://conf.d/ops/bin/pw
+    - mode: 755
+
+/usr/bin/randchars:
+  file.managed:
+    - source: salt://conf.d/ops/bin/randchars.py
+    - mode: 755
+    
+    
+三、执行
+[root@tvm-saltmaster base]# salt 'tvm-*' state.sls ops.bin test=True --output-file='/tmp/salt.log'
+[root@tvm-saltmaster base]# salt 'tvm-*' state.sls ops.bin --output-file='/tmp/salt.log'
+
+增加到top.sls中
+[root@tvm-saltmaster base]# cat top.sls 
+base:
+  'tvm-yum':
+    - dnsmasq
+    - crontab
+    - web
+  'tvm-zabbix':
+    - mysql.server
+    - zabbix.server
+    - zabbix.web
+
+  '*':
+    - abc
+    - monit
+    - postfix
+    - salt.minion
+    - ssh
+    - vim
+    - zabbix.agent
+    - ops.bin
+
+    
+四、总结
+此处使用到：
+pip.installed
+
+使用时，需确保安装了python-pip这个包，否则会提示异常。
+且pip安装包时，对应的主机可以连接到外网，如果没联网，有如下报错：
+----------
+          ID: pip-pkgs
+    Function: pip.installed
+        Name: virtualenvwrapper
+      Result: False
+     Comment: Failed to install packages: virtualenvwrapper. Error: Collecting virtualenvwrapper   Retrying (Retry(total=4, connect=None, read=None, redirect=None)) after connection broken by 'ProtocolError('Connection aborted.', error(101, 'Network is unreachable'))': /simple/virtualenvwrapper/
+                Retrying (Retry(total=3, connect=None, read=None, redirect=None)) after connection broken by 'ProtocolError('Connection aborted.', error(101, 'Network is unreachable'))': /simple/virtualenvwrapper/
+                Retrying (Retry(total=2, connect=None, read=None, redirect=None)) after connection broken by 'ProtocolError('Connection aborted.', error(101, 'Network is unreachable'))': /simple/virtualenvwrapper/
+                Retrying (Retry(total=1, connect=None, read=None, redirect=None)) after connection broken by 'ProtocolError('Connection aborted.', error(101, 'Network is unreachable'))': /simple/virtualenvwrapper/
+                Retrying (Retry(total=0, connect=None, read=None, redirect=None)) after connection broken by 'ProtocolError('Connection aborted.', error(101, 'Network is unreachable'))': /simple/virtualenvwrapper/
+                Retrying (Retry(total=4, connect=None, read=None, redirect=None)) after connection broken by 'ProtocolError('Connection aborted.', error(101, 'Network is unreachable'))': /simple/virtualenvwrapper/
+                Retrying (Retry(total=3, connect=None, read=None, redirect=None)) after connection broken by 'ProtocolError('Connection aborted.', error(101, 'Network is unreachable'))': /simple/virtualenvwrapper/
+                Retrying (Retry(total=2, connect=None, read=None, redirect=None)) after connection broken by 'ProtocolError('Connection aborted.', error(101, 'Network is unreachable'))': /simple/virtualenvwrapper/
+                Retrying (Retry(total=1, connect=None, read=None, redirect=None)) after connection broken by 'ProtocolError('Connection aborted.', error(101, 'Network is unreachable'))': /simple/virtualenvwrapper/
+                Retrying (Retry(total=0, connect=None, read=None, redirect=None)) after connection broken by 'ProtocolError('Connection aborted.', error(101, 'Network is unreachable'))': /simple/virtualenvwrapper/
+                Could not find a version that satisfies the requirement virtualenvwrapper (from versions: )
+              No matching distribution found for virtualenvwrapper
+     Started: 16:30:04.360978
+    Duration: 15536.139 ms
+     Changes:   
+----------
+
+
+五、附上几个小工具的用法
+1、乱序输出字符 pw
+其他人写的一个小脚本，调用的是pip安装的pwgen这个工具
+[root@tvm-test ~]# cat /usr/bin/pw
+#!/usr/bin/python
+#
+# 2015/8/14
+
+import os
+import sys
+
+def gen_pw():
+# yum -y install python-pip
+# pip install pwgen
+    p = os.popen('/usr/bin/pwgen -1 -B -n 10')
+    p = p.read().strip('\n')
+    p = p[:5].upper() + p[5:].lower()
+    return p
+
+def print_msg():
+    p1 = gen_pw()
+    p2 = gen_pw()
+    #msg = 'root:{0}  root1:{1}'.format(p1,p2)
+    msg = '{0} {1}'.format(p1,p2)
+    print msg
+if __name__ == '__main__':
+    print_msg()
+
+
+2、乱序输出字符 randchar
+自己写的一个小脚本，生成一些简单的字符
+[root@tvm-test ~]# cat /usr/bin/randchars 
+#!/bin/env python
+# 
+# 2015/08/10
+
+import random
+
+class RandChars(object):
+    '''
+    RandChars(24).generate()
+    '''
+    # char pools
+    pools = '23456789'
+    pools += 'abcdefghijkmnpqrstuvwxyz'
+    pools += 'ABCDEFGHIJKMNPQRSTUVWXYZ'
+    pools += '~!@#$%^&*()_+'
+    # pool size
+    pool_size = len(pools)
+    
+    def __init__(self, length=12):
+        self.length = length
+
+    # get a char from pool
+    def fetch_one(self):
+        rnd_index = random.randint(0, self.pool_size-1)
+        return self.pools[rnd_index]
+
+    # map the password by index
+    def generate(self):
+        rnd_chars = ''
+        i = 0
+        while i < self.length:
+            rnd_chars += self.fetch_one()
+            i += 1
+        return rnd_chars
+
+if __name__ == '__main__':
+    try:
+        while True:
+            print('[-] [press `Ctrl+C` to cancel], default=24: ')
+            length = raw_input('Length to generate: ')
+            # python3
+            #length = input('Length: ')
+
+            if not length:
+                length = '24'
+            if length.isdigit():
+                print('\n\n{0}\n\n'.format(RandChars(int(length)).generate()))
+            else:
+                print('\n[WARNING] hi, length is digit.\n')
+    except KeyboardInterrupt:
+        print('\n\n[NOTICE] You cancelled the operation.\n')
+    except Exception as err:
+        print('\n[ERROR]: {0}\n'.format(err))
+        
+
+3、sendEmail
+其他人写的脚本
+[root@tvm-test ~]# sendEmail -s smtp.company.com \
+-xu mail_username@company.com \
+-xp mail_password \
+-f mail_from@company.com \
+-t mail_to@client.com \
+-u 'msg title' \
+-m 'msg body' \
+-a /tmp/attachment.txt 
+Aug 14 17:00:10 tvm-test sendEmail[6319]: Email was sent successfully!
+
+
+ZYXW、参考
+1、官网doc
+http://docs.saltstack.com/en/latest/ref/modules/all/salt.modules.pip.html#module-salt.modules.pip
+
+
+

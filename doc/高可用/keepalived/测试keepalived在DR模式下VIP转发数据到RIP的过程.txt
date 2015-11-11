@@ -1,0 +1,50 @@
+测试keepalived在DR模式下VIP转发数据到RIP的过程
+
+
+此处测试环境约定：
+【Client】                            CIP = 10.0.200.22       MAC = 8c:89:a5:96:4c:b2（假设为11:11:11:11:11:11）
+【Director】      VIP = 10.0.205.100  DIP = 10.0.200.21       MAC = 8c:89:a5:96:51:cf（假设为22:22:22:22:22:22）
+【RealServer】                        RIP = 10.0.205.2        MAC = 08:00:27:3b:62:f5（假设为33:33:33:33:33:33）
+
+1）【Client】 ARP Request who has 10.0.205.100 tell 10.0.200.22
+CIP = 10.0.200.22
+MAC = 11:11:11:11:11:11
+
+2）【Director】响应1，ARP Reply 10.0.205.100 is-at 22:22:22:22:22:22
+VIP = 10.0.205.100
+DIP = 10.0.200.21
+MAC = 22:22:22:22:22:22
+
+3）【Client】发送TCP SYN
+CIP = 10.0.200.22   MAC = 11:11:11:11:11:11
+->
+VIP = 10.0.205.100  MAC = 22:22:22:22:22:22
+
+4）【Director】选一个【RealServer】，改数据包里的MAC为RIP的MAC，转发给RIP
+CIP = 10.0.200.22   MAC = 11:11:11:11:11:11
+->
+VIP = 10.0.205.100  MAC = 33:33:33:33:33:33
+
+
+5）【RealServer】收包，发ARP，Request who has 10.0.200.22 tell 10.0.205.2
+6）【Client】响应5）ARP Reply 10.0.200.22 is-at 11:11:11:11:11:11
+7）【RealServer】使用VIP回应3
+
+
+实测抓包内容：
+[root@svr200-22 ~]# tcpdump -nn host 10.0.200.22 and \(10.0.200.21 or 10.0.205.100 or 10.0.205.2\)
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on eth0, link-type EN10MB (Ethernet), capture size 65535 bytes
+18:08:31.342062 ARP, Request who-has 10.0.205.100 tell 10.0.200.22, length 28
+18:08:31.342627 ARP, Reply 10.0.205.100 is-at 8c:89:a5:96:51:cf, length 46
+18:08:31.342637 IP 10.0.200.22.58914 > 10.0.205.100.80: Flags [S], seq 3567838243, win 14600, options [mss 1460,sackOK,TS val 373309346 ecr 0,nop,wscale 7], length 0
+18:08:31.343842 ARP, Request who-has 10.0.200.22 tell 10.0.205.2, length 46
+18:08:31.343854 ARP, Reply 10.0.200.22 is-at 8c:89:a5:96:4c:b2, length 28
+18:08:31.344629 IP 10.0.205.100.80 > 10.0.200.22.58914: Flags [S.], seq 4193479915, ack 3567838244, win 14480, options [mss 1460,sackOK,TS val 27450580 ecr 373309346,nop,wscale 6], length 0
+18:08:31.344649 IP 10.0.200.22.58914 > 10.0.205.100.80: Flags [.], ack 1, win 115, options [nop,nop,TS val 373309348 ecr 27450580], length 0
+18:08:39.260264 IP 10.0.200.22.58914 > 10.0.205.100.80: Flags [P.], seq 1:6, ack 1, win 115, options [nop,nop,TS val 373317264 ecr 27450580], length 5
+18:08:39.261438 IP 10.0.205.100.80 > 10.0.200.22.58914: Flags [.], ack 6, win 227, options [nop,nop,TS val 27458498 ecr 373317264], length 0
+18:08:39.261637 IP 10.0.205.100.80 > 10.0.200.22.58914: Flags [P.], seq 1:174, ack 6, win 227, options [nop,nop,TS val 27458498 ecr 373317264], length 173
+18:08:39.261663 IP 10.0.200.22.58914 > 10.0.205.100.80: Flags [.], ack 174, win 123, options [nop,nop,TS val 373317265 ecr 27458498], length 0
+18:08:39.261670 IP 10.0.205.100.80 > 10.0.200.22.58914: Flags [F.], seq 174, ack 6, win 227, options [nop,nop,TS val 27458498 ecr 373317264], length 0
+

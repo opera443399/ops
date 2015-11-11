@@ -1,0 +1,171 @@
+对应的zabbix配置：
+UserParameter=hardware_memory_health,awk -v hardware_memory=`omreport chassis memory|awk '/^Health/{print $NF}'` 'BEGIN{if(hardware_memory=="Ok") {print 1} else {print 0}}'
+
+
+涉及的命令：
+[root@local ~]# omreport chassis memory
+
+Memory Information
+
+Health : Ok
+
+Attributes of Memory Array(s)
+
+Attributes of Memory Array(s)
+Location           : System Board or Motherboard
+Use                : System Memory
+Installed Capacity : 32768  MB
+Maximum Capacity   : 1572864  MB
+Slots Available    : 24
+Slots Used         : 4
+Error Correction   : Multibit ECC
+
+Total of Memory Array(s)
+Total Installed Capacity                     : 32768  MB
+Total Installed Capacity Available to the OS : 32058  MB
+Total Maximum Capacity                       : 1572864  MB
+
+Details of Memory Array 1
+Index          : 0
+Status         : Ok
+Connector Name : DIMM_A1 
+Type           : DDR3 - Synchronous Registered (Buffered)
+Size           : 8192  MB
+
+Index          : 1
+Status         : Ok
+Connector Name : DIMM_A2 
+Type           : DDR3 - Synchronous Registered (Buffered)
+Size           : 8192  MB
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_A3 
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_A4 
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_A5 
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_A6 
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_A7 
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_A8 
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_A9 
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_A10
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_A11
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_A12
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 2
+Status         : Ok
+Connector Name : DIMM_B1 
+Type           : DDR3 - Synchronous Registered (Buffered)
+Size           : 8192  MB
+
+Index          : 3
+Status         : Ok
+Connector Name : DIMM_B2 
+Type           : DDR3 - Synchronous Registered (Buffered)
+Size           : 8192  MB
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_B3 
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_B4 
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_B5 
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_B6 
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_B7 
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_B8 
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_B9 
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_B10
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_B11
+Type           : [Not Occupied]
+Size           : 
+
+Index          : 
+Status         : Unknown
+Connector Name : DIMM_B12
+Type           : [Not Occupied]
+Size           :

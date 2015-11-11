@@ -1,0 +1,99 @@
+http://hi.baidu.com/wangpeizeng/item/6d4d88b6b06f5474244b0979
+
+
+Win2003 终端服务器，突破120限制
+破解 Windows2003终端授权2008-12-01 13:47
+1,
+恩   具体的提供破解方法原文是
+Thanks to a Microsoft article, I've found out that it is very easy to extend your Windows Terminal Services 3-month trial or experience time. It's so easy that I'm sure many administrators have done this in their own systems, while waiting for their managers or financial staff to buy the definitive licenses (not being hypocrite here).
+
+Following these instructions, you don't have to crack any program. You won't mess with your system. The magic is to only delete the licenses databases both in the server and the clients, and let windows re-create them for you.
+
+----
+
+Make sure you've installed "Terminal Services Licensing". By the way, this method only makes sense if you need to use Terminal Services in Application Mode, which is the one that requires licensing.
+
+The idea is quite simple.
+
+First, disconnect all users from the terminal. If you need to do this remotely, you can also disconnect yourself, and access the files remotely.
+
+Go to %WINDIR%\system32\lserver
+
+Notice the file TSLIC.edb. Rename it to tslic.old
+
+In every client computer, remove the CAL TS registry keys, located at:
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\MSLicensing
+
+Restart your server.
+
+Finally, if you need more information about how to crack terminal services, go check at Microsoft's web site. See the "Cause 2" steps. :-)
+
+Shouldn't MS improve the security for TS Licensing in the next versions of Windows (2003 with SP1 is also easy to "crack")?
+2,
+解决的方法如下：
+△ 原理
+1．终端服务试用期限只检查是否过期，不检查是否进入了使用期限。
+2．终端服务的使用到期时间是安装的时候产生的。
+△ 先决条件
+必须是新安装系统
+△ 操作方法
+1．设置系统时间
+安装好Windows前，在BIOS中将时间修改到一个非常遥远的将来时间
+例如：2010年1月1日
+2．安装操作系统
+没什么好说的，关键就是不能插网线。
+至少是绝对不能设置有效的网关。
+3．安装终端服务
+选择控制面板→添加或删除程序→添加/删除Windows组建→终端服务器
+千万“不”要选择安装“终端服务器授权”（！！特别注意！！）
+安装时选择“我将在120天内制定许可证服务器”，
+以及“每用户授权模式”。
+3．安装完成
+完成安装后重新启动服务器，然后将系统时间修改回来。
+4. 改终端服务设置
+运行gpedit.msc，打开“计算机配置”->“管理模板”->“Windows组件”->“终端服务”
+找到“限制终端服务用户到一个远程会话”，设置为Disable，即禁用。
+即可使用终端服务，直到201x年的安装时间＋120天。
+3,
+3、医治“终端服务授权”之痛
+　　用windows server 2003做服务器的人都知道其安全性能比以前的windows版本高出很多，但是也带来很多麻烦，其中终端授权就是一例。在Server 2003中服务器最重要的远程管理“终端服务”居然要求授权，要许可证，否则120天过期需要购买授权。这是让管理员们非常郁闷的事情，其实这个问题可以得到很好的解决。我们通过如下的操作即可解除该认证限制。
+　　在Server 2003上首先开启终端服务，然后依次执行“控制面板→添加删除程序→添加/删除windows组件”，在“Windows组件向导”窗口的“组件”下取消对“终端服务器”和“终端服务器授权”的勾选，然后点击“下一步”删除这两个系统组件。在删除完成后，系统会提示会提示我们重新启动计算机，这时候千万不要重启一定要点“否”，否则我们的操作就前功尽弃了。(图10)
+
+
+然后点击右键点击“我的电脑”选择“属性”，依次点击定位到“远程→远程桌面” ，勾选“启用这台计算机上的远程桌面”，之后会得到提示，不用理它点击“确定”应用即可。现在，重新启动计算机大功告成，不用任何第三方破解软件轻松破解了Windows 2003的终端服务器许可。
+　　总结：终端服务在当前的某些行业中仍然发挥着巨大的作用，有着广泛的用途。其实，何止这些，在企业环境中我们也可以通过终端服务器实现某些特殊的应用。让我们继续深入挖掘，使其更好地为我们服务。
+4
+设置终端登陆数先决条件: 在你刚开始装系统的时候就会提示你最大连接用户的数目！要有“终端服务器授权”！ 设置终端最大登陆数: 控制面板-终端服务配置-选择“连接”中的“RDP-TCP”，[网卡]中选中你的网卡适配器，设置为无限连接数。 
+
+破解win2003“终端服务器授权”激活许可证： 
+用过windows server 2003做服务器的人都知道，windows2003的性能安全性比以前的windows版本高出很多，但是也带来很多麻烦。其中服务器最重要的远程管理 “终端服务”居然要求授权，要许可证，否则120天过期。其实这个问题很好解决按照一下方法就可以。 
+操作步骤： 
+        1、如果你服务器上已经开着终端服务，控制面板→添加删除程序→添加/删除 
+              windows组件→删除终端服务和终端授权服务。 这个时候回提示你重新启
+              动计算机，请千万记住一定要点“否”，否则就麻烦了。
+   2、点我的电脑属性→远程→远程桌面→在启用这台计算机的远程桌面上打对
+               勾→之后会得到提示，点确定就行→应用。
+   3、重新启动计算机大功搞成，不用任何破解软件，轻松加愉快。 其实这个服
+               务在WINDOWS2003安装完就有，大家可以注意2003在添加/删除服务的
+                时候经常不用从安装盘的I386里读东西，嘿嘿………… 
+
+激活2003终端授权服务器 (这种方法有效)
+
+首先安装终端服务器及终端服务器授权，
+
+1）点击”开始”->”程序”->”管理工具”->”终端服务器授权”,选择未激活的服务器名称,选择”属性”, 请记下对话框中出现的产品ID,我们要用这20位的ID号到网上注册。
+2）打开Internet Explorer浏览器,在地址栏中输https://activate.microsoft.com（http 也可）这个地址，此时是英文界面。在左上角的下拉框中选中"Chinese(Simplified)"（简体中文）项，再按"GO"图标。 
+3)现在便得到的是中文网页了。确保已选中"启用许可证服务器"项，再单击"下一步"按钮。 
+4)在随后要求提供的信息界面中，"产品ID"处输入刚才抄下的那个20位数字,再填入自己的其他基本资料，然后再选"下一步"继续。 
+5)此时系统会显示你方才输入的个人信息，确信无误之后再 "下一步"； 
+6）你便可以得到"已成功处理您的许可证服务器启动申请。你的许可证ID是：…"，又是一个需要抄下的分为七段的35位数，里面包含有数字也有大写的英文 字母；并且还会问你"需要此时获取客户机许可证吗？"，你当然应该回答”是”； 
+7）如果没有许可证，那么许可证程序选择“Enterprise Agreement”，确定您的信息后,便可继续”下一步”； 
+8）在接下来的界面中（在此是以选择“Enterprise Agreement”，如果选择其他的许可证程序，可能略有不同），"产品类型"一项应为"Windows 2003终端服务客户端访问许可证"；"数量"为你欲连接的最大用户数（比如为"100"）；在"注册号码"中输入你从微软获得的那个七位数（如果自己没 有许可证，那么就输入6565792,4954438,6879321或者5296992），再"下一步"； 
+9)又是确认您的设置； 
+10）现在应该是"谢谢您激活终端服务许可证"的时候了！你的收获包括两个东东，一个是刚才已经得到的那个35位数的"许可证服务器ID"，一个是现在才 取得的另一个七段共35位数的"许可证密钥包ID"。恭喜你！ 
+11）现在请到”开始”->”程序”->”管理工具”->”终端服务器授权”中完成最后的激活操作吧，选择服务器名称后点击右键,将” 属性”中的”安装方法”设为”Web浏览器”； 12）再选择服务器,点击右键,选择”安装许可证”； 
+13）现在就可以将您在Web上得到的许可证密钥ID输入到以下的输入框中了； 
+14）大功告成,现在终于没有120天的后顾之忧了； 
+15）最后我们又返回到终端服务器的授权中,点击服务器名称,右键选择”激活”,那么就完成任务了；
+#学习笔记

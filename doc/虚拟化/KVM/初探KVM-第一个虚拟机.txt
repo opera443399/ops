@@ -1,0 +1,174 @@
+初探KVM-第一个虚拟机
+2015/10/10 time 9:38
+
+一、准备环境
+主板是否支持虚拟化技术：
+egrep '(vmx|svm)' --color=always /proc/cpuinfo
+
+检查kvm是否加载：
+# lsmod |grep kvm
+
+
+关闭selinux
+# setenforce  0
+# sed -i 's/=enforcing/=disabled/g' /etc/selinux/config
+
+
+
+管理方式
+1）安装vnc用GUI工具(Virtual Machine Manager)管理：
+Virtual Machine Manager 由 Red Hat 使用 Python 语言开发，用于控制虚拟机的生命周期，包括配给、虚拟网络管理，统计数据收集和报告，以及提供对虚拟机本身的简单图形访问。
+http://www.ibm.com/developerworks/cn/cloud/library/cl-managingvms/
+
+2）命令行工具
+
+3）图形化工具
+
+
+二、配置配置vnc服务
+1. 安装包
+# yum install tigervnc-server
+# yum groupinstall "Desktop"
+
+2. 配置vnc密码：
+# vncpasswd
+
+3. 更新vnc配置：
+# vim /etc/sysconfig/vncservers
+新增内容如下：
+VNCSERVERS="1:root"
+VNCSERVERARGS[1]="-geometry 1280x960"
+
+4. 启动服务
+# service vncserver start
+
+5. 调整防火墙配置，放行端口：5901:5902
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 5901:5902 -j ACCEPT 
+
+其中：
+5900：用来后续连接到vm
+5901：用来连接到宿主机n86
+
+6. 如果在win下使用vncviewer连接异常，一直黑屏，调整下面的参数：
+options->Expert->ColorLevel,value=full
+
+
+                            
+三、尝试安装一个虚拟机
+1、配置kvm环境
+[root@200-70 ~]# yum groupinstall -y "Virtualization Client" "Virtualization Platform" "Virtualization Tools"
+
+启动服务：
+[root@200-70 ~]# service libvirtd start
+
+2、增加网桥br0
+		+-----+        +-----+       +-----+
+KVM ->  |<--->|  eth0  |<--->|  br0  |<--->|  em1 -> LAN
+		+-----+        +-----+       +-----+
+                            10.0.x.y/24
+                            
+[root@200-70 ~]# cd /etc/sysconfig/network-scripts
+[root@200-70 network-scripts]# cat <<'_EOF' >ifcfg-br0
+DEVICE=br0
+TYPE=Bridge
+ONBOOT=yes
+NM_CONTROLLED=no
+BOOTPROTO=none
+IPADDR=10.0.200.70
+PREFIX=24
+GATEWAY=10.0.200.1
+DELAY=0
+DEFROUTE=yes
+
+_EOF
+
+[root@200-70 network-scripts]# mv ifcfg-em1 bak.ifcfg-em1 \
+&& cat <<'_EOF' >ifcfg-em1
+DEVICE=em1
+BRIDGE=br0
+ONBOOT=yes
+MTU=1500
+NM_CONTROLLED=no
+
+_EOF
+
+[root@200-70 network-scripts]# service network restart
+[root@200-70 network-scripts]# brctl show
+bridge name     bridge id               STP enabled     interfaces
+br0             8000.f8bc124de980       no              em1
+virbr0          8000.525400288c45       yes             virbr0-nic
+
+    
+    
+4、第一个虚拟机
+[root@200-70 ~]# mkdir /data/kvm/{images,iso}
+[root@200-70 ~]# cd /data/kvm
+
+1）创建一个磁盘镜像
+[root@200-70 kvm]# qemu-img create -f qcow2  /data/kvm/images/test01/vm_os.qcow2 20G   
+
+2）创建一个虚拟机
+[root@200-70 ~]# virt-install --name test01 \
+--ram 1024 \
+--vcpus=1 \
+--cdrom  /data/kvm/iso/CentOS-6.5-x86_64-bin-DVD1.iso \
+--disk path=/data/kvm/images/test01/vm_os.qcow2,device=disk,bus=virtio,size=40,format=qcow2 \
+--network bridge:br0 \
+--graphics vnc,port=5902,listen=0.0.0.0 \
+--hvm \
+--arch x86_64 \
+--os-type=linux \
+--os-variant=rhel6 \
+--noautoconsole
+
+Starting install...
+Creating domain...                                    |    0 B     00:00     
+Domain installation still in progress. You can reconnect to 
+the console to complete the installation process.
+
+
+Starting install...
+Creating domain...                                                                                                                                                                                                    |    0 B     00:00     
+Domain installation still in progress. You can reconnect to 
+the console to complete the installation process.
+
+上面提示要重新连接到console来继续完成安装os的过程（通过vnc方式）
+
+3）用VNC连接
+10.0.200.70：5900
+ 
+在VNC下安装虚拟机（略）
+
+4）启动这个虚拟机
+[root@200-70 kvm]# virsh start test01
+Domain test01 started
+
+[root@200-70 kvm]# virsh list
+ Id    Name                           State
+----------------------------------------------------
+ 4     test01                         running
+
+ 
+ 
+四、管理
+1、如何删除该虚拟机
+取消定义：
+[root@200-70 kvm]# virsh undefine test01 
+Domain test01 has been undefined
+销毁：
+[root@200-70 kvm]# virsh destroy test01
+Domain test01 destroyed
+
+
+2、如何导出xml配置
+[root@200-70 kvm]# virsh dumpxml test01 >test01/test.xml
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,27 @@
+对应的zabbix配置：
+UserParameter=hardware_cpu,omreport chassis processors|awk '/^Health/{if($NF=="Ok") {print 1} else {print 0}}'
+
+
+涉及的命令：
+[root@local ~]# omreport chassis processors
+Processors Information
+
+Health : Ok
+
+Index             : 0
+Status            : Ok
+Connector Name    : CPU1
+Processor Brand   : Intel(R) Xeon(R) CPU E5-2630 0 @ 2.30GHz
+Processor Version : Model 45 Stepping 7
+Current Speed     : 2300  MHz
+State             : Present
+Core Count        : 6
+
+Index             : 1
+Status            : Ok
+Connector Name    : CPU2
+Processor Brand   : Intel(R) Xeon(R) CPU E5-2630 0 @ 2.30GHz
+Processor Version : Model 45 Stepping 7
+Current Speed     : 2300  MHz
+State             : Present
+Core Count        : 6

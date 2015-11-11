@@ -1,0 +1,363 @@
+﻿测试使用cobbler服务
+
+
+操作内容：
+一、基础环境
+1、在tvm-base-centos66的基础上，复制一个镜像为tvm-cobbler来测试。
+目的：无人值守安装一个个性化的OS，对比默认的os配置，做了如下的调整：
+字符集，
+时区，
+系统分区，
+指定的软件包，如：Base "Development Tools" "Chinese-Support" ntp lrzsz git 等，
+yum的本地base和epel源（此时已经搭建完毕本地的base和epel源，否则应该在后面的步骤中去掉对应的操作），
+针对个别服务的配置，如：ssh，crontab，salt-minion等。
+
+2、网络：
+eth0：host-only（用于虚拟内网，手动固定IP，这样从宿主机可以直接连接到这个vm）
+eth1：NAT（用于上外网，动态IP）
+[root@tvm-cobbler ~]# cd /etc/sysconfig/network-scripts/
+[root@tvm-cobbler network-scripts]# cat ifcfg-eth0
+DEVICE=eth0
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=192.168.56.252
+PREFIX=24
+GATEWAY=192.168.56.1
+DNS1=192.168.56.254
+
+[root@tvm-cobbler network-scripts]# cat ifcfg-eth1
+DEVICE=eth1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+DNS1=192.168.56.254
+
+二、配置cobbler环境
+1、安装
+使用局域网的epel源：
+[root@tvm-rpm ~]# mv /etc/yum.repos.d/*.repo /tmp/ \
+&& wget http://mirrors.office.test/local-office.repo -O /etc/yum.repos.d/local-office.repo \
+&& yum clean all \
+&& yum makecache
+
+注：如果要使用公网的epel源，可以这样操作：
+# rpm -Uvh http://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+
+[root@tvm-cobbler ~]# yum -y install cobbler cobbler-web httpd dhcp rsync tftp-server  pykickstart xinetd syslinux cman
+
+2、配置
+安装后：
+[root@tvm-cobbler ~]# ls /etc/cobbler/
+auth.conf               dnsmasq.template        named.template  secondary.template  zone.template
+cheetah_macros          import_rsync_whitelist  power           settings            zone_templates
+cobbler_bash            iso                     pxe             tftpd.template
+completions             ldap                    reporting       users.conf
+dhcp.template           modules.conf            rsync.exclude   users.digest
+distro_signatures.json  mongodb.conf            rsync.template  version
+
+先生成一个密码串：
+[root@tvm-cobbler ~]# openssl passwd -1 -salt 'tvm-cobbler'
+Password: （TestVM）
+$1$tvm-cobb$RD9M3INq6sjYzh5Vrbf4S/
+
+更新http的密码：
+[root@tvm-cobbler ~]# htdigest /etc/cobbler/users.digest "relbboc" cobbler 
+Adding user cobbler in realm relbboc
+New password: （relbboc）
+Re-type new password:（relbboc）
+
+也可以通过这种方式来测试：
+#    authn_testing    -- username/password is always testing/testing (debug)
+[root@tvm-cobbler ~]# sed 's/ = authn_configfile/ = authn_testing/' /etc/cobbler/modules.conf 
+
+
+调整防火墙，允许：
+tcp
+80
+443
+25151
+
+udp
+69
+
+sed -i -e 's|@dists=.*|#@dists=|'  /etc/debmirror.conf
+sed -i -e 's|@arches=.*|#@arches=|'  /etc/debmirror.conf
+
+调整配置：
+[root@tvm-cobbler ~]# vim /etc/cobbler/settings
+default_password_crypted: "$1$tvm-cobb$RD9M3INq6sjYzh5Vrbf4S/"
+manage_dhcp: 1
+manage_tftpd: 1
+manage_rsync: 1
+next_server: 192.168.56.252             # 接管DHCP服务器后，指定cobbler服务器的IP
+server: 192.168.56.252                  # cobbler服务器IP
+
+[root@tvm-cobbler ~]# vim /etc/cobbler/dhcp.template 
+subnet 192.168.56.0 netmask 255.255.255.0 {
+     option routers             192.168.56.1;
+     option domain-name-servers 192.168.56.254;
+     option subnet-mask         255.255.255.0;
+     range dynamic-bootp        192.168.56.150 192.168.56.199;
+     
+        
+[root@tvm-cobbler ~]# sed -i 's/yes/no/' /etc/xinetd.d/rsync
+[root@tvm-cobbler ~]# service xinetd restart
+先check一下，然后按照提示检查配置。
+[root@tvm-cobbler ~]# cobbler check
+[root@tvm-cobbler ~]# service cobblerd restart
+[root@tvm-cobbler ~]# cobbler sync
+
+开机启动：
+chkconfig httpd on
+
+
+3、导入os镜像
+[root@tvm-cobbler ~]# mount -o loop /dev/scd0 /mnt  
+[root@tvm-cobbler ~]# cobbler import --path=/mnt/ --name=CentOS-6.5-x86_64
+task started: 2015-07-16_171121_import
+task started (id=Media import, time=Thu Jul 16 17:11:21 2015)
+（等待导入完成）
+Found a candidate signature: breed=redhat, version=rhel6
+Found a matching signature: breed=redhat, version=rhel6
+Adding distros from path /var/www/cobbler/ks_mirror/CentOS-6.5-x86_64:
+creating new distro: CentOS-6.5-x86_64
+trying symlink: /var/www/cobbler/ks_mirror/CentOS-6.5-x86_64 -> /var/www/cobbler/links/CentOS-6.5-x86_64
+creating new profile: CentOS-6.5-x86_64
+associating repos
+checking for rsync repo(s)
+checking for rhn repo(s)
+checking for yum repo(s)
+starting descent into /var/www/cobbler/ks_mirror/CentOS-6.5-x86_64 for CentOS-6.5-x86_64
+processing repo at : /var/www/cobbler/ks_mirror/CentOS-6.5-x86_64
+need to process repo/comps: /var/www/cobbler/ks_mirror/CentOS-6.5-x86_64
+looking for /var/www/cobbler/ks_mirror/CentOS-6.5-x86_64/repodata/*comps*.xml
+Keeping repodata as-is :/var/www/cobbler/ks_mirror/CentOS-6.5-x86_64/repodata
+*** TASK COMPLETE ***
+
+[root@tvm-cobbler ~]# umount /mnt/
+[root@tvm-cobbler ~]# cd /var/lib/cobbler/kickstarts/
+
+4、调整profiles配置。
+[root@tvm-cobbler kickstarts]# cp -a sample_end.ks CentOS-6.5-x86_64.ks
+查看我修改了哪些配置：
+[root@tvm-cobbler kickstarts]# diff sample_end.ks CentOS-6.5-x86_64.ks 
+21c21
+< lang en_US
+---
+> lang en_US.UTF-8
+38c38
+< timezone  America/New_York
+---
+> timezone  Asia/Shanghai
+44c44,49
+< autopart
+---
+> #autopart
+> part /boot --bytes-per-inode=4096 --fstype="ext4" --size=200 --ondisk=sda
+> part swap --bytes-per-inode=4096 --fstype="swap" --size=4096 --ondisk=sda
+> part / --bytes-per-inode=4096 --fstype="ext4" --size=1 --grow --ondisk=sda
+> part /data --bytes-per-inode=4096 --fstype="ext4" --size=1 --grow --ondisk=sdb
+> 
+55a61,66
+> @Base
+> @Development Tools
+> @Chinese-Support
+> ntp
+> lrzsz
+> git
+（diff的后续输出略过，因为后面显示的是os安装完成后的脚本，下面有个示例，写在CentOS-6.5-x86_64.ks这个文件的“# Start final steps”这一行之前）
+-=-===---------------------------------------------------=-=-
+### repo ###
+#
+mv /etc/yum.repos.d/*.repo /tmp/ \
+&& wget http://mirrors.office.test/local-office.repo -O /etc/yum.repos.d/local-office.repo \
+&& yum clean all \
+&& yum makecache
+
+### ssh config ###
+#
+mv /etc/ssh/sshd_config /etc/ssh/sshd_config.old \
+&& cat <<"_EOF" >/etc/ssh/sshd_config
+\# added by cobbler
+Port 22
+Protocol 2
+SyslogFacility AUTHPRIV
+\#PasswordAuthentication no
+\#PermitRootLogin no
+ChallengeResponseAuthentication no
+GSSAPIAuthentication no
+GSSAPICleanupCredentials no
+UsePAM yes
+AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+AcceptEnv XMODIFIERS
+X11Forwarding yes
+UseDNS no
+Subsystem       sftp    /usr/libexec/openssh/sftp-server
+_EOF
+
+### datetime and crontab ###
+#
+ntpdate ntp.office.test
+cat <<"_EOF" >/var/spool/cron/root
+\# [daily]
+\# added by cobbler
+*/20 * * * * /usr/sbin/ntpdate ntp.office.test >/dev/null 2>&1 &
+_EOF
+
+### network ###
+#
+f_ifdev=`ip a |grep global |awk '{print \$NF}'`
+f_ip=`ip a |grep global |cut -d '/' -f 1 |awk '{print \$NF}'`
+f_mask=`ip a |grep global |cut -d '/' -f 2 |awk '{print \$1}'`
+f_gw=`route -n |grep UG |awk '{print \$2}'`
+f_dns=`cat /etc/resolv.conf |grep name |awk '{print $2}'`
+cat <<_EOF >"/etc/sysconfig/network-scripts/ifcfg-\${f_ifdev}"
+DEVICE=\${f_ifdev}
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=\${f_ip}
+PREFIX=\${f_mask}
+GATEWAY=\${f_gw}
+DNS1=\${f_dns}
+_EOF
+
+### hostname ###
+f_id=`echo \${f_ip} |awk -F '.' '{print "tvm-"\$3"-"\$4}'`
+hostname \${f_id}
+
+cat <<_EOF >/etc/sysconfig/network
+NETWORKING=yes
+HOSTNAME=\${f_id}
+_EOF
+
+### salt-minion ###
+#
+salt_m="salt-m.office.test"
+yum install salt-minion -y
+
+cp -a /etc/salt/minion /etc/salt/minion.bak
+cat <<_EOF >/etc/salt/minion
+master: \${salt_m}
+id: \$(hostname)
+_EOF
+
+
+# Start final steps
+-=-===---------------------------------------------------=-=-
+
+[root@tvm-cobbler kickstarts]# cobbler profile edit \
+--name=CentOS-6.5-x86_64 \
+--distro=CentOS-6.5-x86_64 \
+--kickstart=/var/lib/cobbler/kickstarts/CentOS-6.5-x86_64.ks 
+
+
+5、验证
+[root@tvm-cobbler kickstarts]# cobbler validateks
+task started: 2015-07-17_175218_validateks
+task started (id=Kickstart Validation, time=Fri Jul 17 17:52:18 2015)
+----------------------------
+osversion: rhel6
+checking url: http://192.168.56.252/cblr/svc/op/ks/profile/CentOS-6.5-x86_64
+running: /usr/bin/ksvalidator -v "rhel6" "http://192.168.56.252/cblr/svc/op/ks/profile/CentOS-6.5-x86_64"
+received on stdout: 
+received on stderr:  
+*** all kickstarts seem to be ok ***
+*** TASK COMPLETE ***
+
+上述文字结尾表示正常。
+
+
+修改配置后，记得要sync一下来生效
+[root@tvm-cobbler kickstarts]# cobbler sync
+*** TASK COMPLETE ***
+上述文字结尾表示正常。
+
+
+注：可以这样查看已经更改后的profiles的状态：
+[root@tvm-cobbler kickstarts]# cobbler profile report --name CentOS-6.5-x86_64
+[root@tvm-cobbler kickstarts]# cat /var/lib/cobbler/config/profiles.d/CentOS-6.5-x86_64.json |python -m simplejson.tool
+也可以这样：
+[root@tvm-cobbler kickstarts]# curl http://192.168.56.252/cblr/svc/op/ks/profile/CentOS-6.5-x86_64
+（略）
+# End final steps
+%end
+
+
+6、调整systems配置
+通过配置system，可以个性化的针对指定的客户端（例如通过mac地址来匹配到主机）来指定系统配置。
+
+[root@tvm-cobbler kickstarts]# cobbler system add \
+--name=cobbler-test \
+--profile=CentOS-6.5-x86_64 \
+--hostname=tvm-test \
+--interface=eth0 \
+--mac=08:00:27:bf:43:92 \
+--ip-address=192.168.56.200 \
+--subnet=255.255.255.0 \
+--gateway=192.168.56.1 \
+--static=1 \
+--name-servers=192.168.56.254
+
+[root@tvm-cobbler kickstarts]# cobbler system list
+   cobbler-test
+[root@tvm-cobbler kickstarts]# cobbler system report --name=cobbler-test
+[root@tvm-cobbler kickstarts]# cobbler validateks
+task started: 2015-07-22_165915_validateks
+task started (id=Kickstart Validation, time=Wed Jul 22 16:59:15 2015)
+----------------------------
+osversion: rhel6
+checking url: http://192.168.56.252/cblr/svc/op/ks/profile/CentOS-6.5-x86_64
+running: /usr/bin/ksvalidator -v "rhel6" "http://192.168.56.252/cblr/svc/op/ks/profile/CentOS-6.5-x86_64"
+received on stdout: 
+received on stderr: 
+----------------------------
+osversion: rhel6
+checking url: http://192.168.56.252/cblr/svc/op/ks/system/cobbler-test
+running: /usr/bin/ksvalidator -v "rhel6" "http://192.168.56.252/cblr/svc/op/ks/system/cobbler-test"
+received on stdout: 
+received on stderr: 
+*** all kickstarts seem to be ok ***
+*** TASK COMPLETE ***
+[root@tvm-cobbler kickstarts]# cobbler sync
+
+注：移除这个配置可以通过执行：cobbler system remove --name=cobbler-test
+
+
+
+
+二、在virtualbox上新建一个虚拟机来测试。
+1、调整网卡，使用host-only，且去掉dhcp服务器的功能。
+2、启动测试的虚拟机tvm-client1，按F12，按L键，进入pxe启动模式
+
+
+三、FAQ
+Q：客户端从PXE启动后，弹出蓝色菜单要选择，意味着ks没有起作用，故障在哪里？
+A：检查以下内容：
+-------------------------------------------------------------
+试着浏览器或者curl访问下述URL：
+[root@tvm-cobbler kickstarts]# curl http://192.168.56.252/cblr/svc/op/ks/profile/CentOS-6.5-x86_64
+
+如果有错误，则会提示：
+# This kickstart had errors that prevented it from being rendered correctly.
+# The cobbler.log should have information relating to this failure.
+
+此时可以查看日志：
+[root@tvm-cobbler kickstarts]# tail /var/log/cobbler/cobbler.log   
+-------------------------------------------------------------
+
+
+
+
+
+
+ZYXW、参考
+1、CENTOS6.5安装和配置COBBLER 2.4
+http://blog.hackroad.com/operations-engineer/linux_server/11353.html
+

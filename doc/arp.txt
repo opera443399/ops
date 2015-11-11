@@ -1,0 +1,22 @@
+linux抑制arp通告
+
+通常在用LVS的时候，要在lo口用到虚拟ip，此时需要调整2个地方：
+arp_ignore
+arp_announce
+因为多个IP用到一个物理网卡的MAC，arp会在局域网广播说：
+“ip为192.168.1.1的MAC地址是多少”，此时将有多个主机回应。
+17	0.328160000	Elitegro_1f:10:5f	Broadcast	ARP	60	Who has 192.168.1.1?  Tell 192.168.1.148
+
+通常是这样做的：
+echo 1 >/proc/sys/net/ipv4/conf/all/arp_ignore
+echo 2 >/proc/sys/net/ipv4/conf/all/arp_announce
+echo 1 >/proc/sys/net/ipv4/conf/lo/arp_ignore
+echo 2 >/proc/sys/net/ipv4/conf/lo/arp_announce
+
+疑问是：
+all中包括了lo不？
+个人理解是：
+先禁止all这个全局的端口的arp行为，然后指定lo口的
+
+关于lvs和arp的问题，此处可以参考网络文章，例如：
+​http://blog.chinaunix.net/uid-24960107-id-193084.html

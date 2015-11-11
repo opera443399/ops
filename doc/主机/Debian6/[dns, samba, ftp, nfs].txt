@@ -1,0 +1,344 @@
+1. apt-get install 失败
+-----------------------
+---更新/etc/apt/sources.list的内容，具体参照conf/sources.list文件。
+# 
+#deb cdrom:[Debian GNU/Linux 6.0.4 _Squeeze_ - Official i386 NETINST Binary-1 20120129-00:42]/ squeeze main
+#deb cdrom:[Debian GNU/Linux 6.0.4 _Squeeze_ - Official i386 NETINST Binary-1 20120129-00:42]/ squeeze main
+
+deb http://mirrors.163.com/debian/ squeez main contrib non-free
+deb http://mirrors.163.com/debian/ squeeze-proposed-update main contrib -non-free
+deb http://mirrors.163.com/debian-security/ squeeze/updates main contrib non-free
+deb-src http://mirrors.163.com/debian/squeeze main non-free contrib
+deb-src http://mirrors.163.com/debian squeeze-proposed-updates main contrib non-free
+deb-src http://mirrors.163.com/debian-security/ squeeze/updates main contrib non-free
+deb http://ftp.sjtu.edu.cn/debian/ squeeze main non-free contrib
+deb http://ftp.sjtu.edu.cn/debian/ squeeze-proposed-updates main contrib non-free
+deb http://ftp.sjtu.edu.cn/debian-security/ squeeze/updates main contrib non-free
+deb-src http://ftp.sjtu.edu.cn/debian/ squeeze main non-free contrib
+deb-src http://ftp.sjtu.edu.cn/debian squeeze-proposed-updates main contrib non-free
+deb-src http://ftp.sjtu.edu.cn/debian-security/ squeeze/updates main contrib non-free
+
+deb http://security.debian.org/ squeeze/updates main
+deb-src http://security.debian.org/ squeeze/updates main
+2. 网络设置命令
+---------------
+# ifdown eth0
+# vim /etc/network/interfaces
+----
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto eth0
+iface eth0 inet static
+        address 192.168.1.234
+        netmask 255.255.255.0
+        network 192.168.1.0
+        broadcast 192.168.1.255
+        gateway 192.168.1.1
+----
+# ifup eth0
+
+
+
+3. dos2unix
+-------------
+ 
+---安装
+#apt-get install dos2unix
+
+
+---用法 
+#dos2unix filename
+#find -type f | xargs dos2unix --dos2unix --safe
+
+
+4. DNS服务器
+--------------
+---安装：  
+#apt-get install bind9 dnsutils bind9-doc
+
+
+-----
+
+---重启Bind9
+/etc/init.d/bind9 restart
+
+
+
+---测试：
+# dig pc.world
+# dig -x 192.168.1.234
+# named-checkzone pc.world /etc/bind/db.pc.world
+
+
+---修改：/etc/resolv.conf
+# vim /etc/resolv.conf
+----
+search pc.world.
+nameserver 192.168.1.234
+;nameserver 211.148.192.141
+;nameserver 211.148.192.151
+----
+
+-----
+
+---修改：/etc/bind/named.conf.options
+
+# vim /etc/bind/named.conf.options
+
+----
+options {
+        directory "/var/cache/bind";
+
+        // If there is a firewall between you and nameservers you want
+        // to talk to, you may need to fix the firewall to allow multiple
+        // ports to talk.  See http://www.kb.cert.org/vuls/id/800113
+
+        // If your ISP provided one or more IP addresses for stable
+        // nameservers, you probably want to use them as forwarders.
+        // Uncomment the following block, and insert the addresses replacing
+        // the all-0's placeholder.
+
+        forwarders {
+                211.148.192.141;
+                211.148.192.151;
+         };
+
+        auth-nxdomain no;    # conform to RFC1035
+        listen-on-v6 { any; };
+};
+----
+
+
+---修改：/etc/bind/named.conf.local，建立相应的日志文件
+
+
+# vim /etc/bind/named.conf.local
+----
+zone "pc.world" {
+        type master;
+        file "/etc/bind/db.pc.world";
+};
+
+zone "1.168.192.in-addr.arpa" {
+        type master;
+        file "/etc/bind/db.192.168.1";
+};
+
+logging {
+        channel query.log {
+                file "/var/log/dns.log";
+                severity debug 3;
+        };
+        category queries { query.log;};
+};
+-----
+
+# touch /var/log/dns.log
+# chown bind /var/log/dns.log
+
+
+---添加文件：/etc/bind/db.pc.world
+
+# vim /etc/bind/db.pc.world
+
+-----
+$TTL 38400
+@       IN      SOA     pCdebian6.pc.world. nosmo.pc.world. (
+                20120326
+                10800
+                3600
+                604800
+                38400
+                )
+@       IN      NS      pCdebian6.pc.world.
+
+pc.world.       IN      A       192.168.1.234
+pCdebian6       IN      A       192.168.1.234
+www                     IN      A       192.168.1.234
+ftp                     IN      A       192.168.1.234
+------
+
+
+---添加文件：/etc/bind/db.192.168.1
+# vim /etc/bind/db.192.168.1
+
+-----
+$TTL 38400
+@       IN      SOA     pCdebian6.pc.world. nosmo.pc.world. (
+                20120326
+                10800
+                3600
+                604800
+                38400
+                )
+@       IN      NS      pCdebian6.pc.world.
+
+234      PTR     pc.world.
+-----
+
+
+
+5. SAMBA服务
+----------------
+---安装：
+# apt-get install samba
+
+
+
+---修改配置文件：
+# vim /etc/samba/smb.confd
+
+
+找到[homes]，修改path等，例如：
+---
+
+[homes]
+comment = Home Directories
+browseable = no
+path = /tmp
+public = no
+writable = yes
+read only = no
+create mask = 0777
+directory mask = 0777
+valid users = %S
+---
+
+
+---添加用户并设置samba访问密码：
+# useradd -m user1
+
+# smbpasswd -a user1
+
+
+---重新启动服务：
+# /etc/init.d/samba restart
+
+
+
+---共享权限问题
+# mkdir /home/share
+
+# chmod 777 /home /home/share
+
+---在/etc/samba/smb.conf文件中控制访问权限，如：
+----
+
+read only = no
+create mask = 0775
+directory mask = 0775
+----
+
+例如有用户和用户组：
+user01:gw01
+user02:gw02
+新建文件和文件夹时，则权限如下：
+drwxrwxr-x 2 user01 gw01 4096 Mar 13 23:23 gwdir01
+
+drwxrwxr-x 2 user02 gw02 4096 Mar 13 23:27 gwdir02
+即：目录和文件只有本人和本组成员和rw，其他人只读。
+
+
+6.  FTP
+---------
+[vsftpd]
+---Install required packages
+# apt-get install vsftpd libpam-pwdfile
+
+
+---Configure vsftpd
+# vim /etc/vsftpd.conf
+
+
+
+---Edit these variables in the config file and leave everything else with the default value.
+----
+
+anonymous_enable=NO
+local_enable=YES
+write_enable=YES
+local_umask=022
+nopriv_user=vsftpd
+virtual_use_local_privs=YES
+guest_enable=YES
+user_sub_token=$USER
+local_root=/var/www/$USER
+chroot_local_user=YES
+hide_ids=YES
+guest_username=vsftpd
+----
+Set the 'local_root' to the parent directory where the user's home directories are located
+
+---Configure PAM to check the passwd file for users 
+
+
+# vim /etc/pam.d/vsftpd
+---
+auth required pam_pwdfile.so pwdfile /etc/ftpd.passwd
+account required pam_permit.so
+---
+
+Make sure you 'remove' everything else from the file
+
+---Create the passwd file containing the users
+[if htpasswd doesnot work, install apache like this: ]
+# apt-get install apache2.2
+
+---
+# htpasswd -c /etc/ftpd.passwd user1
+
+
+You can later add additional users to the file like this:
+# htpasswd /etc/ftpd.passwd user2
+
+
+---Create a local user that’s used by the virtual users to authenticate
+# useradd --home /home/vsftpd --gid nogroup -m --shell /bin/false vsftpd
+
+
+---Restart vsftpd
+/etc/init.d/vsftpd restart
+
+
+
+---Create user's home directory since vsftpd doesn't do it automatically
+# mkdir /var/www/user1
+
+# chown vsftpd:nogroup /var/www/user1
+(and...)
+# mkdir /var/www/user2
+# chown vsftpd:nogroup /var/www/user2
+
+
+7. NFS
+---------
+
+使用NFS访问Windows下的共享。
+
+假设Windows上有如下共享：//192.168.1.100/share
+
+---建立要挂载的文件夹
+# mkdir /mnt/win7share
+
+
+---安装cifs-utils，否则挂载时会报错：CIFS VFS: cifs_mount failed w/return code = -22
+# apt-get install cifs-utils smbclient
+
+
+---挂载
+# mount -t cifs -o username=chaos //192.168.1.100/share  /mnt/win7share
+
+password:
+
+
+(DONE)
+
+---安装NFS服务
+# apt-get install nfs-server
+

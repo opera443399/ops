@@ -1,0 +1,10 @@
+﻿head -c n 文件
+输出文件的前 n bytes的内容。
+若用的是-c -n，则表示除了前n bytes不输出，其他全部显示出来。
+
+head -c 10 /var/log/syslog
+输出syslog前10 bytes
+
+FSIZE=500000
+head -c $FSIZE < /dev/zero > sysfile
+利用/dev/zero建立一个文件 sysfile，文件大小为500 000 bytes

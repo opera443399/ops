@@ -1,0 +1,71 @@
+1）用户A生产一对key，，A和A.pub
+2）把A.pub的内容发给admin
+3）admin把A.pub的内容对应的用户中
+4）用户A，使用私钥文件A来登录服务器，，其中，使用winscp之类工具的，因为是使用的putty来登录linux，这种是putty私有格式的，用它提供的工具，把A加载进去，另存为A.ppk
+
+
+
+【创建key】
+$ ssh-keygen -t rsa -b 2048 -C you_comment_here -f filename
+
+
+如何生成key，示例：
+$ ssh-keygen -t rsa -b 2048 -C test@office -f test
+Enter passphrase (empty for no passphrase): 【输入你使用key的时候的密码，例如abcde】
+生成了2个文件：
+$ ls
+test  test.pub
+我需要的是test.pub中的内容，可以通过最后的注释判断是哪位的key
+$ cat test.pub 
+ssh-rsa testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest test@office
+
+你使用key登录时，会提示输入passphrase，也就是上面的abcde
+
+更换passphrase
+$ ssh-keygen -p 
+Enter file in which the key is (/home/test/.ssh/id_rsa): /home/user1/test
+Enter old passphrase: abcde
+Key has comment '/home/user1/test'
+Enter new passphrase (empty for no passphrase): 11112222
+Enter same passphrase again: 11112222
+Your identification has been saved with the new passphrase.
+
+ssh格式转换为openssh的key：
+$ ssh-keygen -i -f Identity.pub >> authorized_keys
+
+
+
+关于权限：
+700 /home/user1
+700 /home/user1/.ssh 
+600 /home/user1/.ssh/authorized_keys 
+
+
+
+脚本：
+------------------------------------------------------------------------------------
+username='Jack'
+useradd ${username}
+id ${username}
+
+[ -d /home/${username}/.ssh ] || mkdir -p /home/${username}/.ssh
+
+cat <<_PUBKEY >> /home/${username}/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaCafdsfdsfdsfdsfds90f8d90sfjdskfjsd8fuk3emjoklu89UIKDFKDSUFDSKFDKSFDSBHFJBSDLCMFLSMDCKJDKSJFOKDSWMFLbxdtm5l1Fhe2pzblLi5cKh21nDRL8xwmQKwa9hVcadbcc Jack@home
+_PUBKEY
+
+chmod 700 /home/${username}/.ssh
+chmod 600 /home/${username}/.ssh/authorized_keys
+chown -R ${username}:${username} /home/${username}/.ssh
+
+cat /home/${username}/.ssh/authorized_keys
+------------------------------------------------------------------------------------
+
+注3：用户成功登录后，可以自行更新/home/${username}/.ssh/authorized_keys这个文件中存放的个人的public key信息
+
+
+
+
+
+
+

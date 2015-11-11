@@ -1,0 +1,19 @@
+类似这样：
+
+#!/bin/bash  
+#
+
+# rsync -avzP --exclude="*.log" --exclude="*.zip.*" --exclude="*.csv.*" --exclude="*.xls.*" /home/web/log/exportlog/ 192.168.5.72::s72log_export_pub
+
+src=/home/web/log/exportlog/
+dest=s72log_export_pub
+ip=192.168.5.72
+
+
+/usr/local/bin/inotifywait -mr -e close_write --exclude '^.*(log|csv\..*|xls\..*|zip\..*)$' $src | while read file
+do
+        echo "[+] `date` start"
+        echo "[-] $file"
+        rsync -avzP --exclude="*.log" --exclude="*.zip.*" --exclude="*.csv.*" --exclude="*.xls.*" $src $ip::$dest
+        echo "[-] `date` end"
+done

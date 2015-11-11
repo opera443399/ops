@@ -1,0 +1,75 @@
+sudo的用法记录
+
+
+一、修改sudo配置文件
+
+直接visudo命令编辑配置文件：
+
+1. 注释Defaults requiretty
+Defaults requiretty修改为 #Defaults requiretty， 表示不需要控制终端。
+否则会出现sudo: sorry, you must have a tty to run sudo
+
+2. 增加行 Defaults visiblepw
+否则会出现 sudo: no tty present and no askpass program specified 
+
+
+3. 赋予zabbix用户执行nmap权限
+如，增加行：zabbix  ALL=(root) NOPASSWD: /usr/bin/nmap
+注：NOPASSWD可以使在命令执行时不需要交互输入zabbix用户的密码
+
+
+user_or_group ALL=(ALL) NOPASSWD: ALL
+
+Jack ALL=(ALL) NOPASSWD: ALL
+
+单个命令：
+Jack ALL=(ALL) NOPASSWD: /usr/bin/supervisorctl
+
+多个命令：
+xxx ALL=NOPASSWD:/data/apps/coreseek/bin/coreseek.sh, /data/apps/coreseek/bin/indexer_rotate.sh
+
+
+4、赋予user1通过sudo来执行coreseek的2个命令的权限
+
+# visudo
+user1 ALL=NOPASSWD:/data/apps/coreseek/bin/coreseek_ctl.sh, /data/svr/coreseek/bin/indexer_rotate.sh
+# su user1
+$ sudo /data/svr/coreseek/bin/
+crontab_init.sh    coreseek_ctl.sh     indexer_rotate.sh  
+$ sudo /data/svr/coreseek/bin/indexer_rotate.sh 
+
+usage: /data/svr/coreseek/bin/indexer_rotate.sh [main|day|merge|all]
+
+$ sudo /data/svr/coreseek/bin/coreseek_ctl.sh status
+root     11526     1  0 Dec16 ?        00:00:04 /usr/local/coreseek/bin/searchd --config /data/svr/coreseek/conf/test.conf
+
+
+二、其他配置
+1、查看相关文档：
+[root@tvm-rpm ~]# rpm -ql sudo |grep doc
+
+2、日志：
+[root@tvm-test ~]# cat /etc/sudoers.d/log 
+Defaults logfile=/var/log/sudo.log
+[root@tvm-test ~]# cat /etc/rsyslog.d/sudo.conf 
+local2.* /var/log/sudo.log
+
+[root@tvm-test ~]# service rsyslog restart
+
+[root@tvm-test ~]# su Jack
+[Jack@tvm-test root]$ tail /var/log/sudo.log     
+tail: cannot open `/var/log/sudo.log' for reading: Permission denied
+[Jack@tvm-test root]$ sudo tail /var/log/sudo.log
+Jul 21 17:48:25 : Jack : TTY=pts/1 ; PWD=/root ; USER=root ;
+    COMMAND=/usr/bin/tail /var/log/sudo.log
+
+
+3、增加sudo用户的配置到/etc/sudoers.d目录下
+echo "cephuser ALL = (root) NOPASSWD:ALL" |tee /etc/sudoers.d/cephuser
+chmod 0440 /etc/sudoers.d/cephuser
+
+
+
+
+
+

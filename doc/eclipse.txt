@@ -1,0 +1,48 @@
+eclipse环境
+
+一、安装包
+1、java jdk
+http://www.oracle.com/technetwork/java/javase/downloads/index.html
+
+Which Java package do I need?
+
+Software Developers: JDK (Java SE Development Kit). For Java Developers. Includes a complete JRE plus tools for developing, debugging, and monitoring Java applications.
+
+Administrators running applications on a server:  Server JRE (Server Java Runtime Environment) For deploying Java applications on servers. Includes tools for JVM monitoring and tools commonly required for server applications, but does not include browser integration (the Java plug-in), auto-update, nor an installer. 
+
+End user running Java on a desktop: JRE: (Java Runtime Environment). Covers most end-users needs. Contains everything required to run Java applications on your system.
+
+
+2、eclipse
+http://www.eclipse.org/downloads/
+
+Eclipse IDE for Java EE Developers
+Tools for Java developers creating Java EE and Web applications, including a Java IDE, tools for Java EE, JPA, JSF, Mylyn...
+
+Eclipse IDE for Java Developers
+The essential tools for any Java developer, including a Java IDE, a Git client, XML Editor, Mylyn, Maven integration and WindowBuilder...
+
+解压即用。
+
+
+二、进行java开发的示例
+1、有个HelloWorld的指引
+新建project来测试。
+
+
+三、进行python开发的示例
+1、增加一个pydev
+菜单：Help->install new software，选择“Add”，输入：
+name：pydev
+location：http://pydev.org/updates
+稍等一下，可以看到PyDev，选择它，一步步的安装
+
+菜单：Windows->Preferences，选择PyDev-Interpreters-Python Interpreter，选择“New”，找到python的exe的目录，例如：
+D:\apps\Python34\python.exe，一路回车确定。
+新建project来测试。
+
+
+
+
+
+

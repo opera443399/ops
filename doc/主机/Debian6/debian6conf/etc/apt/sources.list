@@ -1,0 +1,22 @@
+# 
+
+# deb cdrom:[Debian GNU/Linux 6.0.4 _Squeeze_ - Official i386 NETINST Binary-1 20120129-00:42]/ squeeze main
+
+#deb cdrom:[Debian GNU/Linux 6.0.4 _Squeeze_ - Official i386 NETINST Binary-1 20120129-00:42]/ squeeze main
+
+deb http://mirrors.163.com/debian/ squeez main contrib non-free
+deb http://mirrors.163.com/debian/ squeeze-proposed-update main contrib -non-free
+deb http://mirrors.163.com/debian-security/ squeeze/updates main contrib non-free
+deb-src http://mirrors.163.com/debian/squeeze main non-free contrib
+deb-src http://mirrors.163.com/debian squeeze-proposed-updates main contrib non-free
+deb-src http://mirrors.163.com/debian-security/ squeeze/updates main contrib non-free
+deb http://ftp.sjtu.edu.cn/debian/ squeeze main non-free contrib
+deb http://ftp.sjtu.edu.cn/debian/ squeeze-proposed-updates main contrib non-free
+deb http://ftp.sjtu.edu.cn/debian-security/ squeeze/updates main contrib non-free
+deb-src http://ftp.sjtu.edu.cn/debian/ squeeze main non-free contrib
+deb-src http://ftp.sjtu.edu.cn/debian squeeze-proposed-updates main contrib non-free
+deb-src http://ftp.sjtu.edu.cn/debian-security/ squeeze/updates main contrib non-free
+
+deb http://security.debian.org/ squeeze/updates main
+deb-src http://security.debian.org/ squeeze/updates main
+

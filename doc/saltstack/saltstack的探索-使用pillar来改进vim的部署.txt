@@ -1,0 +1,67 @@
+saltstack的探索-官网文档02-使用pillar来改进vim的部署
+
+[root@svr200-21 srv]# pwd
+/srv
+[root@svr200-21 srv]# ls
+pillar  salt
+[root@svr200-21 srv]# cat pillar/
+data.sls  pkg/      top.sls   users/    
+[root@svr200-21 srv]# cat pillar/pkg/init.sls 
+pkgs:
+  {% if grains['os_family'] == 'RedHat' %}
+  vim: vim-enhanced
+  {% elif grains['os_family'] == 'Debian' %}
+  vim: vim
+  {% elif grains['os'] == 'Arch' %}
+  vim: vim
+  {% endif %}
+
+[root@svr200-21 srv]# cat pillar/top.sls 
+base:
+  '*':
+    - data
+    - users
+    - pkg
+[root@svr200-21 srv]# cat salt/edit/vim.sls 
+vim:
+    pkg:
+      - installed
+      - name: {{ pillar['pkgs']['vim'] }}
+
+/root/.vimrc:
+    file.managed:
+        - source: salt://edit/conf/vimrc
+        - mode: 644
+        - uesr: root
+        - group: root
+        - require:
+          - pkg: vim
+
+          
+执行：
+[root@svr200-21 srv]# salt 'svr205-2' state.sls edit.vim
+svr205-2:
+----------
+          ID: vim
+    Function: pkg.installed
+        Name: vim-enhanced
+      Result: True
+     Comment: Package vim-enhanced is already installed.
+     Started: 18:05:24.707048
+    Duration: 1808.3 ms
+     Changes:   
+----------
+          ID: /root/.vimrc
+    Function: file.managed
+      Result: True
+     Comment: File /root/.vimrc is in the correct state
+     Started: 18:05:26.515743
+    Duration: 153.787 ms
+     Changes:   
+
+Summary
+------------
+Succeeded: 2
+Failed:    0
+------------
+Total states run:     2

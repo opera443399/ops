@@ -1,0 +1,189 @@
+对应的zabbix配置：
+UserParameter=hardware_cpu_model,awk -v hardware_cpu_crontol=`omreport chassis biossetup|awk '/C State/{if($NF=="Enabled") {print 0} else {print 1}}'` -v hardware_cpu_c1=`omreport chassis biossetup|awk '/C1[-|E]/{if($NF=="Enabled") {print 0} else {print 1}}'` 'BEGIN{if(hardware_cpu_crontol==0 && hardware_cpu_c1==0) {print 0} else {print 1}}'
+
+
+涉及的命令：
+[root@local ~]# omreport chassis biossetup
+
+Operation is under progress, it may take few seconds to complete...
+
+Note: use display=shortnames optional parameter to see attribute names and setting values in short form.
+BIOS Setup
+
+
+Serial Communication                              
+------------------------------------------        
+Serial Communication                              : On without Console Redirection
+Serial Port Address                               : Serial Device1=COM2,Serial Device2=COM1
+External Serial Connector                         : Serial Device 1
+Failsafe Baud Rate                                : 115200
+Remote Terminal Type                              : VT100/VT220
+Redirection After Boot                            : Enabled
+
+System Information                                
+------------------------------------------        
+System Model Name                                 : PowerEdge R720
+System BIOS Version                               : 2.2.2
+System Service Tag                                : 26KD122
+System Manufacturer                               : Dell Inc.
+System Manufacturer Contact Information           : www.dell.com
+System CPLD Version                               : 103
+
+Memory Settings                                   
+------------------------------------------        
+System Memory Size                                : 32.0 GB
+System Memory Type                                : ECC DDR3
+System Memory Speed                               : 1333 MHz
+System Memory Voltage                             : 1.35V
+Video Memory                                      : 16 MB
+System Memory Testing                             : Disabled
+Memory Operating Mode                             : Optimizer Mode
+Node Interleaving                                 : Disabled
+
+Processor Settings                                
+------------------------------------------        
+Logical Processor                                 : Enabled
+QPI Speed                                         : Maximum data rate
+Alternate RTID (Requestor Transaction ID) Setting : Disabled
+Virtualization Technology                         : Enabled
+Adjacent Cache Line Prefetch                      : Enabled
+Hardware Prefetcher                               : Enabled
+DCU Streamer Prefetcher                           : Enabled
+DCU IP Prefetcher                                 : Enabled
+Execute Disable                                   : Enabled
+Logical Processor Idling                          : Disabled
+Number of Cores per Processor                     : All
+Processor 64-bit Support                          : Yes
+Processor Core Speed                              : 2.30 GHz
+Processor Bus Speed                               : 7.20 GT/s
+Family-Model-Stepping                             : 06-2D-7
+Brand                                             : [Intel(R) Xeon(R) CPU E5-2630 0 @ 2.30GHz       ]
+Level 2 Cache                                     : 6x256 KB
+Level 3 Cache                                     : 15 MB
+Number of Cores                                   : 6
+Family-Model-Stepping                             : 06-2D-7
+Brand                                             : [Intel(R) Xeon(R) CPU E5-2630 0 @ 2.30GHz       ]
+Level 2 Cache                                     : 6x256 KB
+Level 3 Cache                                     : 15 MB
+Number of Cores                                   : 6
+
+SATA Settings                                     
+------------------------------------------        
+Embedded SATA                                     : AHCI Mode
+Port A                                            : Auto
+Model                                             : Unknown
+Drive Type                                        : Unknown Device
+Capacity                                          : N/A
+Port B                                            : Auto
+Model                                             : Unknown
+Drive Type                                        : Unknown Device
+Capacity                                          : N/A
+Port C                                            : Auto
+Model                                             : Unknown
+Drive Type                                        : Unknown Device
+Capacity                                          : N/A
+Port D                                            : Auto
+Model                                             : Unknown
+Drive Type                                        : Unknown Device
+Capacity                                          : N/A
+Port E                                            : Auto
+Model                                             : TSSTcorp DVD+/-RW SN-208FB 
+Drive Type                                        : Optical Drive
+Capacity                                          : N/A
+Port F                                            : Auto
+Model                                             : Unknown
+Drive Type                                        : Unknown Device
+Capacity                                          : N/A
+
+Boot Settings                                     
+------------------------------------------        
+Boot Mode                                         : BIOS
+Boot Sequence Retry                               : Disabled
+
+Integrated Devices                                
+------------------------------------------        
+Integrated RAID Controller                        : Enabled
+User Accessible USB Ports                         : All Ports On
+Internal USB Port                                 : On
+Integrated Network Card 1                         : Enabled
+Integrated Network Card 1 Port 1 Boot Protocol    : PXE
+Integrated Network Card 1 Port 2 Boot Protocol    : None
+Integrated Network Card 1 Port 3 Boot Protocol    : None
+Integrated Network Card 1 Port 4 Boot Protocol    : None
+OS Watchdog Timer                                 : Disabled
+I/OAT DMA Engine                                  : Disabled
+Embedded Video Controller                         : Enabled
+SR-IOV Global Enable                              : Disabled
+Memory Mapped I/O above 4GB                       : Enabled
+
+System Profile Settings                           
+------------------------------------------        
+System Profile                                    : Performance Per Watt (DAPC)
+CPU Power Management                              : System DBPM (DAPC)
+Memory Frequency                                  : Maximum Performance
+Turbo Boost                                       : Enabled
+C1E                                               : Enabled
+C States                                          : Enabled
+Monitor/Mwait                                     : Enabled
+Memory Patrol Scrub                               : Standard
+Memory Refresh Rate                               : 1x
+Memory Operating Voltage                          : Auto
+Collaborative CPU Performance Control             : Disabled
+
+System Security                                   
+------------------------------------------        
+Intel(R) AES-NI                                   : Enabled
+System Password                                   : 
+Setup Password                                    : 
+Password Status                                   : Unlocked
+AC Power Recovery                                 : Last
+AC Power Recovery Delay                           : Immediate
+User Defined Delay (60s to 240s)                  : 60
+
+Miscellaneous Settings                            
+------------------------------------------        
+Asset Tag                                         : 
+Keyboard NumLock                                  : On
+Report Keyboard Errors                            : Report
+F1/F2 Prompt on Error                             : Enabled
+In-System Characterization                        : Enabled
+
+BIOS Boot Settings                                
+------------------------------------------        
+
+Boot Sequence                                     
+                                                  : 0. Enabled: Hard drive C:
+                                                  : 1. Enabled: Embedded SATA Port Optical Drive E: TSSTcorp DVD+/-RW SN-208FB              
+                                                  : 2. Enabled: Integrated NIC 1 Port 1 Partition 1: BRCM MBA Slot 0100 v16.2.1
+
+Hard-Disk Drive Sequence                          
+                                                  : 0. Integrated RAID Controller 1: PERC H710 Mini(bus 03 dev 00)
+
+UEFI Boot Settings                                
+------------------------------------------        
+
+UEFI Boot Sequence                                
+                                                  : 0. Enabled: Embedded SATA Port Optical Drive E: TSSTcorp DVD+/-RW SN-208FB              
+                                                  : 1. Disabled: Integrated NIC 1 Port 1 Partition 1: EFI Network 1
+                                                  : 2. Disabled: Integrated NIC 1 Port 2 Partition 1: EFI Network 2
+                                                  : 3. Disabled: Integrated NIC 1 Port 3 Partition 1: EFI Network 3
+                                                  : 4. Disabled: Integrated NIC 1 Port 4 Partition 1: EFI Network 4
+                                                  : 5. Enabled: Unavailable: Windows Boot Manager
+UEFI PXE boot protocol                            : IPv4
+
+One-Time Boot                                     
+------------------------------------------        
+One-Time Boot Device List                         : Disabled
+BIOS Boot Sequence Device                         : Hard drive C:
+BIOS Hard-Disk Drive Sequence Device              : Integrated RAID Controller 1: PERC H710 Mini(bus 03 dev 00)
+UEFI Boot Sequence Device                         : Embedded SATA Port Optical Drive E: TSSTcorp DVD+/-RW SN-208FB              
+
+Slot Disablement                                  
+------------------------------------------        
+Slot 1                                            : Enabled
+Slot 2                                            : Enabled
+Slot 3                                            : Enabled
+Slot 4                                            : Enabled
+Slot 5                                            : Enabled
+Slot 6                                            : Enabled
+Slot 7                                            : Enabled

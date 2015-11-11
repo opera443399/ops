@@ -1,0 +1,359 @@
+日期：2015/11/3 - 2015/11/4
+主机：admin-node, node1, node2, node3, client1
+目的：初探ceph-熟悉安装配置和基本概念
+操作内容：
+一、基础环境
+1、硬件配置需求
+官网资料
+【最低配置】
+Process	Criteria	Minimum Recommended
+ceph-osd	Processor	
+            1x 64-bit AMD-64
+            1x 32-bit ARM dual-core or better
+            1x i386 dual-core
+            RAM	~1GB for 1TB of storage per daemon
+            Volume Storage	1x storage drive per daemon
+            Journal	1x SSD partition per daemon (optional)
+            Network	2x 1GB Ethernet NICs
+            
+ceph-mon	Processor	
+            1x 64-bit AMD-64/i386
+            1x 32-bit ARM dual-core or better
+            1x i386 dual-core
+            RAM	1 GB per daemon
+            Disk Space	10 GB per daemon
+            Network	2x 1GB Ethernet NICs
+            
+ceph-mds	Processor	
+            1x 64-bit AMD-64 quad-core
+            1x 32-bit ARM quad-core
+            1x i386 quad-core
+            RAM	1 GB minimum per daemon
+            Disk Space	1 MB per daemon
+            Network	2x 1GB Ethernet NICs
+            
+【生成环境配置】
+DELL EXAMPLE
+
+A recent (2012) Ceph cluster project is using two fairly robust hardware configurations for Ceph OSDs, and a lighter configuration for monitors.
+
+Configuration	Criteria	Minimum Recommended
+Dell PE R510	Processor	2x 64-bit quad-core Xeon CPUs
+                RAM	16 GB
+                Volume Storage	8x 2TB drives. 1 OS, 7 Storage
+                Client Network	2x 1GB Ethernet NICs
+                OSD Network	2x 1GB Ethernet NICs
+                Mgmt. Network	2x 1GB Ethernet NICs
+                
+Dell PE R515	Processor	1x hex-core Opteron CPU
+                RAM	16 GB
+                Volume Storage	12x 3TB drives. Storage
+                OS Storage	1x 500GB drive. Operating System.
+                Client Network	2x 1GB Ethernet NICs
+                OSD Network	2x 1GB Ethernet NICs
+                Mgmt. Network	2x 1GB Ethernet NICs
+
+            
+2、资源分配
+admin-node          -> node1
+(ceph-deploy)           (osd.0, mon.node1, mds.node1)
+                    -> node2
+                        (osd.1, mon.node2)
+                    -> node3
+                        (osd.2, mon.node3)
+
+CPU: 1
+RAM: 2G
+Disk: 20G/OS, 1T/DATA
+Netif: 2
+
+3、配置node的系统
+1）OS：centos65x64
+2）服务
+已配置：ntp, openssh-server
+# yum -y install ntp openssh-server
+已禁用：SELinux
+# setenforce 0 && sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+
+3）hostname 和 hosts
+node的名称可以在hosts做映射，也可以配置一个简单的dns服务，但要注意和hostname一致，原因后文有述。
+我们配置一下hosts
+# cat /etc/hosts
+192.168.20.31 admin-node
+192.168.20.32 node1
+192.168.20.41 node2
+192.168.20.42 node3
+
+错误的配置示例：
+hostname=vm_node1
+hosts中是：
+192.168.20.32 node1
+则后续会遇到错误：
+[node1][INFO  ] Running command: sudo /sbin/service ceph -c /etc/ceph/ceph.conf start mon.vm_node1
+[node1][INFO  ] Running command: sudo ceph --cluster=ceph --admin-daemon /var/run/ceph/ceph-mon.node1.asok mon_status
+[node1][ERROR ] admin_socket: exception getting command descriptions: [Errno 2] No such file or directory
+
+如上所述，很明显，，第1条命令在启动ceph服务时，使用了hostname，而第2条命令使用的是节点的名称，这两者并不一致。
+
+
+
+4）创建用户
+先生成密码：
+[root@admin-node ~]# openssl passwd -1 -salt 'cephuser'
+Password: 
+$1$cephuser$s.kBq3jpmu6NwZhSaIYW11
+
+在每个node上重复操作：
+[root@admin-node ~]# useradd -p '$1$cephuser$s.kBq3jpmu6NwZhSaIYW11'  cephuser
+
+5）配置sudo
+[root@admin-node ~]# echo "cephuser ALL = (root) NOPASSWD:ALL" |tee /etc/sudoers.d/cephuser
+[root@admin-node ~]# chmod 0440 /etc/sudoers.d/cephuser
+
+编辑：
+# visudo
+找到这一行：
+Defaults    requiretty
+替换成：
+Defaults:ceph !requiretty
+
+
+6）生成ssh免密码登录（passphrase 为空）
+[root@admin-node ~]# ssh-keygen -b 2048 -C 'admin-node'
+[root@admin-node ~]# ssh-copy-id cephuser@admin-node
+[root@admin-node ~]# ssh-copy-id cephuser@node1
+[root@admin-node ~]# ssh-copy-id cephuser@node2
+[root@admin-node ~]# ssh-copy-id cephuser@node3
+测试：
+[root@admin-node ~]# ssh cephuser@node3
+[cephuser@node3 ~]$ exit
+logout
+Connection to node3 closed.
+
+配置config，这样一来，登录ssh时，将不用指定用户名：
+[root@admin-node ~]# vim ~/.ssh/config
+Host admin-node
+   Hostname admin-node
+   User cephuser
+Host node1
+   Hostname node1
+   User cephuser
+Host node2
+   Hostname node2
+   User cephuser
+Host node3
+   Hostname node3
+   User cephuser
+
+测试：
+[root@admin-node ~]# ssh node2   
+[cephuser@node2 ~]$ exit
+logout
+Connection to node2 closed.
+每个node都先登录一次。
+
+7） 防火墙
+port 6789 for Ceph Monitors and ports 6800:7300 for Ceph OSDs
+这里简化一下，在每个node上重复操作：
+[root@admin-node ~]# sed -i.backup '/-A INPUT -i lo -j ACCEPT/a\## Ceph related \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 6789 -j ACCEPT \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 6800:7300 -j ACCEPT \
+# \
+' /etc/sysconfig/iptables
+[root@admin-node ~]# service iptables reload
+
+注意，，防火墙调整不当，会导致后续做健康检查时出现 HEALTH_WARN
+
+
+二、Ceph Storage Cluster
+Ceph Monitor：1个
+Ceph OSD Daemons：2个
+
+1、创建集群，指定Ceph Monitor节点
+更新yum源，安装部署工具
+[root@admin-node ~]# yum install ceph-deploy
+
+在 admin-node 创建目录用于存放配置和keys，后续的命令将会生成一些文件。
+[root@admin-node ~]# mkdir my-cluster && cd my-cluster
+[root@admin-node my-cluster]# ceph-deploy new node1 node2 node3
+（new -h 可以查看帮助，，此处是指定mon节点为：node1 node2 node3）
+生成了3个文件：
+[root@admin-node my-cluster]# ls
+ceph.conf  ceph.log  ceph.mon.keyring
+
+调整配置：
+[root@admin-node my-cluster]# cat ceph.conf 
+[global]
+fsid = b04a567c-67cb-4d3c-94ed-202aa490d5c4
+mon_initial_members = node1, node2, node3
+mon_host = 192.168.20.32,192.168.20.41,192.168.20.42
+auth_cluster_required = cephx
+auth_service_required = cephx
+auth_client_required = cephx
+filestore_xattr_use_omap = true
+
+2、安装ceph软件包
+1）【注】：ceph-deploy在安装node的过程中，会检查和下载epel和ceph的repo文件，如果是使用企业内部的yum源，要格外注意这个细节。
+可以先在admin-node这台主机上测试一下ceph-deploy在这个环节执行过程。我们可以发现，在这个过程中，执行的命令如下：
+[root@admin-node my-cluster]# cat /etc/yum.repos.d/ceph.log  |grep command
+[admin-node][INFO  ] Running command: sudo yum clean all
+[admin-node][INFO  ] Running command: sudo yum -y install epel-release
+[admin-node][INFO  ] Running command: sudo yum -y install yum-plugin-priorities
+[admin-node][INFO  ] Running command: sudo rpm --import https://git.ceph.com/?p=ceph.git;a=blob_plain;f=keys/release.asc
+[admin-node][INFO  ] Running command: sudo rpm -Uvh --replacepkgs http://ceph.com/rpm-hammer/el6/noarch/ceph-release-1-0.el6.noarch.rpm
+[admin-node][INFO  ] Running command: sudo yum -y install ceph ceph-radosgw
+[admin-node][INFO  ] Running command: sudo ceph --version
+
+根据生成的repo文件（epel.repo, ceph.repo），我们在做本次操作前，可以提前缓存ceph的源到本地yum源。
+
+2）部署节点
+先安装一个node试试：
+[root@admin-node my-cluster]# ceph-deploy install node1
+也可以指定多个node来安装：
+[root@admin-node my-cluster]# ceph-deploy install node1 node2 node3
+
+如果遇到异常错误需要重新做：
+-----------------------------
+ceph-deploy forgetkeys
+ceph-deploy purge node1
+还要清理node上的ceph相关文件：
+[root@node1 ~]# rm /var/lib/ceph -fr
+
+要注意，上述操作也会移除ceph.repo，这将影响使用本地的yum源的场景，此时需要重新配置本地的yum源中的ceph.repo文件：
+[root@node1 ~]# wget http://mirrors.office.test/ceph/ceph.repo -O /etc/yum.repos.d/ceph.repo
+
+如果有必要，，推倒重来，删除my-cluster下的所有文件。
+[root@admin-node my-cluster]# rm * -f
+然后再次执行install的操作。
+ceph-deploy install node1
+-----------------------------
+
+
+
+3、mon
+[root@admin-node my-cluster]# ceph-deploy mon create-initial
+
+初始化mon后，可能会报错：rgw相关的文件无法找到，原因是：
+bootstrap-rgw keyring 只有在Hammer 或者更高的版本才提供。
+
+{cluster-name}.client.admin.keyring
+{cluster-name}.bootstrap-osd.keyring
+{cluster-name}.bootstrap-mds.keyring
+{cluster-name}.bootstrap-rgw.keyring（没有收集这个kering）
+
+[root@admin-node my-cluster]# ls
+ceph.bootstrap-mds.keyring  ceph.bootstrap-osd.keyring  ceph.client.admin.keyring  ceph.conf  ceph.log  ceph.mon.keyring
+
+4、osd
+[root@admin-node my-cluster]# ceph-deploy osd prepare node1:/data/osd node2:/data/osd node3:/data/osd
+[root@admin-node my-cluster]# ceph-deploy osd activate node1:/data/osd node2:/data/osd node3:/data/osd
+[root@admin-node my-cluster]# ceph -s
+    cluster b04a567c-67cb-4d3c-94ed-202aa490d5c4
+     health HEALTH_OK
+     monmap e2: 3 mons at {node1=192.168.20.32:6789/0,node2=192.168.20.41:6789/0,node3=192.168.20.42:6789/0}, election epoch 8, quorum 0,1,2 node1,node2,node3
+     osdmap e13: 3 osds: 3 up, 3 in
+      pgmap v20: 64 pgs, 1 pools, 0 bytes data, 0 objects
+            15458 MB used, 3055 GB / 3070 GB avail
+                  64 active+clean
+                  
+5、admin
+拷贝配置文件和keys到所有节点，这样执行ceph命令时将不用显示的指定。
+[root@admin-node my-cluster]# ceph-deploy admin admin-node node1 node2 node3
+
+
+6、mds：
+[root@admin-node my-cluster]# ceph-deploy mds create node1
+创建pool
+[root@admin-node my-cluster]# ceph osd pool create data 192 192
+pool 'data' created
+[root@admin-node my-cluster]# ceph osd pool create metadata 192 192
+pool 'metadata' created
+[root@admin-node my-cluster]# ceph fs new cephfs metadata data
+new fs with metadata pool 2 and data pool 1
+[root@admin-node my-cluster]# ceph fs ls
+name: cephfs, metadata pool: metadata, data pools: [data ]
+[root@admin-node my-cluster]# ceph mds stat
+e5: 1/1/1 up {0=node1=up:active}
+
+
+7、其他命令
+ceph -s
+ceph osd tree
+ceph mds stat
+ceph quorum_status --format json-pretty
+
+
+三、问题
+1、配置后查看ceph集群的状态，总是显示：“HEALTH_WARN clock skew detected on mon.node2, mon.node3”
+调整ntp服务器的配置，admin-node配置为ntp服务器端，所有节点从admin-node定时同步时间后，查看状态，依然无效。
+[root@admin-node ~]# ceph health detail
+HEALTH_WARN clock skew detected on mon.node2, mon.node3
+mon.node2 addr 192.168.20.41:6789/0 clock skew 2.33112s > max 0.05s (latency 0.00191309s)
+mon.node3 addr 192.168.20.42:6789/0 clock skew 2.34557s > max 0.05s (latency 0.00459134s)
+
+等待一段时间后，才发现延迟在减低
+[root@admin-node ~]# ceph health detail
+HEALTH_WARN clock skew detected on mon.node2, mon.node3
+mon.node2 addr 192.168.20.41:6789/0 clock skew 0.141779s > max 0.05s (latency 0.0016405s)
+mon.node3 addr 192.168.20.42:6789/0 clock skew 0.142604s > max 0.05s (latency 0.00181181s)
+最终：
+[root@admin-node ~]# ceph health detail
+HEALTH_OK
+
+
+2、客户端如何使用fuse来挂载ceph
+至少有一个元数据服务器才能使用 CephFS，因此要先创建mds
+ceph-fuse自动从/etc/ceph目录下读取配置文件和key，因此可以提前从admin-node同步过来。
+[root@admin-node ~]# scp /etc/ceph/ceph.* ip_of_test11:/etc/ceph/
+
+客户端操作：
+[root@test11 ~]# mkdir /mnt/ceph-test
+[root@test11 ~]# ceph-fuse /mnt/ceph-test/
+2015-11-04 14:13:09.844650 7fd2b7a62760 -1 init, newargv = 0x35d7820 newargc=11
+ceph-fuse[4307]: starting ceph client
+ceph-fuse[4307]: starting fuse
+[root@test11 ceph]# df -h /mnt/ceph-test
+Filesystem      Size  Used Avail Use% Mounted on
+ceph-fuse       3.0T   16G  3.0T   1% /mnt/ceph-test
+
+
+3、使用块存储需要升级centos65的内核为3.x的版本。在不变更现有环境的前提下，只能考虑使用fuse挂载
+【方法1：从官网下载编译】
+tar -xf linux-3.x.xx.tar.xz
+cd linux-3.x.xx
+make mrproper       # 清理旧版本文件
+make menuconfig     # 设置菜单，选择要编译进内核的模块，例如ceph相关
+make all -j 8
+make modules_install
+make install -j 8
+
+【方法2：安装编译好的内核】
+参考：http://elrepo.org/tiki/tiki-index.php
+rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
+rpm -Uvh http://www.elrepo.org/elrepo-release-6-6.el6.elrepo.noarch.rpm
+## kernel-lt 是longtime，kernel-ml是mainline
+yum --disablerepo=\* --enablerepo=elrepo-kernel install kernel-lt
+
+
+
+
+
+
+ZYXW、参考
+1、官网doc
+http://ceph.com/
+http://docs.ceph.com/docs/master/start/
+http://docs.ceph.com/docs/master/start/quick-start-preflight/
+http://docs.ceph.com/docs/master/start/quick-ceph-deploy/
+http://docs.ceph.com/docs/master/cephfs/createfs/
+http://docs.ceph.com/docs/master/cephfs/fuse/
+http://docs.ceph.com/docs/master/start/os-recommendations/
+
+2、其他作者
+http://noops.me/?p=1098
+
+
+
+
+
+

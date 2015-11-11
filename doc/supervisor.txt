@@ -1,0 +1,31 @@
+supervisor
+
+安装
+[root@www download]# wget https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py -O - | python
+[root@www download]# easy_install supervisor
+[root@www download]# echo_supervisord_conf > /etc/supervisord.conf
+
+
+启动supervisord服务：
+/usr/bin/supervisord -c /etc/supervisord.conf
+
+并增加到开机启动/etc/rc.local中
+
+
+配置supervisord.conf：
+
+[root@test11 ~]# tail -n 5  /etc/supervisord.conf  
+[program:progname]
+command=/usr/bin/php  xxx.php
+process_name=%(program_name)s_%(process_num)02d
+numprocs=5
+user=daemon
+
+重新加载supervisord服务：
+supervisorctl reload
+
+
+调整user1增加sudo的权限：
+user1 ALL=NOPASSWD: /usr/bin/supervisorctl
+然后通过这样的方式来管理：
+$ sudo supervisorctl status|stop|start|restart

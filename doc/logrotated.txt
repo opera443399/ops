@@ -1,0 +1,30 @@
+Linux系统自带的日志滚动压缩服务logrotated
+
+举例说明：
+
+cat <<_CONF > /etc/logrotate.d/haproxy
+/var/log/haproxy/haproxy.log
+{
+compress
+copytruncate
+daily
+dateext
+missingok
+notifempty
+rotate 2
+}
+_CONF
+
+
+上述将增加一个logrotated的配置文件/etc/logrotate.d/haproxy
+然后使用logrotate的默认设置来做日志滚动压缩：
+/etc/logrotate.conf 
+
+
+也可以手动调用：
+假设我们的配置文件放在：
+/data/log/logrotate.d/haproxy
+
+然后，在计划任务中配置：
+59 23 * * * /usr/sbin/logrotate -f /data/log/logrotate.d/haproxy
+

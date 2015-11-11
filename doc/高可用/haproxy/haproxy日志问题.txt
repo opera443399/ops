@@ -1,0 +1,25 @@
+因为centos用的是rsyslog，需要调整配置：
+搜索端口：514，找到UDP相关的内容，取消注释，如下：
+[root@test240 haproxy]# vi /etc/rsyslog.conf
+-------
+# Provides UDP syslog reception
+$ModLoad imudp
+$UDPServerRun 514
+
+增加一行：
+local0.* /home/haproxy/logs/haproxy.log
+-------
+
+
+
+
+或者增加一个配置。
+
+[root@test240 haproxy]# cat /etc/rsyslog.d/haproxy.rsyslog.conf
+# Enable UDP port 514 to listen to incoming log messages from haproxy
+$ModLoad imudp
+$UDPServerRun 514 
+local0.=info -/home/haproxy/logs/haproxy.log
+local0.notice -/home/haproxy/logs/haproxy.admin
+# don't log anywhere else
+local0.* ~

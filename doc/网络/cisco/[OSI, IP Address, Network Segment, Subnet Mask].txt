@@ -1,0 +1,192 @@
+### Concept ###
+----------------------
+
+from 20110712 to 20110716
+
+1.Network segment
+{
+router;
+switch;
+bridge;
+}
+
+
+2.LAN blocks
+{
+broadcast domain;
+broadcast  storm;
+multicast;
+low brandwidth;
+}
+
+
+3.benefits of the router
+{
+! forward broadcast;
+filter msgs on layer-3(Network layer);
+}
+
+
+4. benefits of the switch
+{
+enhance LAN performance;
+supply more blandwidth;
+}
+
+
+5. collision domain
+{
+data packets can collide with one another when being sent on a shared medium,in particular, when using early versions of the Ethernet.
+A network collision occurs when more than one device attempts to send a packet on a network segment at the same time.
+}
+
+
+6. bridge
+{
+A network bridge connects mulitple network segments at the layer-2(Data Link layer) of the OSI model.
+A device that behaves according to the IEEE 802.1D standard.
+A bridge and a switch are very much alike.a switch being a bridge with numerous ports.
+} 
+
+
+7. OSI(Open Systems Interconnection) reference model
+{
+Description of OSI layers:
+---Layer 7: Application Layer
+It contains all protocols and methods that fall into the realm of process-to process communications across an IP network. Application Layer methods use the underlying Transport Layer protocols to establish host-to-host connections. 
+
+---Layer 6: Presentation Layer
+It serves as the data translator for the network. It is sometimes called the syntax layer. It is lowest layer at which application programmers consider data structure and presentataion, instead of simply sending data in form of datagrams or packets between hosts. This layer deals with issus of string representation.
+    The idea is that the Application Layer should be able to point at the data to be moved, and the Presentation Layer will deal with the rest. 
+    Serialization of complex data structures into flat byte-strings; 
+    #Services#: Encryption and Decryption; Compression; Data conversion Character code translation.
+    Within the service layering semantics of the OSI network architecture, the Presentation Layer responds to service requests from the Application Layer and issues service requests to the Session Layer.
+
+---Layer 5: Session Layer
+It provides the mechanism for opening, closing and managing a session between end-user application processes. Communication sessions consist of requests and responses that occur between applications. Session Layer services are commonly used in application environments that make use of remote procedure calls(RPCs).
+    #Services#: Authentication; Permissions; Session restoration(checkpointing and recovery).
+
+---Layer 4: Transport Layer
+It provides end-to-end communication services for applications within a layered architecture of network components and protocols.
+    #Services#: Connection-oriented communication; Byte orientation; Same order delivery; Reliability; Flow control; Congestion avoidance; Multiplexing.
+
+---Layer 3: Network Layer
+It is responsible for routing packets delivery including routing through intermediate routers, where as the Data Link Layer is responsible for Media Access Control, Flow Control and Error Checking. It provides the functional and procedural means of transferring variable length data sequences from a source to a destination host via one or more networks while maintaining the quality of service functions.
+    Functions of the Network Layer include: Connection model: connectionless communication; Host addressing; Message forwording.
+
+---Layer 2: Data Link Layer
+It is the protocol layer which transfers data between adjacent network nodes in a wide area network or between nodes on the same local area network segment. It provides the functional and procedural means to transfer data between network entities and might provide the means to detect and possibly correct errors that may occur in the Physical Layer. 
+
+------2.1 WAN Protocol architecture
+The uppermost sublayer is Logical Link Control (LLC). This sublayer multiplexes protocols running stop the Data Link Layer, and optionally provides flow control, acknowledgment, and error notification. The LLC provides addressing and control of the data link. It specifies which mechanisms are to be used for addressing stations over the transmission medium and for controlling the data exchanged between the originator and recipient machines.
+
+------2.2 IEEE 802 LAN architecture
+The sublayer below it is Media Access Control (MAC). Sometimes this refers to the sublayer that determines who is allowed to access the media at any one time (usually CSMA/CD). Other times it refers to a frame structure with MAC addresses inside.
+        There are generally two forms of media access control: distributed and centralized. Both of these may be compared to communication between people. In a network made up of people speaking, i.e. a conversation, we look for clues from our fellow talkers to see if any of them appear to be about to speak. If two people speak at the same time, they will back off and begin a long and elaborate game of saying "no, you first".
+        The Media Access Control sublayer also determines where one frame of data ends and the next one starts -- frame synchronization. There are four means of frame synchronization: time based, character counting, byte stuffing and bit stuffing.
+    #Services#: Encapsulation of network layer data packets into frames; Frame synchronization.
+    #Services-LLC#: Error control(automatic repeat request, ARG); Flow control.
+    #Services-MAC#: Multiple access protocols; Physcical addressing; LAN switching; Data packet queueing; Store-and-forward switching; Qualit of Service(QoS) control; Virtual Lans(VLAN).
+
+---Layer 1: Physical Layer
+The Physical Layer consists of the basic hardware transmission technologies of a network. It is a fundamental layer underlying the logical data structures of the higher level functions in a network.The Physical Layer defines the means of transmitting raw bits rather than logical data packets over a physical link connecting network nodes. The bit stream may be grouped into code words or symbols and converted to a physical signal that is transmitted over a hardware transmission medium. The Physical Layer provides an electrical, mechanical, and procedural interface to the transmission medium. The shapes and properties of the electrical connectors, the frequencies to broadcast on, the modulation scheme to use and similar low-level parameters, are specified here.
+    #Services#: Bit-by-bit; Standardized interface....
+}
+
+
+8. IP Address
+{
+Bits->Decimal
+1 1 1 1 1 1 1 1
+128 64 32 16 8 4 2 1
+--------------------------------------------------
+Bits:   1-8,   9-16,   17-24,   25-32
+Class:
+A:(0-127)  0xxx xxxx  Host,   Host,   Host  
+B:(128-191) 10xx xxxx  Network,   Host,   Host   
+C:(192-223) 110x xxxx  Network,   Network,   Network  
+D:(224-239) 1110 xxxx  Multicast Group, Multicast Group, Multicast Group
+
+1. A: 10.0.0.0 - 10.255.255.255
+2. B: 172.16.0.0 - 172.31.255.255
+3. C: 192.168.0.0 - 192.168.255.255
+
+}
+
+
+9. Subnet Mask
+{
+i.e.
+
+
+IP: 192.168.10.0
+Mask: 255.255.255.192(/26)
+1. subnets = 2 * 2 = 4
+2. hosts = 2^6 - 2 = 62
+3. available subnet: block size = 256 - 192 = 64; [0, 64, 128, 192]
+4. broadcast address = nextsubnet - 1. [63, 127, 191, 255]
+5. range of the hosts: [192.168.10.1 ~ 192.168.10.62]; [192.168.10.65 ~ 192.168.10.126]; 192.168.10.129 ~ 192.168.10.190]; [192.168.10.193 ~ 192.168.10.254]
+
+需要针对一段IP地址：192.168.0.0-192.168.30.254
+子网（subnet）的block size = 32 = 256 - 224（子网掩码）
+子网掩码为：255.255.224.0 即 VLSM 的子网位 = /19
+111111111.11111111.11100000.000000000
+网络位3个1(2^3=8，合计8个网段)，其余全是主机位。网段如下
+0-31
+32-63
+64-95
+96-127
+128-159
+160-191
+192-223
+224-255
+
+
+
+host的ip范围：
+192.168.0.0/19  = 192.168.0.1  - 192.168.31.254
+192.168.32.0/19 = 192.168.32.1 - 192.168.63.254
+...
+
+}
+
+
+10. Unshielded Twisted Paired(UTP)
+{
+Purpose: This figure illustrates an unshielded twisted-pair RJ-45 connector.
+Emphasize: the RJ-45 has eight pins. Some are for tip (T) and some for ring(R).
+Pin Tip/Ring Pair1-4
+1 T2
+2 R2
+3 T3
+4 R1
+5 T1
+6 R3
+7 T4
+8 R4
+---
+Emphasize:  If you hold the two ends of an RJ-45 cable side by side, you'll see eight colored strips, or pins, at each end. 
+------>If the order of the colored pins is the same at each end, then the cable is straight through. 
+------>If the order of the colors is reversed at each end, then the cable is crossed over or rolled.
+------>Straight-thru Ethernet uses pins 1, 2, 3, and 6. Straight-thru cables are used for switch to router cabling, switch to PC or server cabling, or hub to PC or server cabling.  
+
+---
+straight: "X" <--> ""
+crossover: "" <--> "" or "X" <--> "X"
+This figure describes a simple way to determine whether one should use a crossover or straight thru cable.
+}
+
+
+11 RIP
+{
+distance vector: RIP IGRP
+link state: OSPF IS-IS
+hybird: EIGRP
+---
+distance: how far
+vector: in which direction
+convergence time: 
+rooting loops: 
+------>solution to solve it:
+------>split horizon; route poisoning; poison reverse; holddown timers; triggered updates; max-hop
+}

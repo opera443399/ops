@@ -1,0 +1,69 @@
+saltstack的探索-给zabbix客户端推送一个自定义的配置文件
+
+目的：使用zabbix监控指定的内容，例如某个进程是否存在，因此我们推送一个自定义的zabbix配置到指定的客户端，然后重启zabbix-agent服务。
+目录和脚本：
+[root@master zabbix]# ls
+agent.sls  bin  conf  sbin  template.sls
+[root@master zabbix]# cat conf/myapp_process.conf 
+UserParameter=myapp.process.get[*], ps -ef |grep "$1" |grep -v grep |wc -l
+UserParameter=myapp.process.getcpu[*], ps aux |grep "$1" |grep -v grep |awk '{print $$3}'
+
+[root@master zabbix]# cat template.sls 
+/etc/zabbix/zabbix_agentd.conf.d/myapp_process.conf:
+  file.managed:
+    - source: salt://zabbix/conf/myapp_process.conf
+    - mode: 755
+
+zabbix-agent-restart:
+  require:
+    - file: /etc/rc.d/init.d/zabbix-agent
+  cmd.run:
+    - name: service zabbix-agent restart
+
+    
+执行：
+[root@master zabbix]# salt -E 'test(2|4[0-9]|50).company.com' state.sls zabbix.template
+
+注：上述匹配的主机是test2,test40-test49,test50
+
+执行结果类似：
+test2.company.com:
+----------
+          ID: /etc/zabbix/zabbix_agentd.conf.d/myapp_process.conf
+    Function: file.managed
+      Result: True
+     Comment: File /etc/zabbix/zabbix_agentd.conf.d/myapp_process.conf updated
+     Started: 10:48:28.260497
+    Duration: 358.863 ms
+     Changes:   
+              ----------
+              diff:
+                  New file
+              mode:
+                  0755
+----------
+          ID: zabbix-agent-restart
+    Function: cmd.run
+        Name: service zabbix-agent restart
+      Result: True
+     Comment: Command "service zabbix-agent restart" run
+     Started: 10:48:28.619573
+    Duration: 211.772 ms
+     Changes:   
+              ----------
+              pid:
+                  15559
+              retcode:
+                  0
+              stderr:
+                  
+              stdout:
+                  Shutting down Zabbix agent: [  OK  ]
+                  Starting Zabbix agent: [  OK  ]
+
+Summary
+------------
+Succeeded: 2 (changed=2)
+Failed:    0
+------------
+Total states run:     2

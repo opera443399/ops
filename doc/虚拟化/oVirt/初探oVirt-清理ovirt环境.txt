@@ -1,0 +1,71 @@
+初探oVirt-清理ovirt环境
+2015/10/16 time 18:18
+
+1）清理ovirt相关服务（包括HA,engine）：
+停用并卸载ovirt,vdsm,libvirt相关的服务。
+yum remove *ovirt* *vdsm* *libvirt* *rhev* *glusterfs* *postgresql*
+rm /etc/ovirt* /etc/vdsm /etc/libvirt* /etc/pki/vdsm /etc/pki/libvirt /etc/pki/CA/cacert.pem*  /var/run/vdsm /var/run/libvirt /var/lib/vdsm /var/lib/libvirt /var/lib/ovirt* /var/lib/pgsql /var/log/*ovirt* /var/log/vdsm /var/log/libvirt
+
+如果需要清理vdsm管理的multipath：
+首先，查看列表：
+multipath -l
+清空：
+multipath -F
+移除包：
+yum remove *multipath*
+
+2）清理网卡和防火墙的配置
+【网卡】以em1桥接ovirtmgmt，em2+em3=bond1桥接br1为例
+# cd /etc/sysconfig/network-scripts/ 
+# brctl delbr \;vdsmdummy\; 
+# ifdown br1 \
+&& ifdown bond1 \
+&& echo -bond1 >/sys/class/net/bonding_masters \
+&& mv ifcfg-bond1 ifcfg-br1 /tmp/ \
+&& cat <<'_EOF' >ifcfg-em2 && ifup em2
+DEVICE=em2
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=10.60.200.86
+NETMASK=255.255.255.0
+_EOF
+
+# cat <<'_EOF' >ifcfg-em3
+DEVICE=em3
+TYPE=Ethernet
+ONBOOT=no
+NM_CONTROLLED=yes
+BOOTPROTO=dhcp
+_EOF
+
+
+# brctl delif ovirtmgmt em1 && ifdown ovirtmgmt && brctl delbr ovirtmgmt \
+&& cat <<'_EOF' >ifcfg-em1 && ifup em1 &&　mv *ovirt* /tmp/
+DEVICE=em1
+TYPE=Ethernet
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+IPADDR=10.50.200.86
+NETMASK=255.255.255.0
+GATEWAY=10.50.200.1
+_EOF
+
+
+
+【防火墙】
+# cat <<'_EOF' > /etc/sysconfig/iptables && service iptables reload
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT 
+-A INPUT -p icmp -j ACCEPT 
+-A INPUT -i lo -j ACCEPT 
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT 
+-A INPUT -j REJECT --reject-with icmp-host-prohibited 
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited 
+COMMIT
+_EOF

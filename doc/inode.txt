@@ -1,0 +1,39 @@
+inode占用异常问题
+
+
+报警：Free inodes on /var (percentage) (linuxhost:vfs.fs.inode[/var,pfree]): 20 %
+故障原因：/var/spool/postfix/maildrop 小文件太多造成inode索引使用完
+
+1）查看inode使用状况；
+# df -i
+/dev/sda3         985424 788777    196647   81% /var
+
+切换到目录/var，检查哪个目录占用inode多
+# find */ ! -type l |cut -d / -f 1 |uniq -c
+/var 目录下：   
+ 786362 spool
+
+ /var/spool 目录下：
+ 786338 postfix
+/
+var/spool/postfix 目录下： 
+ 786301 maildrop
+
+2）查看/var/spool/postfix/maildrop是否有非常多的小文件；
+清理小文件：
+# cd /var/spool/postfix/maildrop； ls | xargs rm -rf; 
+效果：
+/dev/sda3         985424   2495    982929    1% /var
+
+解决根本问题：
+# vim /etc/crontab
+将MAILTO=root替换成MAILTO=""
+# service crond restart
+
+如果cron有什么原因需要将命令结果发一封邮件，那么就要看MAILTO这部分了，如果给MAILTO赋值了，并且不是空，那么就会发给这个用户；如果是空，MAILTO=""，那就不发任何邮件。如果没有定义MAILTO，也就是说crontab里面没有写这一行，那么就发给这个crontab的主人。
+
+进一步检查发现是某用户的crontab执行的脚本失效，已清理。
+
+参考：
+http://www.ittang.com/2014/0115/13165.html
+http://linux.chinaunix.net/techdoc/system/2008/08/28/1028572.shtml

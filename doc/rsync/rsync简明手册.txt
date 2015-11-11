@@ -1,0 +1,273 @@
+rsync简明手册
+http://www.cnblogs.com/lykyl/archive/2013/04/10/rsync.html
+
+!rsync同步模式
+sync在进行同步或备份时，使用远程shell，或TCP连接远程daemon，有两种途经连接远程主机。
+shell模式，不需要使用配置文件，也不需要启动远端rsync。远程传输时一般使用ssh作为传输工具。
+daemon模式，但必须在一台机器上启动rsync。
+
+!rsync命令调用格式
+本地文件同步:  
+  rsync [OPTION...] SRC... [DEST]
+示例：
+rsync -a /home/back1 /home/back2
+
+基于远程shell同步:
+  拉取: rsync [OPTION...] [USER@]HOST:SRC... [DEST]
+  推送: rsync [OPTION...] SRC... [USER@]HOST:DEST
+
+基于rsync daemon同步:
+  拉取: rsync [OPTION...] [USER@]HOST::SRC... [DEST]
+        rsync [OPTION...] rsync://[USER@]HOST[:PORT]/SRC... [DEST]
+  推送: rsync [OPTION...] SRC... [USER@]HOST::DEST
+        rsync [OPTION...] SRC... rsync://[USER@]HOST[:PORT]/DEST
+
+如果只指定了源路径，而没有指定目的路径，rsync将会显示源路径中的文件列表。
+源路径的最后有斜杠，则只复制目录中的文件；没有斜杠，不但要复制目录中的文件，还要复制目录本身。
+目的路径的最后有没有斜杠，对传输没有影响。
+
+!常用参数说明
+-delete   刪除服务端不存在的客户端文件
+-password-file=FILE   指定本机rsyncd.secrets的位置
+-a, --archive        归档模式，表示以递归方式传输文件，并保持所有文件属性，等于-rlptgoD
+-v, --verbose        详细模式输出
+-q, --quiet        精简输出模式
+-c, --checksum        打开校验开关，强制对文件传输进行校验
+-r, --recursive        对子目录以递归模式处理
+-R, --relative        使用相对路径信息
+-b, --backup        创建备份，也就是对于目的已经存在有同样的文件名时，将老的文件重新命名为~filename。可以使用--suffix选项来指定不同的备份文件前缀。
+--backup-dir        将备份文件(如~filename)存放在在目录下。
+-suffix=SUFFIX定义备份文件前缀
+-u, --update        仅仅进行更新，也就是跳过所有已经存在于DST，并且文件时间晚于要备份的文件。(不覆盖更新的文件)
+-l, --links        保留软链结
+-L, --copy-links        想对待常规文件一样处理软链结
+--copy-unsafe-links        仅仅拷贝指向SRC路径目录树以外的链结
+--safe-links        忽略指向SRC路径目录树以外的链结
+-H, --hard-links        保留硬链结
+-p, --perms        保持文件权限
+-o, --owner        保持文件属主信息
+-g, --group        保持文件属组信息
+-D, --devices        保持设备文件信息
+-t, --times        保持文件时间信息
+-S, --sparse        对稀疏文件进行特殊处理以节省DST的空间
+-n, --dry-run        现实哪些文件将被传输
+-W, --whole-file        拷贝文件，不进行增量检测
+-x, --one-file-system        不要跨越文件系统边界
+-B, --block-size=SIZE        检验算法使用的块尺寸，默认是700字节
+-e, --rsh=COMMAND        指定使用rsh、ssh方式进行数据同步
+--rsync-path=PATH        指定远程服务器上的rsync命令所在路径信息
+-C, --cvs-exclude        使用和CVS一样的方法自动忽略文件，用来排除那些不希望传输的文件
+-f, --filter=RULE   从指定文件加载过滤规则。
+--existing        仅仅更新那些已经存在于DST的文件，而不备份那些新创建的文件
+--delete        删除那些DST中SRC没有的文件
+--delete-excluded        同样删除接收端那些被该选项指定排除的文件
+--delete-after        传输结束以后再删除
+--ignore-errors        及时出现IO错误也进行删除
+--max-delete=NUM        最多删除NUM个文件
+-P, --partial        保留那些因故没有完全传输的文件，以是加快随后的再次传输
+--force        强制删除目录，即使不为空
+--numeric-ids        不将数字的用户和组ID匹配为用户名和组名
+--timeout=TIME         IP超时时间，单位为秒
+-I, --ignore-times        不跳过那些有同样的时间和长度的文件
+--size-only        当决定是否要备份文件时，仅仅察看文件大小而不考虑文件时间
+--modify-window=NUM        决定文件是否时间相同时使用的时间戳窗口，默认为0
+-T --temp-dir=DIR        在DIR中创建临时文件
+--compare-dest=DIR        同样比较DIR中的文件来决定是否需要备份
+--progress        显示备份过程
+-z, --compress        对备份的文件在传输时进行压缩处理
+--exclude=PATTERN        指定排除不需要传输的文件模式
+--include=PATTERN        指定不排除而需要传输的文件模式
+--exclude-from=FILE        排除FILE中指定模式的文件
+--include-from=FILE        不排除FILE指定模式匹配的文件
+--version        打印版本信息
+--address        绑定到特定的地址
+--config=FILE        指定其他的配置文件，不使用默认的rsyncd.conf文件
+--port=PORT        指定其他的rsync服务端口
+--blocking-io        对远程shell使用阻塞IO
+-stats给出某些文件的传输状态
+--progress        在传输时现实传输过程
+--log-format=formAT        指定日志文件格式
+--password-file=FILE        从FILE中得到密码
+--bwlimit=KBPS        限制I/O带宽，KBytes per second
+-h, --help        显示帮助信息
+
+!rsyncd.conf配置,按“[]”设定的模块划分同步模块。每个模块中包含格式为name = value的参数定义。格式、参数说明及常用设置如下：
+#默认存放位置/etc/rsyncd.conf
+#全局参数
+#指定消息文本文件，当客户端连接成功时显示该文件的内容到客户端
+motd file=/usr/local/etc/rsyncdmsg
+
+#指定pid文件
+pid file=/var/run/rsyncd.pid
+
+#指定rsync监听端口，默认为873
+port=873
+
+#指定IP
+address=127.0.0.1
+
+#模块参数，部分模块参数也可在全局段定义，作用于全部模块。
+#模块名为sync_test
+[sync_test]
+
+#以nobody身份运行rsync server
+uid = nobody 
+
+#指定守护程序以root方式运行时模块应当替换的文件传入和传出的组名或组ID，配合"uid"选项。
+gid = nobody
+
+#同步模块备注
+comment = backup demo
+
+#需要做鏡像的目錄
+path = /opt/data
+
+#认证用戶名，未指定为允许匿名。多个用户名可用空格或逗号分隔。
+auth users = tester
+
+#密码文件存放路径
+secrets file = /usr/local/etc/rsyncd.secrets 
+
+#同步是否为只读，默认为yes
+read only = yes
+
+#同步是否为只写，默认为no
+write only=no
+
+#当客户请求可以使用的模块列表时，该模块是否应该被列出。如果设置该选项为false，可以创建隐藏的模块。默认为yes
+list=yes
+
+#不对指定类型文件压缩
+dont compress = *.gz *.tgz *.zip *.z *.rpm *.deb *.iso *.bz2 *.tbz *.jpg 
+
+#如果设为true，则在传输文件时chroot到path指定的目录下。需要rsync以root权限启动，并且不能备份指向外部的符号连接所指向的目录文件。默认值为true。
+use chroot=true
+
+#指定该模块的最大并发连接数量，默认值是0。
+max connections=0
+
+#指定支持max connections参数的锁文件。
+lock file=/var/run/rsyncd.lock
+
+#指定日志记录消息级别，默认为daemon。
+#常见的消息级别是：uth, authpriv, cron, daemon, ftp, kern, lpr, mail, news, security, sys-log, user, uucp, local0, local1, local2, local3,local4, local5, local6和local7。
+syslog facility=daemon
+
+#指定同步日志文件位置，不指定则将日志存入syslog
+log file=/var/log/rsyncd.log
+
+#如果为true，则密码文件只能被rsync服务器运行身份的用户访问，其他任何用户不可以访问该文件。默认值为true。
+strict modes=true
+ 
+# 只允许指定IP的客户端连接该模块
+# 多个IP或网段用空格隔开，“*”则表示所有，默认是允许所有主机连接。
+# 网段设定示例：192.168.0.0/24，也可以是192.168.0.0/255.255.255.0
+hosts allow＝*
+ 
+# 不允许指定IP的客户端连接该模块，默认不指定
+hosts deny
+
+# 是否忽略server上的IO错误，一般来说rsync在出现IO错误时将将跳过--delete操作，以防止因为暂时的资源不足或其它IO错误导致的严重问题。
+ignore errors=yes
+ 
+#忽略没有访问权限的文件。
+ignore nonreadable=yes
+
+#用ftp格式的文件来记录下载和上载操作在单独的日志中。
+transfer logging
+
+# 定制日志文件的字段。其格式是一个包含格式定义符的字符串
+# 主要定义符及含义：
+# %h远程主机名
+# %a远程IP地址
+# %l文件长度字符数
+# %p该次rsync会话的进程id
+# %o操作类型："send"或"recv"
+# %f文件名
+# %P模块路径
+# %m模块名
+# %t当前时间
+# %u认证的用户名(匿名时是null)
+# %b实际传输的字节数
+# %c当发送文件时，该字段记录该文件的校验码
+#默认log格式为："%o %h [%a] %m (%u) %f %l"，一般来说,在每行的头上会添加"%t [%p] "。
+log format=%o %h [%a] %m (%u) %f %l
+
+# 设定同步超时时间。单位为秒钟，0表示没有超时定义，这也是默认值。
+timeout＝100
+
+# 列表禁止客户端使用的命令参数列表。必须使用命令全名。
+refuse options
+
+# 用来指定多个由空格隔开的多个文件或目录(相对路径)，并将其添加到忽略列表中。一个模块只能指定一个exclude选项。
+# 但是需要注意的一点是该选项有一定的安全性问题，客户很有可能绕过exclude列表，如果希望确保特定的文件不能被访问，那就最好结合uid/gid选项一起使用。
+exclude
+
+# 指定一个包含exclude模式的定义的文件名，服务器从该文件中读取exclude列表定义。
+exclude from
+
+# 用来指定不排除符合要求的文件或目录。
+include
+ 
+# 指定一个包含include模式的定义的文件名，服务器从该文件中读取include列表定义。
+include from
+
+
+!rsyncd.secrets配置，格式为用户名:密码,每一行指定一个用户。
+示例：tester:123456
+rsyncd.secrets文件要将权限修改为600，否则同步时会报错。
+
+!rsync的过滤规则
+rsync按照命令行中filter规则顺序建立一个有序列表。filter规则的语法如下：
+rule [pattern_or_filename]
+rule,modfiers [pattern_or_filename]
+可以使用完整规则名称，也可以使用简写名称。如果使用简写形式，前面语法中rule和modefiers之间的逗号是可选的，紧跟着的pattern或filename（如果存在）之后必须有一个空格或下划线。
+如果规则是从文件中读取的，那么文件中的空白行将被忽略，以#开头的行被视为注释。
+
+可用rule如下：
+exclude, - ：排除模式
+include, + ：包含模式
+merge, . ：指定一个merge-file，供多个规则读取
+dir-merge, : ：指定一个per-directory merge-file
+hide, H ：指定一个模式，符合该模式的文件将被隐藏，以防止传输
+show, S ：不隐藏符合该模式的文件
+protect, p ：指定一个模式来防止文件被删除
+risk, R ：符合该模式的文件不会被保护
+clear, ! ：清除当前的include/exclude模式列表（该选项无参数）
+
+exclude和include两个rule支持modfiers,可用modfiers如下：
+/，指定include/exclude规则要匹配当前项目的绝对路径。例如，-/ /etc/passwd，每当从/etc目录中传输文件时，都要排除密码文件。
+!，告诉rsync，当模式匹配失败时，include/exclude规则才生效。如，-! */，它将匹配所有非目录文件。
+C，该修饰符指示，所有全局的CVS-exclude规则将插入到-C的地方。该修饰符后面无参数。
+s，指示规则作用于发送端。当规则对发送端生效时，它将阻止文件被传输。该修饰符通常用于那些在两端都生效的规则，除非指定了--delete-excluded；它将使规则默认只在发送端生效。另一种指定发送端includes/excludes的途经是使用hide(H)和show(S)。
+r，通常用来指示规则应用于接收端。当规则对接收方生效时，它将防止文件被删除。另一种指定接收端includes/excludes的方法是，使用protect(P)和risk(R)规则。
+
+每个--filter、--include、--exclude选项只接受一个rule/pattern，如果想添加多个rule/pattern，可以在命令行中的重复这些选项，或在--filter选项中使用merge-file语法，或使用--include-from/--exclude-from选项。
+--include和--exclude是--filter选项的简化版。
+daemon过滤链由”filter”、”include from”、”include”、”exclude from”、”exclude”参数组成，最先匹配的模式会生效。
+
+!rsnyc的匹配原则
+1 如果”/”出现在模式的开头，那么它标记了层级中的一个特殊位置，否则，它只是匹配路径的结束。
+因此，”/foo”将匹配”root of the transfer”中的foo（对全局规则而言），或者merge-file目录中的foo（对per-directory规则而言）。
+而未经限定的foo将匹配文件系统中任何位置的foo，因为算法是自上而下递归地生效，就像是路径的每个部分轮流变成文件或目录的结尾。
+例如foo/a/b/c，算法对该路径的解释将会是foo/a，foo/a/b，foo/a/b/c，算法依次把a、b、c作为文件或目录结尾。实际上，非锚定的”sub/foo”将会匹配层次结构中包含子目录sub的，任何位置的foo。
+
+2 如果”/”出现在模式的结尾，那么它只匹配目录，而不匹配常规文件、链接，或设备。
+
+3 rsync会检查模式中是否包含下列通配符，以确定做简单的字符匹配还是通配符匹配：
+* ：匹配路径的任何部分，遇到斜杠终止
+** ：匹配任何东西，包括斜杠
+? ：匹配任何单个字符，斜杠(“/”)除外
+[ ：匹配一个字符集，如[a-z]，或[[:alpha:]]
+
+4 在通配符模式中，反斜杠(“\”)对通配符进行转义，如果通配符不存在，它会被解释一个普通字符
+
+5 如果模式包含”/”（尾部的”/”不计算在内）或”**”，它将匹配完整路径，包括前导目录（即foo/a，既匹配a，也匹配前导的foo）；如果模式不包含”/”或”**”，它只匹配路径最后的部分。注意：算法是递归地应用，所以实际上“完整路径”可能是从起始目录向下，路径的任何一个部分。
+6 以dir_name/***结尾的模式，既匹配目录（就像指定了dir_name/），又匹配目录中的所有文件（就像指定了dir_name/**）。
+请注意：如果使用了-r选项（-a选项隐含了此选项），那么，自顶向下，路径的每一个部分都将被访问，所以，include/exclude模式会递归地对路径的每个组成部分生效（如，要包含/foo/bar/baz，就不能排除/foo和/foo/bar）。
+当rsync寻找要发送的文件时，exclude模式实际上是rsync在历遍目录时的一个短路。如果一个模式排除了特定的父目录，它就能使一个更深的include模式无法生效，因为rsync无法穿过层级中的排除部分而向下（匹配文件）。 也就是说，如果模式排除一个指定的父目录，那么它将无法继续匹配该父目录下的子目录或文件。
+
+
+rsync过滤及匹配单元重点参考了 rsync三：过滤规则 ，强烈建议大家认真学习一下。
+
+（lykyl原创，转载请注明出处）

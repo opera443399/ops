@@ -1,0 +1,15 @@
+$TTL 38400
+@	IN	SOA	pCdebian6.pc.world. nosmo.pc.world. (
+		20120326
+		10800
+		3600
+		604800
+		38400
+		)
+@	IN	NS	pCdebian6.pc.world.
+
+pc.world.	IN	A	192.168.1.234
+pCdebian6	IN	A	192.168.1.234
+www			IN	A	192.168.1.234
+ftp			IN	A	192.168.1.234
+phpmyadmin	IN	A	192.168.1.234

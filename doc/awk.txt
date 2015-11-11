@@ -1,0 +1,81 @@
+awk博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
+另，附上几个blog的文章，后续可能会更新这个列表：
+Linux awk命令详解http://blog.chinaunix.net/uid-25120309-id-3801250.html
+http://www.cnblogs.com/ggjucheng/archive/2013/01/13/2858470.html
+
+【AWK】
+去掉空格：
+awk '{ result=gensub(/ /,"",1);print result }'
+
+打印某一段内容：
+awk '{print $7}' access.log
+
+统计IP数量：
+awk '{cs[$1]+=1} END {for(c in cs) print cs[c], c}' access.log |sort -nr
+
+打印最后一列：
+awk '{print $8 " " $NF} ' access.log
+
+统计大小：
+awk '{print $10 "  " $1 "  " $7}' access.log|awk '{B+=$1} END {print B/1024/1024 " MB"}'
+
+统计TCP状态：
+netstat -n | awk '/^tcp/ {++state[$NF]} END {for(key in state) print key,"\t",state[key]}'
+
+统计日志中http状态码：
+zcat 2013-07-15-0000-2330_test.company.com.*|awk '{print $9}'|sort|uniq -c|sort -nr|more
+
+统计日志格式最后一行是源站IP的对应数据：
+zcat 2013-07-15-*|awk '$7~/test.company.com/{print $NF}'|sort|uniq -c|sort -nr|head
+
+统计日志中18点访问test.company.com，状态码为200的数据，打印响应时间和源站地址：
+zcat 2013-07-15-18*|grep test.company.com|awk '$9=="200"{print $(NF-7),$NF}'|sort|uniq -c|sort -nr|more
+
+统计延时超过100ms的请求：
+zcat 2013-07-15-18*|grep test.company.com|awk '$9=="0"&&$(NF-7)>100 {print $(NF-7)}'|sort|uniq -c|sort -nr|more
+
+NR：整个脚本当前已经读过的记录数，就是行号，从1开始。随着所读文件的数目，一直累加。
+FNR：同NR，不过是相对于当前在读的文件记录数。每开始读一个文件时，从1开始累加，相当于行号。读完一个文件后就会清0，新的文件又会从1开始。
+http://in.sdo.com/?p=1054
+
+统计http code为502的数量，IP
+假设有以下文件：
+cs.502 ： 统计了出现502的次数和IP，格式为“次数  IP”
+cs.502.ip ： 从cs.502中筛选出IP，格式为“IP”
+cs.502.country ： 利用qqwry做IP到地理位置的转换，格式为“IP  地理位置”
+现在的需求是，把cs.502和cs.502.country合并
+
+awk 'NR==FNR {a[$2]=$0;next} NR>FNR {print a[$1] " "$2}' cs.502 cs.502.country >cs.502.log
+
+计算http code 海外相对全部的占比是多少
+test.all 的内容是：
+46255 0
+967 504
+218 502
+
+test.oversea 的内容是：
+1171 0
+408 504
+205 502
+
+awk 'NR==FNR {a[$2]=$1;next} NR>FNR {printf "%.2f% ", $1/a[$2]*100;print $2}' test.all test.oversea 
+2.53% 0
+42.19% 504
+94.04% 502
+
+计算百分比：
+echo 55 4001638 |awk '{printf "%.4f%\n",$1/$2*100}'
+
+根据后3位来排序：
+1231234214329049203
+4239049230492039402
+3209402394023940234
+awk '{print $0,substr($0,length($0)-2,3)}' x.txt |sort -n -k 2 | awk '{print $1}'
+sed -r 's/(.*)((.){3})/\1|\2/' test.txt |sort -n -k 2 -t \| |sed 's/|//g'
+
+
+去重 
+awk '!a[$1]++' test.log
+
+展示df的简单版本，只显示磁盘分区和对应的used的值：
+df -h |sed '1d' |egrep -v ""/dev/shm"|"/dev/mapper"" |awk '{print $NF"\t"$(NF-1)}' |while read a b; do echo "$a used: $b"; done

@@ -1,0 +1,110 @@
+安装sphinx相关服务。
+参考：http://blog.csdn.net/e421083458/article/details/21529969
+http://www.coreseek.cn/products-install/install_on_bsd_linux/
+
+一、客户端安装
+
+1. pecl安装
+# pecl install sphinx
+
+
+2. 编译安装
+1）安装sphinx库
+安装libsphinxclient
+# wget http://www.coreseek.cn/uploads/csft/4.0/coreseek-4.1-beta.tar.gz
+# tar zxvf coreseek-4.1-beta.tar.gz && cd coreseek-4.1-beta
+# cd csft-4.1/api/libsphinxclient/
+
+# aclocal
+# libtoolize --force
+# automake --add-missing
+# autoconf
+# autoheader
+
+#./configure  --prefix=/usr/local/sphinxclient
+# make && make install
+# cd /home/download/
+
+2）安装php扩展
+# wget http://pecl.php.net/get/sphinx-1.3.2.tgz
+# tar zxvf sphinx-1.3.2.tgz && cd sphinx-1.3.2
+# phpize
+# ./configure --with-sphinx=/usr/local/sphinxclient
+# make && make install
+Installing shared extensions:     /usr/lib64/php/modules/
+
+修改php配置，增加扩展到：
+# cat /etc/php.d/sphinx.ini 
+; Enable sphinx extension module
+extension=sphinx.so
+
+# php -m |grep sphinx
+sphinx
+
+重启php-fpm服务：
+# service php-fpm reload
+Reloading php-fpm: [12-Nov-2014 09:15:32] NOTICE: configuration file /etc/php-fpm.conf test is successful
+
+
+
+二、安装sphinx软件coreseek服务端
+[root@test1 download]# yum install libtool expat expat-devel
+[root@test1 download]# wget http://www.coreseek.cn/uploads/csft/4.0/coreseek-4.1-beta.tar.gz
+[root@test1 download]# tar zxvf coreseek-4.1-beta.tar.gz && cd coreseek-4.1-beta
+
+1）安装mmesg3
+[root@test1 coreseek-4.1-beta]# cd mmseg-3.2.14/
+[root@test1 mmseg-3.2.14]# ./bootstrap
+
+[root@test1 mmseg-3.2.14]# aclocal
+[root@test1 mmseg-3.2.14]# libtoolize --force
+[root@test1 mmseg-3.2.14]# automake --add-missing
+[root@test1 mmseg-3.2.14]# autoconf  
+[root@test1 mmseg-3.2.14]# autoheader  
+
+[root@test1 mmseg-3.2.14]# ./configure --prefix=/usr/local/mmseg3
+[root@test1 mmseg-3.2.14]# make && make install
+
+2）安装coreseek
+[root@test1 mmseg-3.2.14]# cd ../csft-4.1/ && sh buildconf.sh
+[root@test1 csft-4.1]# ./configure --prefix=/usr/local/coreseek  --without-unixodbc --with-mmseg --with-mmseg-includes=/usr/local/mmseg3/include/mmseg/ --with-mmseg-libs=/usr/local/mmseg3/lib/ --with-mysql
+[root@test1 csft-4.1]# make && make install
+
+测试：
+[root@test1 csft-4.1]# cd ../testpack && cat var/test/test.xml    #此时应该正确显示中文
+生成：
+[root@test1 csft-4.1]# /usr/local/mmseg3/bin/mmseg -d /usr/local/mmseg3/etc var/test/test.xml
+[root@test1 testpack]# /usr/local/coreseek/bin/indexer -c etc/csft.conf --all
+Coreseek Fulltext 4.1 [ Sphinx 2.0.2-dev (r2922)]
+Copyright (c) 2007-2011,
+Beijing Choice Software Technologies Inc (http://www.coreseek.com)
+
+ using config file 'etc/csft.conf'...
+indexing index 'xml'...
+collected 3 docs, 0.0 MB
+sorted 0.0 Mhits, 100.0% done
+total 3 docs, 7585 bytes
+total 0.011 sec, 665350 bytes/sec, 263.15 docs/sec
+total 3 reads, 0.000 sec, 2.8 kb/call avg, 0.0 msec/call avg
+total 9 writes, 0.000 sec, 2.2 kb/call avg, 0.0 msec/call avg
+
+搜索：
+[root@test1 testpack]# /usr/local/coreseek/bin/search -c etc/csft.conf 网络搜索
+Coreseek Fulltext 4.1 [ Sphinx 2.0.2-dev (r2922)]
+Copyright (c) 2007-2011,
+Beijing Choice Software Technologies Inc (http://www.coreseek.com)
+
+ using config file 'etc/csft.conf'...
+index 'xml': query '网络搜索 ': returned 1 matches of 1 total in 0.000 sec
+
+displaying matches:
+1. document=1, weight=1590, published=Thu Apr  1 22:20:07 2010, author_id=1
+
+words:
+1. '网络': 1 documents, 1 hits
+2. '搜索': 2 documents, 5 hits
+
+
+
+
+

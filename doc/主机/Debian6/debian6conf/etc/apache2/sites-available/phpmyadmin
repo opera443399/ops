@@ -1,0 +1,9 @@
+<VirtualHost phpmyadmin.pc.world>
+	ServerName 192.168.1.234
+	ServerAdmin nosmo@pc.world
+
+	DocumentRoot /var/www/phpmyadmin/
+	ErrorLog "/var/log/apache2/phpmyadmin_error.log"
+	CustomLog "/var/log/apache2/phpmyadmin_access.log" common
+
+</VirtualHost>
