@@ -1,0 +1,79 @@
+﻿Xen4CentOS
+
+0,先加入salt管理
+	curl http://192.168.20.102/repo/salt.sh|bash
+	
+1,添加源和grub脚本
+	yum install centos-release-xen
+	rm -f /etc/yum.repos.d/CentOS-Xen.repo (因为xen-repo已经添加到runmit-repo了)
+	
+2,安装xen4
+	yum install xen -y
+	
+3,执行如下命令，自动修改grub.conf
+	/usr/bin/grub-bootxen.sh
+	完成后grub配置如下：
+		title CentOS (3.10.43-11.el6.centos.alt.x86_64)
+				root (hd0,0)
+				kernel /xen.gz dom0_mem=1024M,max:1024M loglvl=all guest_loglvl=all
+				module /vmlinuz-3.10.43-11.el6.centos.alt.x86_64 ro root=UUID=7ed7a168-1f6d-4cbb-900f-87f78369eb23 rd_NO_LUKS  KEYBOARDTYPE=pc KEYTABLE=us LANG=en_US.UTF-8 rd_NO_MD SYSFONT=latarcyrheb-sun16 rd_NO_LVM crashkernel=auto rhgb quiet rd_NO_DM rhgb quiet
+				module /initramfs-3.10.43-11.el6.centos.alt.x86_64.img
+			
+4,重启后检查安装情况
+	uname -a
+	xl info 
+	
+5,配置网桥
+	cat /etc/sysconfig/network-scripts/ifcfg-em1 
+		DEVICE="em1"
+		BOOTPROTO="static"
+		HWADDR="C8:1F:66:F3:85:84"
+		NM_CONTROLLED="yes"
+		ONBOOT="yes"
+		TYPE="Ethernet"
+		#IPADDR=192.168.20.85
+		#NETMASK=255.255.255.0
+		#GATEWAY=192.168.20.1
+		BRIDGE=xenbr1
+		
+	cat /etc/sysconfig/network-scripts/ifcfg-xenbr1 
+		DEVICE="xenbr1"
+		BOOTPROTO="static"
+		ONBOOT="yes"
+		TYPE="Rridge"
+		IPADDR=192.168.20.85
+		NETMASK=255.255.255.0
+		GATEWAY=192.168.20.1
+
+	cat /etc/sysconfig/network-scripts/ifcfg-em2
+		DEVICE=em2
+		HWADDR=C8:1F:66:F3:85:85
+		TYPE=Ethernet
+		UUID=70063893-d808-4a81-a36d-7fc012b3b2cb
+		BOOTPROTO="static"
+		NM_CONTROLLED="yes"
+		ONBOOT="yes"
+		TYPE="Ethernet"
+		#IPADDR=192.168.25.85
+		#NETMASK=255.255.255.0
+		#GATEWAY=192.168.25.1
+		BRIDGE=xenbr2
+
+	cat /etc/sysconfig/network-scripts/ifcfg-xenbr2
+		DEVICE="xenbr2"
+		TYPE="Bridge"
+		BOOTPROTO="static"
+		ONBOOT="yes"
+		IPADDR=192.168.25.85
+		NETMASK=255.255.255.0
+		#GATEWAY=192.168.25.1
+
+	然后重启网卡，就可以使用如下命令看到添加的网桥了
+		brctl show 
+		
+6,关闭xend服务
+	/etc/init.d/xend stop
+	chkconfig xend off
+	
+
+	
