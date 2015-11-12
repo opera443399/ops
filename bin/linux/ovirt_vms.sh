@@ -1,11 +1,11 @@
 #!/bin/bash
 # 
-# 2015/10/23
-# __version__='0.2.2'
+# 2015/11/12
+# __version__='0.2.3'
 # 批量生成一个 IP 段的 vm 信息，指出需要几个 vm 并创建和设置 vm 的主机名，root密码，网络配置。
 # requires: ovirt_randchars.py ovirt_api.sh
 
-s_vm_subnet='10.50.102'
+s_vm_subnet='10.50.200'
 s_vm_netmask='255.255.255.0'
 s_vm_gateway="${s_vm_subnet}.1"
 s_vm_dns='223.5.5.5'
@@ -26,12 +26,15 @@ function pool(){
 ## 生成指定网段 的 vm 数据
 function prepare() {
     local idx=1
+    local s_domain='company.com'
     echo 'STATE_CREATE,STATE_INIT,VM_NAME,PASSWORD VM_IP VM_NETMASK VM_GATEWAY VM_DNS' >${f_vms}
     pool
+
     for i in `cat ${f_ip_pool}`;
     do  
         local s_vm_ip="$i"
-        local s_vm_name="vm_$(echo ${s_vm_ip} |awk -F'.' '{print $3"_"$4}')"
+        ## 构造 vm 名称  vm_ip3_ip4.domain
+        local s_vm_name="vm_$(echo ${s_vm_ip} |awk -F'.' '{print $3"_"$4}').${s_domain}"
         local s_password=$(python ovirt_randchars.py)
         msg="CREATE_NO,INIT_NO,${s_vm_name},${s_password} ${s_vm_ip} ${s_vm_netmask} ${s_vm_gateway} ${s_vm_dns}"
         echo ${msg} >>${f_vms}
