@@ -1,4 +1,4 @@
-日期：2015/11/4 - 2015/11/11 time 16:15
+日期：2015/11/4 - 2015/11/12 time 11:13
 主机：e01, n33, n34
 目的：再探oVirt-配置一个2节点的ovirt环境
 操作内容：
@@ -281,8 +281,6 @@ gluster volume set ovirt-data diagnostics.count-fop-hits on
 gluster volume set ovirt-data diagnostics.latency-measurement on
 gluster volume set ovirt-data storage.owner-gid 36
 gluster volume set ovirt-data storage.owner-uid 36 
-gluster volume set ovirt-data cluster.server-quorum-type server
-gluster volume set ovirt-data cluster.quorum-type auto
 gluster volume set ovirt-data network.remote-dio enable
 gluster volume set ovirt-data cluster.eager-lock enable
 gluster volume set ovirt-data performance.stat-prefetch off
@@ -292,6 +290,11 @@ gluster volume set ovirt-data performance.quick-read off
 gluster volume set ovirt-data auth.allow \*
 gluster volume set ovirt-data user.cifs enable
 gluster volume set ovirt-data nfs.disable off
+
+注：ovirt在增加这种类型的存储时会提示：“为了数据的完整性，请确保服务器是用 Quorum（客户端和服务器 Quorum）配置的。”
+但我们这里只配置了2个节点的卷，当其中1个节点失效时，则集群失效，因此，建议此处不配置下述2个选项。
+gluster volume set ovirt-data cluster.server-quorum-type server
+gluster volume set ovirt-data cluster.quorum-type auto
 
 
 在 engine 页面选择菜单：“数据中心-Default-存储-新建域”
@@ -322,8 +325,6 @@ gluster volume set ovirt-export diagnostics.count-fop-hits on
 gluster volume set ovirt-export diagnostics.latency-measurement on
 gluster volume set ovirt-export storage.owner-gid 36
 gluster volume set ovirt-export storage.owner-uid 36 
-gluster volume set ovirt-export cluster.server-quorum-type server
-gluster volume set ovirt-export cluster.quorum-type auto
 gluster volume set ovirt-export network.remote-dio enable
 gluster volume set ovirt-export cluster.eager-lock enable
 gluster volume set ovirt-export performance.stat-prefetch off
@@ -333,6 +334,12 @@ gluster volume set ovirt-export performance.quick-read off
 gluster volume set ovirt-export auth.allow \*
 gluster volume set ovirt-export user.cifs enable
 gluster volume set ovirt-export nfs.disable off
+
+注：ovirt在增加这种类型的存储时会提示：“为了数据的完整性，请确保服务器是用 Quorum（客户端和服务器 Quorum）配置的。”
+但我们这里只配置了2个节点的卷，当其中1个节点失效时，则集群失效，因此，建议此处不配置下述2个选项。
+gluster volume set ovirt-export cluster.server-quorum-type server
+gluster volume set ovirt-export cluster.quorum-type auto
+
 
 在 engine 页面选择菜单：“数据中心-Default-存储-新建域”
 名称：export

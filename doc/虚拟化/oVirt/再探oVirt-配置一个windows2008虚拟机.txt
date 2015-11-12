@@ -62,7 +62,23 @@ dom_md/ images/
 
 
 
-
+XYXW、参考
+1、Windows_Virtio_Drivers
+https://fedoraproject.org/wiki/Windows_Virtio_Drivers
+ISO contents
+The .iso contains the following bits:
+NetKVM/: Virtio Network driver
+viostor/: Virtio Block driver
+vioscsi/: Virtio SCSI driver
+viorng/: Virtio RNG driver
+vioser/: Virtio serial driver
+Balloon/: Virtio Memory Balloon driver
+qxl/: QXL graphics driver for Windows 7 and earlier. (build virtio-win-0.1.103-1 and later)
+qxldod/: QXL graphics driver for Windows 8 and later. (build virtio-win-0.1.103-2 and later)
+pvpanic/: QEMU pvpanic device driver (build virtio-win-0.1.103-2 and later)
+guest-agent/: QEMU Guest Agent 32bit and 64bit MSI installers
+qemupciserial/: QEMU PCI serial device driver
+*.vfd: VFD floppy images for using during install of Windows XP
 
 
 
