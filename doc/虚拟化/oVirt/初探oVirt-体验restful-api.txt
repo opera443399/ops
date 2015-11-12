@@ -1,4 +1,4 @@
-日期：2015/10/20 - 2015/11/9 time 11:49
+日期：2015/10/20 - 2015/11/12 time 17:02
 主机：n86
 目的：初探oVirt-测试restful-api
 操作内容：
@@ -47,13 +47,181 @@
 
 
 
-二、脚本示例
+二、配置cloud-init
+1、调整主机名，重新生成ssh-keys，更改用户密码，设置网卡和dns
+curl -s --cacert ca.crt \
+-u "admin@internal:TestVM" \
+-H "Content-type: application/xml" \
+-d '
+<action>
+<use_cloud_init>true</use_cloud_init>
+<vm>
+    <initialization>
+        <cloud_init>
+            <host>
+                <address>vm01</address>
+            </host>
+            <regenerate_ssh_keys>true</regenerate_ssh_keys>
+            <users>
+                <user>
+                    <user_name>root</user_name>
+                    <password>ttt111</password>
+                </user>
+            </users>
+            <network_configuration>
+                <nics>
+                    <nic>
+                        <name>eth0</name>
+                        <boot_protocol>DHCP</boot_protocol>
+                        <on_boot>false</on_boot>
+                    </nic>
+                    <nic>
+                        <name>eth1</name>
+                        <boot_protocol>static</boot_protocol>
+                        <network>
+                            <ip address=\"10.0.200.101\" netmask=\"255.255.255.0\" gateway=\"10.0.200.1\" />
+                        </network>
+                        <on_boot>true</on_boot>
+                    </nic>
+                </nics>
+                <dns>
+                    <servers>
+                        <host>
+                            <address>223.5.5.5</address>
+                        </host>
+                    </servers>
+                </dns>
+            </network_configuration>
+        </cloud_init>
+    </initialization>
+</vm>
+</action>
+' https://e01.test/api/vms/387cd076-8dc5-4bdb-85c3-f13ddbc1455a/start -o 111.xml
+
+
+2、自定义的yaml文件
+1）一个简单的例子，演示如何执行自定义的命令，要注意引号的使用。   
+curl -s --cacert ca.crt \
+-u "admin@internal:TestVM" \
+-H "Content-type: application/xml" \
+-d '
+<action>
+<use_cloud_init>true</use_cloud_init>
+<vm>
+    <initialization>
+        <cloud_init>
+            <files>
+                <file>
+                    <name>aaa.txt</name>
+                    <content>
+runcmd:
+- echo "test1111" >>/tmp/aaa.txt
+                    </content>
+                    <type>plaintext</type>
+                </file>
+            </files>
+        </cloud_init>
+    </initialization>
+</vm>
+</action>
+' https://e01.test/api/vms/387cd076-8dc5-4bdb-85c3-f13ddbc1455a/start -o 111.xml
+
+
+验证加载内容：
+[root@n36 ~]# mount -o loop `ps -ef |grep --color vm_200_7 |grep payload |cut -d',' -f36 |cut -d'=' -f3` /mnt && cat /mnt/openstack/latest/* && umount /mnt/
+{
+  "launch_index" : "0",
+  "availability_zone" : "nova",
+  "uuid" : "8457ea78-eb13-4b2e-abfe-bbddff7e3b70",
+  "meta" : {
+    "essential" : "false",
+    "role" : "server",
+    "dsmode" : "local"
+  }
+}#cloud-config
+ssh_pwauth: true
+disable_root: 0
+output:
+  all: '>> /var/log/cloud-init-output.log'
+chpasswd:
+  expire: false
+runcmd:
+- 'sed -i ''/^datasource_list: /d'' /etc/cloud/cloud.cfg; echo ''datasource_list:
+  ["NoCloud", "ConfigDrive"]'' >> /etc/cloud/cloud.cfg'
+
+runcmd:
+- echo "test1111" >>/tmp/aaa.txt
+                    [root@n36 ~]# 
+查看目标机器是否执行命令：
+[root@vm_200_8 ~]# tail -n 1 /tmp/aaa.txt 
+test1111
+符合预期。
+
+                    
+2）复杂一点，下载并执行一个脚本
+curl -s --cacert ca.crt \
+-u "admin@internal:TestVM" \
+-H "Content-type: application/xml" \
+-d '
+<action>
+<use_cloud_init>true</use_cloud_init>
+<vm>
+    <initialization>
+        <cloud_init>
+            <files>
+                <file>
+                    <name>test.sh</name>
+                    <content>
+runcmd:
+- curl http://office.test/ovirt/test.sh |bash -
+                    </content>
+                    <type>plaintext</type>
+                </file>
+            </files>
+        </cloud_init>
+    </initialization>
+</vm>
+</action>
+' https://e01.test/api/vms/d07b3ef4-441b-4c1e-a872-194dc1887be9/start -o 111.xml
+
+验证加载内容：
+[root@n36 ~]# mount -o loop `ps -ef |grep --color vm_200_8 |grep -v grep |cut -d',' -f36 |cut -d'=' -f3` /mnt && cat /mnt/openstack/latest/* && umount /mnt 
+{
+  "launch_index" : "0",
+  "availability_zone" : "nova",
+  "uuid" : "226dfcd8-ff7e-466d-8133-f182999ee776",
+  "meta" : {
+    "essential" : "false",
+    "role" : "server",
+    "dsmode" : "local"
+  }
+}#cloud-config
+ssh_pwauth: true
+disable_root: 0
+output:
+  all: '>> /var/log/cloud-init-output.log'
+chpasswd:
+  expire: false
+runcmd:
+- 'sed -i ''/^datasource_list: /d'' /etc/cloud/cloud.cfg; echo ''datasource_list:
+  ["NoCloud", "ConfigDrive"]'' >> /etc/cloud/cloud.cfg'
+
+runcmd:
+- curl http://192.168.20.102/ovirt/test.sh |bash -
+                    [root@n36 ~]# 
+查看目标机器是否执行命令：
+[root@vm_200_8 ~]# tail -n 1 /tmp/test.sh.log 
+Thu Nov 12 08:02:25 CST 2015 [test]
+符合预期。
+
+
+三、脚本示例
 ----------------------------------------------------------------------------
 [root@n86 bin]# cat ovirt_api.sh 
 #!/bin/bash
 # 
-# 2015/11/9
-# __version__='0.2.5'
+# 2015/11/12
+# __version__='0.2.7'
 # for ovirt-engine-sdk-python-3.6.0
 
 #
@@ -244,6 +412,11 @@ function vm_runonce() {
                 <nics>
                     <nic>
                         <name>eth0</name>
+                        <boot_protocol>DHCP</boot_protocol>
+                        <on_boot>false</on_boot>
+                    </nic>
+                    <nic>
+                        <name>eth1</name>
                         <boot_protocol>static</boot_protocol>
                         <network>
                             <ip address=\"${s_vm_ip}\" netmask=\"${s_vm_netmask}\" gateway=\"${s_vm_gateway}\" />
@@ -259,6 +432,16 @@ function vm_runonce() {
                     </servers>
                 </dns>
             </network_configuration>
+            <files>
+                <file>
+                    <name>post-init</name>
+                    <content>
+runcmd:
+- curl http://office.test/ovirt/test.sh |bash -
+                    </content>
+                    <type>plaintext</type>
+                </file>
+            </files>
         </cloud_init>
     </initialization>
 </vm>
@@ -355,7 +538,7 @@ case ${s_action} in
         vm_${s_action} ${s_vm_name}
         ;;
     create)
-        vm_create_from_tpl ${s_vm_name} 'tpl-s1' 'Host-Only'
+        vm_create_from_tpl ${s_vm_name} 'tpl-m1' 'host-only'
         vm_state ${s_vm_name}
         ;;
     init)
