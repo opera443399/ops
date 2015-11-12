@@ -1,7 +1,7 @@
 #!/bin/bash
 # 
-# 2015/11/9
-# __version__='0.2.5'
+# 2015/11/12
+# __version__='0.2.6'
 # for ovirt-engine-sdk-python-3.6.0
 
 #
@@ -192,6 +192,11 @@ function vm_runonce() {
                 <nics>
                     <nic>
                         <name>eth0</name>
+                        <boot_protocol>DHCP</boot_protocol>
+                        <on_boot>false</on_boot>
+                    </nic>
+                    <nic>
+                        <name>eth1</name>
                         <boot_protocol>static</boot_protocol>
                         <network>
                             <ip address=\"${s_vm_ip}\" netmask=\"${s_vm_netmask}\" gateway=\"${s_vm_gateway}\" />
@@ -303,7 +308,7 @@ case ${s_action} in
         vm_${s_action} ${s_vm_name}
         ;;
     create)
-        vm_create_from_tpl ${s_vm_name} 'tpl-s1' 'Host-Only'
+        vm_create_from_tpl ${s_vm_name} 'tpl-m1' 'host-only'
         vm_state ${s_vm_name}
         ;;
     init)
