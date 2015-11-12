@@ -1,7 +1,7 @@
 #!/bin/bash
 # 
 # 2015/11/12
-# __version__='0.2.6'
+# __version__='0.2.7'
 # for ovirt-engine-sdk-python-3.6.0
 
 #
@@ -212,6 +212,16 @@ function vm_runonce() {
                     </servers>
                 </dns>
             </network_configuration>
+            <files>
+                <file>
+                    <name>post-init</name>
+                    <content>
+runcmd:
+- curl http://office.test/ovirt/test.sh |bash -
+                    </content>
+                    <type>plaintext</type>
+                </file>
+            </files>
         </cloud_init>
     </initialization>
 </vm>
