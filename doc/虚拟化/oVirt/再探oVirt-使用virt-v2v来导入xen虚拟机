@@ -1,0 +1,108 @@
+日期：2015/11/12 - 2015/11/13 time 13:56
+主机：n35
+目的：再探oVirt-使用virt-v2v来导入xen虚拟机
+操作内容：
+一、资源
+xen server: n35.test(vm31, vm32)
+vm的配置：
+2个网卡：分别桥接到xenbr1，xenbr2
+2个磁盘：1个是系统分区，1个是swap分区，且磁盘是直接使用的lvm卷
+
+二、将通过xl管理的vm转换成virsh来管理
+1、导出配置
+[root@n35 data]# virsh domxml-from-native xen-xm /etc/xen/sz-local-vm31.cfg  >sz-local-vm31.xml
+[root@n35 data]# virsh define sz-local-vm31.xml 
+
+2、停止xl管理的xen
+[root@n35 data]# xl shutdown sz-local-vm31
+
+3、使用virsh启动
+[root@n35 data]# virsh start sz-local-vm31
+Domain sz-local-vm31 started
+
+[root@n35 data]# virsh list --all         
+ Id    Name                           State
+----------------------------------------------------
+ 3     sz-local-vm31                  running
+[root@n35 data]# ssh 192.168.20.31          
+root@192.168.20.31's password: 
+Last login: Fri Nov 13 21:12:48 2015 from 192.168.20.35
+[root@sz-local-vm31 ~]# exit
+logout
+Connection to 192.168.20.31 closed.
+
+
+4、配置存储池（v2v需要）
+[root@n35 data]# virsh pool-create-as --name default --type dir --target /dev/vg0
+[root@n35 data]# virsh pool-list
+Name                 State      Autostart 
+-----------------------------------------
+default              active     no        
+
+[root@n35 data]# virsh pool-dumpxml default
+<pool type='dir'>
+  <name>default</name>
+  <uuid>f5ba8f67-7995-0b15-0cb3-7faf9bdc2a31</uuid>
+  <capacity unit='bytes'>455127040</capacity>
+  <allocation unit='bytes'>229376</allocation>
+  <available unit='bytes'>454897664</available>
+  <source>
+  </source>
+  <target>
+    <path>/dev/vg0</path>
+    <permissions>
+      <mode>0755</mode>
+      <owner>-1</owner>
+      <group>-1</group>
+    </permissions>
+  </target>
+</pool>
+
+
+5、禁用swap分区
+swapoff -a
+注释/etc/fstab/中的swap配置
+关闭vm
+[root@n35 data]# virsh shutdown sz-local-vm31
+Domain sz-local-vm31 is being shutdown
+
+[root@n35 data]# virsh list --all            
+ Id    Name                           State
+----------------------------------------------------
+ -     sz-local-vm31                  shut off
+
+调整xml配置，删掉swap相关的磁盘设备：
+[root@n35 data]# virsh dumpxml sz-local-vm31 >vm31.old.xml
+[root@n35 data]# virsh edit sz-local-vm31   
+Domain sz-local-vm31 XML configuration edited.
+[root@n35 data]# virsh dumpxml sz-local-vm31 >vm31.new.xml
+
+
+三、配置一个转换服务器，尝试转换xen为rhev格式
+[root@a02 ~]# yum install virt-v2v
+开始转换：
+[root@a02 ~]# virt-v2v -ic xen+ssh://root@192.168.20.35 \
+-o rhev -os 192.168.20.86:/data/ovirt/export --network ovirt \
+sz-local-vm31
+
+
+
+
+
+ZYXW、参考
+1、xl and libvirt
+https://www.redhat.com/archives/libvir-list/2014-May/msg00928.html
+
+
+
+
+
+
+
+
+
+
+
+
+
+

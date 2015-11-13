@@ -1,0 +1,303 @@
+日期：2015/11/12 - 2015/11/13 time 18:56
+主机：n35
+目的：初探xen-配置第一个虚拟机
+操作内容：
+一、资源
+1、源
+yum install centos-release-xen
+yum install xen
+
+2、调整grub
+执行：grub-bootxen.sh
+从
+title CentOS (3.10.55-11.el6.centos.alt.x86_64)
+        root (hd0,0)
+        kernel /vmlinuz-3.10.55-11.el6.centos.alt.x86_64 ro root=UUID=f66d47ea-e21b-44c8-87d2-de03169c80ff rd_NO_LUKS  KEYBOARDTYPE=pc KEYTABLE=us LANG=en_US.UTF-8 rd_NO_MD SYSFONT=latarcyrheb-sun16 rd_NO_LVM crashkernel=auto rhgb quiet rd_NO_DM rhgb quiet
+        initrd /initramfs-3.10.55-11.el6.centos.alt.x86_64.img
+变成：        
+title CentOS (3.10.55-11.el6.centos.alt.x86_64)
+        root (hd0,0)
+        kernel /xen.gz dom0_mem=1024M,max:1024M loglvl=all guest_loglvl=all
+        module /vmlinuz-3.10.55-11.el6.centos.alt.x86_64 ro root=UUID=f66d47ea-e21b-44c8-87d2-de03169c80ff rd_NO_LUKS  KEYBOARDTYPE=pc KEYTABLE=us LANG=en_US.UTF-8 rd_NO_MD SYSFONT=latarcyrheb-sun16 rd_NO_LVM crashkernel=auto rhgb quiet rd_NO_DM rhgb quiet
+        module /initramfs-3.10.55-11.el6.centos.alt.x86_64.img
+        
+重启
+reboot
+        
+        
+3、准备数据盘
+yum install lvm2 xfsprogs -y
+
+umount /data
+sed -i '\/data/d' /etc/fstab
+fdisk /dev/sdb <<'_EOF'
+p
+d
+p
+w
+_EOF
+pvcreate /dev/sdb
+vgcreate vg0 /dev/sdb 
+
+
+先划分1T的空间作为管理用途，其余的空间留给vm用。
+lvcreate -L 1T -n lv01 vg0
+mkfs.xfs -f -i size=512 /dev/vg0/lv01 
+mkdir /data
+cat <<_EOF >>/etc/fstab
+UUID=$(blkid /dev/vg0/lv01 |cut -d'"' -f2) /data                   xfs     defaults        0 0
+_EOF
+mount -a   
+        
+        
+4、更新网卡配置，新增2个网桥（此处以2个网卡为例）
+cd /etc/sysconfig/network-scripts/
+
+cat <<_EOF >ifcfg-em1
+DEVICE=em1
+BRIDGE=xenbr1
+ONBOOT=yes
+MTU=1500
+NM_CONTROLLED=no
+_EOF
+
+cat <<_EOF >ifcfg-xenbr1
+DEVICE=xenbr1
+TYPE=Bridge
+DELAY=0
+STP=off
+ONBOOT=yes
+IPADDR=192.168.20.35
+NETMASK=255.255.255.0
+GATEWAY=192.168.20.1
+BOOTPROTO=none
+MTU=1500
+DEFROUTE=yes
+NM_CONTROLLED=no
+HOTPLUG=no
+_EOF
+        
+cat <<_EOF >ifcfg-em2
+DEVICE=em2
+BRIDGE=xenbr2
+ONBOOT=yes
+MTU=1500
+NM_CONTROLLED=no
+_EOF
+
+cat <<_EOF >ifcfg-xenbr2
+DEVICE=xenbr2
+TYPE=Bridge
+DELAY=0
+STP=off
+ONBOOT=yes
+IPADDR=192.168.25.35
+NETMASK=255.255.255.0
+BOOTPROTO=none
+MTU=1500
+DEFROUTE=no
+NM_CONTROLLED=no
+HOTPLUG=no
+_EOF
+        
+        
+[root@n35 network-scripts]# service network restart
+
+5、关闭xend服务
+service xend stop
+chkconfig xend off
+
+
+二、创建1个虚拟机
+1、使用提前准备好的模版和脚本来创建。
+（脚本后附）
+[root@n35 pvcreate]# sh vm_centos-create-2nic.sh sz-local-vm31 4 4096 100GB 4GB 192.168.20.31 192.168.20.1 192.168.25.31
+  Logical volume "sz-local-vm31-disk" created
+  Logical volume "sz-local-vm31-swap" created
+mke2fs 1.41.12 (17-May-2010)
+Filesystem label=
+OS type: Linux
+Block size=4096 (log=2)
+Fragment size=4096 (log=2)
+Stride=0 blocks, Stripe width=0 blocks
+6553600 inodes, 26214400 blocks
+1310720 blocks (5.00%) reserved for the super user
+First data block=0
+Maximum filesystem blocks=4294967296
+800 block groups
+32768 blocks per group, 32768 fragments per group
+8192 inodes per group
+Superblock backups stored on blocks: 
+        32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208, 
+        4096000, 7962624, 11239424, 20480000, 23887872
+
+Writing inode tables: done                            
+Creating journal (32768 blocks): done
+Writing superblocks and filesystem accounting information: done
+
+This filesystem will be automatically checked every 23 mounts or
+180 days, whichever comes first.  Use tune2fs -c or -i to override.
+Setting up swapspace version 1, size = 4194300 KiB
+no label, UUID=e9445dde-07fc-48e1-919b-ef3f6a9a8512
+VM sz-local-vm31 create done!!!
+startup command 
+xl create -c /etc/xen/sz-local-vm31.cfg
+Enjoy !
+        
+2、启动：
+xl create -c /etc/xen/sz-local-vm31.cfg
+
+3、查看   
+[root@n35 ~]# xl list
+Name                                        ID   Mem VCPUs      State   Time(s)
+Domain-0                                     0  1023     8     r-----     114.5
+sz-local-vm31                                1  4096     4     -b----      15.4
+
+4、console
+[root@n35 ~]# xl console sz-local-vm31
+      
+CentOS release 6.5 (Final)
+Kernel 2.6.32-431.23.3.el6.x86_64 on an x86_64
+
+sz-local-vm31 login: （使用 ctrl+] 切换到 host 上）
+
+
+
+三、脚本
+参考同事提供的脚本
+1、创建一个 lv-HOSTNAME-disk 作为系统分区，再创建1个 lv-HOSTNAME-swap 作为 swap 分区
+2、挂载lvm卷，解压centos系统的模版，调整系统的配置，卸载卷
+3、建立配置文件 HOSTNAME.cfg
+4、使用工具 lx 从配置文件启动 vm
+
+[root@n35 ~]# cd /data/pvcreate
+[root@n35 pvcreate]# ls
+Centos6-5.tgz  macgen.py  vm_centos-create-2nic.sh  vm_centos-create.sh
+[root@n35 pvcreate]# cat vm_centos-create-2nic.sh 
+#!/bin/bash
+#
+# 2015/11/13
+
+if [ "$#" -ne "8" ];then
+    echo "$0: incorrect parameter!"
+    echo "usage: $0 <hostname> <cpucount> <memsize /MB> <disksize /GB> <diskswapsize> <ipaddress> <gateway> <ipaddress2>"
+    echo "example: $0 sz-local-vm-cms 2 2000 100GB 5GB 192.168.20.22 192.168.20.1 192.168.25.22 "
+    exit 1
+else
+    set -e
+fi
+
+# declare variable
+HOSTNAME=$1
+CPUCOUNT=$2
+MEMSIZE=$3
+DISKSIZE=$4
+SWAPSIZE=$5
+IPADDR=$6
+GW=$7
+IPADDR2=$8
+WORKSPACE=$(pwd)
+MACADDR=$($WORKSPACE/macgen.py)
+MACADDR2=$($WORKSPACE/macgen.py)
+
+# create lv
+lvcreate -L $DISKSIZE -n "$HOSTNAME-disk" vg0
+lvcreate -L $SWAPSIZE -n "$HOSTNAME-swap" vg0
+
+# format lv 
+mkfs.ext4 /dev/vg0/$HOSTNAME-disk
+mkswap -f /dev/vg0/$HOSTNAME-swap
+
+# configure vm
+mkdir /mnt/$HOSTNAME
+mount -t ext4 /dev/vg0/$HOSTNAME-disk /mnt/$HOSTNAME
+
+tar zxf $WORKSPACE/Centos6-5.tgz -C /mnt/$HOSTNAME/
+
+sed -i "/HOSTNAME=/c HOSTNAME=$HOSTNAME" /mnt/$HOSTNAME/etc/sysconfig/network
+eth0="/mnt/$HOSTNAME/etc/sysconfig/network-scripts/ifcfg-eth0"
+eth1="/mnt/$HOSTNAME/etc/sysconfig/network-scripts/ifcfg-eth1"
+
+cat <<E_ETH_0 >> ${eth0}
+DEVICE="eth0"
+BOOTPROTO="none"
+NM_CONTROLLED="yes"
+ONBOOT="yes"
+TYPE="Ethernet"
+IPADDR=$IPADDR
+NETMASK=255.255.255.0
+GATEWAY=$GW
+E_ETH_0
+
+cat <<E_ETH_1 >> ${eth1}
+DEVICE="eth1"
+BOOTPROTO="none"
+NM_CONTROLLED="yes"
+ONBOOT="yes"
+TYPE="Ethernet"
+IPADDR=$IPADDR2
+NETMASK=255.255.255.0
+E_ETH_1
+
+
+umount /mnt/$HOSTNAME
+
+# create pv config file
+cat <<E_O_F >> /etc/xen/$HOSTNAME.cfg
+
+kernel      = '/usr/lib/xen/boot/pv-grub-x86_64.gz'
+extra = "(hd0)/boot/grub/menu.lst"
+
+memory = "$MEMSIZE"
+maxmem = 10000
+name = "$HOSTNAME"
+vcpus = "$CPUCOUNT"
+maxvcpus = 10
+
+disk        = [
+                "phy:/dev/vg0/$HOSTNAME-disk,xvda1,w",
+                "phy:/dev/vg0/$HOSTNAME-swap,xvdb1,w"
+              ]
+
+#  Networking
+
+vif = [ "bridge=xenbr1, ip=$IPADDR, mac=$MACADDR","bridge=xenbr2, ip=$IPADDR2, mac=$MACADDR2" ]
+
+#  Behaviour
+
+on_poweroff = 'destroy'
+on_reboot   = 'restart'
+on_crash    = 'restart'
+E_O_F
+
+# auto startup
+if [ -d /etc/xen/auto ]; then
+    ln -s /etc/xen/$HOSTNAME.cfg /etc/xen/auto/$HOSTNAME.cfg
+else
+    mkdir /etc/xen/auto
+    ln -s /etc/xen/$HOSTNAME.cfg /etc/xen/auto/$HOSTNAME.cfg
+fi
+
+echo "VM $HOSTNAME create done!!!"
+echo "startup command "
+echo "xl create -c /etc/xen/$HOSTNAME.cfg"
+echo "Enjoy !"
+[root@n35 pvcreate]# cat macgen.py 
+#!/usr/bin/python
+import random
+
+mac = [ 0x00, 0x16, 0x3e, random.randint(0x00, 0x7f),
+random.randint(0x00, 0xff), random.randint(0x00, 0xff) ]
+s = []
+for item in mac:
+        s.append(str("%02x" % item).upper())
+print ':'.join(s)
+
+
+
+
+
+
+
+
+   
