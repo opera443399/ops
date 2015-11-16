@@ -1,4 +1,4 @@
-日期：2015/11/12 - 2015/11/13 time 18:56
+日期：2015/11/12 - 2015/11/16 time 14:41
 主机：n35
 目的：初探xen-配置第一个虚拟机
 操作内容：
@@ -111,9 +111,9 @@ chkconfig xend off
 二、创建1个虚拟机
 1、使用提前准备好的模版和脚本来创建。
 （脚本后附）
-[root@n35 pvcreate]# sh vm_centos-create-2nic.sh sz-local-vm31 4 4096 100GB 4GB 192.168.20.31 192.168.20.1 192.168.25.31
-  Logical volume "sz-local-vm31-disk" created
-  Logical volume "sz-local-vm31-swap" created
+[root@n35 pvcreate]# sh vm_centos-create-2nic.sh tvm31 4 4096 100GB 4GB 192.168.20.31 192.168.20.1 192.168.25.31
+  Logical volume "tvm31-disk" created
+  Logical volume "tvm31-swap" created
 mke2fs 1.41.12 (17-May-2010)
 Filesystem label=
 OS type: Linux
@@ -139,28 +139,30 @@ This filesystem will be automatically checked every 23 mounts or
 180 days, whichever comes first.  Use tune2fs -c or -i to override.
 Setting up swapspace version 1, size = 4194300 KiB
 no label, UUID=e9445dde-07fc-48e1-919b-ef3f6a9a8512
-VM sz-local-vm31 create done!!!
+VM tvm31 create done!!!
 startup command 
-xl create -c /etc/xen/sz-local-vm31.cfg
+xl create -c /etc/xen/tvm31.cfg
 Enjoy !
         
 2、启动：
-xl create -c /etc/xen/sz-local-vm31.cfg
+xl create -c /etc/xen/tvm31.cfg
 
 3、查看   
 [root@n35 ~]# xl list
 Name                                        ID   Mem VCPUs      State   Time(s)
 Domain-0                                     0  1023     8     r-----     114.5
-sz-local-vm31                                1  4096     4     -b----      15.4
+tvm31                                1  4096     4     -b----      15.4
 
 4、console
-[root@n35 ~]# xl console sz-local-vm31
+[root@n35 ~]# xl console tvm31
       
 CentOS release 6.5 (Final)
 Kernel 2.6.32-431.23.3.el6.x86_64 on an x86_64
 
-sz-local-vm31 login: （使用 ctrl+] 切换到 host 上）
+tvm31 login: （使用 ctrl+] 切换到 host 上）
 
+5、关闭
+[root@n35 ~]# xl shutdown tvm31
 
 
 三、脚本
@@ -174,14 +176,13 @@ sz-local-vm31 login: （使用 ctrl+] 切换到 host 上）
 [root@n35 pvcreate]# ls
 Centos6-5.tgz  macgen.py  vm_centos-create-2nic.sh  vm_centos-create.sh
 [root@n35 pvcreate]# cat vm_centos-create-2nic.sh 
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# 2015/11/13
 
 if [ "$#" -ne "8" ];then
     echo "$0: incorrect parameter!"
     echo "usage: $0 <hostname> <cpucount> <memsize /MB> <disksize /GB> <diskswapsize> <ipaddress> <gateway> <ipaddress2>"
-    echo "example: $0 sz-local-vm-cms 2 2000 100GB 5GB 192.168.20.22 192.168.20.1 192.168.25.22 "
+    echo "example: $0 tvm-cms 2 2000 100GB 5GB 192.168.20.22 192.168.20.1 192.168.25.22 "
     exit 1
 else
     set -e
