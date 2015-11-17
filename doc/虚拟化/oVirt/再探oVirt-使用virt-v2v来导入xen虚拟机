@@ -52,7 +52,12 @@ Name                 State      Autostart
 vg0              active     no 
 
 
+4、尝试转换数据盘为qcow2格式，然后拷贝到一个kvm主机上，手动改写一个xml文件，利用这个数据盘来定义一个kvm虚拟机测试
 [root@n35 test]# qemu-img convert -O qcow2 /dev/vg0/t1-disk  /data/test/t1.qcow2
+
+重点是：磁盘是否可以引导启动。
+如果上面的问题突破，则可以进入v2v的步骤。
+
 
 
 三、配置一个转换服务器，尝试转换xen为rhev格式
@@ -74,17 +79,6 @@ Connection to 192.168.20.35 closed.
 -o rhev -os 192.168.20.86:/data/ovirt/export --network ovirtmgmt \
 t1
 
-root@192.168.20.35's password: 
-root@192.168.20.35's password: 
-t1-disk: 100% [==========================================================================================================================================================================]D 0h01m57s
-mount_options: mount_options: mount_options_stub: /dev/xvda1: No such file or directory at /usr/share/perl5/vendor_perl/Sys/VirtConvert/GuestfsHandle.pm line 201.
- at /usr/share/perl5/vendor_perl/Sys/VirtConvert/Converter.pm line 99
- (ignored)
-mkdtemp: mkdtemp: mkdtemp_stub: you must call 'mount' first to mount the root filesystem at /usr/share/perl5/vendor_perl/Sys/VirtConvert/GuestfsHandle.pm line 201.
- at /usr/share/perl5/vendor_perl/Sys/VirtConvert/Config.pm line 235
-
-
- 
  
  
  
