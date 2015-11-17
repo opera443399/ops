@@ -1,0 +1,76 @@
+日期：2015/11/17 - 2015/11/17 time 09:50
+主机：n86
+目的：初探KVM-如何封装linux模版
+操作内容：
+一、手动
+手动清理在创建虚拟机时可能导致冲突的配置
+
+--- 清理cloud-init（如果有在使用这个） ---
+rm /var/lib/cloud -fr
+
+--- 清理hostname ---
+cat <<'_EOF' >/etc/sysconfig/network
+NETWORKING=yes
+HOSTNAME=localhost.localdomain
+_EOF
+
+--- 清理网卡相关 ---
+sed -i -e '/UUID/d' -e '/HWADDR/d' -e '/ONBOOT/d' -e '/BOOTPROTO/d' \
+-e '/IPADDR/d' -e '/NETMASK/d' -e '/GATEWAY/d' \
+-e '/TYPE=Ethernet/a\ONBOOT=no\nBOOTPROTO=dhcp' /etc/sysconfig/network-scripts/ifcfg-eth*
+
+--- 清理ssh相关 ---
+rm -f /etc/ssh/ssh_host_*
+rm /root/.ssh -fr 
+
+--- 清理log ---
+find /var/log -type f -delete
+find /root -type f ! -name ".*" -delete
+
+
+--- 最后一步 ---
+手动配置（不想重置root密码和其他服务，如果通过sys-unconfig将会这样操作）
+--- 清理 udev 和history ---
+rm /etc/udev/rules.d/*-persistent-*.rules -f
+history -c
+
+--- 关机 ---
+# poweroff
+
+
+
+
+二、自动
+--- 清理hostname ---
+cat <<'_EOF' >/etc/sysconfig/network
+NETWORKING=yes
+HOSTNAME=localhost.localdomain
+_EOF
+
+--- 清理网卡相关 ---
+sed -i -e '/UUID/d' -e '/HWADDR/d' -e '/ONBOOT/d' -e '/BOOTPROTO/d' \
+-e '/IPADDR/d' -e '/NETMASK/d' -e '/GATEWAY/d' \
+-e '/TYPE=Ethernet/a\ONBOOT=no\nBOOTPROTO=dhcp' /etc/sysconfig/network-scripts/ifcfg-eth*
+
+--- 清理ssh相关 ---
+rm -f /etc/ssh/ssh_host_*
+rm /root/.ssh -fr 
+
+--- 清理log ---
+find /var/log -type f -delete
+find /root -type f ! -name ".*" -delete
+
+--- 清理 history ---
+history -c
+
+--- 最后一步，操作后会自动关闭vm ---
+# sys-unconfig
+【注意】
+sys-unconfig这个工具除了清理udev，还将在下次启动时，启动几个服务，例如密码，网络，时间等配置，具体可以参考man的解释。
+
+
+
+
+
+
+

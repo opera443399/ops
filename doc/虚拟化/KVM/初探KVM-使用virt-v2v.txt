@@ -1,0 +1,91 @@
+日期：2015/11/17 - 2015/11/17 time 13:56
+主机：n35, n86
+目的：初探KVM-使用virt-v2v
+操作内容：
+一、资源
+1、建立一台kvm虚拟机供测试
+
+[root@n86 ~]# qemu-img create -f qcow2  /data/kvm/images/tvm01.test-vda.qcow2 4G 
+virt-install --name tvm01.test \
+--ram 1024 \
+--vcpus=2 \
+--cdrom  /data/kvm/iso/CentOS-6.5-x86_64-bin-DVD1.iso \
+--disk path=/data/kvm/images/tvm01.test-vda.qcow2,device=disk,bus=virtio,size=4,format=qcow2 \
+--network bridge:br0 \
+--graphics vnc,port='-1',listen='0.0.0.0' \
+--hvm \
+--arch x86_64 \
+--os-type=linux \
+--os-variant=rhel6 \
+--noautoconsole
+
+
+
+二、转换过程
+1、安装
+[root@a02 ~]# yum install virt-v2v
+
+
+2、查看远端的vm
+[root@a02 ~]# virsh -c qemu+ssh://root@10.50.200.86/system list --all
+root@10.50.200.86's password: 
+ Id    Name                           State
+----------------------------------------------------
+ 1     e01.test                       running
+ -     tpl_vm-c2_m1g_d4g_e1           shut off
+ -     tvm01.test                     shut off
+
+ 
+3、开始转换
+[root@a02 ~]# virt-v2v -ic qemu+ssh://root@10.50.200.86/system \
+-o rhev -os 10.50.200.86:/data/ovirt/export --network ovirtmgmt \
+tvm01.test
+
+注意：--network 指定的网卡 是在ovirt中定义的网络接口，这个即使指定的不对也没关系，后续导入vm后，可以编辑网络，再做调整。
+
+root@10.50.200.86's password: 
+root@10.50.200.86's password: 
+tvm01.test-vda.qcow2: 100% [=========================================]D 0h00m17s
+（上述测试中，磁盘大小为4G，因此17s搞定，显然，此处磁盘越大，则越慢；现在正在等待v2v转换中，输出无，不知道在干嘛，完成后，显示如下语句：）
+virt-v2v: tvm01.test configured with virtio drivers.
+
+4、查看export域的状态
+[root@n86 ~]# cd /data/ovirt/export/
+[root@n86 export]# ls
+06df9082-f3e2-4c80-a18c-7418f7bb008a  __DIRECT_IO_TEST__
+[root@n86 export]# cd 06df9082-f3e2-4c80-a18c-7418f7bb008a/
+[root@n86 06df9082-f3e2-4c80-a18c-7418f7bb008a]# ls
+dom_md  images  master  v2v.D5AZDSTF
+
+正在转换中，有个临时的目录 v2v.D5AZDSTF，里面安装rhev的规则正在生成数据：
+[root@n86 06df9082-f3e2-4c80-a18c-7418f7bb008a]# cat v2v.D5AZDSTF/c3b0387c-d2ac-41aa-ba23-9639ff277339/ffecbbcb-b642-44b3-a361-d52a5f96c80f.meta 
+DOMAIN=06df9082-f3e2-4c80-a18c-7418f7bb008a
+VOLTYPE=LEAF
+CTIME=1447729331
+FORMAT=COW
+IMAGE=c3b0387c-d2ac-41aa-ba23-9639ff277339
+DISKTYPE=1
+PUUID=00000000-0000-0000-0000-000000000000
+LEGALITY=LEGAL
+MTIME=1447729331
+POOL_UUID=00000000-0000-0000-0000-000000000000
+SIZE=8388608
+TYPE=SPARSE
+DESCRIPTION=Exported by virt-v2v
+EOF
+
+
+转换完毕后：
+[root@n86 06df9082-f3e2-4c80-a18c-7418f7bb008a]# ls
+dom_md  images  master
+[root@n86 06df9082-f3e2-4c80-a18c-7418f7bb008a]# ls images/ -lt |grep 'Nov 17'
+drwxr-xr-x 2 vdsm kvm  97 Nov 17 11:03 c3b0387c-d2ac-41aa-ba23-9639ff277339
+
+
+三、验证
+在ovirt页面-虚拟机-选择右键菜单-导入
+
+结果符合预期。
+
+
+

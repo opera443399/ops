@@ -295,8 +295,9 @@ for item in mac:
 print ':'.join(s)
 
 
-
-
+ZYXW¡¢²Î¿¼
+1¡¢Xen
+https://wiki.archlinux.org/index.php/Xen
 
 
 

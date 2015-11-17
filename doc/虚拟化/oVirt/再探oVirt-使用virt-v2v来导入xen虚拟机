@@ -1,4 +1,4 @@
-日期：2015/11/12 - 2015/11/13 time 13:56
+日期：2015/11/12 - 2015/11/17 time 16:45
 主机：n35
 目的：再探oVirt-使用virt-v2v来导入xen虚拟机
 操作内容：
@@ -9,35 +9,69 @@ vm的配置：
 2个磁盘：1个是系统分区，1个是swap分区，且磁盘是直接使用的lvm卷
 
 二、将通过xl管理的vm转换成virsh来管理
-1、禁用swap分区
+1、调整vm的配置
+1）禁用swap分区
 swapoff -a
 注释/etc/fstab/中的swap配置
+
+2）调整/etc/fstab, /boot/下几个文件中涉及到/dev/xvda1这类字符，替换为为UUID格式
+
 关闭vm
-[root@n35 test]# xl shutdown t1
-启用xend
-[root@n35 test]# service xend start
+
+
+配置kvm环境
+启动服务：
+[root@n35 test]# service libvirtd start
 
 2、导出配置使用virsh管理
 [root@n35 test]# virsh domxml-from-native xen-xm /etc/xen/t1.cfg  >t1.xml
-调整xml配置，删掉swap相关的磁盘设备，导入virsh
 [root@n35 test]# virsh define t1.xml 
+Domain t1 defined from t1.xml
+
+[root@n35 test]# virsh list --all
+ Id    Name                           State
+----------------------------------------------------
+ -     t1                             shut off
+[root@n35 test]# virsh start t1
+Domain t1 started
+[root@n35 test]# ssh 192.168.20.32
+root@192.168.20.32's password: 
+[root@t1 ~]# exit
+logout
+Connection to 192.168.20.32 closed.
+[root@n35 test]# virsh shutdown t1
+
 
 3、配置存储池（v2v需要） 
 [root@n35 test]# virsh pool-create-as --name vg0 --type logical --target /dev/vg0
+Pool vg0 created
 
-4、关闭
-[root@n35 test]# virsh shutdown t1
-[root@n35 test]# virsh list --all            
- Id    Name                           State
-----------------------------------------------------
- -     t1                  shut off
+[root@n35 test]# virsh pool-list
+Name                 State      Autostart 
+-----------------------------------------
+vg0              active     no 
+
+
+[root@n35 test]# qemu-img convert -O qcow2 /dev/vg0/t1-disk  /data/test/t1.qcow2
 
 
 三、配置一个转换服务器，尝试转换xen为rhev格式
 [root@a02 ~]# yum install virt-v2v
+方便起见，先配置ssh免密码登录
+
+[root@a02 ~]# ssh-keygen 
+[root@a02 ~]# ssh-copy-id 192.168.20.35
+[root@a02 ~]# ssh 192.168.20.35
+Last login: Tue Nov 17 10:21:05 2015 from 192.168.21.20
+[root@n35 ~]# exit
+logout
+Connection to 192.168.20.35 closed.
+[root@a02 ~]# 
+[root@a02 ~]# virsh -c xen+ssh://root@192.168.20.35 list --all
+
 开始转换：
 [root@a02 ~]# virt-v2v -ic xen+ssh://root@192.168.20.35 \
--o rhev -os 192.168.20.86:/data/ovirt/export --network ovirt \
+-o rhev -os 192.168.20.86:/data/ovirt/export --network ovirtmgmt \
 t1
 
 root@192.168.20.35's password: 
@@ -50,6 +84,19 @@ mkdtemp: mkdtemp: mkdtemp_stub: you must call 'mount' first to mount the root fi
  at /usr/share/perl5/vendor_perl/Sys/VirtConvert/Config.pm line 235
 
 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
 
 ZYXW、参考
 1、xl and libvirt
@@ -58,10 +105,11 @@ https://www.redhat.com/archives/libvir-list/2014-May/msg00928.html
 2、Migrate XenServer to RHEV
 https://access.redhat.com/discussions/451463
 
+3、Ovirt : Convert physical/virtual systems to virtual using virt-p2v && virt-v2v then use it in ovirt DC
+http://website-humblec.rhcloud.com/convert-physical-virtual-virtual-using-virt-v2v-virt-p2v-kvmovirt/
 
-
-
-
+4、virt-v2v - Convert a guest to use KVM
+http://libguestfs.org/virt-v2v.1.html
 
 
 

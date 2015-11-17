@@ -1,4 +1,4 @@
-日期：2015/9/2 - 2015/9/28 time 19:22
+日期：2015/9/2 - 2015/11/17 time 09:50
 主机：node72, node73, node86, node93
 目的：初探oVirt-体验
 操作内容：
@@ -576,30 +576,32 @@ oVirt允许通过设定个别重要的VM的优先级，在迁移队列中提前�
 installed: ovirt-guest-agent bind-utils lrzsz man ntp openssh-clients rsync traceroute vim wget tree
 
 2）手动清理在创建虚拟机时可能导致冲突的配置
-清理hostname
-# cat <<'_EOF' >/etc/sysconfig/network
+--- 清理hostname ---
+cat <<'_EOF' >/etc/sysconfig/network
 NETWORKING=yes
 HOSTNAME=localhost.localdomain
 _EOF
 
-清理ssh相关
-# rm -f /etc/ssh/ssh_host_* && rm -fr /root/.ssh
-
-清理网卡相关
-# sed -i -e '/UUID/d' -e '/HWADDR/d' -e '/ONBOOT/d' -e '/BOOTPROTO/d' \
+--- 清理网卡相关 ---
+sed -i -e '/UUID/d' -e '/HWADDR/d' -e '/ONBOOT/d' -e '/BOOTPROTO/d' \
 -e '/IPADDR/d' -e '/NETMASK/d' -e '/GATEWAY/d' \
 -e '/TYPE=Ethernet/a\ONBOOT=no\nBOOTPROTO=dhcp' /etc/sysconfig/network-scripts/ifcfg-eth*
 
+--- 清理ssh相关 ---
+rm -f /etc/ssh/ssh_host_*
+rm /root/.ssh -fr 
 
-（可选）清理log相关文件
-# find /var/log -type f -delete \
-&& find /root -type f ! -name ".*" -delete \
-&& echo> /root/.bash_history
+--- 清理log ---
+find /var/log -type f -delete
+find /root -type f ! -name ".*" -delete
 
-最后一步，操作后会自动关闭vm
+--- 清理 history ---
+history -c
+
+--- 最后一步，操作后会自动关闭vm ---
 # sys-unconfig
 【注意】
-其实sys-unconfig这个工具里面只是清理了udev，其他的私人文件还是要自己手动处理。
+sys-unconfig这个工具除了清理udev，还将在下次启动时，启动几个服务，例如密码，网络，时间等配置，具体可以参考man的解释。
 
 
 

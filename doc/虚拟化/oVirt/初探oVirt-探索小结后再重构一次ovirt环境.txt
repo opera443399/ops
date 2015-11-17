@@ -1,4 +1,4 @@
-日期：2015/10/12 - 2015/11/5 time 17:52
+日期：2015/10/12 - 2015/11/17 time 09:50
 主机：n72, n73, n86, n93, vm220
 目的：初探oVirt-探索小结后再重构一次ovirt环境
 操作内容：
@@ -302,8 +302,11 @@ find /root -type f ! -name ".*" -delete
 手动配置（不想重置root密码和其他服务，如果通过sys-unconfig将会这样操作）
 --- 清理 udev 和history ---
 rm /etc/udev/rules.d/*-persistent-*.rules -f
-echo> /root/.bash_history
 history -c
+
+--- 关机 ---
+# poweroff
+
 
 
 五、模版和导出

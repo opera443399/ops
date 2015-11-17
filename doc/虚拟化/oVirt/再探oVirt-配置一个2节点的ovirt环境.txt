@@ -1,4 +1,4 @@
-日期：2015/11/4 - 2015/11/12 time 11:13
+日期：2015/11/4 - 2015/11/17 time 09:50
 主机：e01, n33, n34
 目的：再探oVirt-配置一个2节点的ovirt环境
 操作内容：
@@ -458,7 +458,6 @@ find /root -type f ! -name ".*" -delete
 手动配置（不想重置root密码和其他服务，如果通过sys-unconfig将会这样操作）
 --- 清理 udev 和history ---
 rm /etc/udev/rules.d/*-persistent-*.rules -f
-echo> /root/.bash_history
 history -c
 
 --- 关机 ---
@@ -513,23 +512,6 @@ history -c
 通过上述操作可以发现，OS盘设置为80G时，则快照、克隆、导出等操作耗时在8分钟左右；
 之前也测试过20G的磁盘空间，耗时在3分钟左右；
 因此，这一块的容量，建议根据实际需求来配置。
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
