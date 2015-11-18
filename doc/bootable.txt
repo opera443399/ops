@@ -1,5 +1,26 @@
-grub的用法记录
+bootable
 
+一、mbr
+512B(MBR)= 446B(bootloader) + 64B(partition table) + 2B(magic number)
+
+[root@a02 test]# dd if=/dev/vda of=mbr.bin bs=512 count=1 
+1+0 records in
+1+0 records out
+512 bytes (512 B) copied, 0.00386177 s, 133 kB/s
+
+[root@n86 test]# cat mbr.bin |hexdump -C
+00000000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+00000200
+
+[root@n86 test]# od -xa mbr.bin
+0000000    0000    0000    0000    0000    0000    0000    0000    0000
+        nul nul nul nul nul nul nul nul nul nul nul nul nul nul nul nul
+*
+0001000
+
+
+二、grub
 1、调整grub参数
 移除启动时的滚动条：
 删除文件 /etc/grub.conf 中 rhgb 字段。
@@ -14,6 +35,10 @@ grub> initrd /initrd-2.6.14.2.img
 grub> boot
 Uncompressing Linux... Ok, booting the kernel.
 如果您不知道要引导的内核的名称，只需使用斜线（/）然后按下 Tab 键即可。GRUB 会显示内核和 initrd 映像列表。
+
+
+ 
+
 
 
 

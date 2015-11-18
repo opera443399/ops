@@ -1,7 +1,0 @@
-od
-
-[root@a02 test]# dd if=/dev/vda of=mbr.bin bs=512 count=1 
-1+0 records in
-1+0 records out
-512 bytes (512 B) copied, 0.00386177 s, 133 kB/s
-[root@a02 test]# od -xa mbr.bin

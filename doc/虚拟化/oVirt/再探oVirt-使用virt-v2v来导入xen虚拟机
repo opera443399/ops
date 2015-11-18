@@ -1,4 +1,4 @@
-日期：2015/11/12 - 2015/11/17 time 16:45
+日期：2015/11/12 - 2015/11/18 time 18:54
 主机：n35
 目的：再探oVirt-使用virt-v2v来导入xen虚拟机
 操作内容：
@@ -52,14 +52,6 @@ Name                 State      Autostart
 vg0              active     no 
 
 
-4、尝试转换数据盘为qcow2格式，然后拷贝到一个kvm主机上，手动改写一个xml文件，利用这个数据盘来定义一个kvm虚拟机测试
-[root@n35 test]# qemu-img convert -O qcow2 /dev/vg0/t1-disk  /data/test/t1.qcow2
-
-重点是：磁盘是否可以引导启动。
-如果上面的问题突破，则可以进入v2v的步骤。
-
-
-
 三、配置一个转换服务器，尝试转换xen为rhev格式
 [root@a02 ~]# yum install virt-v2v
 方便起见，先配置ssh免密码登录
@@ -79,15 +71,54 @@ Connection to 192.168.20.35 closed.
 -o rhev -os 192.168.20.86:/data/ovirt/export --network ovirtmgmt \
 t1
 
+t1-disk: 100% [==============================================================================]D 0h02m03s
+virt-v2v: t1 configured with virtio drivers.
+
+
+四、无法启动，尝试转换磁盘为可引导
+1、尝试将xen的pv转换为hvm模式
+[root@n35 xen]# cat t2.cfg 
+builder = "hvm"
+name = "t2"
+
+pae=1
+acpi=1
+apic=1
+
+on_poweroff = 'destroy'
+on_reboot   = 'restart'
+on_crash    = 'restart'
+
+memory = 2048
+maxmem = 4096
+
+vcpus = 2
+maxvcpus = 10
+disk = [ '/dev/vg0/t1-disk,,xvda',
+         '/data/test/CentOS-6.5-x86_64-bin-DVD1.iso,,hdc,cdrom' ]
+
+vif = [ 'bridge=xenbr1, mac=00:16:3E:3B:FA:3E',
+        'bridge=xenbr2, mac=00:16:3E:46:4B:31' ]
+#-----------------------------------------------------------------------------
+# boot on floppy (a), hard disk (c), Network (n) or CD-ROM (d) 
+# default: hard disk, cd-rom, floppy
+boot="d"
+
+# Guest VGA console configuration, either SDL or VNC
+vnc = 1
+vnclisten="0.0.0.0"
+vncpasswd=""
+
+serial = 'pty'
+
+[root@n35 ~]# xl create /etc/xen/t2.cfg 
+使用vnc连接上去，安装系统，选择update，在reboot前切换到命令行界面（失败）
  
  
- 
- 
- 
- 
- 
- 
- 
+打算照着usb引导的方式来做：
+http://www.51know.info/system_base/grub_install_to_usb.html
+http://www.techrepublic.com/article/solutionbase-moving-linux-from-one-disk-to-another/
+
  
  
  
@@ -95,17 +126,16 @@ t1
 ZYXW、参考
 1、xl and libvirt
 https://www.redhat.com/archives/libvir-list/2014-May/msg00928.html
-
 2、Migrate XenServer to RHEV
 https://access.redhat.com/discussions/451463
-
 3、Ovirt : Convert physical/virtual systems to virtual using virt-p2v && virt-v2v then use it in ovirt DC
 http://website-humblec.rhcloud.com/convert-physical-virtual-virtual-using-virt-v2v-virt-p2v-kvmovirt/
-
 4、virt-v2v - Convert a guest to use KVM
 http://libguestfs.org/virt-v2v.1.html
-
-
+5、XL DISK CONFIGURATION
+http://xenbits.xen.org/docs/4.3-testing/misc/xl-disk-configuration.txt
+6、Converting a PV vm back into an HVM vm
+https://blogs.oracle.com/wim/entry/converting_a_pv_vm_back_into_a
 
 
 
