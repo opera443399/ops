@@ -1,0 +1,27 @@
+swap的用法
+
+一、创建
+第一种方法:
+1.fdisk  /dev/sda
+2.n       (新建一个分区为/dev/sda6)
+3.t        (修改分区的id)
+4.82     (swap的id为82)
+5.w       (重写分区表)
+6.partprobe  (同步内存和分区表信息)
+7.mkswap /dev/sda6   (格式化成swap分区)
+8.swapon /dev/sda6   (打开swap分区)
+9.vim /etc/fstab           (在fstab中增加一条记录如下)
+/dev/hda6    swap   swap defaults 0 0
+10.mount -a
+
+第二种方法:
+1.dd if=/dev/zero of=/opt/swapfile bs=1M count=1000   (创建一个1G的文件作为交换分区使用)
+2.mkswap /opt/swapfile   (格式化成swap分区)
+3.swapon /opt/swapfile   (打开swap分区)
+4.vim /etc/fstab           (在fstab中增加一条记录如下)
+/opt/swapfile    swap   swap defaults 0 0
+5.mount -a
+
+
+二、关闭
+swapoff -a

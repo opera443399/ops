@@ -6,7 +6,7 @@
 1、建立一台kvm虚拟机供测试
 
 [root@n86 ~]# qemu-img create -f qcow2  /data/kvm/images/tvm01.test-vda.qcow2 4G 
-virt-install --name tvm01.test \
+[root@n86 ~]# virt-install --name tvm01.test \
 --ram 1024 \
 --vcpus=2 \
 --cdrom  /data/kvm/iso/CentOS-6.5-x86_64-bin-DVD1.iso \

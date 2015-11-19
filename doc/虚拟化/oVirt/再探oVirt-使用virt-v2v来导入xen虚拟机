@@ -1,55 +1,333 @@
-日期：2015/11/12 - 2015/11/18 time 18:54
-主机：n35
+日期：2015/11/12 - 2015/11/19 time 18:48
+主机：n36
 目的：再探oVirt-使用virt-v2v来导入xen虚拟机
 操作内容：
 一、资源
-xen server: n35.test(vm31, vm32)
+xen server: n36.test(vm31, vm32)
 vm的配置：
 2个网卡：分别桥接到xenbr1，xenbr2
 2个磁盘：1个是系统分区，1个是swap分区，且磁盘是直接使用的lvm卷
+[root@n36 ~]# cat /etc/xen/t1.cfg 
 
-二、将通过xl管理的vm转换成virsh来管理
-1、调整vm的配置
-1）禁用swap分区
+kernel      = '/usr/lib/xen/boot/pv-grub-x86_64.gz'
+extra = "(hd0)/boot/grub/menu.lst"
+
+memory = "2000"
+maxmem = 10000
+name = "t1"
+vcpus = "2"
+maxvcpus = 10
+
+disk        = ["/dev/vg0/t1-disk,,xvda1",
+               "/dev/vg0/t1-swap,,xvdb1"
+              ]
+
+#  Networking
+
+vif = [ "bridge=xenbr1, ip=192.168.20.32, mac=00:16:3E:3B:FA:3E",
+        "bridge=xenbr2, ip=192.168.25.32, mac=00:16:3E:46:4B:31" 
+      ]
+
+#  Behaviour
+
+on_poweroff = 'destroy'
+on_reboot   = 'restart'
+on_crash    = 'restart'
+
+启动：
+xl create /etc/xen/t1.cfg
+停止：
+xl shutdown t1
+xl destroy t1
+列出：
+xl list
+
+
+二、调整vm的配置
+1、禁用swap分区
 swapoff -a
 注释/etc/fstab/中的swap配置
 
-2）调整/etc/fstab, /boot/下几个文件中涉及到/dev/xvda1这类字符，替换为为UUID格式
+2、调整/etc/fstab, /etc/grub.conf 这2个文件中涉及到/dev/xvda1这类字符，替换为为UUID格式
+[root@t1 ~]# df -h
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/xvda1      5.0G  1.4G  3.4G  29% /
+tmpfs           911M     0  911M   0% /dev/shm   
+[root@t1 ~]# blkid /dev/xvda1 
+/dev/xvda1: UUID="85a633b4-7c72-4958-8b1d-17bc026877c6" TYPE="ext4"
+
 
 关闭vm
 
 
-配置kvm环境
-启动服务：
-[root@n35 test]# service libvirtd start
+三、在另外一台主机上，尝试转换磁盘为可引导
+1、源的数据分布
+[root@n36 xen]# lvs
+  LV      VG   Attr       LSize Pool Origin Data%  Move Log Cpy%Sync Convert
+  lv01    vg0  -wi-ao---- 1.00t                                             
+  t1-disk vg0  -wi-ao---- 5.00g                                             
+  t1-swap vg0  -wi-a----- 2.00g                                             
 
-2、导出配置使用virsh管理
-[root@n35 test]# virsh domxml-from-native xen-xm /etc/xen/t1.cfg  >t1.xml
-[root@n35 test]# virsh define t1.xml 
-Domain t1 defined from t1.xml
-
-[root@n35 test]# virsh list --all
- Id    Name                           State
-----------------------------------------------------
- -     t1                             shut off
-[root@n35 test]# virsh start t1
-Domain t1 started
-[root@n35 test]# ssh 192.168.20.32
-root@192.168.20.32's password: 
-[root@t1 ~]# exit
-logout
-Connection to 192.168.20.32 closed.
-[root@n35 test]# virsh shutdown t1
+2、创建1个新的 root 分区，相对源分区，多出 12M 的空间用于后续的偏移位置（超过1个 cylinder 的大小即可，LVM中一个 cylinder 大概有 8M 左右） 。
+[root@n36 ~]# lvcreate -L 5.01G -n t1-disk vg0 
+[root@n36 ~]# lvs
+  LV      VG   Attr       LSize Pool Origin Data%  Move Log Cpy%Sync Convert
+  lv01    vg0  -wi-ao---- 1.00t                                             
+  t1-disk vg0  -wi-a----- 5.01g                                             
 
 
-3、配置存储池（v2v需要） 
-[root@n35 test]# virsh pool-create-as --name vg0 --type logical --target /dev/vg0
-Pool vg0 created
+3、创建boot分区
+[root@n36 ~]# mkdir /data/kvm/images -p
+1）生成一个镜像
+[root@n36 ~]# dd if=/dev/zero of=/data/kvm/images/t1-boot bs=32M count=1
+2）格式 boot 分区，从 cylinder 0 开始
+[root@n36 ~]# sfdisk /data/kvm/images/t1-boot 
+（略）
+/data/kvm/images/t1-boot1 :0（这里输入 0 ，选择 cylinder 0，然后一路回车）
+（略）
+Do you want to write this to disk? [ynq] y
+（略）)
 
-[root@n35 test]# virsh pool-list
-Name                 State      Autostart 
------------------------------------------
-vg0              active     no 
+3）创建 devicemapper
+[root@n36 ~]# kpartx -av /data/kvm/images/t1-boot 
+add map loop0p1 (253:3): 0 64259 linear /dev/loop0 1
+
+4）创建 fs
+[root@n36 ~]# mke2fs  /dev/mapper/loop0p1 
+
+5）挂载文件系统
+[root@n36 ~]# mkdir -p /mnt/boot && mount /dev/mapper/loop0p1 /mnt/boot/
+[root@n36 ~]# df -h /mnt/boot/
+Filesystem           Size  Used Avail Use% Mounted on
+/dev/mapper/loop0p1   31M  389K   29M   2% /mnt/boot
+
+6）同步本机的 /boot 目录下的文件 到 上述镜像
+[root@n36 ~]# du -sh /boot/
+28M     /boot/
+[root@n36 ~]# rsync -avP /boot/ /mnt/boot/
+
+7）调整grub配置
+[root@n36 ~]# echo> /mnt/boot/grub/device.map 
+[root@n36 ~]# vim /mnt/boot/grub/grub.conf 
+更改root的UUID为t1对应的UUID
+    kernel /vmlinuz-2.6.32-431.el6.x86_64 ro root=UUID=85a633b4-7c72-4958-8b1d-17bc026877c6（调整这里）
+
+8）配置grub，写入启动扇区
+[root@n36 ~]# touch /mnt/boot/kvm-boot-image
+[root@n36 ~]# grub --device-map=/dev/null
+（略）
+grub> device (hd0) /data/kvm/images/t1-boot
+device (hd0) /data/kvm/images/t1-boot
+grub> find /kvm-boot-image
+find /kvm-boot-image
+ (hd0,0)
+grub> root (hd0,0)
+root (hd0,0)
+ Filesystem type is ext2fs, partition type 0x83
+grub> setup (hd0)
+setup (hd0)
+ Checking if "/boot/grub/stage1" exists... no
+ Checking if "/grub/stage1" exists... yes
+ Checking if "/grub/stage2" exists... yes
+ Checking if "/grub/e2fs_stage1_5" exists... yes
+ Running "embed /grub/e2fs_stage1_5 (hd0)"... failed (this is not fatal)
+ Running "embed /grub/e2fs_stage1_5 (hd0,0)"... failed (this is not fatal)
+ Running "install /grub/stage1 (hd0) /grub/stage2 p /grub/grub.conf "... succeeded
+Done.
+grub> quit
+quit
+
+
+4、创建 root 分区
+1）安装一个进度条小工具后续要用到。
+[root@n36 ~]# yum install pv
+
+2）查看分区的信息：
+[root@n36 ~]# fdisk -l /dev/vg0/t1-disk 
+
+Disk /dev/vg0/t1-disk: 5381 MB, 5381292032 bytes
+255 heads, 63 sectors/track, 654 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+-------------
+可以发现：
+Disk 大小：5381292032 bytes
+cylinders 大小：8225280 bytes
+
+
+3）配置ssh免密码登录，后续要用到
+[root@n36 ~]# ssh-keygen
+[root@n36 ~]# ssh-copy-id 192.168.20.35
+root@192.168.20.35's password: 
+Now try logging into the machine, with "ssh '192.168.20.35'", and check in:
+
+  .ssh/authorized_keys
+
+to make sure we haven't added extra keys that you weren't expecting.
+
+测试：
+[root@n36 ~]# ssh root@192.168.20.35 -C "lvs"
+  LV      VG   Attr       LSize Pool Origin Data%  Move Log Cpy%Sync Convert
+  lv01    vg0  -wi-ao---- 1.00t                                             
+  t1-disk vg0  -wi-a----- 5.00g                                             
+
+4）给新的 root 分区填充数据，包括一个全为 0 的 cylinder，然后紧跟 旧的 root 分区的数据（t1-disk）
+[root@n36 ~]# ( dd if=/dev/zero bs=8225280 count=1; ssh 192.168.20.35 -C "dd if=/dev/vg0/t1-disk" ) | pv -reps 5381292032 |dd bs=1048577 of=/dev/vg0/t1-disk
+1+0 records in
+1+0 records out
+8225280 bytes (8.2 MB) copied, 0.0169351 s, 486 MB/s
+10485760+0 records in===============================================================> ] 99% ETA 0:00:00
+10485760+0 records out
+5368709120 bytes (5.4 GB) copied, 189.368 s, 28.4 MB/s
+[27.1MB/s] [========================================================================> ] 99%            
+0+324852 records in
+0+324852 records out
+5376934400 bytes (5.4 GB) copied, 191.367 s, 28.1 MB/s
+
+
+5）格式化 root 分区，从 cylinder 1 开始
+[root@n36 ~]# sfdisk /dev/vg0/t1-disk 
+（略）
+/dev/vg0/t1-disk1 :1（这里输入 1 ，选择 cylinder 1，然后一路回车）
+（略）
+Do you want to write this to disk? [ynq] y
+（略）
+
+6）创建 devicemapper
+[root@n36 ~]# kpartx -av /dev/vg0/t1-disk 
+add map vg0-t1--disk1 (253:3): 0 10490445 linear /dev/vg0/t1-disk 16065
+add map vg0-t1--disk2 (253:4): 0 16064 linear /dev/vg0/t1-disk 1
+
+7）检查已经存在的fs，如果这里报错，证明之前填充的数据大小有误。
+[root@n36 ~]# e2fsck /dev/mapper/vg0-t1--disk1
+e2fsck 1.41.12 (17-May-2010)
+/dev/mapper/vg0-t1--disk1: clean, 48296/327680 files, 364606/1310720 blocks
+
+[root@n36 ~]# mkdir -p /mnt/t1d1 && mount /dev/mapper/vg0-t1--disk1 /mnt/t1d1/
+[root@n36 ~]# ls /mnt/t1d1/
+bin   dev  home  lib64       media  opt   root  selinux  sys  usr
+boot  etc  lib   lost+found  mnt    proc  sbin  srv      tmp  var
+
+8）同步内核模块文件，调整挂载点等
+[root@n36 ~]# rsync -avP /lib/modules/ /mnt/t1d1/lib/modules/
+[root@n36 ~]# vim /mnt/t2d1/etc/fstab
+#/dev/sda1                /boot                   ext4    defaults        1 2
+UUID=85a633b4-7c72-4958-8b1d-17bc026877c6              /                       ext4    defaults        1 1
+#/dev/sdc1                swap                    ext4    defaults        1 2
+
+
+5、之前有挂载过的要卸载掉：
+---
+kpartx -av /data/kvm/images/t1-boot 
+mkdir -p /mnt/boot && mount /dev/mapper/loop0p1 /mnt/boot/
+
+kpartx -av /dev/vg0/t1-disk 
+mkdir -p /mnt/t1d1 && mount /dev/mapper/vg0-t1--disk1 /mnt/t1d1/
+---
+umount /mnt/boot
+kpartx -d /data/kvm/images/t1-boot 
+
+umount /mnt/t1d1
+kpartx -d /dev/vg0/t1-disk
+---
+
+[root@n36 ~]# ls /dev/mapper/vg0-t1*
+/dev/mapper/vg0-t1--disk  /dev/mapper/vg0-t1--swap
+
+
+
+
+
+四、使用 kvm 来启动 vm
+[root@n36 ~]# cd /data/kvm/
+1、创建一个kvm配置文件：
+---------------------------------------
+[root@n36 kvm]# cat t1.xml 
+<domain type='kvm'>
+  <name>t1</name>
+  <memory unit='KiB'>4096000</memory>
+  <currentMemory unit='KiB'>2048000</currentMemory>
+  <vcpu placement='static'>2</vcpu>
+  <os>
+    <type arch='x86_64' machine='rhel6.5.0'>hvm</type>
+    <boot dev='hd'/>
+    <boot dev='cdrom'/>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+    <pae/>
+  </features>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>restart</on_crash>
+  <devices>
+    <emulator>/usr/libexec/qemu-kvm</emulator>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='raw' cache='none'/>
+      <source file='/data/kvm/images/t1-boot'/>
+      <target dev='sda' bus='ide'/>
+    </disk>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='raw' cache='none'/>
+      <source file='/dev/mapper/vg0-t1--disk'/>
+      <target dev='sdb' bus='ide'/>
+    </disk>
+    <controller type='usb' index='0'>
+    </controller>
+    <controller type='ide' index='0'>
+    </controller>
+    <interface type='bridge'>
+      <mac address='00:16:3e:3b:fa:3e'/>
+      <source bridge='ovirtmgmt'/>
+      <model type='virtio'/>
+    </interface>
+    <interface type='bridge'>
+      <mac address='00:16:3e:46:4b:31'/>
+      <source bridge='ovirtwan'/>
+      <model type='virtio'/>
+    </interface>
+    <serial type='pty'>
+      <target port='0'/>
+    </serial>
+    <console type='pty'>
+      <target type='serial' port='0'/>
+    </console>
+    <input type='tablet' bus='usb'/>
+    <input type='mouse' bus='ps2'/>
+    <graphics type='vnc' port='-1' autoport='yes' listen='0.0.0.0'>
+      <listen type='address' address='0.0.0.0'/>
+    </graphics>
+    <video>
+      <model type='cirrus' vram='9216' heads='1'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
+    </video>
+    <memballoon model='virtio'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
+    </memballoon>
+  </devices>
+</domain>
+---------------------------------------
+
+2、定义并启动 t1
+[root@n36 kvm]# virsh define t1.xml
+[root@n36 kvm]# virsh start t1
+
+3、顺利引导进入系统后：
+调整fstab
+增加swap分区
+
+
+
+
+
+五、使用v2v转换到ovirt中
+1、配置存储池（v2v需要） 
+[root@n36 ~]# virsh pool-create-as --name p1 --type dir --target /data/kvm/images
+[root@n36 ~]# virsh pool-create-as --name vg0 --type logical --target /dev/vg0
 
 
 三、配置一个转换服务器，尝试转换xen为rhev格式
@@ -60,7 +338,7 @@ vg0              active     no
 [root@a02 ~]# ssh-copy-id 192.168.20.35
 [root@a02 ~]# ssh 192.168.20.35
 Last login: Tue Nov 17 10:21:05 2015 from 192.168.21.20
-[root@n35 ~]# exit
+[root@n36 ~]# exit
 logout
 Connection to 192.168.20.35 closed.
 [root@a02 ~]# 
@@ -75,51 +353,6 @@ t1-disk: 100% [=================================================================
 virt-v2v: t1 configured with virtio drivers.
 
 
-四、无法启动，尝试转换磁盘为可引导
-1、尝试将xen的pv转换为hvm模式
-[root@n35 xen]# cat t2.cfg 
-builder = "hvm"
-name = "t2"
-
-pae=1
-acpi=1
-apic=1
-
-on_poweroff = 'destroy'
-on_reboot   = 'restart'
-on_crash    = 'restart'
-
-memory = 2048
-maxmem = 4096
-
-vcpus = 2
-maxvcpus = 10
-disk = [ '/dev/vg0/t1-disk,,xvda',
-         '/data/test/CentOS-6.5-x86_64-bin-DVD1.iso,,hdc,cdrom' ]
-
-vif = [ 'bridge=xenbr1, mac=00:16:3E:3B:FA:3E',
-        'bridge=xenbr2, mac=00:16:3E:46:4B:31' ]
-#-----------------------------------------------------------------------------
-# boot on floppy (a), hard disk (c), Network (n) or CD-ROM (d) 
-# default: hard disk, cd-rom, floppy
-boot="d"
-
-# Guest VGA console configuration, either SDL or VNC
-vnc = 1
-vnclisten="0.0.0.0"
-vncpasswd=""
-
-serial = 'pty'
-
-[root@n35 ~]# xl create /etc/xen/t2.cfg 
-使用vnc连接上去，安装系统，选择update，在reboot前切换到命令行界面（失败）
- 
- 
-打算照着usb引导的方式来做：
-http://www.51know.info/system_base/grub_install_to_usb.html
-http://www.techrepublic.com/article/solutionbase-moving-linux-from-one-disk-to-another/
-
- 
  
  
 
@@ -136,9 +369,9 @@ http://libguestfs.org/virt-v2v.1.html
 http://xenbits.xen.org/docs/4.3-testing/misc/xl-disk-configuration.txt
 6、Converting a PV vm back into an HVM vm
 https://blogs.oracle.com/wim/entry/converting_a_pv_vm_back_into_a
-
-
-
-
+7、Migrate Xen based VM (domU) to KVM based VM
+http://wiki.kartbuilding.net/index.php/Migrate_Xen_based_VM_(domU)_to_KVM_based_VM
+8、Moving disks from Xen to KVM
+http://www.zomo.co.uk/2012/04/moving-disks-from-xen-to-kvm/
 
 
