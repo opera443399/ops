@@ -33,9 +33,7 @@ total 233164
 lrwxrwxrwx 1 root root        75 Nov  9 18:29 ovirt-tools-setup.iso -> /usr/share/ovirt-guest-tools-iso/oVirt-toolsSetup_3.6.0_0.2_master.fc22.iso
 
 
-拷贝 virtio-win-0.1.105_amd64.vfd 到 iso 域中。
-[root@engine ~]# cd /data/ovirt/iso/a0f12884-7840-42a9-b58b-280e3f4f6aba/
-dom_md/ images/ 
+拷贝 virtio-win-0.1.105_amd64.vfd 到 iso 域中。 
 [root@engine ~]# cd /data/ovirt/iso/a0f12884-7840-42a9-b58b-280e3f4f6aba/images/11111111-1111-1111-1111-111111111111/
 [root@engine 11111111-1111-1111-1111-111111111111]# cp -a /usr/share/artifacts/virtio-win-drivers/virtio-win-0.1.105_amd64.vfd .
 [root@engine 11111111-1111-1111-1111-111111111111]# cp -a /usr/share/ovirt-guest-tools-iso/oVirt-toolsSetup_3.6.0_0.2_master.fc22.iso .
