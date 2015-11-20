@@ -1,0 +1,397 @@
+日期：2015/11/12 - 2015/11/20 time 17:34
+主机：n35, n36, n86 
+目的：再探oVirt-转换xen虚拟机为kvm虚拟机并使用virt-v2v来导入到oVirt中
+操作内容：
+一、资源
+1、源：xen 主机 n35
+xen server: n35.test
+vm: t1
+
+2、vm的配置
+[root@n35 pvcreate]# cat /etc/xen/t1.cfg 
+
+kernel      = '/usr/lib/xen/boot/pv-grub-x86_64.gz'
+extra = "(hd0)/boot/grub/menu.lst"
+
+memory = "2048"
+maxmem = 10000
+name = "t1"
+vcpus = "2"
+maxvcpus = 10
+
+disk        = [
+                "phy:/dev/vg0/t1-disk,xvda1,w",
+                "phy:/dev/vg0/t1-swap,xvdb1,w"
+              ]
+
+#  Networking
+
+vif = [ "bridge=xenbr1, ip=10.50.200.32, mac=00:16:3E:62:0B:FD","bridge=xenbr2, ip=192.168.25.32, mac=00:16:3E:19:FF:C1" ]
+
+#  Behaviour
+
+on_poweroff = 'destroy'
+on_reboot   = 'restart'
+on_crash    = 'restart'
+
+其中：
+2个网卡：分别桥接到xenbr1，xenbr2
+2个磁盘：1个是系统分区，1个是swap分区，且磁盘是直接使用的lvm卷
+
+3、vm的控制
+启动：
+xl create /etc/xen/t1.cfg
+控制台：
+xl console t1
+停止：
+xl shutdown t1
+列出：
+xl list
+
+
+4、目标：kvm 主机 n36
+kvm server: n36.test
+方便起见，先配置ssh到n36的免口令登录
+[root@a02 ~]# ssh-keygen 
+[root@a02 ~]# ssh-copy-id 10.50.200.35
+[root@n36 kvm]# df -h
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/sda3             338G  3.7G  317G   2% /
+tmpfs                  16G   76K   16G   1% /dev/shm
+/dev/sda1             194M   33M  152M  18% /boot
+/dev/mapper/vg0-lv01  1.0T   13G 1012G   2% /data
+
+[root@n36 kvm]# lvs
+  LV   VG   Attr       LSize Pool Origin Data%  Move Log Cpy%Sync Convert
+  lv01 vg0  -wi-ao---- 1.00t 
+  
+挂载了一个lv分区作为数据盘，用于存放转换后的vm数据
+
+
+5、v2v转换服务器
+v2v server: a02.test
+
+[root@a02 ~]# yum install virt-v2v
+方便起见，先配置ssh到n36的免口令登录
+[root@a02 ~]# ssh-keygen 
+[root@a02 ~]# ssh-copy-id 10.50.200.36
+
+
+二、调整vm的配置
+1、禁用swap分区
+swapoff -a
+注释/etc/fstab/中的swap配置
+[root@t1 ~]# sed -i '/swap/d' /etc/fstab
+
+2、调整 /dev/xvda1这类字符，替换为为UUID格式
+[root@t1 ~]# df -h
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/xvda1      7.9G  1.5G  6.1G  19% /
+tmpfs           934M     0  934M   0% /dev/shm  
+[root@t1 ~]# blkid /dev/xvda1 
+/dev/xvda1: UUID="2aab5775-9c09-4d11-a246-1a01aaade9aa" TYPE="ext4" 
+
+[root@t1 ~]# vim /etc/fstab
+UUID="2aab5775-9c09-4d11-a246-1a01aaade9aa"  /  ext4    defaults        1 1
+
+3、关闭vm
+[root@t1 ~]# init 0
+
+
+
+三、在另外一台主机上，尝试转换磁盘为可引导
+[root@n36 kvm]# mkdir /data/kvm/{images,conf} -p
+[root@n36 kvm]# cd /data/kvm/
+
+1、创建 引导（/boot） 分区
+1）生成一个镜像
+[root@n36 kvm]# qemu-img create /data/kvm/images/t1-boot.img 100M
+
+2）格式化 boot 分区，从 cylinder 0 开始
+[root@n36 kvm]# sfdisk /data/kvm/images/t1-boot.img
+（略）
+/data/kvm/images/t1-boot1 :0（这里输入 0 ，选择 cylinder 0，然后一路回车）
+（略）
+Do you want to write this to disk? [ynq] y
+（略）)
+
+3）创建 devicemapper
+[root@n36 kvm]# kpartx -av /data/kvm/images/t1-boot.img 
+add map loop0p1 (253:2): 0 401624 linear /dev/loop0 1
+
+4）创建 fs
+[root@n36 kvm]# mke2fs  /dev/mapper/loop0p1 
+
+5）挂载文件系统
+[root@n36 kvm]# mkdir -p /mnt/boot && mount /dev/mapper/loop0p1 /mnt/boot/
+[root@n36 kvm]# df -h /mnt/boot/
+Filesystem           Size  Used Avail Use% Mounted on
+/dev/mapper/loop0p1   92M  1.6M   85M   2% /mnt/boot
+[root@n36 kvm]# ls /mnt/boot/
+lost+found
+
+6）同步本机的 /boot 目录下的文件 到 上述 新建的 boot 分区的镜像中，作为新虚拟机的 boot 分区，后续要调整内核参数和数据盘的挂载点配置中的根分区为：UUID=xxxx
+[root@n36 kvm]# du -sh /boot/
+28M     /boot/
+确认磁盘空间够用，开始同步：
+[root@n36 kvm]# rsync -avP /boot/ /mnt/boot/
+
+7）调整grub配置
+[root@n36 kvm]# echo> /mnt/boot/grub/device.map 
+[root@n36 kvm]# vim /mnt/boot/grub/grub.conf
+更改root的UUID为t1对应的UUID
+    kernel /vmlinuz-2.6.32-431.el6.x86_64 ro root=UUID=2aab5775-9c09-4d11-a246-1a01aaade9aa（调整这里，UUID在前面有提到）
+
+8）配置grub，写入启动扇区
+[root@n36 kvm]# touch /mnt/boot/kvm-boot-image
+[root@n36 kvm]# grub --device-map=/dev/null
+（略）
+grub> device (hd0) /data/kvm/images/t1-boot.img
+device (hd0) /data/kvm/images/t1-boot.img
+grub> find /kvm-boot-image
+find /kvm-boot-image
+ (hd0,0)
+grub> root (hd0,0)
+root (hd0,0)
+ Filesystem type is ext2fs, partition type 0x83
+grub> setup (hd0)
+setup (hd0)
+ Checking if "/boot/grub/stage1" exists... no
+ Checking if "/grub/stage1" exists... yes
+ Checking if "/grub/stage2" exists... yes
+ Checking if "/grub/e2fs_stage1_5" exists... yes
+ Running "embed /grub/e2fs_stage1_5 (hd0)"... failed (this is not fatal)
+ Running "embed /grub/e2fs_stage1_5 (hd0,0)"... failed (this is not fatal)
+ Running "install /grub/stage1 (hd0) /grub/stage2 p /grub/grub.conf "... succeeded
+Done.
+grub> quit
+quit
+
+9）卸载
+[root@n36 kvm]# umount /mnt/boot && kpartx -d /data/kvm/images/t1-boot.img
+loop deleted : /dev/loop0
+
+
+2、创建 根（/root） 分区
+1）源的数据分布
+[root@n35 kvm]# lvs
+  LV      VG   Attr       LSize Pool Origin Data%  Move Log Cpy%Sync Convert
+  lv01    vg0  -wi-ao---- 1.00t                                             
+  t1-disk vg0  -wi-a----- 8.00g                                             
+  t1-swap vg0  -wi-a----- 2.00g                                      
+
+2）导出数据盘t1-disk
+[root@n35 ~]# qemu-img convert -O raw /dev/vg0/t1-disk /data/test/t1-disk.img
+
+3）检查上面的这个镜像
+[root@n35 ~]# e2fsck /data/kvm/images/t1-disk.img 
+e2fsck 1.41.12 (17-May-2010)
+Superblock last mount time is in the future.
+        (by less than a day, probably due to the hardware clock being incorrectly set)  Fix<y>? yes
+
+/data/kvm/images/t1-disk.img: clean, 48297/524288 files, 402393/2097152 blocks
+有个时间的问题，修复一下，再次查看：
+[root@n36 kvm]# e2fsck /data/kvm/images/t1-disk.img 
+e2fsck 1.41.12 (17-May-2010)
+/data/kvm/images/t1-disk.img: clean, 48297/524288 files, 402393/2097152 blocks
+
+4）同步数据盘到本地
+[root@n36 kvm]# rsync -avP 10.50.200.35:/data/test/t1-disk.img /data/kvm/images/
+receiving incremental file list
+t1-disk.img
+  8589934592 100%   85.42MB/s    0:01:35 (xfer#1, to-check=0/1)
+
+sent 30 bytes  received 8590983250 bytes  89025733.47 bytes/sec
+total size is 8589934592  speedup is 1.00
+【这个步骤耗时：95s】
+
+
+5）挂载
+[root@n36 kvm]# mkdir -p /mnt/disk && mount -o loop /data/kvm/images/t1-disk.img /mnt/disk
+查看：
+[root@n36 kvm]# df -h /mnt/disk/
+Filesystem            Size  Used Avail Use% Mounted on
+/data/kvm/images/t1-disk.img
+                      7.9G  1.5G  6.1G  19% /mnt/disk
+[root@n36 kvm]# ls /mnt/disk/   
+bin   dev  home  lib64       media  opt   root  selinux  sys  usr
+boot  etc  lib   lost+found  mnt    proc  sbin  srv      tmp  var
+
+6）同步内核模块文件
+[root@n36 kvm]# rsync -avP /lib/modules/ /mnt/disk/lib/modules/
+
+7）移除/boot
+[root@n36 kvm]# echo> /mnt/disk/boot/grub/device.map
+
+8）卸载
+[root@n36 kvm]# umount /mnt/disk/
+
+
+四、使用 kvm 来启动 vm
+[root@n36 kvm]# vim conf/t1.xml
+1、创建一个kvm配置文件：
+---------------------------------------
+<domain type='kvm'>
+  <name>t1</name>
+  <memory unit='KiB'>4096000</memory>
+  <currentMemory unit='KiB'>2048000</currentMemory>
+  <vcpu placement='static'>2</vcpu>
+  <os>
+    <type arch='x86_64' machine='rhel6.5.0'>hvm</type>
+    <boot dev='hd'/>
+    <boot dev='cdrom'/>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+    <pae/>
+  </features>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>restart</on_crash>
+  <devices>
+    <emulator>/usr/libexec/qemu-kvm</emulator>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='raw' cache='none'/>
+      <source file='/data/kvm/images/t1-boot.img'/>
+      <target dev='vda' bus='virtio'/>
+    </disk>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='raw' cache='none'/>
+      <source file='/data/kvm/images/t1-disk.img'/>
+      <target dev='vdb' bus='virtio'/>
+    </disk>
+    <controller type='usb' index='0'>
+    </controller>
+    <controller type='ide' index='0'>
+    </controller>
+    <interface type='bridge'>
+      <mac address='00:16:3e:3b:fa:3e'/>
+      <source bridge='ovirtmgmt'/>
+      <model type='virtio'/>
+    </interface>
+    <interface type='bridge'>
+      <mac address='00:16:3e:46:4b:31'/>
+      <source bridge='ovirtwan'/>
+      <model type='virtio'/>
+    </interface>
+    <serial type='pty'>
+      <target port='0'/>
+    </serial>
+    <console type='pty'>
+      <target type='serial' port='0'/>
+    </console>
+    <input type='tablet' bus='usb'/>
+    <input type='mouse' bus='ps2'/>
+    <graphics type='vnc' port='-1' autoport='yes' listen='0.0.0.0'>
+      <listen type='address' address='0.0.0.0'/>
+    </graphics>
+    <video>
+      <model type='cirrus' vram='9216' heads='1'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
+    </video>
+    <memballoon model='virtio'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
+    </memballoon>
+  </devices>
+</domain>
+
+---------------------------------------
+
+2、定义并启动 t1
+[root@n36 kvm]# virsh define conf/t1.xml 
+Domain t1 defined from conf/t1.xml
+[root@n36 kvm]# virsh start t1
+
+3、验证是否顺利引导进入系统，通过后，关闭vm
+[root@n36 kvm]# virsh list --all
+ Id    Name                           State
+----------------------------------------------------
+ -     t1                             shut off
+
+
+
+四、使用v2v转换到ovirt中
+1、配置存储池（v2v需要根据 pool 来发现 vm 的磁盘） 
+[root@n36 kvm]# virsh pool-create-as --name p1 --type dir --target /data/kvm/images
+
+2、配置v2v服务器，尝试转换 kvm 为 rhev 格式
+1）先查看一下远端的 vm 列表：
+[root@a02 ~]# virsh -c qemu+ssh://root@10.50.200.36/system list --all
+ Id    Name                           State
+----------------------------------------------------
+ -     t1                             shut off
+ 
+2）开始转换
+[root@a02 ~]# date
+Fri Nov 20 16:41:31 CST 2015
+[root@a02 ~]# virt-v2v -ic qemu+ssh://root@10.50.200.36/system \
+-o rhev -os 10.50.200.86:/data/ovirt/export --network ovirtmgmt \
+t1
+
+t1-boot.img: 100% [================================================================]D 0h00m03s
+t1-disk.img: 100% [================================================================]D 0h02m17s
+（半天没任何输出，，等待ing，v2v在后台不知道在干啥呢，或许是在转换磁盘中）
+
+
+
+此时，可以切到ovirt导出域所在位置，查看v2v的临时目录是否还存在，如果上述操作完毕，该临时目录内的文件将转移到对应的同级目录 images 中：
+[root@n86 ~]# cd /data/ovirt/export/06df9082-f3e2-4c80-a18c-7418f7bb008a; \
+while true; do sleep 1s; \
+    if [ -d v2v.YvMfaTjy ]; then 
+        echo -n '.'; 
+    else 
+        echo -e "\nDONE!\n`date`";
+        break 
+    fi 
+done
+
+..................................................................................................................................................................
+DONE!
+Fri Nov 20 16:59:24 CST 2015
+【这个步骤耗时：17m53s，其中拷贝磁盘耗时：2m20s，转换耗费：15m33s】
+
+
+
+
+3、在ovirt页面导入虚拟机
+【这个步骤耗时：150s】
+
+
+
+
+
+
+
+ 
+
+五、QA
+Q1: v2v执行时报错：virt-v2v: Didn't receive full volume. 
+[root@a02 ~]# virt-v2v -ic qemu+ssh://root@10.50.200.36/system -o rhev -os 10.50.200.86:/data/ovirt/export --network ovirtmgmt t1
+t1-boot.img: 100% [================================================================]D 0h00m03s
+virt-v2v: Didn't receive full volume. Received 104857600 of 209715200 bytes.
+A：从提示可以发现，t1-boot.img 拷贝了 100M，v2v得到的信息是 200M，它是从存储池获取的信息，而此处，存储池得到的是旧的信息，可能是有kvm进程在占用（例如vnc连接到图像界面打开virt-manager界面在管理kvm，此时，不妨退出再打开，然后刷新存储池）。
+命令行刷新：
+[root@n36 kvm]# virsh pool-refresh p1
+Pool p1 refreshed
+
+ 
+ 
+ 
+ 
+ZYXW、参考
+1、xl and libvirt
+https://www.redhat.com/archives/libvir-list/2014-May/msg00928.html
+2、Migrate XenServer to RHEV
+https://access.redhat.com/discussions/451463
+3、Ovirt : Convert physical/virtual systems to virtual using virt-p2v && virt-v2v then use it in ovirt DC
+http://website-humblec.rhcloud.com/convert-physical-virtual-virtual-using-virt-v2v-virt-p2v-kvmovirt/
+4、virt-v2v - Convert a guest to use KVM
+http://libguestfs.org/virt-v2v.1.html
+5、Migrate Xen based VM (domU) to KVM based VM
+http://wiki.kartbuilding.net/index.php/Migrate_Xen_based_VM_(domU)_to_KVM_based_VM
+6、Moving disks from Xen to KVM
+http://www.zomo.co.uk/2012/04/moving-disks-from-xen-to-kvm/
+
+
