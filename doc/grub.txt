@@ -1,0 +1,113 @@
+grub和linux磁盘可引导bootable的方法探讨
+
+一、mbr
+512B(MBR)= 446B(bootloader) + 64B(partition table) + 2B(magic number)
+
+[root@a02 test]# dd if=/dev/vda of=mbr.bin bs=512 count=1 
+1+0 records in
+1+0 records out
+512 bytes (512 B) copied, 0.00386177 s, 133 kB/s
+
+[root@n86 test]# cat mbr.bin |hexdump -C
+00000000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+00000200
+
+[root@n86 test]# od -xa mbr.bin
+0000000    0000    0000    0000    0000    0000    0000    0000    0000
+        nul nul nul nul nul nul nul nul nul nul nul nul nul nul nul nul
+*
+0001000
+
+
+二、grub
+1、调整grub参数
+移除启动时的滚动条：
+删除文件 /etc/grub.conf 中 rhgb 字段。
+
+
+2、GRUB 中的手工引导
+在 GRUB 命令行中，我们可以使用 initrd 映像引导一个特定的内核，方法如下：
+grub> kernel /bzImage-2.6.14.2
+[Linux-bzImage, setup=0x1400, size=0x29672e]
+grub> initrd /initrd-2.6.14.2.img
+[Linux-initrd @ 0x5f13000, 0xcc199 bytes]
+grub> boot
+Uncompressing Linux... Ok, booting the kernel.
+如果您不知道要引导的内核的名称，只需使用斜线（/）然后按下 Tab 键即可。GRUB 会显示内核和 initrd 映像列表。
+
+
+3、实例：创建一个 引导（/boot） 分区
+1）生成一个镜像
+[root@n36 kvm]# qemu-img create /data/kvm/images/t1-boot.img 100M
+
+2）格式化 boot 分区，从 cylinder 0 开始
+[root@n36 kvm]# sfdisk /data/kvm/images/t1-boot.img
+（略）
+/data/kvm/images/t1-boot1 :0（这里输入 0 ，选择 cylinder 0，然后一路回车）
+（略）
+Do you want to write this to disk? [ynq] y
+（略）)
+
+3）创建 devicemapper
+[root@n36 kvm]# kpartx -av /data/kvm/images/t1-boot.img 
+add map loop0p1 (253:2): 0 401624 linear /dev/loop0 1
+
+4）创建 fs
+[root@n36 kvm]# mke2fs  /dev/mapper/loop0p1 
+
+5）挂载文件系统
+[root@n36 kvm]# mkdir -p /mnt/boot && mount /dev/mapper/loop0p1 /mnt/boot/
+[root@n36 kvm]# df -h /mnt/boot/
+Filesystem           Size  Used Avail Use% Mounted on
+/dev/mapper/loop0p1   92M  1.6M   85M   2% /mnt/boot
+[root@n36 kvm]# ls /mnt/boot/
+lost+found
+
+6）同步本机的 /boot 目录下的文件 到 上述 新建的 boot 分区的镜像中，作为新虚拟机的 boot 分区，后续要调整内核参数和数据盘的挂载点配置中的根分区为：UUID=xxxx
+[root@n36 kvm]# du -sh /boot/
+28M     /boot/
+确认磁盘空间够用，开始同步：
+[root@n36 kvm]# rsync -avP /boot/ /mnt/boot/
+
+7）调整grub配置
+[root@n36 kvm]# echo> /mnt/boot/grub/device.map 
+[root@n36 kvm]# vim /mnt/boot/grub/grub.conf
+更改root的UUID为t1对应的UUID
+    kernel /vmlinuz-2.6.32-431.el6.x86_64 ro root=UUID=2aab5775-9c09-4d11-a246-1a01aaade9aa（调整这里，UUID在前面有提到）
+
+8）配置grub，写入启动扇区
+[root@n36 kvm]# touch /mnt/boot/kvm-boot-image
+[root@n36 kvm]# grub --device-map=/dev/null
+（略）
+grub> device (hd0) /data/kvm/images/t1-boot.img
+device (hd0) /data/kvm/images/t1-boot.img
+grub> find /kvm-boot-image
+find /kvm-boot-image
+ (hd0,0)
+grub> root (hd0,0)
+root (hd0,0)
+ Filesystem type is ext2fs, partition type 0x83
+grub> setup (hd0)
+setup (hd0)
+ Checking if "/boot/grub/stage1" exists... no
+ Checking if "/grub/stage1" exists... yes
+ Checking if "/grub/stage2" exists... yes
+ Checking if "/grub/e2fs_stage1_5" exists... yes
+ Running "embed /grub/e2fs_stage1_5 (hd0)"... failed (this is not fatal)
+ Running "embed /grub/e2fs_stage1_5 (hd0,0)"... failed (this is not fatal)
+ Running "install /grub/stage1 (hd0) /grub/stage2 p /grub/grub.conf "... succeeded
+Done.
+grub> quit
+quit
+
+9）卸载
+[root@n36 kvm]# umount /mnt/boot && kpartx -d /data/kvm/images/t1-boot.img
+loop deleted : /dev/loop0
+
+
+
+
+ZYXW、参考
+1、Linux 引导过程内幕
+http://www.ibm.com/developerworks/cn/linux/l-linuxboot/
