@@ -1,4 +1,4 @@
-日期：2015/11/23 - 2015/11/23 time 13:03
+日期：2015/11/23 - 2015/11/23 time 16:28
 主机：n35，a02
 目的：再探oVirt-迁移xen虚拟机的disk到ovirt中新建的vm的disk上
 操作内容：
@@ -8,7 +8,7 @@ xen server: n35.test
 vm: new-t10g
 cpu: 2
 mem: 2g
-disk: 10g
+disk: 10g（lvm分区）
 eth: 2
 
 
@@ -60,9 +60,8 @@ boot  etc  lib   lost+found  mnt    proc  sbin  srv      tmp  var
 bin   dev  home  lib64       media  opt   root  selinux  sys  usr
 boot  etc  lib   lost+found  mnt    proc  sbin  srv      tmp  var
 
-
 3、开始同步【耗时：1 分钟】
-[root@a02 ~]# rsync -avP --delete 10.50.200.35:/media/ /mnt/ --exclude="boot"
+[root@a02 ~]# rsync -avP --delete 10.0.200.35:/media/ /mnt/ --exclude="boot"
 
 4、编辑grub配置，调整根分区（/）位置，将UUID调整为/dev/vda1
 [root@a02 ~]# vim /mnt/boot/grub/grub.conf 
@@ -86,11 +85,11 @@ proc                    /proc                   proc    defaults        0 0
 [root@a02 ~]# rm /mnt/etc/udev/rules.d/* 
 
 7、清理网卡配置，移除mac地址和uuid
-sed -i -e '/UUID/d' -e '/HWADDR/d' /mnt/etc/sysconfig/network-scripts/ifcfg-eth*
+[root@a02 ~]# sed -i -e '/UUID/d' -e '/HWADDR/d' /mnt/etc/sysconfig/network-scripts/ifcfg-eth*
 
 8、卸载
 [root@a02 ~]# umount /mnt/
-
+[root@n35 xen]# umount /media
 
 
 四、将 修复完毕的 磁盘 挂载回去
@@ -99,16 +98,41 @@ sed -i -e '/UUID/d' -e '/HWADDR/d' /mnt/etc/sysconfig/network-scripts/ifcfg-eth*
 3、启动虚拟机验证【符合预期】
 
 
-五、完整流程重来一遍，统计耗时
+五、测试
+1、完整流程重来一遍，统计耗时
 磁盘    步骤二耗时    步骤三耗时    步骤四耗时
  10G     00:09:16      00:04:24      00:01:35
 
+2、整个流程中，还有以下2个因数会影响耗时：
+1）xen虚拟机的系统磁盘数据较多（大量的小文件将显著的影响同步时间）
+2）克隆一个已经最小化安装的虚拟机，但这个虚拟机较大（例如，100G大概耗时： 10 分钟）
+ 
+ 
+3、测试多个分区的情景
+1）假设有如下分区
+/dev/vda1 /boot
+/dev/vda2 swap
+/dev/vda3 /
 
-六、小结
-1、如果提前收集不同的xen虚拟机配置，新建虚拟机，配置成模版，提前用模版克隆，则可以加快迁移速度。
+2）注意事项
+[root@a02 ~]# mount -o loop /dev/vdb3 /mnt/
+[root@a02 ~]# mount -o loop /dev/vdb1 /mnt/boot/
+[root@a02 ~]# vim /mnt/boot/grub/grub.conf 
+root=/dev/vda3
+[root@a02 ~]# vim /mnt/etc/fstab 
+/dev/vda3              /                       ext4    defaults        1 1
+[root@a02 ~]# rm /mnt/etc/udev/rules.d/* 
+[root@a02 ~]# sed -i -e '/UUID/d' -e '/HWADDR/d' /mnt/etc/sysconfig/network-scripts/ifcfg-eth*
+[root@a02 ~]# umount /mnt/boot/
+[root@a02 ~]# umount /mnt/
+
+4、小结
+如果提前收集不同的xen虚拟机配置，新建虚拟机，配置成模版，提前用模版克隆，则可以加快迁移速度。
 
 
 
+ZYXW、参考
+1、来自Cyrus和实验和建议思路。
 
 
 
