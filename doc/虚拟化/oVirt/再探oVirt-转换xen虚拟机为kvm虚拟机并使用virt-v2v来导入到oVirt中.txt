@@ -1,4 +1,4 @@
-日期：2015/11/12 - 2015/11/20 time 17:34
+日期：2015/11/12 - 2015/11/23 time 11:32
 主机：n35, n36, n86 
 目的：再探oVirt-转换xen虚拟机为kvm虚拟机并使用virt-v2v来导入到oVirt中
 操作内容：
@@ -26,7 +26,7 @@ disk        = [
 
 #  Networking
 
-vif = [ "bridge=xenbr1, ip=10.50.200.32, mac=00:16:3E:62:0B:FD","bridge=xenbr2, ip=192.168.25.32, mac=00:16:3E:19:FF:C1" ]
+vif = [ "bridge=xenbr1, ip=10.50.200.32, mac=00:16:3E:62:0B:FD","bridge=xenbr2, ip=10.0.205.32, mac=00:16:3E:19:FF:C1" ]
 
 #  Behaviour
 
@@ -79,7 +79,6 @@ v2v server: a02.test
 
 二、调整vm的配置
 1、禁用swap分区
-swapoff -a
 注释/etc/fstab/中的swap配置
 [root@t1 ~]# sed -i '/swap/d' /etc/fstab
 
@@ -103,7 +102,7 @@ UUID="2aab5775-9c09-4d11-a246-1a01aaade9aa"  /  ext4    defaults        1 1
 [root@n36 kvm]# mkdir /data/kvm/{images,conf} -p
 [root@n36 kvm]# cd /data/kvm/
 
-1、创建 引导（/boot） 分区
+1、创建 引导分区（/boot）
 1）生成一个镜像
 [root@n36 kvm]# qemu-img create /data/kvm/images/t1-boot.img 100M
 
@@ -172,7 +171,7 @@ quit
 loop deleted : /dev/loop0
 
 
-2、创建 根（/root） 分区
+2、创建 根分区（/）
 1）源的数据分布
 [root@n35 kvm]# lvs
   LV      VG   Attr       LSize Pool Origin Data%  Move Log Cpy%Sync Convert

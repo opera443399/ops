@@ -1,0 +1,115 @@
+日期：2015/11/23 - 2015/11/23 time 13:03
+主机：n35，a02
+目的：再探oVirt-迁移xen虚拟机的disk到ovirt中新建的vm的disk上
+操作内容：
+一、资源
+1、源：xen 主机 n35
+xen server: n35.test
+vm: new-t10g
+cpu: 2
+mem: 2g
+disk: 10g
+eth: 2
+
+
+
+2、思路
+1）在ovirt中新建1个同样的内核和磁盘配置的虚拟机A。
+2）移除A的磁盘Da，挂载到另一个虚拟机B上
+3）同步目标xen虚拟机C的数据，到Da上，排除/boot分区
+4）更新配置文件grub，fstab，udev，ifcfg
+
+
+二、在ovirt中操作
+1、新建一个虚拟机
+名称： new-t10g
+内存：2048 MB
+CPU：2
+
+引导操作，创建一个虚拟磁盘
+大小（GB）：10
+别名： new-t10g_Disk1
+
+2、只运行一次【耗时：5 分钟】
+安装系统：版本一致
+分区：和xen虚拟机一致（本例，仅根分区）
+软件包：最小化
+
+3、停止虚拟机
+4、编辑 new-t10g 的磁盘
+可引导的：不勾选
+5、删除 new-t10g 的磁盘
+永久地删除：不勾选
+5、附加并挂载 new-t10g 的磁盘 到 临时用的虚拟机 a02
+
+
+三、在 a02 上挂载 new-t10g 的磁盘
+1、挂载
+[root@a02 ~]# mount -o loop /dev/vdb1 /mnt
+[root@a02 ~]# du -sh /mnt
+589M    /mnt
+[root@a02 ~]# ls /mnt/
+bin   dev  home  lib64       media  opt   root  selinux  sys  usr
+boot  etc  lib   lost+found  mnt    proc  sbin  srv      tmp  var
+
+2、关闭xen虚拟机，挂载磁盘
+[root@n35 xen]# mount -o loop /dev/vg0/t10g-disk /media/
+[root@n35 xen]# du -sh /media
+1.3G    /media
+[root@n35 xen]# ls /media/
+bin   dev  home  lib64       media  opt   root  selinux  sys  usr
+boot  etc  lib   lost+found  mnt    proc  sbin  srv      tmp  var
+
+
+3、开始同步【耗时：1 分钟】
+[root@a02 ~]# rsync -avP --delete 10.50.200.35:/media/ /mnt/ --exclude="boot"
+
+4、编辑grub配置，调整根分区（/）位置，将UUID调整为/dev/vda1
+[root@a02 ~]# vim /mnt/boot/grub/grub.conf 
+title CentOS (2.6.32-431.el6.x86_64)
+        root (hd0,0)
+        kernel /boot/vmlinuz-2.6.32-431.el6.x86_64 ro root=/dev/vda1 rd_NO_LUKS rd_NO_LVM LANG=en_US.UTF-8 rd_NO_MD SYSFONT=latarcyrheb-sun16 crashkernel=auto  KEYBOARDTYPE=pc KEYTABLE=us rd_NO_DM rhgb quiet
+        initrd /boot/initramfs-2.6.32-431.el6.x86_64.img
+
+5、编辑fstab，调整根分区（/）为/dev/vda1，注释掉swap分区
+[root@a02 ~]# vim /mnt/etc/fstab 
+/dev/vda1              /                       ext4    defaults        1 1
+#/dev/xvda1              /                       ext4    defaults        1 1
+#/dev/xvdb1              swap                    swap    defaults        0 0
+tmpfs                   /dev/shm                tmpfs   defaults        0 0
+devpts                  /dev/pts                devpts  gid=5,mode=620  0 0
+sysfs                   /sys                    sysfs   defaults        0 0
+proc                    /proc                   proc    defaults        0 0
+
+
+6、清理udev
+[root@a02 ~]# rm /mnt/etc/udev/rules.d/* 
+
+7、清理网卡配置，移除mac地址和uuid
+sed -i -e '/UUID/d' -e '/HWADDR/d' /mnt/etc/sysconfig/network-scripts/ifcfg-eth*
+
+8、卸载
+[root@a02 ~]# umount /mnt/
+
+
+
+四、将 修复完毕的 磁盘 挂载回去
+1、选择虚拟机 a02 的磁盘 new-t10g_Disk1 ，取消激活，删除
+2、附加到虚拟机 new-t10g ，编辑，选中“可引导的”
+3、启动虚拟机验证【符合预期】
+
+
+五、完整流程重来一遍，统计耗时
+磁盘    步骤二耗时    步骤三耗时    步骤四耗时
+ 10G     00:09:16      00:04:24      00:01:35
+
+
+六、小结
+1、如果提前收集不同的xen虚拟机配置，新建虚拟机，配置成模版，提前用模版克隆，则可以加快迁移速度。
+
+
+
+
+
+
+
