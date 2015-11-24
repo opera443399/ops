@@ -16,6 +16,7 @@ http://zh.community.dell.com/techcenter/systems-management/w/wiki/618.1-6-idrac7
 简而言之就是：
 1）已经安装了OME，并使用自动发现和idrac添加了几台服务器，打开了snmp的162端口。
 2）配置了idrac的SNMP 陷阱，并测试警报目标为上述OME服务器的IP，单击“测试 SNMP 陷阱”，通过；
+启用了idrac的警报，利用“警报筛选器”以及“警报和远程系统日志配置”来选中需要通过SNMP陷阱来告警的警报。
 3）在OME中参考右上角的“帮助文档”来配置告警：
 “主页 > 管理警报 > 配置警报措施 > 设置电子邮件通知”
 4）邮件报警示例
