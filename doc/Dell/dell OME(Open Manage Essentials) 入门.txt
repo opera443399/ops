@@ -4,7 +4,7 @@ dell OME(Open Manage Essentials) 入门
 更便捷为您提供主动和自助技术支持，预先硬件日志下载，系统和驱动安装，保修和配置查询
 
 一、使用OME（OpenManageEssentials）统一管理dell服务器硬件
-下载地址：
+下载地址：（在dell服务器的产品支持页面查找“系统管理”的软件可以发现下载地址）
 http://downloads.dell.com/FOLDER03321333M/1/OpenManageEssentials_2_1_A00.exe
 下载后，通过引导程序一步步安装即可，大概有IIS，SQLSERVER，SupportAssist等。
 结合SupportAssist可实现远程监控硬件环境、自动收集数据和日志、主动创建案例和派遣部件。
@@ -15,9 +15,42 @@ http://downloads.dell.com/FOLDER03321333M/1/OpenManageEssentials_2_1_A00.exe
 http://zh.community.dell.com/techcenter/systems-management/w/wiki/618.1-6-idrac7
 简而言之就是：
 1）已经安装了OME，并使用自动发现和idrac添加了几台服务器，打开了snmp的162端口。
-2）配置了idrac的SNMP 陷阱，并测试警报目标为上述OME服务器的IP，测试通过；
+2）配置了idrac的SNMP 陷阱，并测试警报目标为上述OME服务器的IP，单击“测试 SNMP 陷阱”，通过；
 3）在OME中参考右上角的“帮助文档”来配置告警：
 “主页 > 管理警报 > 配置警报措施 > 设置电子邮件通知”
+4）邮件报警示例
+菜单：“管理-警报-警报措施-电子邮件”
+默认存在3个sample，克隆一个为：“邮件告警给Service Desk”，编辑。
+
+单击：“下一步”，进入“配置电子邮件参数”
+收件人：xxx
+发件人：xxx
+主题：
+------------------
+设备：$n[$ip]; 严重性：$sev
+------------------
+信息：
+------------------
+设备：$n[$ip]
+服务标签：$st，资产标签：$at
+日期时间: $d $t 
+严重性：$sev
+警报源名称：$sn
+警报类别名称：$cn
+软件包名称：$pkn
+建议的解决方案：$r
+
+消息：
+$m
+------------------
+单击：“邮件设置”，来配置smtp服务器和对应的帐号密码
+单击：“检测措施”，来发送测试邮件
+单击：“下一步”，进入“严重性”
+单击：“下一步”，进入“报警类别”
+单击：“下一步”，进入“设备组”
+单击：“下一步”，进入“时间范围”
+单击：“下一步”，完成。
+此时，可以在idrac单击“测试 SNMP 陷阱”来验证。
 
 
  
@@ -40,6 +73,13 @@ http://supportapj.dell.com/support/topics/topic.aspx/ap/shared/support/my_system
 http://zh.community.dell.com/support_forums/poweredge/f/279/t/9585
 
 
+三、小结
+不少人管理dell服务器的方式并不规范，是分享太少的缘故吗？是资料比较难检索到的缘故吗？
+
+
+
 ZYXW、参考
-1、大部分连接，来自dell的技术支持；
+1、大部分链接，来自dell的技术支持；
 2、OME和告警的流程，来自自己的测试小结；
+3、发现一篇文章，有大量截图介绍：DELL OME监控服务器安装配置
+http://www.cnblogs.com/wanggege/p/4770884.html
