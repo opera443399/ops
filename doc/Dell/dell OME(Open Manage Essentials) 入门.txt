@@ -1,0 +1,45 @@
+dell OME(Open Manage Essentials) 入门
+2015/11/24
+
+更便捷为您提供主动和自助技术支持，预先硬件日志下载，系统和驱动安装，保修和配置查询
+
+一、使用OME（OpenManageEssentials）统一管理dell服务器硬件
+下载地址：
+http://downloads.dell.com/FOLDER03321333M/1/OpenManageEssentials_2_1_A00.exe
+下载后，通过引导程序一步步安装即可，大概有IIS，SQLSERVER，SupportAssist等。
+结合SupportAssist可实现远程监控硬件环境、自动收集数据和日志、主动创建案例和派遣部件。
+
+
+这里讲述了如何收集idrac7的报警，并统一使用邮件告警
+参考：1.6 iDRAC7 被管理端配置(免代理软件)
+http://zh.community.dell.com/techcenter/systems-management/w/wiki/618.1-6-idrac7
+简而言之就是：
+1）已经安装了OME，并使用自动发现和idrac添加了几台服务器，打开了snmp的162端口。
+2）配置了idrac的SNMP 陷阱，并测试警报目标为上述OME服务器的IP，测试通过；
+3）在OME中参考右上角的“帮助文档”来配置告警：
+“主页 > 管理警报 > 配置警报措施 > 设置电子邮件通知”
+
+
+ 
+二、Dell Dset日志收集工具
+是硬件故障分析的利器，更加高效的报修，缩短问题解决时间，建议提前收集好。
+Windows®版: http://zh.community.dell.com/techcenter/b/weblog/archive/2012/10/21/dset-windows-174
+Linux版: http://zh.community.dell.com/techcenter/b/weblog/archive/2012/10/29/dell-poweredge-dset-linux
+VMware ESXi5.0版: http://zh.community.dell.com/techcenter/b/weblog/archive/2012/12/27/how-to-collect-dset-log-in-vmware-esxi  
+
+Windows 2008安装指南: 通过Lifecycle安装，请点这里
+http://zh.community.dell.com/support_forums/poweredge/f/279/t/2812
+
+Dell服务器驱动（Windows )及工具 下载大全:请点这里
+http://zh.community.dell.com/support_forums/poweredge/f/279/t/9585
+
+保修和配置查询，请点这里
+http://supportapj.dell.com/support/topics/topic.aspx/ap/shared/support/my_systems_info/zh/cn/details?c=cn&l=zh&s=gen
+
+技术支持论坛：请点这里
+http://zh.community.dell.com/support_forums/poweredge/f/279/t/9585
+
+
+ZYXW、参考
+1、大部分连接，来自dell的技术支持；
+2、OME和告警的流程，来自自己的测试小结；
