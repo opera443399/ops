@@ -1,4 +1,4 @@
-日期：2015/11/23 - 2015/11/23 time 16:28
+日期：2015/11/23 - 2015/11/25 time 17:25
 主机：n35，a02
 目的：再探oVirt-迁移xen虚拟机的disk到ovirt中新建的vm的disk上
 操作内容：
@@ -116,19 +116,25 @@ proc                    /proc                   proc    defaults        0 0
 
 2）注意事项
 [root@a02 ~]# mount -o loop /dev/vdb3 /mnt/
+
+调整grub（如果是做模版，可以提前调整好grub的配置，这样下面3个步骤可以省略）
 [root@a02 ~]# mount -o loop /dev/vdb1 /mnt/boot/
 [root@a02 ~]# vim /mnt/boot/grub/grub.conf 
 root=/dev/vda3
+[root@a02 ~]# umount /mnt/boot/
+
+（关闭xen虚拟机，挂载磁盘，同步数据，略）
 [root@a02 ~]# vim /mnt/etc/fstab 
-/dev/vda3              /                       ext4    defaults        1 1
+/dev/vda3 /                       ext4    defaults        1 1
+/dev/vda1 /boot                   ext4    defaults        1 2
+/dev/vda2 swap                    swap    defaults        0 0
 [root@a02 ~]# rm /mnt/etc/udev/rules.d/* 
 [root@a02 ~]# sed -i -e '/UUID/d' -e '/HWADDR/d' /mnt/etc/sysconfig/network-scripts/ifcfg-eth*
-[root@a02 ~]# umount /mnt/boot/
 [root@a02 ~]# umount /mnt/
 
 4、小结
-如果提前收集不同的xen虚拟机配置，新建虚拟机，配置成模版，提前用模版克隆，则可以加快迁移速度。
-
+1）如果提前收集不同的xen虚拟机配置，新建虚拟机，配置成模版，提前用模版克隆，则可以加快迁移速度。
+2）如果源vm（此处是new-t10g）的数据量较大（例如超过40G），建议新建一个xen虚拟机（假设是test1）挂载源vm（此处是new-t10g）的数据盘，然后再由中转的vm（此处是a02）来从test1同步数据。理由是，遇到过一次从xen宿主机（此处是n35）同步一个80G的vm时，大概同步了50G时，n35死机。
 
 
 ZYXW、参考
