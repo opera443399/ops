@@ -9,7 +9,7 @@ u：只进行更新，防止本地新文件被重写，注意两者机器的时钟的同时
 P：是综合了–partial –progress两个参数，
 所以此时的rsync支持了断点续传
 
-1）主机a启动rsync服务：
+1、主机a启动rsync服务：
 /usr/bin/rsync --daemon --address=192.168.1.250
 
 配置文件默认：/etc/rsyncd.conf
@@ -38,19 +38,19 @@ gid = root
 
 注意，使用list = no 否则可以直接通过rsync ip:: 列出模块名
 
-2）主机b同步主机a
+2、主机b同步主机a
 rsync --avzP ipa::模块名a  目录/x/y/z
 
 注意::和:的区别， 目录最后有没有斜杠的区别。
 
-3）注意测试src 和 dest 路径对应的文件夹是否符合预期；例如上述例子是将
+3、注意测试src 和 dest 路径对应的文件夹是否符合预期；例如上述例子是将
 /a/b/c 同步到本地的 /x/y/z    目录z下面放的是目录c，并非是c目录下的文件，即：
 /x/y/z/c/
 
 刚测试了下，如果路径a配置的是/a/b/c/   则同步的是/x/y/z/(c目录下的文件)
 也就是要注意路径最后有没有斜杠/
 
-4）限速
+4、限速
 
 GB级别的网卡，调整限速为600Mbps = 60000KBps
 
@@ -58,3 +58,35 @@ GB级别的网卡，调整限速为600Mbps = 60000KBps
 
 http://drops.wooyun.org/papers/161
 
+
+5、rsync和inotifywait的排除选项
+
+#!/bin/bash  
+#
+
+# rsync -avzP --exclude="*.log" --exclude="*.zip.*" --exclude="*.csv.*" --exclude="*.xls.*" /home/web/log/exportlog/ 192.168.5.72::s72log_export_pub
+
+src=/home/web/log/exportlog/
+dest=s72log_export_pub
+ip=192.168.5.72
+
+
+/usr/local/bin/inotifywait -mr -e close_write --exclude '^.*(log|csv\..*|xls\..*|zip\..*)$' $src | while read file
+do
+        echo "[+] `date` start"
+        echo "[-] $file"
+        rsync -avzP --exclude="*.log" --exclude="*.zip.*" --exclude="*.csv.*" --exclude="*.xls.*" $src $ip::$dest
+        echo "[-] `date` end"
+done
+
+
+
+6、注意rsync排除目录的区别
+# rsync -avP --delete 192.168.1.50:/media/ /mnt/ --exclude="boot"
+# rsync -avP --delete 192.168.1.50:/media/ /mnt/ --exclude="/boot"
+# rsync -avP --delete 192.168.1.50:/media/ /mnt/ --exclude="boot/"
+# rsync -avP --delete 192.168.1.50:/media/ /mnt/ --exclude="/boot/"
+
+
+
+7、如果使用 -z 参数，则可能导致传输速度变慢

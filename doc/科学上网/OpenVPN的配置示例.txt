@@ -1,0 +1,141 @@
+配置一个 OpenVPN 服务
+
+一、配置openvpn服务
+yum install epel-release
+yum install openvpn easy-rsa -y
+
+cp /usr/share/doc/openvpn-*/sample/sample-config-files/server.conf /etc/openvpn
+后续调整这个配置
+
+二、生成key和证书
+mkdir -p /etc/openvpn/easy-rsa/keys
+cp -rf /usr/share/easy-rsa/2.0/* /etc/openvpn/easy-rsa
+
+1、服务端的key和证书
+调整变量，自行修改内容
+cd /etc/openvpn/easy-rsa
+# vim vars
+export KEY_COUNTRY="US"
+export KEY_PROVINCE="NY"
+export KEY_CITY="New York"
+export KEY_ORG="test.com"
+export KEY_EMAIL="root@test.com"
+export KEY_OU="Community"
+export KEY_NAME="server"
+
+开始创建
+source ./vars
+./clean-all
+./build-ca
+./build-key-server server
+./build-dh
+
+拷贝服务器证书和key到/etc/openvpn
+cd keys 
+cp -avf dh2048.pem ca.crt server.crt server.key /etc/openvpn
+cd ..
+
+
+
+
+三、配置服务端
+# cat /etc/openvpn/server.conf |grep ^[^#] |grep -v '^;'
+port 1194
+proto udp
+dev tun
+ca ca.crt
+cert server.crt
+key server.key  # This file should be kept secret
+dh dh2048.pem
+server 192.168.234.128 255.255.255.128
+ifconfig-pool-persist ipp.txt
+push "redirect-gateway def1 bypass-dhcp"
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
+keepalive 10 120
+comp-lzo
+user nobody
+group nobody
+persist-key
+persist-tun
+status openvpn-status.log
+log         openvpn.log
+verb 3
+
+防火墙
+# cat /etc/sysconfig/iptables
+*nat
+:PREROUTING ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A POSTROUTING -s 192.168.234.128/25 -o eth1 -j MASQUERADE 
+
+COMMIT
+
+
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [22314:2061866]
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT 
+-A INPUT -p icmp -j ACCEPT 
+-A INPUT -i lo -j ACCEPT 
+-A INPUT -i tun0 -j ACCEPT
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT 
+-A INPUT -p udp -m state --state NEW -m udp --dport 1194 -j ACCEPT 
+-A INPUT -j REJECT --reject-with icmp-host-prohibited 
+-A FORWARD -i tun0 -j ACCEPT
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited 
+COMMIT
+
+打开转发
+# echo 1 > /proc/sys/net/ipv4/ip_forward 
+# sed -i 's,net.ipv4.ip_forward = 0,net.ipv4.ip_forward = 1,' /etc/sysctl.conf 
+
+
+启动服务：
+service iptables restart
+service openvpn restart
+
+四、配置客户端
+1、客户端配置中的证书和key的内容：
+cd /etc/openvpn/easy-rsa
+./build-key pc
+cd keys/
+拷贝这3个文件后续用到：ca.crt client-test.crt client-test.key
+
+
+2、编写一个客户端的配置文件：
+client-test.ovpn:
+---------------
+client
+dev tun
+proto udp
+remote put-remote-server-here 1194
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+comp-lzo
+verb 3
+
+<ca>
+cat ca.crt 的内容 粘贴到这里
+</ca>
+
+<cert>
+cat client-test.crt 的内容 粘贴到这里
+</cert>
+
+<key>
+cat client-test.key 的内容 粘贴到这里
+</key>
+----------------
+
+
+
+ZYXW、参考
+1、digitalocean
+https://www.digitalocean.com/community/tutorials/how-to-setup-and-configure-an-openvpn-server-on-centos-7
+http://bbs.aliyun.com/read/164332.html
+https://docs.ucloud.cn/software/vpn/OpenVPN4CentOS.html
