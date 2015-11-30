@@ -15,11 +15,11 @@ Setting project for dj-test to /root/.pyprojects/dj-test
 
 二、写项目
 1、startproject
-(dj-test)[root@tvm-test dj-test]# django-admin.py startproject mercury
-(dj-test)[root@tvm-test dj-test]# tree mercury/
-mercury/
+(dj-test)[root@tvm-test dj-test]# django-admin.py startproject sports
+(dj-test)[root@tvm-test dj-test]# tree sports/
+sports/
 ├── manage.py
-└── mercury
+└── sports
     ├── __init__.py
     ├── settings.py
     ├── urls.py
@@ -29,11 +29,11 @@ mercury/
 
 
 2、startapp
-(dj-test)[root@tvm-test dj-test]# cd mercury
-(dj-test)[root@tvm-test mercury]# python manage.py startapp football
-(dj-test)[root@tvm-test mercury]# ls
-football  manage.py  mercury
-(dj-test)[root@tvm-test mercury]# tree football/
+(dj-test)[root@tvm-test dj-test]# cd sports
+(dj-test)[root@tvm-test sports]# python manage.py startapp football
+(dj-test)[root@tvm-test sports]# ls
+football  manage.py  sports
+(dj-test)[root@tvm-test sports]# tree football/
 football/
 ├── admin.py
 ├── __init__.py
@@ -57,7 +57,7 @@ django的设置
 
 
 3、syncdb
-(dj-test)[root@tvm-test mercury]# python manage.py syncdb
+(dj-test)[root@tvm-test sports]# python manage.py syncdb
 Creating tables ...
 Creating table django_admin_log
 Creating table auth_permission
@@ -82,12 +82,12 @@ Installed 0 object(s) from 0 fixture(s)
 
 
 4、runserver
-(dj-test)[root@tvm-test mercury]# python manage.py runserver 0.0.0.0:8000
+(dj-test)[root@tvm-test sports]# python manage.py runserver 0.0.0.0:8000
 Validating models...
 
 0 errors found
 August 14, 2015 - 09:55:48
-Django version 1.6, using settings 'mercury.settings'
+Django version 1.6, using settings 'sports.settings'
 Starting development server at http://0.0.0.0:8000/
 Quit the server with CONTROL-C.
 
@@ -103,10 +103,10 @@ You're seeing this message because you have DEBUG = True in your Django settings
 
 
 5、【settings.py】
-(dj-test)[root@tvm-test mercury]# ls
-db.sqlite3  football  manage.py  mercury
-我们编辑一下“mercury/settings.py”，找到INSTALLED_APPS，注册我们的应用“football”
-(dj-test)[root@tvm-test mercury]# vim mercury/settings.py
+(dj-test)[root@tvm-test sports]# ls
+db.sqlite3  football  manage.py  sports
+我们编辑一下“sports/settings.py”，找到INSTALLED_APPS，注册我们的应用“football”
+(dj-test)[root@tvm-test sports]# vim sports/settings.py
 # Application definition
 
 INSTALLED_APPS = (
@@ -123,7 +123,7 @@ INSTALLED_APPS = (
 在这里注册后，django可以根据app的名称来找对应的模版和静态文件。
 
 6、【views.py】
-(dj-test)[root@tvm-test mercury]# cat football/views.py   
+(dj-test)[root@tvm-test sports]# cat football/views.py   
 #coding:utf-8 
 from django.shortcuts import render
 
@@ -134,10 +134,10 @@ from django.http import HttpResponse
 def index(request):
     return HttpResponse(u'这个app的名称是：football')
 
-这里因为涉及到中午，环境是python2而不是python3，因此要申明页面编码为utf-8，，py接触一点的应该都知道这个细节，略过。
+这里因为涉及到中文，环境是python2而不是python3，因此要申明页面编码为utf-8，，py接触一点的应该都知道这个细节，略过。
     
 7、【urls.py】
-(dj-test)[root@tvm-test mercury]# cat mercury/urls.py
+(dj-test)[root@tvm-test sports]# cat sports/urls.py
 from django.conf.urls import patterns, include, url
 
 from django.contrib import admin
@@ -145,7 +145,7 @@ admin.autodiscover()
 
 urlpatterns = patterns('',
     # Examples:
-    # url(r'^$', 'mercury.views.home', name='home'),
+    # url(r'^$', 'sports.views.home', name='home'),
     # url(r'^blog/', include('blog.urls')),
     url(r'^football/', 'football.views.index', name='home'), ## newline added here
 
@@ -154,7 +154,7 @@ urlpatterns = patterns('',
 
 
 8、再次runserver看看效果
-(dj-test)[root@tvm-test mercury]# python manage.py runserver 0.0.0.0:8000
+(dj-test)[root@tvm-test sports]# python manage.py runserver 0.0.0.0:8000
 
 在另一个窗口测试：
 [root@tvm-test ~]# curl http://127.0.0.1:8000/football/
