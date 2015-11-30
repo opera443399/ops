@@ -1,0 +1,159 @@
+日期：2015/11/30 - 2015/11/30 time 14:18
+主机：e01, n33, n34
+目的：初探glusterfs-处理脑裂(split-brain)状态
+操作内容：
+一、现象
+1、ovirt在升级glusterfs的版本时，测试未停止ovirt和gluster服务，直接升级gluster软件包然后重启gluster服务，结果发现其中一个vm的数据盘出现异常，无法启动
+2、查看glustefs日志，可能是存在脑裂
+3、原因是因为作为测试用途，仅用2台物理机做的glustefs做为ovirt的数据域，且关闭了 quorum 相关选项，这种场景容易导致脑裂，ovirt在增加数据域的时候有明显的提示。
+
+二、处理过程
+1、查看gluster的状态
+--------- split-brain的报告 ---------
+gluster> volume heal ovirt-data info
+Brick n33.test:/data/ovirt/data/
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/1d04adc8-9921-4e1c-b192-84fba64224db/bd3c9ecf-8100-42db-9db5-038dd95a4d54 - Is in split-brain
+
+Number of entries: 1
+
+Brick n34.test:/data/ovirt/data/
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/1d04adc8-9921-4e1c-b192-84fba64224db/bd3c9ecf-8100-42db-9db5-038dd95a4d54 - Is in split-brain
+
+Number of entries: 1
+
+
+2、数据对比
+--------- 异常的状态对比 ---------
+[root@n33 1d04adc8-9921-4e1c-b192-84fba64224db]# getfattr -d -m . -e hex bd3c9ecf-8100-42db-9db5-038dd95a4d54
+# file: bd3c9ecf-8100-42db-9db5-038dd95a4d54
+trusted.afr.ovirt-data-client-0=0x000000000000000000000000
+trusted.afr.ovirt-data-client-1=0x0000000a0000000000000000
+trusted.gfid=0xaa32a1b65bf14655aafbeb0f242e61e0
+
+[root@n34 1d04adc8-9921-4e1c-b192-84fba64224db]# getfattr -d -m . -e hex bd3c9ecf-8100-42db-9db5-038dd95a4d54
+# file: bd3c9ecf-8100-42db-9db5-038dd95a4d54
+trusted.afr.ovirt-data-client-0=0x0000000f0000000000000000
+trusted.afr.ovirt-data-client-1=0x000000000000000000000000
+trusted.gfid=0xaa32a1b65bf14655aafbeb0f242e61e0
+
+--------- 随便找一个正常的数据文件的状态做对比 ---------
+[root@n33 560a7b8c-fbfe-4495-b315-e46593b4523e]# getfattr -d -m . -e hex 52a0c2aa-778a-4964-98c6-03cdb591cfa8
+# file: 52a0c2aa-778a-4964-98c6-03cdb591cfa8
+trusted.afr.ovirt-data-client-0=0x000000000000000000000000
+trusted.afr.ovirt-data-client-1=0x000000000000000000000000
+trusted.gfid=0xa36f8c0d2e014dc1ba19600aa62a20ec
+
+[root@n34 560a7b8c-fbfe-4495-b315-e46593b4523e]# getfattr -d -m . -e hex 52a0c2aa-778a-4964-98c6-03cdb591cfa8
+# file: 52a0c2aa-778a-4964-98c6-03cdb591cfa8
+trusted.afr.ovirt-data-client-0=0x000000000000000000000000
+trusted.afr.ovirt-data-client-1=0x000000000000000000000000
+trusted.gfid=0xa36f8c0d2e014dc1ba19600aa62a20ec
+--------- 上面是正常的现象，2个节点的状态一致 ---------
+
+
+
+3、解释
+trusted.afr.ovirt-data-client-0=0x000000000000000000000000
+trusted.afr.ovirt-data-client-1=0x0000000a0000000000000000
+对比
+trusted.afr.ovirt-data-client-0=0x0000000f0000000000000000
+trusted.afr.ovirt-data-client-1=0x000000000000000000000000
+
+说明：
+0x 0x0000000a 00000000 00000000
+        |      |       |
+        |      |        \_ changelog of directory entries
+        |       \_ changelog of metadata
+         \ _ changelog of data
+         
+结论：client-0认为client1的数据有问题，反之亦然
+
+
+4、处理
+[root@n33 1d04adc8-9921-4e1c-b192-84fba64224db]# stat bd3c9ecf-8100-42db-9db5-038dd95a4d54
+  File: `bd3c9ecf-8100-42db-9db5-038dd95a4d54'
+  Size: 85899345920     Blocks: 27881072   IO Block: 4096   regular file
+Device: fd01h/64769d    Inode: 2147485390  Links: 2
+Access: (0660/-rw-rw----)  Uid: (   36/    vdsm)   Gid: (   36/     kvm)
+Access: 2015-11-27 19:02:02.947525264 +0800
+Modify: 2015-11-27 19:02:14.020777092 +0800
+Change: 2015-11-30 09:25:41.425588695 +0800
+[root@n34 1d04adc8-9921-4e1c-b192-84fba64224db]# stat bd3c9ecf-8100-42db-9db5-038dd95a4d54
+  File: `bd3c9ecf-8100-42db-9db5-038dd95a4d54'
+  Size: 85899345920     Blocks: 27881896   IO Block: 4096   regular file
+Device: fd01h/64769d    Inode: 1974        Links: 2
+Access: (0660/-rw-rw----)  Uid: (   36/    vdsm)   Gid: (   36/     kvm)
+Access: 2015-11-27 18:59:45.987653357 +0800
+Modify: 2015-11-27 18:59:57.051164636 +0800
+Change: 2015-11-30 09:22:22.977259770 +0800
+
+根据文件的状态内容来选择1个可靠的副本，丢弃另一个。
+
+ok，我先打算保留时间更新的一个副本，也就是n33上的，则我们打算丢弃n34上的副本
+[root@n34 1d04adc8-9921-4e1c-b192-84fba64224db]# setfattr -n trusted.afr.ovirt-data-client-0 -v 0x000000000000000100000000 bd3c9ecf-8100-42db-9db5-038dd95a4d54
+[root@n34 1d04adc8-9921-4e1c-b192-84fba64224db]# getfattr -d -m . -e hex bd3c9ecf-8100-42db-9db5-038dd95a4d54
+# file: bd3c9ecf-8100-42db-9db5-038dd95a4d54
+trusted.afr.ovirt-data-client-0=0x000000000000000100000000
+trusted.afr.ovirt-data-client-1=0x000000000000000000000000
+trusted.gfid=0xaa32a1b65bf14655aafbeb0f242e61e0
+
+
+[root@n33 1d04adc8-9921-4e1c-b192-84fba64224db]# gluster
+gluster> volume heal ovirt-data info
+Brick n33.test:/data/ovirt/data/
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/1d04adc8-9921-4e1c-b192-84fba64224db/bd3c9ecf-8100-42db-9db5-038dd95a4d54 - Possibly undergoing heal
+
+Number of entries: 1
+
+Brick n34.test:/data/ovirt/data/
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/1d04adc8-9921-4e1c-b192-84fba64224db/bd3c9ecf-8100-42db-9db5-038dd95a4d54 - Possibly undergoing heal
+
+Number of entries: 1
+
+大概5分钟后：
+gluster> volume heal ovirt-data info
+Brick n33.test:/data/ovirt/data/
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/1d04adc8-9921-4e1c-b192-84fba64224db/bd3c9ecf-8100-42db-9db5-038dd95a4d54 - Possibly undergoing heal
+
+Number of entries: 1
+
+Brick n34.test:/data/ovirt/data/
+Number of entries: 0
+
+大概半小时后：
+gluster> volume heal ovirt-data info
+Brick n33.test:/data/ovirt/data/
+Number of entries: 0
+
+Brick n34.test:/data/ovirt/data/
+Number of entries: 0
+
+
+再次对比：
+[root@n33 1d04adc8-9921-4e1c-b192-84fba64224db]# getfattr -d -m . -e hex bd3c9ecf-8100-42db-9db5-038dd95a4d54
+# file: bd3c9ecf-8100-42db-9db5-038dd95a4d54
+trusted.afr.dirty=0x000000000000000000000000
+trusted.afr.ovirt-data-client-0=0x000000000000000000000000
+trusted.afr.ovirt-data-client-1=0x000000000000000000000000
+trusted.gfid=0xaa32a1b65bf14655aafbeb0f242e61e0
+
+[root@n34 1d04adc8-9921-4e1c-b192-84fba64224db]# getfattr -d -m . -e hex bd3c9ecf-8100-42db-9db5-038dd95a4d54
+# file: bd3c9ecf-8100-42db-9db5-038dd95a4d54
+trusted.afr.dirty=0x000000000000000000000000
+trusted.afr.ovirt-data-client-0=0x000000000000000000000000
+trusted.afr.ovirt-data-client-1=0x000000000000000000000000
+trusted.gfid=0xaa32a1b65bf14655aafbeb0f242e61e0
+
+
+三、验证
+启动ovirt中对应的vm，系统是windows2008r2，可以启动，有提示异常关闭，类似突然断电，在系统中运行的服务无明显异常。
+符合预期。
+
+四、小结
+建议开启 server 和 client 的 quorum 相关选项来预防脑裂，详情请参考后附redhat的文档链接。
+
+
+
+ZYXW、参考
+1、Managing Split-brain
+https://access.redhat.com/documentation/en-US/Red_Hat_Storage/3/html/Administration_Guide/sect-Managing_Split-brain.html
