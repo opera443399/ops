@@ -1,0 +1,90 @@
+初探django-charade
+
+
+一、准备环境
+1、启动项目
+[root@tvm01 ~]# pip2.7 install django==1.8.7
+[root@tvm01 ~]# pip2.7 install pytz
+[root@tvm01 ~]# python -c "import django; print(django.get_version())"
+1.8.7
+
+[root@tvm01 ~]# mkdir django && cd django
+[root@tvm01 django]# django-admin startproject www
+[root@tvm01 django]# cd www/
+[root@tvm01 www]# django-admin startapp charade
+
+
+
+二、操作概述
+1、项目设置
+[root@tvm01 www]# vim www/settings.py 
+[root@tvm01 www]# vim www/urls.py 
+
+
+2、配置app
+[root@tvm01 www]# mkdir charade/template
+[root@tvm01 www]# vim charade/templates/index.html
+[root@tvm01 www]# vim charade/views.py 
+
+3、同步数据
+[root@tvm01 www]# python manage.py migrate
+Operations to perform:
+  Synchronize unmigrated apps: staticfiles, charade, messages
+  Apply all migrations: admin, contenttypes, auth, sessions
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+  Installing custom SQL...
+Running migrations:
+  Rendering model states... DONE
+  Applying contenttypes.0001_initial... OK
+  Applying auth.0001_initial... OK
+  Applying admin.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying sessions.0001_initial... OK
+
+
+4、更新 model 后，如何变更数据库
+
+编写 models 并注册到 admin中
+[root@tvm01 www]# vim charade/models.py
+[root@tvm01 www]# vim charade/admin.py
+
+
+通知django有数据变更
+[root@tvm01 www]# python manage.py makemigrations charade
+Migrations for 'charade':
+  0001_initial.py:
+    - Create model Vocabulary
+    
+检查要变更的sql：    
+[root@tvm01 www]# python manage.py sqlmigrate charade 0001
+
+
+执行变更
+[root@tvm01 www]# python manage.py migrate
+
+
+5、运行服务
+python manage.py runserver 0.0.0.0:80
+
+  
+6、创建管理员
+[root@tvm01 www]# python manage.py createsuperuser
+
+
+
+
+
+ZYXW、参考
+1、tutorial
+https://docs.djangoproject.com/en/1.8/intro/tutorial01/
+https://docs.djangoproject.com/en/1.8/intro/tutorial02/
+
+2、Django 基础教程
+http://www.ziqiangxuetang.com/django/django-tutorial.html

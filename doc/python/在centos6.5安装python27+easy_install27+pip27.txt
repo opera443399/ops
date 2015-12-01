@@ -1,0 +1,50 @@
+在centos6.5安装python27+easy_install27+pip27
+
+yum groupinstall "Development Tools"
+yum install -y openssl-devel zlib-dev sqlite-devel bzip2-devel
+
+如果安装openssl-devel出现报错：
+Protected multilib versions: libselinux-2.0.94-5.3.el6_4.1.i686 != libselinux-2.0.94-5.8.el6.x86_64
+可以尝试：
+yum downgrade libselinux*
+
+
+安装 Python-2.7
+wget https://www.python.org/ftp/python/2.7.10/Python-2.7.10.tgz
+tar zxvf Python-2.7.10.tgz
+cd Python-2.7.10
+./configure
+make
+make install
+cd ..
+
+
+
+安装 easy_install
+wget https://pypi.python.org/packages/source/s/setuptools/setuptools-18.7.zip
+unzip setuptools-18.7.zip
+cd setuptools-18.7
+python2.7 setup.py install
+cd ..
+
+
+安装 pip
+easy_install-2.7 pip
+# pip2.7 --version
+pip 7.1.2 from /usr/local/lib/python2.7/site-packages/pip-7.1.2-py2.7.egg (python 2.7)
+
+
+ZYXW、参考
+1、CENTOS 6.5 安装 Python 2.7 总结
+http://segmentfault.com/a/1190000000654227
+2、How To Set Up Python 2.7.6 and 3.3.3 on CentOS 6.4
+https://www.digitalocean.com/community/tutorials/how-to-set-up-python-2-7-6-and-3-3-3-on-centos-6-4
+3、0006944: openssl-devel.x86_64 has .i686 libraries as a dependency
+https://bugs.centos.org/view.php?id=6944
+4、yum install error: protected multilib versions error
+http://superuser.com/questions/345876/yum-install-error-protected-multilib-versions-error
+5、How to fix “unknown url type: https” error in easy_install
+http://ask.xmodulo.com/fix-unknown-url-type-https-error-easy_install.html
+
+
+
