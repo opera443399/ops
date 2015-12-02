@@ -1,0 +1,35 @@
+日期：2015/12/2 - 2015/12/2 time 9:36
+主机：e01, n33, n34
+目的：初探glusterfs-脑裂(split-brain)的原因
+操作内容
+
+一、场景
+Rebooting the servers like this can cause split-brains.
+Example:
+there is a volume with two bricks brick-A on server-A, and brick-B on server-B.
+Lets say server-A is brought down and while it is down file-1 is modified which needs to be healed to server-A
+from server-B as soon as it is up.
+Now as soon as server-A is up lets say server-B is brought down before the healing on file-1 could complete.
+Now lets say file-1 is modified again.
+Now when server-B comes backup, file-1 would be in split-brain.
+
+So make sure the files are healed after a server is brought up then only reboot the other machine.
+
+
+示例：
+gluster 卷 gv0 成员有
+server-A:/brick-A
+server-B:/brick-B
+
+server-A 宕机下线后，file-1 被修改，因此，预期 server-A 上线后，将被 server-B 修复 这个文件
+此时假设：
+server-A 刚上线，但 server-B 在 修复 file-1 之前，，突然也出现了宕机下线，此时，server-A 又修改了 file-1
+等到：
+server-B 修复上线时，将发现 file-1 处于脑裂的状态
+
+
+
+
+ZYXW、参考
+1、Re: No active sinks for performing self-heal on file
+http://comments.gmane.org/gmane.comp.file-systems.gluster.user/12530

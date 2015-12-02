@@ -1,5 +1,5 @@
 初探django-charade
-
+2015/12/2
 
 一、准备环境
 1、启动项目
@@ -18,35 +18,18 @@
 二、操作概述
 1、项目设置
 [root@tvm01 www]# vim www/settings.py 
-[root@tvm01 www]# vim www/urls.py 
-
 
 2、配置app
-[root@tvm01 www]# mkdir charade/template
-[root@tvm01 www]# vim charade/templates/index.html
+[root@tvm01 www]# mkdir charade/templates/charade -p
+[root@tvm01 www]# mkdir charade/static/charade/images -p
+[root@tvm01 www]# vim charade/urls.py 
+[root@tvm01 www]# vim www/urls.py
 [root@tvm01 www]# vim charade/views.py 
+[root@tvm01 www]# vim charade/templates/charade/index.html
+[root@tvm01 www]# vim charade/templates/charade/detail.html
 
 3、同步数据
 [root@tvm01 www]# python manage.py migrate
-Operations to perform:
-  Synchronize unmigrated apps: staticfiles, charade, messages
-  Apply all migrations: admin, contenttypes, auth, sessions
-Synchronizing apps without migrations:
-  Creating tables...
-    Running deferred SQL...
-  Installing custom SQL...
-Running migrations:
-  Rendering model states... DONE
-  Applying contenttypes.0001_initial... OK
-  Applying auth.0001_initial... OK
-  Applying admin.0001_initial... OK
-  Applying contenttypes.0002_remove_content_type_name... OK
-  Applying auth.0002_alter_permission_name_max_length... OK
-  Applying auth.0003_alter_user_email_max_length... OK
-  Applying auth.0004_alter_user_username_opts... OK
-  Applying auth.0005_alter_user_last_login_null... OK
-  Applying auth.0006_require_contenttypes_0002... OK
-  Applying sessions.0001_initial... OK
 
 
 4、更新 model 后，如何变更数据库
@@ -71,20 +54,47 @@ Migrations for 'charade':
 
 
 5、运行服务
-python manage.py runserver 0.0.0.0:80
+[root@tvm01 www]# python manage.py runserver 0.0.0.0:80
 
   
 6、创建管理员
 [root@tvm01 www]# python manage.py createsuperuser
+
+7、找到django的源码文件路径
+[root@tvm01 www]# python -c "
+import sys
+sys.path = sys.path[1:]
+import django
+print(django.__path__)"
+
+8、测试
+[root@tvm01 www]# python manage.py test charade
+
+9、流程
+startproject(www) -> startapp(charade) -> settings/urls(www) -> urls/models(charade) -> views/admin(charade) -> templates/static(charade)
+
+
+
+三、技巧
+1、在模版的一个循环中，根据行数来使用不同的css class
+注意 cycle 的用法
+{% for o in some_list %}
+    <tr class="{% cycle 'row1' 'row2' %}">
+        ...
+    </tr>
+{% endfor %}
+
 
 
 
 
 
 ZYXW、参考
-1、tutorial
-https://docs.djangoproject.com/en/1.8/intro/tutorial01/
-https://docs.djangoproject.com/en/1.8/intro/tutorial02/
+1、Getting started¶
+https://docs.djangoproject.com/en/1.8/intro
+https://docs.djangoproject.com/en/1.8/topics/
+https://docs.djangoproject.com/en/1.8/ref/templates/builtins/#ref-templates-builtins-tags
+https://docs.djangoproject.com/en/1.8/topics/pagination/
 
 2、Django 基础教程
 http://www.ziqiangxuetang.com/django/django-tutorial.html
