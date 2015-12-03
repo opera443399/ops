@@ -4,3 +4,18 @@ wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tgz \
 && ./configure \
 && make \
 && make install
+
+
+简单的post方法
+import requests
+
+url='http://www.psxq.gov.cn/app/inquiry/createVote.jsp'
+data={
+'inquiry':         1,      
+'topic':           1,      
+'topicType@1':     1,      
+'1@1':             2,      
+'button': ''                 
+}
+
+requests.post(url,data)
