@@ -1,0 +1,16 @@
+{% extends 'charade/base.html' %}
+{% block title %}detail{% endblock %}
+{% block content %}
+{% if gametemporarytable %}
+    <div class="word  word_en">
+        {{ gametemporarytable.en }}
+    </div>
+    <div class="word word_exp">
+        中文：{{ gametemporarytable.zh }}
+        <br />
+        解释：{{ gametemporarytable.exp }}
+    </div>
+{% else %}
+    <p>Not available.</p>
+{% endif %}
+{% endblock %}

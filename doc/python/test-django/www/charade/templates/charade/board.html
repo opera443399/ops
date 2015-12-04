@@ -1,0 +1,41 @@
+{% extends 'charade/base.html' %}
+{% block title %}Scores Board{% endblock %}
+{% block content %}
+{% if board %}
+    <div class="nav">
+        {% if board.has_previous %}
+        <span>
+            <a href="?page={{ board.previous_page_number }}">previous</a>
+        </span>
+        {% endif %}
+
+        <span>
+            Page {{ board.number }} of {{ board.paginator.num_pages }}
+        </span>
+
+        {% if board.has_next %}
+        <span>
+            <a href="?page={{ board.next_page_number }}">next</a>
+        </span>
+        {% endif %}
+    </div>
+    <table id="charade">
+        <th>team id</th>
+        <th>amount of words</th>
+        <th>scores</th>
+        <th>start</th>
+        <th>end</th>
+        {% for b in board %}
+        <tr class="{% cycle 'A' 'B' %}">
+            <td>{{ b.id }}</a></td>
+            <td>{{ b.amount }}</a></td>
+            <td>{{ b.scores }}</a></td>
+            <td>{{ b.dt_start }}</a></td>
+            <td>{{ b.dt_end }}</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+{% else %}
+    <p>Not available.</p>
+{% endif %}
+{% endblock %}

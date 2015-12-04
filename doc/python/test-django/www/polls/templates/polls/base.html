@@ -1,0 +1,28 @@
+{% load staticfiles %}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>{% block title %} polls {% endblock %}</title>
+    <meta name="Description" content="" />
+    <meta name="Keywords" content="" />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="{% static 'polls/style.css' %}" />
+</head>
+<body>
+    <!-- Header -->
+    <a href="/">
+        <img class="header" src="{% static 'polls/images/header.jpg' %}" alt="Home" title="Home"></img>
+    </a>
+
+    <p>
+    Hi, Chaos! Carpe diem, seize the day!
+    When we don't appreciate the good, when we take it for granted, the good depreciates.
+    Do it regularly as a ritual! #just remind you#
+    </p>
+    <!-- End Header -->
+    <!-- Content -->
+    {% block content %}{% endblock %}
+    <!-- End Content -->
+</body>
+</html>

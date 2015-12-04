@@ -41,6 +41,8 @@
 [root@tvm01 www]# python manage.py makemigrations charade
 Migrations for 'charade':
   0001_initial.py:
+    - Create model GameScoreBoard
+    - Create model GameTemporaryTable
     - Create model Vocabulary
     
 检查要变更的sql：    
@@ -75,7 +77,10 @@ Migrations for 'charade':
 5、测试
 [root@tvm01 www]# python manage.py test charade
 
-6、流程
+6、shell
+[root@tvm01 www]# python manage.py shell
+
+7、流程
 startproject(www) -> startapp(charade) -> settings/urls(www) -> urls/models(charade) -> views/admin(charade) -> templates/static(charade)
 
 

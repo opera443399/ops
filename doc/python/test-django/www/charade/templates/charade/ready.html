@@ -1,0 +1,16 @@
+{% extends 'charade/base.html' %}
+{% block title %} let's charade {% endblock %}
+{% block content %}
+{% if msgs %}<p><strong>{{ msgs }}<strong></p>{% endif %}
+    <form action="{% url 'charade:game_ready' %}" method="post">
+        <div class="nav">
+            <span><a href="{% url 'polls:index' %}">Polls</a></span>
+            <span>view: <a href="{% url 'charade:game_board' %}">Scores Board</a></span>
+            {% csrf_token %}
+            <label for="amount">number of words: </label>
+            <input type="text" name="amount" id="amount" size="20" maxlength="4" />
+            <button type="submit" class="button green round">Go</button>
+        </div>
+    </form>
+{% endblock %}
+
