@@ -90,3 +90,46 @@ done
 
 
 7、如果使用 -z 参数，则可能导致传输速度变慢
+
+
+8、使用密码验证
+服务端：
+# cat /etc/rsyncd.conf
+-----
+uid = root
+gid = root
+use chroot = yes
+max connections = 200
+timeout=600
+#syslog facility = local5
+pid file = /var/log/rsync/rsyncd.pid
+log file = /var/log/rsync/rsyncd.log
+lock file= /var/log/rsync/rsync.lock
+
+[data]
+        path = /data
+        refuse options =  delete
+        comment = backup
+        read only= no
+        uid = root
+        gid = root
+        #ignore errors
+        auth users = backup
+        secrets file = /etc/rsyncd.secrets
+        
+
+-----
+# cat /etc/rsyncd.secrets 
+backup:111111
+
+# chmod 600 /etc/rsyncd.secrets 
+
+# /usr/bin/rsync --daemon --address=192.168.1.100
+
+客户端：
+# cat /etc/rsync.pass
+111111
+# chmod 600 /etc/rsync.pass
+# rsync -av --no-o --no-g --password-file=/etc/rsync.pass /tmp/1 backup@192.168.20.220::data/backup/ovirt/engine
+
+
