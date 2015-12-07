@@ -12,6 +12,6 @@ urlpatterns = [
     url(r'^score/(?P<wid>[0-9]+)/$', views.game_score, name='game_score'),
     # ex: /charade/board
     url(r'^board/$', views.game_board, name='game_board'),
-    # ex: /charade/vocabulary/explain/11
+    # ex: /charade/explanation/11
     url(r'^explanation/(?P<pk>[0-9]+)/$', views.Explanation.as_view(), name='explanation'),
 ]
