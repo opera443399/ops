@@ -1,4 +1,5 @@
-supervisor
+supervisor的使用简介
+2015/12/8
 
 1、安装
 wget https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py -O - | python

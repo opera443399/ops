@@ -1,5 +1,6 @@
 初探django-charade
-2015/12/4
+2015/12/8
+在根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）
 
 一、准备环境
 1、启动项目
@@ -16,6 +17,9 @@
 [root@tvm01 django]# cd www/
 
 
+2、备注
+1）此处为简单演示，未使用类似 virtualenv 这类配置，具体方法可以自行测试几次，很简单。
+2）使用的系统是 centos6.5x64，并编译安装了python2.7，如果是 centos7， 则默认已经是 python2.7 的版本
 
 
 二、操作概述
@@ -125,7 +129,7 @@ class Question(models.Model):
 
 
 ZYXW、参考
-1、Getting started¶
+1、Getting started
 模型：https://docs.djangoproject.com/en/1.8/intro/tutorial01/
 后台：https://docs.djangoproject.com/en/1.8/intro/tutorial02/
 视图：https://docs.djangoproject.com/en/1.8/intro/tutorial03/

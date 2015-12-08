@@ -60,6 +60,8 @@ server {
 [root@tvm01 www]# service nginx start
 
 
-
+三、备注
+笔者当然也有参考网络文章如何配置apache，如何使用nginx的uwsgi模块，可惜在有限的时间内，未测试成功，后续再琢磨。
+因此，才笨拙的采用了nginx处理static文件，然后路由urls，转发到后端的uwsgi服务上
 
 

@@ -1,6 +1,6 @@
-日期：2015/10/20 - 2015/11/12 time 17:02
+日期：2015/10/20 - 2015/12/8 time 16:15
 主机：n86
-目的：初探oVirt-测试restful-api
+目的：初探oVirt-体验REST-API
 操作内容：
 一、示例
 1、列出资源，使用GET方法
@@ -48,6 +48,10 @@
 
 
 二、配置cloud-init
+注：本文是从ovirt-engine-sdk-python的3.5.4更新到3.6.0.3，关于版本的差异有一个主要区别是新增了这个选项：
+<use_cloud_init>true</use_cloud_init>
+
+
 1、调整主机名，重新生成ssh-keys，更改用户密码，设置网卡和dns
 curl -s --cacert ca.crt \
 -u "admin@internal:TestVM" \
@@ -207,7 +211,7 @@ runcmd:
   ["NoCloud", "ConfigDrive"]'' >> /etc/cloud/cloud.cfg'
 
 runcmd:
-- curl http://192.168.20.102/ovirt/test.sh |bash -
+- curl http://office.test/ovirt/test.sh |bash -
                     [root@n36 ~]# 
 查看目标机器是否执行命令：
 [root@vm_200_8 ~]# tail -n 1 /tmp/test.sh.log 
@@ -220,9 +224,9 @@ Thu Nov 12 08:02:25 CST 2015 [test]
 [root@n86 bin]# cat ovirt_api.sh 
 #!/bin/bash
 # 
-# 2015/11/12
-# __version__='0.2.7'
-# for ovirt-engine-sdk-python-3.6.0
+# 2015/12/8
+# __version__='0.2.8'
+# for ovirt-engine-3.6.0.3
 
 #
 DEBUG=0
@@ -538,7 +542,7 @@ case ${s_action} in
         vm_${s_action} ${s_vm_name}
         ;;
     create)
-        vm_create_from_tpl ${s_vm_name} 'tpl-m1' 'host-only'
+        vm_create_from_tpl ${s_vm_name} 'tpl-m1' 'C1'
         vm_state ${s_vm_name}
         ;;
     init)
