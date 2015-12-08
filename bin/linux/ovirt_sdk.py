@@ -1,7 +1,7 @@
 #!/bin/env python
 # -*- coding:utf-8 -*-
-# for ovirt-engine-sdk-python-3.5.4
-# 2015/11/9
+# for ovirt-engine-sdk-python-3.6.0.3
+# 2015/12/8
 
 from __future__ import print_function
 from time import sleep
@@ -9,7 +9,7 @@ from time import sleep
 from ovirtsdk.api import API
 from ovirtsdk.xml import params
 
-__version__ = '0.2.7'
+__version__ = '0.2.8'
 
 OE_URL = 'https://e01.test/api'
 OE_USERNAME = 'admin@internal'
@@ -125,7 +125,7 @@ def vm_run_once(oe_api, vm_name, vm_password, vm_nic_info):
                                             network_configuration=p_network)
             p_initialization = params.Initialization(cloud_init=p_cloud_init)
             vm_params = params.VM(initialization=p_initialization)
-            vm_action = params.Action(vm=vm_params)
+            vm_action = params.Action(vm=vm_params, use_cloud_init=True)
             oe_api.vms.get(vm_name).start(vm_action)
             
             print('[I] Waiting for VM to reach Up status... ', end='')
@@ -178,8 +178,8 @@ if __name__ == '__main__':
     p.add_option("-L", "--vm-list", action="store", type="string", dest="vm_list",
                  help='a list of vms. eg: -a stop-list -L "vm01, vm02, vm03"')
     p.set_defaults(action='list',
-                   vm_cluster='Host-Only',
-                   vm_template='tpl-s1')
+                   vm_cluster='C01',
+                   vm_template='tpl-m1')
     opt, args = p.parse_args()
     oe_conn = None
     try:
