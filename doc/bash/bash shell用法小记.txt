@@ -1,7 +1,7 @@
 bash shell用法小记
-2015/11/27
+2015/12/08
 
-shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，具体的请因需求自行研究。
+shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
 1. 计算
 # echo $((1+2))
@@ -318,4 +318,61 @@ _EOF
 
 20. 模拟占用最少 1 GiB 内存
 python -c "while True: data='x'*1024*10**6" &
+
+
+21. 排序的疑问
+[root@tvm01 ~]# cat a.test 
+a
+b
+c
+d
+e
+a
+b
+c
+d
+e
+1
+2
+3
+4
+5
+1
+1
+2
+2
+3
+3
+[root@tvm01 ~]# cat a.test |uniq |sort      
+1
+1
+2
+2
+3
+3
+4
+5
+a
+a
+b
+b
+c
+c
+d
+d
+e
+e
+[root@tvm01 ~]# cat a.test |sort |uniq |sort      
+1
+2
+3
+4
+5
+a
+b
+c
+d
+e
+上述2者的效果不一样，为何？
+原因：uniq命令隔行重复是无效的，针对这种情况，需要先用sort排序再uniq。
 

@@ -13,8 +13,8 @@ debug
 www/setting.py: DEBUG=True
 如果：DEBUG=False，则django不处理静态文件，此时应该配置nginx或apache来处理静态文件
 
-nginx
------
+uwsgi+nginx+supervisor
+----------------------
 一、安装
 [root@tvm01 ~]# yum install nginx
 [root@tvm01 ~]# pip2.7 install uwsgi
@@ -35,8 +35,24 @@ STATIC_ROOT = os.path.join(BASE_DIR,'static')
 3、使用uwsgi来运行django服务：
 [root@tvm01 www]# /usr/local/bin/uwsgi --http 127.0.0.1:8090 --chdir /opt/test-django/www --module www.wsgi >/var/log/nginx/uwsgi.log 2>&1 & 
 
+4、使用supervisor来管理uwsgi服务：
+# pip2.7 install supervisor
+# echo_supervisord_conf > /etc/supervisord.conf \
+&& mkdir /etc/supervisor.d \
+&& /usr/bin/echo_supervisord_conf >/etc/supervisord.conf  \
+&& echo -e '[include]\nfiles=/etc/supervisor.d/*.ini' >>/etc/supervisord.conf \
+&& grep ^[^\;] /etc/supervisord.conf
+# whereis supervisord
+supervisord: /etc/supervisord.conf /usr/local/bin/supervisord
+# /usr/local/bin/supervisord -c /etc/supervisord.conf
+# echo '/usr/local/bin/supervisord -c /etc/supervisord.conf' >>/etc/rc.local
+# cd /etc/supervisor.d
+# cat uwsgi.ini 
+[program:uwsgi]
+command=/usr/local/bin/uwsgi --http 127.0.0.1:8090 --chdir /opt/test-django/www --module www.wsgi >/var/log/nginx/uwsgi.log 2>&1
+# supervisorctl reload
 
-4、使用nginx来处理静态文件：
+5、使用nginx来处理静态文件：
 [root@tvm01 www]# cat /etc/nginx/conf.d/www.conf 
 upstream backend {
     server 127.0.0.1:8090;

@@ -1,29 +1,58 @@
 supervisor
 
-安装
-[root@www download]# wget https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py -O - | python
-[root@www download]# easy_install supervisor
-[root@www download]# echo_supervisord_conf > /etc/supervisord.conf
+1、安装
+wget https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py -O - | python
+easy_install supervisor
+
+或者
+yum install python-pip
+pip install supervisor
 
 
-启动supervisord服务：
-/usr/bin/supervisord -c /etc/supervisord.conf
+2、配置文件：
+# echo_supervisord_conf > /etc/supervisord.conf \
+&& mkdir /etc/supervisor.d \
+&& /usr/bin/echo_supervisord_conf >/etc/supervisord.conf  \
+&& echo -e '[include]\nfiles=/etc/supervisor.d/*.ini' >>/etc/supervisord.conf \
+&& grep ^[^\;] /etc/supervisord.conf
+        
+        
+
+3、启动supervisord服务：
+# whereis supervisord
+supervisord: /etc/supervisord.conf /usr/local/bin/supervisord
+# /usr/local/bin/supervisord -c /etc/supervisord.conf
 
 并增加到开机启动/etc/rc.local中
+# echo '/usr/local/bin/supervisord -c /etc/supervisord.conf' >>/etc/rc.local
 
+4、配置服务
+# cd /etc/supervisor.d
+# cat sshd.ini    
+[program:sshd]
+command=/usr/sbin/sshd -D
 
-配置supervisord.conf：
-
-[root@test11 ~]# tail -n 5  /etc/supervisord.conf  
-[program:progname]
+# cat test.ini    
+[program:test]
 command=/usr/bin/php  xxx.php
 process_name=%(program_name)s_%(process_num)02d
 numprocs=5
-user=daemon
+user=nobody
+
+# cat uwsgi.ini 
+[program:uwsgi]
+command=/usr/local/bin/uwsgi --http 127.0.0.1:8090 --chdir /opt/test-django/www --module www.wsgi >/var/log/nginx/uwsgi.log 2>&1
 
 重新加载supervisord服务：
-supervisorctl reload
+# supervisorctl reload
+Restarted supervisord
 
+验证
+# supervisorctl status
+uwsgi                            RUNNING   pid 15041, uptime 0:00:17
+# ss -antp src :8090
+State       Recv-Q Send-Q                     Local Address:Port                       Peer Address:Port 
+LISTEN      0      100                            127.0.0.1:8090                                  *:*      users:(("uwsgi",15041,4),("uwsgi",15042,4))
 
 调整user1增加sudo的权限：
 user1 ALL=NOPASSWD: /usr/bin/supervisorctl
