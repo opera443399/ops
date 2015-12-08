@@ -1,8 +1,8 @@
 #!/bin/bash
 # 
-# 2015/11/12
-# __version__='0.2.7'
-# for ovirt-engine-sdk-python-3.6.0
+# 2015/12/8
+# __version__='0.2.8'
+# for ovirt-engine-3.6.0.3
 
 #
 DEBUG=0
@@ -318,7 +318,7 @@ case ${s_action} in
         vm_${s_action} ${s_vm_name}
         ;;
     create)
-        vm_create_from_tpl ${s_vm_name} 'tpl-m1' 'host-only'
+        vm_create_from_tpl ${s_vm_name} 'tpl-m1' 'C1'
         vm_state ${s_vm_name}
         ;;
     init)
