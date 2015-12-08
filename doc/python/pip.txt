@@ -47,7 +47,7 @@ pip freeze >requirements.txt
 
 
 四、版本问题
-在windows下安装 ovirt-engine-sdk-python 时遇到异常：
+1、在windows下安装 ovirt-engine-sdk-python 时遇到异常：
 # pip install ovirt-engine-sdk-python
 Please specify --curl-dir=/path/to/built/libcurl
 
@@ -56,8 +56,49 @@ pycurl DLL load failed: %1 不是有效的 Win32 应用程序。
 
 可以在这里找到amd64的版本，然后用pip手动安装：
 http://www.lfd.uci.edu/~gohlke/pythonlibs/#pycurl
+假设下载后，路径为：D:/pycurl-7.19.5.1-cp27-none-win_amd64.whl
+
+安装：
+C:\Users\admin>pip install D:/pycurl-7.19.5.1-cp27-none-win_amd64.whl
+Processing d:\pycurl-7.19.5.1-cp27-none-win_amd64.whl
+Installing collected packages: pycurl
+Successfully installed pycurl-7.19.5.1
 
 
+2、升级
+pip install --upgrade ovirt-engine-sdk-python
+如果又遇到pycurl异常的提示，，
+C:\Users\admin>pip install D:/pycurl-7.19.5.1-cp27-none-win_amd64.whl
+Processing d:\pycurl-7.19.5.1-cp27-none-win_amd64.whl
+Installing collected packages: pycurl
+Successfully installed pycurl-7.19.5.1
+
+C:\Users\admin>pip install --upgrade ovirt-engine-sdk-python
+Collecting ovirt-engine-sdk-python
+  Using cached ovirt-engine-sdk-python-3.6.0.3.tar.gz
+Collecting lxml>=2.2.3 (from ovirt-engine-sdk-python)
+  Using cached lxml-3.5.0.tar.gz
+Collecting pycurl>=7.19.0 (from ovirt-engine-sdk-python)
+  Using cached pycurl-7.19.5.3.tar.gz
+    Complete output from command python setup.py egg_info:
+    Please specify --curl-dir=/path/to/built/libcurl
+
+    ----------------------------------------
+Command "python setup.py egg_info" failed with error code 10 in c:\users\pc5e16~
+1.pen\appdata\local\temp\pip-build-owiy_9\pycurl
+
+
+则尝试 uninstall ovirt-engine-sdk-python 再重新install
+C:\Users\admin>pip install ovirt-engine-sdk-python
+Collecting ovirt-engine-sdk-python
+  Using cached ovirt-engine-sdk-python-3.6.0.3.tar.gz
+Requirement already satisfied (use --upgrade to upgrade): lxml>=2.2.3 in d:\apps
+\python27\lib\site-packages (from ovirt-engine-sdk-python)
+Requirement already satisfied (use --upgrade to upgrade): pycurl>=7.19.0 in d:\a
+pps\python27\lib\site-packages (from ovirt-engine-sdk-python)
+Installing collected packages: ovirt-engine-sdk-python
+  Running setup.py install for ovirt-engine-sdk-python
+Successfully installed ovirt-engine-sdk-python-3.6.0.3
 
 
 
