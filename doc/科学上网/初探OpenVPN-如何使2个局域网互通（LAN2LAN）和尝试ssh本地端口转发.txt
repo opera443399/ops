@@ -1,0 +1,386 @@
+初探OpenVPN-如何使2个局域网互通（LAN2LAN）和尝试ssh本地端口转发
+2015/12/9
+
+注：这里采用tcp方法和对应的remote，由于我们连接的服务器是阿里云的国外ECS，可能被相关政策有干扰，直接tcp reset，因此，采用ssh转发端口到本地来建立连接。
+
+一、配置openvpn服务
+[root@test-server-us ~]# yum install epel-release
+[root@test-server-us ~]# yum install openvpn easy-rsa -y
+
+[root@test-server-us ~]# cp /usr/share/doc/openvpn-*/sample/sample-config-files/server.conf /etc/openvpn
+后续调整这个配置
+
+二、生成key和证书
+[root@test-server-us ~]# mkdir -p /etc/openvpn/easy-rsa/keys
+[root@test-server-us ~]# cp -rf /usr/share/easy-rsa/2.0/* /etc/openvpn/easy-rsa
+
+1、服务端的key和证书
+调整变量，自行修改内容
+[root@test-server-us ~]# cd /etc/openvpn/easy-rsa
+[root@test-server-us easy-rsa]# vim vars
+export KEY_COUNTRY="US"
+export KEY_PROVINCE="NY"
+export KEY_CITY="New York"
+export KEY_ORG="test.com"
+export KEY_EMAIL="root@test.com"
+export KEY_OU="Community"
+export KEY_NAME="server"
+
+开始创建
+[root@test-server-us easy-rsa]# source ./vars
+[root@test-server-us easy-rsa]# ./clean-all
+[root@test-server-us easy-rsa]# ./build-ca
+[root@test-server-us easy-rsa]# ./build-key-server server
+[root@test-server-us easy-rsa]# ./build-dh
+
+拷贝服务器证书和key到/etc/openvpn
+[root@test-server-us easy-rsa]# cd keys && cp -avf dh2048.pem ca.crt server.crt server.key /etc/openvpn && cd ..
+
+2、先在服务端生成客户端（假设客户的名称为 pc ）配置中的需要的证书和key（注意，common name 也设置为 pc）：
+[root@test-server-us easy-rsa]# ./build-key pc
+拷贝（或下载）这3个文件（后续在客户端用到）：
+[root@test-server-us easy-rsa]# cd keys/
+ca.crt client-test.crt client-test.key
+
+
+[root@test-server-us keys]# cd /etc/openvpn
+
+
+
+三、配置服务端
+1、创建配置文件
+[root@test-server-us openvpn]# cat /etc/openvpn/server.conf |grep ^[^#] |grep -v '^;'
+local 127.0.0.1
+port 1194
+proto tcp
+dev tun
+ca ca.crt
+cert server.crt
+key server.key  # This file should be kept secret
+dh dh2048.pem
+server 192.168.234.128 255.255.255.128      # 用于 vpn 隧道的网段
+ifconfig-pool-persist ipp.txt
+push "route 10.117.232.0 255.255.248.0"     # 推送服务端的本地网段的路由到客户端
+client-config-dir ccd                       # 客户端的配置文件存放目录
+route 192.168.20.0 255.255.255.0            # 增加到客户端的后端的子网的路由
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
+keepalive 10 120
+comp-lzo
+user nobody
+group nobody
+persist-key
+persist-tun
+status openvpn-status.log
+log         openvpn.log
+verb 3
+
+
+建立目录：
+[root@test-server-us openvpn]# mkdir ccd
+
+为客户端（还是以客户 pc 为例 ）建立一个独立的配置文件（文件的名称和上面的步骤中生成的key中的 common name 一致）：
+[root@test-server-us openvpn]# cat ccd/pc 
+iroute 192.168.20.0 255.255.255.0           # 保证客户端连接后，该客户端的后端的子网也可以访问vpn
+ifconfig-push  192.168.234.153 192.168.234.154
+上述指定了 客户 pc 连接上来时，分配指定的IP地址 192.168.234.153
+
+
+
+2、调整防火墙
+[root@test-server-us openvpn]# cat /etc/sysconfig/iptables
+*nat
+:PREROUTING ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A POSTROUTING -s 192.168.234.128/25 -o eth1 -j MASQUERADE 
+
+COMMIT
+
+
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [22314:2061866]
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT 
+-A INPUT -p icmp -j ACCEPT 
+-A INPUT -i lo -j ACCEPT 
+-A INPUT -i tun0 -j ACCEPT
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT 
+-A INPUT -p udp -m state --state NEW -m udp --dport 1194 -j ACCEPT 
+-A INPUT -j REJECT --reject-with icmp-host-prohibited 
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited 
+COMMIT
+
+[root@test-server-us openvpn]# service iptables restart
+
+
+3、启用 ip_forward 
+[root@test-server-us openvpn]# echo 1 > /proc/sys/net/ipv4/ip_forward 
+[root@test-server-us openvpn]# sed -i 's,net.ipv4.ip_forward = 0,net.ipv4.ip_forward = 1,' /etc/sysctl.conf 
+
+
+4、启动服务：
+[root@test-server-us openvpn]# service openvpn restart
+
+
+四、配置客户端
+1、创建一个客户端的配置文件：
+[root@tvm01 ~]# yum install openvpn
+[root@tvm01 ~]# mkdir /etc/openvpn/clients/
+[root@tvm01 ~]# cat /etc/openvpn/clients/client-pc.ovpn 
+client
+dev tun
+proto tcp
+remote 127.0.0.1 1234
+#proto udp
+#remote 47.88.29.134 1194
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+comp-lzo
+verb 3
+
+<ca>
+cat ca.crt 的内容 粘贴到这里
+</ca>
+
+<cert>
+cat client-test.crt 的内容 粘贴到这里
+</cert>
+
+<key>
+cat client-test.key 的内容 粘贴到这里
+</key>
+
+
+2、连接到VPN服务端
+1）配置ssh本地端口转发
+ssh-keygen
+ssh-copy-id 47.88.29.134
+ssh -NfL 1234:127.0.0.1:1194 47.88.29.134
+
+2）连接
+[root@tvm01 ~]# openvpn  /etc/openvpn/clients/client-pc.ovpn >/var/log/openvpn.client.log 2>&1 &
+
+3）查看服务端的状态
+[root@test-server-us openvpn]# cat openvpn-status.log 
+OpenVPN CLIENT LIST
+Updated,Wed Dec  9 16:30:02 2015
+Common Name,Real Address,Bytes Received,Bytes Sent,Connected Since
+pc,127.0.0.1:48295,8283,9018,Wed Dec  9 16:21:35 2015
+ROUTING TABLE
+Virtual Address,Common Name,Real Address,Last Ref
+192.168.234.153,pc,127.0.0.1:48295,Wed Dec  9 16:23:50 2015
+192.168.20.0/24,pc,127.0.0.1:48295,Wed Dec  9 16:21:46 2015
+GLOBAL STATS
+Max bcast/mcast queue length,0
+END
+
+
+
+五、测试
+1、IP of c/s
+【客户端】
+[root@tvm01 ~]# ip a |grep global
+    inet 192.168.20.32/24 brd 192.168.20.255 scope global eth1
+    inet 192.168.234.153 peer 192.168.234.154/32 scope global tun0
+[root@tvm01 ~]# route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+192.168.234.129 192.168.234.154 255.255.255.255 UGH   0      0        0 tun0
+192.168.234.154 0.0.0.0         255.255.255.255 UH    0      0        0 tun0
+192.168.20.0    0.0.0.0         255.255.255.0   U     0      0        0 eth1
+10.117.232.0    192.168.234.154 255.255.248.0   UG    0      0        0 tun0
+169.254.0.0     0.0.0.0         255.255.0.0     U     1003   0        0 eth1
+0.0.0.0         192.168.20.1    0.0.0.0         UG    0      0        0 eth1
+
+
+【服务端】
+[root@test-server-us openvpn]# ip a |grep global
+    inet 10.117.234.195/21 brd 10.117.239.255 scope global eth0
+    inet 47.88.29.134/22 brd 47.88.31.255 scope global eth1
+    inet 192.168.234.129 peer 192.168.234.130/32 scope global tun0
+[root@test-server-us openvpn]# route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+192.168.234.130 0.0.0.0         255.255.255.255 UH    0      0        0 tun0
+192.168.234.128 192.168.234.130 255.255.255.128 UG    0      0        0 tun0
+192.168.21.0    192.168.234.130 255.255.255.0   UG    0      0        0 tun0
+192.168.20.0    192.168.234.130 255.255.255.0   UG    0      0        0 tun0
+47.88.28.0      0.0.0.0         255.255.252.0   U     0      0        0 eth1
+10.117.232.0    0.0.0.0         255.255.248.0   U     0      0        0 eth0
+169.254.0.0     0.0.0.0         255.255.0.0     U     1002   0        0 eth0
+169.254.0.0     0.0.0.0         255.255.0.0     U     1003   0        0 eth1
+172.16.0.0      10.117.239.247  255.240.0.0     UG    0      0        0 eth0
+100.64.0.0      10.117.239.247  255.192.0.0     UG    0      0        0 eth0
+10.0.0.0        10.117.239.247  255.0.0.0       UG    0      0        0 eth0
+0.0.0.0         47.88.31.247    0.0.0.0         UG    0      0        0 eth1
+
+
+2、ICMP from c/s
+【客户端】
+[root@tvm01 ~]# ping -c 2 192.168.234.129
+PING 192.168.234.129 (192.168.234.129) 56(84) bytes of data.
+64 bytes from 192.168.234.129: icmp_seq=1 ttl=64 time=170 ms
+64 bytes from 192.168.234.129: icmp_seq=2 ttl=64 time=169 ms
+
+[root@tvm01 ~]# ping -c 2 10.117.234.195
+PING 10.117.234.195 (10.117.234.195) 56(84) bytes of data.
+64 bytes from 10.117.234.195: icmp_seq=1 ttl=64 time=169 ms
+64 bytes from 10.117.234.195: icmp_seq=2 ttl=64 time=169 ms
+
+
+【服务端】
+[root@test-server-us openvpn]# ping -c 2 192.168.234.153
+PING 192.168.234.153 (192.168.234.153) 56(84) bytes of data.
+64 bytes from 192.168.234.153: icmp_seq=1 ttl=64 time=169 ms
+64 bytes from 192.168.234.153: icmp_seq=2 ttl=64 time=170 ms
+
+[root@test-server-us openvpn]# ping -c 2 192.168.20.32
+PING 192.168.20.32 (192.168.20.32) 56(84) bytes of data.
+64 bytes from 192.168.20.32: icmp_seq=1 ttl=64 time=169 ms
+64 bytes from 192.168.20.32: icmp_seq=2 ttl=64 time=170 ms
+
+
+3、APP on c/s
+---------app1------------
+【客户端】
+[root@tvm01 ~]# python -m SimpleHTTPServer 8081
+Serving HTTP on 0.0.0.0 port 8081 ...
+192.168.234.129 - - [09/Dec/2015 16:07:33] "HEAD / HTTP/1.1" 200 -
+192.168.234.129 - - [09/Dec/2015 16:07:47] "HEAD / HTTP/1.1" 200 -
+
+【服务端】
+[root@test-server-us openvpn]# curl -I 192.168.234.153:8081
+HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/2.7.10
+Date: Wed, 09 Dec 2015 08:07:33 GMT
+Content-type: text/html; charset=UTF-8
+Content-Length: 860
+
+[root@test-server-us openvpn]# curl -I 192.168.20.32:8081  
+HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/2.7.10
+Date: Wed, 09 Dec 2015 08:07:47 GMT
+Content-type: text/html; charset=UTF-8
+Content-Length: 860
+
+---------app2------------
+【服务端】
+[root@test-server-us openvpn]# python -m SimpleHTTPServer 8091
+Serving HTTP on 0.0.0.0 port 8091 ...
+192.168.234.153 - - [09/Dec/2015 16:08:42] "HEAD / HTTP/1.1" 200 -
+192.168.234.153 - - [09/Dec/2015 16:09:40] "HEAD / HTTP/1.1" 200 -
+
+【客户端】
+[root@tvm01 ~]# curl -I 192.168.234.129:8091
+HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/2.6.6
+Date: Wed, 09 Dec 2015 08:08:42 GMT
+Content-type: text/html; charset=UTF-8
+Content-Length: 570
+
+[root@tvm01 ~]# curl -I 10.117.234.195:8091 
+HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/2.6.6
+Date: Wed, 09 Dec 2015 08:09:40 GMT
+Content-type: text/html; charset=UTF-8
+Content-Length: 570
+
+
+4、LAN from vpn client backend
+【准备工作】
+启用 tvm01 的 ip_forward
+[root@tvm01 ~]# echo 1 >/proc/sys/net/ipv4/ip_forward
+
+调整LAN中一台vm的网关指向 tvm01（192.168.20.32）
+[root@tvm02 ~]# ip a |grep global
+    inet 192.168.20.42/24 brd 192.168.20.255 scope global eth1
+[root@tvm02 ~]# route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+192.168.20.0    0.0.0.0         255.255.255.0   U     0      0        0 eth1
+169.254.0.0     0.0.0.0         255.255.0.0     U     1003   0        0 eth1
+0.0.0.0         192.168.20.32   0.0.0.0         UG    0      0        0 eth1
+
+【客户端】
+[root@tvm02 ~]# ping -c 2 192.168.234.129
+PING 192.168.234.129 (192.168.234.129) 56(84) bytes of data.
+64 bytes from 192.168.234.129: icmp_seq=1 ttl=63 time=174 ms
+64 bytes from 192.168.234.129: icmp_seq=2 ttl=63 time=173 ms
+
+[root@tvm02 ~]# ping -c 2 10.117.234.195
+PING 10.117.234.195 (10.117.234.195) 56(84) bytes of data.
+64 bytes from 10.117.234.195: icmp_seq=1 ttl=63 time=173 ms
+64 bytes from 10.117.234.195: icmp_seq=2 ttl=63 time=173 ms
+
+[root@tvm02 ~]# curl -I 192.168.234.129:8091
+HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/2.6.6
+Date: Wed, 09 Dec 2015 09:53:04 GMT
+Content-type: text/html; charset=UTF-8
+Content-Length: 204
+
+[root@tvm02 ~]# curl -I 10.117.234.195:8091
+HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/2.6.6
+Date: Wed, 09 Dec 2015 09:53:11 GMT
+Content-type: text/html; charset=UTF-8
+Content-Length: 204
+
+[root@tvm02 ~]# service iptables stop
+[root@tvm02 ~]# python -m SimpleHTTPServer 8071
+Serving HTTP on 0.0.0.0 port 8071 ...
+192.168.234.129 - - [09/Dec/2015 09:56:19] "HEAD / HTTP/1.1" 200 -
+
+【服务端】
+[root@test-server-us openvpn]# ping -c 2 192.168.20.42
+PING 192.168.20.42 (192.168.20.42) 56(84) bytes of data.
+64 bytes from 192.168.20.42: icmp_seq=1 ttl=63 time=173 ms
+64 bytes from 192.168.20.42: icmp_seq=2 ttl=63 time=173 ms
+
+[root@test-server-us opt]# python -m SimpleHTTPServer 8091
+Serving HTTP on 0.0.0.0 port 8091 ...
+192.168.20.42 - - [09/Dec/2015 17:53:04] "HEAD / HTTP/1.1" 200 -
+192.168.20.42 - - [09/Dec/2015 17:53:11] "HEAD / HTTP/1.1" 200 -
+
+[root@test-server-us openvpn]# curl -I 192.168.20.42:8071
+HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/2.6.6
+Date: Wed, 09 Dec 2015 01:56:19 GMT
+Content-type: text/html; charset=UTF-8
+Content-Length: 546
+
+
+5、LAN from vpn server backend
+待测试。
+
+
+
+六、疑问
+1、LAN2LAN的场景中，客户端 和 服务端 通讯时，服务端 只能获取到 客户端 的 tun0 的 IP 吗？如何获取 客户端 的真实 IP 呢？
+显然，通过测试可以发现，我们的 VPN 客户端后端的局域网IP 192.168.20.42 已经被 VPN 服务端获取到。
+
+2、如何操作
+简而言之
+[root@tvm01 openvpn]# cat test-vpn-pc.sh 
+#!/bin/bash
+# 
+# 测试vpn 
+# 2015/12/9
+
+ret=`ps -ef |grep '1234:127.0.0.1:1194' |grep -v grep |wc -l`
+if [ $ret -eq 0 ]; then
+    ssh -NfL 1234:127.0.0.1:1194 47.88.29.134
+fi
+openvpn  /etc/openvpn/clients/client-pc.ovpn >/var/log/openvpn.client.log 2>&1 &
+
+
+
+ZYXW、参考
+1、digitalocean
+https://www.digitalocean.com/community/tutorials/how-to-setup-and-configure-an-openvpn-server-on-centos-7
+http://bbs.aliyun.com/read/164332.html
+https://docs.ucloud.cn/software/vpn/OpenVPN4CentOS.html

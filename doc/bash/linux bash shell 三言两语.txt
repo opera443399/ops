@@ -1,5 +1,5 @@
-linux bash shell 几个命令行工具的简单用法小记
-2015/12/08
+linux bash shell 三言两语
+2015/12/9
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -377,3 +377,7 @@ e
 上述2者的效果不一样，为何？
 原因：uniq命令隔行重复是无效的，针对这种情况，需要先用sort排序再uniq。
 
+
+22、临时启用一个端口来测试
+python -m SimpleHTTPServer 8081
+这个简单的http服务器，还可以当作ftp用
