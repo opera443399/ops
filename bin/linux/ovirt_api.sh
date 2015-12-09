@@ -318,7 +318,7 @@ case ${s_action} in
         vm_${s_action} ${s_vm_name}
         ;;
     create)
-        vm_create_from_tpl ${s_vm_name} 'tpl-m1' 'C1'
+        vm_create_from_tpl ${s_vm_name} 'tpl-m1' 'C01'
         vm_state ${s_vm_name}
         ;;
     init)
