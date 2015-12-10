@@ -1,5 +1,5 @@
 初探OpenVPN-如何使2个局域网互通（LAN2LAN）和尝试ssh本地端口转发
-2015/12/9
+2015/12/10
 
 注：这里采用tcp方法和对应的remote，由于我们连接的服务器是阿里云的国外ECS，可能被相关政策有干扰，直接tcp reset，因此，采用ssh转发端口到本地来建立连接。
 
@@ -82,22 +82,13 @@ verb 3
 为客户端（还是以客户 pc 为例 ）建立一个独立的配置文件（文件的名称和上面的步骤中生成的key中的 common name 一致）：
 [root@test-server-us openvpn]# cat ccd/pc 
 iroute 192.168.20.0 255.255.255.0           # 保证客户端连接后，该客户端的后端的子网也可以访问vpn
-ifconfig-push  192.168.234.153 192.168.234.154
-上述指定了 客户 pc 连接上来时，分配指定的IP地址 192.168.234.153
+ifconfig-push  192.168.234.162 192.168.234.161
+上述指定了 客户 pc 连接上来时，分配指定的IP地址 192.168.234.162
 
 
 
-2、调整防火墙
+2、调整防火墙，放行 openvpn udp 1194 端口
 [root@test-server-us openvpn]# cat /etc/sysconfig/iptables
-*nat
-:PREROUTING ACCEPT [0:0]
-:POSTROUTING ACCEPT [0:0]
-:OUTPUT ACCEPT [0:0]
--A POSTROUTING -s 192.168.234.128/25 -o eth1 -j MASQUERADE 
-
-COMMIT
-
-
 *filter
 :INPUT ACCEPT [0:0]
 :FORWARD ACCEPT [0:0]
@@ -156,7 +147,7 @@ cat client-test.key 的内容 粘贴到这里
 
 
 2、连接到VPN服务端
-1）配置ssh本地端口转发
+1）配置ssh本地端口转发（可选，仅用于本次测试，非VPN配置所必需）
 ssh-keygen
 ssh-copy-id 47.88.29.134
 ssh -NfL 1234:127.0.0.1:1194 47.88.29.134
@@ -172,7 +163,7 @@ Common Name,Real Address,Bytes Received,Bytes Sent,Connected Since
 pc,127.0.0.1:48295,8283,9018,Wed Dec  9 16:21:35 2015
 ROUTING TABLE
 Virtual Address,Common Name,Real Address,Last Ref
-192.168.234.153,pc,127.0.0.1:48295,Wed Dec  9 16:23:50 2015
+192.168.234.162,pc,127.0.0.1:48295,Wed Dec  9 16:23:50 2015
 192.168.20.0/24,pc,127.0.0.1:48295,Wed Dec  9 16:21:46 2015
 GLOBAL STATS
 Max bcast/mcast queue length,0
@@ -185,14 +176,14 @@ END
 【客户端】
 [root@tvm01 ~]# ip a |grep global
     inet 192.168.20.32/24 brd 192.168.20.255 scope global eth1
-    inet 192.168.234.153 peer 192.168.234.154/32 scope global tun0
+    inet 192.168.234.162 peer 192.168.234.161/32 scope global tun0
 [root@tvm01 ~]# route -n
 Kernel IP routing table
 Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
-192.168.234.129 192.168.234.154 255.255.255.255 UGH   0      0        0 tun0
-192.168.234.154 0.0.0.0         255.255.255.255 UH    0      0        0 tun0
+192.168.234.129 192.168.234.161 255.255.255.255 UGH   0      0        0 tun0
+192.168.234.161 0.0.0.0         255.255.255.255 UH    0      0        0 tun0
 192.168.20.0    0.0.0.0         255.255.255.0   U     0      0        0 eth1
-10.117.232.0    192.168.234.154 255.255.248.0   UG    0      0        0 tun0
+10.117.232.0    192.168.234.161 255.255.248.0   UG    0      0        0 tun0
 169.254.0.0     0.0.0.0         255.255.0.0     U     1003   0        0 eth1
 0.0.0.0         192.168.20.1    0.0.0.0         UG    0      0        0 eth1
 
@@ -231,18 +222,20 @@ PING 10.117.234.195 (10.117.234.195) 56(84) bytes of data.
 64 bytes from 10.117.234.195: icmp_seq=1 ttl=64 time=169 ms
 64 bytes from 10.117.234.195: icmp_seq=2 ttl=64 time=169 ms
 
-
 【服务端】
-[root@test-server-us openvpn]# ping -c 2 192.168.234.153
-PING 192.168.234.153 (192.168.234.153) 56(84) bytes of data.
-64 bytes from 192.168.234.153: icmp_seq=1 ttl=64 time=169 ms
-64 bytes from 192.168.234.153: icmp_seq=2 ttl=64 time=170 ms
+[root@test-server-us openvpn]# ping -c 2 192.168.234.162
+PING 192.168.234.162 (192.168.234.162) 56(84) bytes of data.
+64 bytes from 192.168.234.162: icmp_seq=1 ttl=64 time=169 ms
+64 bytes from 192.168.234.162: icmp_seq=2 ttl=64 time=170 ms
 
 [root@test-server-us openvpn]# ping -c 2 192.168.20.32
 PING 192.168.20.32 (192.168.20.32) 56(84) bytes of data.
 64 bytes from 192.168.20.32: icmp_seq=1 ttl=64 time=169 ms
 64 bytes from 192.168.20.32: icmp_seq=2 ttl=64 time=170 ms
 
+【小结】
+场景：tvm01 <-> test-server-us
+结果：两者间 tun0 peer IP 和 LAN IP 的 ICMP 可达
 
 3、APP on c/s
 ---------app1------------
@@ -253,7 +246,7 @@ Serving HTTP on 0.0.0.0 port 8081 ...
 192.168.234.129 - - [09/Dec/2015 16:07:47] "HEAD / HTTP/1.1" 200 -
 
 【服务端】
-[root@test-server-us openvpn]# curl -I 192.168.234.153:8081
+[root@test-server-us openvpn]# curl -I 192.168.234.162:8081
 HTTP/1.0 200 OK
 Server: SimpleHTTP/0.6 Python/2.7.10
 Date: Wed, 09 Dec 2015 08:07:33 GMT
@@ -266,13 +259,12 @@ Server: SimpleHTTP/0.6 Python/2.7.10
 Date: Wed, 09 Dec 2015 08:07:47 GMT
 Content-type: text/html; charset=UTF-8
 Content-Length: 860
-
 ---------app2------------
 【服务端】
 [root@test-server-us openvpn]# python -m SimpleHTTPServer 8091
 Serving HTTP on 0.0.0.0 port 8091 ...
-192.168.234.153 - - [09/Dec/2015 16:08:42] "HEAD / HTTP/1.1" 200 -
-192.168.234.153 - - [09/Dec/2015 16:09:40] "HEAD / HTTP/1.1" 200 -
+192.168.234.162 - - [09/Dec/2015 16:08:42] "HEAD / HTTP/1.1" 200 -
+192.168.234.162 - - [09/Dec/2015 16:09:40] "HEAD / HTTP/1.1" 200 -
 
 【客户端】
 [root@tvm01 ~]# curl -I 192.168.234.129:8091
@@ -289,13 +281,16 @@ Date: Wed, 09 Dec 2015 08:09:40 GMT
 Content-type: text/html; charset=UTF-8
 Content-Length: 570
 
+【小结】
+场景：tvm01 <-> test-server-us
+结果：两者间 tun0 peer IP 和 LAN IP 的 路由 可达，Source IP 是 对端 tun0 peer IP
 
 4、LAN from vpn client backend
 【准备工作】
 启用 tvm01 的 ip_forward
 [root@tvm01 ~]# echo 1 >/proc/sys/net/ipv4/ip_forward
 
-调整LAN中一台vm的网关指向 tvm01（192.168.20.32）
+调整客户端 LAN 中一台 vm 的网关指向 tvm01（192.168.20.32）
 [root@tvm02 ~]# ip a |grep global
     inet 192.168.20.42/24 brd 192.168.20.255 scope global eth1
 [root@tvm02 ~]# route -n
@@ -353,17 +348,63 @@ Date: Wed, 09 Dec 2015 01:56:19 GMT
 Content-type: text/html; charset=UTF-8
 Content-Length: 546
 
+【小结】
+场景：tvm02 -> LAN -> tvm01 <-> test-server-us
+结果：test-server-us 可以获取 tvm02 的 LAN IP，反之不行。
+同理，也测试了这种场景：tvm01 <-> test-server-us -> LAN -> test-server-us-007
+结果：test-server-us-007 不能获取 tvm01 的 LAN IP
+
 
 5、LAN from vpn server backend
-待测试。
+【准备工作】
+调整服务端 LAN 中一台 vm 的网关指向 test-server-us（10.117.234.195）
+（略）
 
+【客户端】
+[root@tvm02 ~]# python -m SimpleHTTPServer 8071
+Serving HTTP on 0.0.0.0 port 8071 ...
+10.117.234.200 - - [10/Dec/2015 13:12:47] "HEAD / HTTP/1.1" 200 -
+
+【服务端】
+[root@test-server-us-007 ~]# curl -I 192.168.20.42:8071
+HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/2.6.6
+Date: Thu, 10 Dec 2015 05:12:47 GMT
+Content-type: text/html; charset=UTF-8
+Content-Length: 546
+
+【小结】
+场景：tvm02 -> LAN -> tvm01 <-> test-server-us -> LAN -> test-server-us-007
+test-server-us-007 可以获取 tvm02 的 LAN IP，反之亦然。
+
+
+6、iptables
+如果在服务端 test-server-us 的 iptables 做了 nat 配置，例如：
+-A POSTROUTING -s 10.117.232.0/21 -j MASQUERADE
+则 tvm02 将获取不到来自 test-server-us-007的请求的真实 IP，获取到的将是这个IP：192.168.234.129
+
+此时，可以尝试在上一条策略之前新增一条策略：
+-A POSTROUTING -s 10.117.234.200/32 -j SNAT --to-source 10.117.234.200
+这一条，使防火墙不针对这个IP做NAT
+
+同理：
+假设我们又增加了这条策略：
+-A POSTROUTING -s 192.168.20.0/24 -j MASQUERADE
+则 test-server-us-007 将获取不到来自 tvm02 的请求真实 IP，获取到的将是这个IP：192.168.234.162
+此时，可以尝试在上一条策略之前新增一条策略：
+-A POSTROUTING -s 192.168.20.42/32 -j SNAT --to-source 192.168.20.42
+
+【小结】iptables 中 NAT 的策略 将影响到 服务器/客户端 获取到对端的 源IP/目的IP。
 
 
 六、疑问
 1、LAN2LAN的场景中，客户端 和 服务端 通讯时，服务端 只能获取到 客户端 的 tun0 的 IP 吗？如何获取 客户端 的真实 IP 呢？
-显然，通过测试可以发现，我们的 VPN 客户端后端的局域网IP 192.168.20.42 已经被 VPN 服务端获取到。
+Client1 -> LAN -> C <-> S -> LAN -> Server1
 
-2、如何操作
+显然，通过测试可以发现，LAN2LAN 成功。
+
+
+2、如何快速操作
 简而言之
 [root@tvm01 openvpn]# cat test-vpn-pc.sh 
 #!/bin/bash
@@ -375,7 +416,7 @@ ret=`ps -ef |grep '1234:127.0.0.1:1194' |grep -v grep |wc -l`
 if [ $ret -eq 0 ]; then
     ssh -NfL 1234:127.0.0.1:1194 47.88.29.134
 fi
-openvpn  /etc/openvpn/clients/client-pc.ovpn >/var/log/openvpn.client.log 2>&1 &
+openvpn  /etc/openvpn/clients/client-pc.ovpn >/var/log/openvpn.client.pc.log 2>&1 &
 
 
 

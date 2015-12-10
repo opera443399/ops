@@ -1,3 +1,5 @@
+iptables 做端口转发
+
 A 机器
 网卡1 外网 外网IP
 网卡2 内网 内网IP1
@@ -17,8 +19,6 @@ iptables -A FORWARD -i [A内网网卡] -s [B内网IP] -p tcp –sport [B内网�
 
 
 还有一种情况是针对内网的
-
-
 iptables实现端口转发的过程(修改版)(转)[@more@]
 看了不少关于用iptables实现端口转发的文章,但感觉都没有把问题说得很清楚,现接合我自己设置和使用的经历,谈谈它的实现过程.
 设我们有一台计算机,有两块网卡,eth0连外网,ip为1.2.3.4;eth1连内网,ip为192.168.0.1.现在需要把发往地址1.2.3.4的81端口的ip包转发到ip地址192.168.0.2的8180端口,设置如下:
@@ -36,8 +36,20 @@ iptables实现端口转发的过程(修改版)(转)[@more@]
 iptables -A INPUT -d 192.168.0.2 -p tcp -m tcp --dport 8180 -i eth0 -j ACCEPT
 
 
+iptables下udp端口转发
+#开启路由转发
+echo "1">/proc/sys/net/ipv4/ip_forward
+#增加目的地址转换
+iptables -t nat -A PREROUTING -d 111.225.101.188 -i br1 -p udp -m udp --dport 6464 -j DNAT --to-destination 192.168.122.31:6464
+#增加源地址转换
+iptables -t nat -A POSTROUTING -s 192.168.122.31 -p udp --dport 6464 -j SNAT --to-source 111.225.101.188
+#增加转发
+iptables -A FORWARD -d 192.168.122.0/24 -i br1 -j ACCEPT
+
+
 参考：
 http://blog.sina.com.cn/s/blog_53b91ff30100tmte.html
 http://blog.itpub.net/8225414/viewspace-940661/
+http://www.361way.com/iptables-udp-nat/2947.html
 
 

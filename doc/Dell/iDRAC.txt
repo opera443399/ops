@@ -8,6 +8,154 @@ iDRAC：“我希望像在现场一样管理服务器。”
 
 
 
+ssh 登录 idrac 来 使用 racadm
+$ ssh root@x.x.x.x
+root@x.x.x.x's password: 
+
+/admin1-> racadm help
+ 
+ help [subcommand]    -- display usage summary for a subcommand
+ arp                  -- display the networking ARP table
+ autoupdatescheduler  -- Automatic Platform Update of the devices on the server.
+ clearasrscreen       -- clear the last ASR (crash) screen
+ clearpending         -- clear pending attribute(s) value of a Device Class
+ closessn             -- close a session
+ clrraclog            -- clear the RAC log
+ clrsel               -- clear the System Event Log (SEL)
+ config               -- Deprecated: modify RAC configuration properties
+ coredump             -- display the last RAC coredump
+ coredumpdelete       -- delete the last RAC coredump
+ eventfilters         -- Alerts configuration commands
+ fwupdate             -- update the RAC firmware
+ get                  -- display RAC configuration properties
+ getconfig            -- Deprecated: display RAC configuration properties
+ getled               -- Get the state of the LED on a module.
+ getniccfg            -- display current network settings
+ getraclog            -- display the RAC log
+ getractime           -- display the current RAC time
+ getsel               -- display records from the System Event Log (SEL)
+ getsensorinfo        -- display system sensors
+ getssninfo           -- display session information
+ getsvctag            -- display service tag information
+ getsysinfo           -- display general RAC and system information
+ gettracelog          -- display the RAC diagnostic trace log
+ getuscversion        -- display the current USC version details
+ getversion           -- display the current version details
+ ifconfig             -- display network interface information
+ inlettemphistory     -- inlet temperature history operations
+ lclog                -- LCLog operations
+ frontpanelerror      -- hide LCD errors - color amber to blue
+ netstat              -- display routing table and network statistics
+ ping                 -- send ICMP echo packets on the network
+ ping6                -- send ICMP echo packets on the network
+ racdump              -- display RAC diagnostic information
+ racreset             -- perform a RAC reset operation
+ racresetcfg          -- restore the RAC configuration to factory defaults
+ remoteimage          -- make a remote ISO image available to the server
+ rollback             -- Rollback firmware to its previous version.
+ serveraction         -- perform system power management operations
+ set                  -- modify RAC configuration properties
+ setled               -- Set the state of the LED on a module.
+ setniccfg            -- modify network configuration properties
+ sshpkauth            -- manage SSH PK authentication keys on the RAC
+ sslcertdelete        -- delete an SSL certificate on the iDRAC
+ sslcertview          -- view SSL certificate information
+ sslcsrgen            -- generate a certificate CSR from the RAC
+ sslEncryptionStrength -- Display or modify the SSL Encryption strength.
+ sslresetcfg          -- resets the web certificate to default and restarts the web server.
+ swinventory          -- Display the list of S/W Installed on the server.
+ systemconfig         -- Backup &/or Restore of iDRAC Config and Firmware
+ testemail            -- test RAC e-mail notifications
+ testtrap             -- test RAC SNMP trap notifications
+ testalert            -- test RAC SNMP - FQDN trap notifications
+ traceroute           -- print the route packets trace to network host
+ traceroute6          -- print the route packets trace to network host
+ usercertview         -- view user certificate information
+ vflashpartition      -- manage partitions on the vFlash SD card
+ vflashsd             -- perform vFlash SD Card initialization
+ vmdisconnect         -- disconnect Virtual Media connections
+ vmkey                -- Deprecated: perform vFlash operations
+ license              -- License Manager commands
+ debug                -- Field Service Debug Authorization facility commands
+ raid                 -- Monitoring and Inventory of H/W RAID connected to the server.
+ hwinventory          -- Monitoring and Inventory of H/W NICs connected to the server.
+ nicstatistics        -- Statistics for NICs connected to the server.
+ fcstatistics         -- Statistics for FCs connected to the server.
+ update               -- Platform Update of the devices on the server
+ jobqueue             -- Jobqueue of of the jobs currently scheduled
+ diagnostics          -- Remote Diagnostic commands
+ 
+ Groups
+ 
+idRacInfo            -- Information about iDRAC being queried
+cfgRemoteHosts       -- Properties for configuration of the SMTP server
+cfgUserAdmin         -- Information about iDRAC users
+cfgEmailAlert        -- Parameters to configure e-mail alerting capabilities
+cfgSessionManagement -- Information of the session Properties
+cfgSerial            -- Provides configuration parameters for the iDRAC 
+cfgOobSnmp           -- Configuration of the SNMP agent and trap capabilities
+cfgRacTuning         -- Configuration for various iDRAC properties.
+ifcRacManagedNodeOs  -- Properties of the managed server OS
+cfgRacSecurity       -- Configure SSL certificate signing request settings
+cfgRacVirtual        -- Configuration Properties for iDRAC Virtual Media
+cfgActiveDirectory   -- Configuration of the iDRAC Active Directory feature
+cfgLDAP              -- Configuration properties for LDAP settings
+cfgLdapRoleGroup     -- Configuration of role groups for LDAP
+cfgLogging           -- Group Description for group cfgLogging
+cfgStandardSchema    -- Configuration of AD standard schema settings
+cfgIpmiSerial        -- Properties to configure the IPMI serial interface
+cfgIpmiSol           -- Configuration the SOL capabilities of the system
+cfgIpmiLan           -- Configuration the IPMI over LAN of the system
+cfgIpmiPef           -- Configuration the platform event filters
+cfgServerPower       -- Provides power management features
+cfgServerPowerSupply -- Provides information related to the power supplies
+cfgVFlashSD          -- Configure the properties for the vFlash SD card
+cfgVFlashPartition   -- Configure partitions on the vFlash SD Card
+cfgUserDomain        -- Configure the Active Directory user domain names
+cfgSmartCard         -- Properties to access iDRAC using a smart card
+cfgServerInfo        -- Configuration of first boot device
+cfgSensorRedundancy  -- Configure the power supply redundancy
+cfgLanNetworking     -- Parameters to configure the iDRAC NIC
+cfgStaticLanNetworking -- Parameters to configure the iDRAC NIC
+cfgNetTuning         -- Group Description for group cfgNetTuning
+cfgIPv6LanNetworking -- Configuration of the IPv6 over LAN networking
+cfgIPv6StaticLanNetworking -- Configuration of the IPv6 over LAN networking
+cfgIPv6URL           -- Configuration of the iDRAC IPv6 URL.
+ 
+For Help on configuring the properties of a group - racadm help config
+ 
+-----------------------------------------------------------------------
+ 
+/admin1-> racadm help ping
+
+ping -- send ICMP echo packets on the network
+
+Usage:
+
+racadm ping <ipaddress>
+
+ipaddress : the IP address of the remote endpoint to ping
+
+For Help on configuring the properties of a group - racadm help set
+ 
+-----------------------------------------------------------------------
+ 
+/admin1-> racadm ping 192.168.210.31
+PING 192.168.210.31 (192.168.210.31): 56 data bytes
+64 bytes from 192.168.210.31: seq=0 ttl=126 time=8.532 ms
+
+--- 192.168.210.31 ping statistics ---
+1 packets transmitted, 1 packets received, 0% packet loss
+round-trip min/avg/max = 8.532/8.532/8.532 ms
+
+/admin1-> racadm traceroute 192.168.210.31
+traceroute to 192.168.210.31 (192.168.210.31), 30 hops max, 38 byte packets
+ 1  10.123.11.254 (10.123.11.254)  0.836 ms  0.626 ms  0.563 ms
+ 2  172.29.249.162 (172.29.249.162)  7.645 ms  11.308 ms  7.398 ms
+ 3  192.168.210.31 (192.168.210.31)  7.869 ms  *  8.321 ms
+ 
+ 
+
 ZXYX、参考
 1、R720如何设置、管理和许可iDRAC和生命周期控制器
 http://www.dell.com/support/article/us/en/19/SLN154786/ZH
