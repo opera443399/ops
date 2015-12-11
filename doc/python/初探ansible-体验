@@ -1,0 +1,121 @@
+初探ansible-体验
+
+一、安装
+[root@tvm02 ~]# yum install ansible
+
+
+二、配置
+1、定义主机
+[root@tvm02 ~]# cat /etc/ansible/hosts
+[test]
+192.168.20.32
+
+2、生成key，拷贝到目标主机
+[root@tvm02 ~]# ssh-keygen 
+[root@tvm02 ~]# ssh-copy-id 192.168.20.32
+
+使用SSH agent来避免重复输入密码
+[root@tvm02 ~]# ssh-agent bash
+[root@tvm02 ~]# ssh-add ~/.ssh/id_rsa
+
+
+三、基础命令
+1、第一个命令
+[root@tvm02 ~]# ansible all -m ping
+192.168.20.32 | success >> {
+    "changed": false, 
+    "ping": "pong"
+}
+
+2、远程命令
+[root@tvm02 ~]# ansible all -a "date"    
+192.168.20.32 | success | rc=0 >>
+Fri Dec 11 17:52:15 CST 2015
+
+[root@tvm02 ~]# ansible test -a "hostname"             
+192.168.20.32 | success | rc=0 >>
+tvm01.test
+
+[root@tvm02 ~]# ansible all -a "ping -c 2 qq.com"
+192.168.20.32 | success | rc=0 >>
+PING qq.com (101.226.103.106) 56(84) bytes of data.
+64 bytes from 101.226.103.106: icmp_seq=1 ttl=51 time=34.5 ms
+64 bytes from 101.226.103.106: icmp_seq=2 ttl=51 time=30.6 ms
+
+--- qq.com ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1031ms
+rtt min/avg/max/mdev = 30.609/32.582/34.556/1.981 ms
+
+
+3、服务控制
+[root@tvm02 ~]# ansible test -m service -a "name=nginx state=started"
+192.168.20.32 | success >> {
+    "changed": false, 
+    "name": "nginx", 
+    "state": "started"
+}
+
+4、文件管理
+拷贝
+[root@tvm02 ~]# ansible test -m copy -a "src=/root/11 dest=/tmp/11"
+192.168.20.32 | success >> {
+    "changed": true, 
+    "checksum": "da39a3ee5e6b4b0d3255bfef95601890afd80709", 
+    "dest": "/tmp/11", 
+    "gid": 0, 
+    "group": "root", 
+    "md5sum": "d41d8cd98f00b204e9800998ecf8427e", 
+    "mode": "0644", 
+    "owner": "root", 
+    "size": 0, 
+    "src": "/root/.ansible/tmp/ansible-tmp-1449799988.32-107739303835326/source", 
+    "state": "file", 
+    "uid": 0
+}
+
+[root@tvm02 ~]# ansible test -a "ls -l /tmp/11"
+192.168.20.32 | success | rc=0 >>
+-rw-r--r-- 1 root root 0 Dec 11 18:14 /tmp/11
+
+删除文件
+[root@tvm02 ~]# ansible test -m file -a "dest=/tmp/11 state=absent"    
+192.168.20.32 | success >> {
+    "changed": true, 
+    "path": "/tmp/11", 
+    "state": "absent"
+}
+
+[root@tvm02 ~]# ansible test -a "ls -l /tmp/11"                    
+192.168.20.32 | FAILED | rc=2 >>
+ls: cannot access /tmp/11: No such file or directory
+
+
+5、包管理
+[root@tvm02 ~]# ansible test -m yum -a "name=haproxy state=present"
+192.168.20.32 | success >> {
+    "changed": true, 
+    "msg": "", 
+    "rc": 0, 
+    "results": [
+        "Loaded plugins: fastestmirror, security\nLoading mirror speeds from cached hostfile\nSetting up Install Process\nResolving Dependencies\n--> Running transaction check\n---> Package haproxy.x86_64 0:1.5.4-2.el6 will be installed\n--> Finished Dependency Resolution\n\nDependencies Resolved\n\n================================================================================\n Package          Arch            Version                 Repository       Size\n================================================================================\nInstalling:\n haproxy          x86_64          1.5.4-2.el6             superd          792 k\n\nTransaction Summary\n================================================================================\nInstall       1 Package(s)\n\nTotal download size: 792 k\nInstalled size: 2.4 M\nDownloading Packages:\nRunning rpm_check_debug\nRunning Transaction Test\nTransaction Test Succeeded\nRunning Transaction\n\r  Installing : haproxy-1.5.4-2.el6.x86_64                                   1/1 \n\r  Verifying  : haproxy-1.5.4-2.el6.x86_64                                   1/1 \n\nInstalled:\n  haproxy.x86_64 0:1.5.4-2.el6                                                  \n\nComplete!\n"
+    ]
+}
+
+[root@tvm02 ~]# ansible test -a "whereis haproxy"
+192.168.20.32 | success | rc=0 >>
+haproxy: /usr/sbin/haproxy /etc/haproxy /usr/share/haproxy /usr/share/man/man1/haproxy.1.gz
+
+
+6、获取系统信息
+[root@tvm02 ~]# ansible test -m setup
+
+
+其他可以参考：http://docs.ansible.com/ansible/intro_adhoc.html
+
+
+
+
+参考
+1、doc
+http://docs.ansible.com/ansible/intro_installation.html
+

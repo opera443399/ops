@@ -1,4 +1,4 @@
-日期：2015/10/20 - 2015/12/8 time 16:15
+日期：2015/10/20 - 2015/12/11 time 17:37
 主机：n86
 目的：初探oVirt-体验REST-API
 操作内容：
@@ -224,8 +224,8 @@ Thu Nov 12 08:02:25 CST 2015 [test]
 [root@n86 bin]# cat ovirt_api.sh 
 #!/bin/bash
 # 
-# 2015/12/8
-# __version__='0.2.8'
+# 2015/12/11
+# __version__='0.2.9'
 # for ovirt-engine-3.6.0.3
 
 #
@@ -256,7 +256,7 @@ function vm_uuid() {
     local f_xml="vms.xml"
     
     vm_list
-    s_vm_id=`grep -A 1 "<name>${s_vm_name}</name>" ${f_xml} |grep 'href=' |cut -d'"' -f2 |cut -d'/' -f4`
+    s_vm_id=`grep -vE 'description|comment' ${f_xml} |grep -A 1 "<name>${s_vm_name}</name>"|grep 'href=' |cut -d'"' -f2 |cut -d'/' -f4`
     if [ -z ${s_vm_id} ]; then
         echo '[ERROR] Not found: VM id'
         exit 1

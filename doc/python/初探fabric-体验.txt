@@ -1,0 +1,93 @@
+初探fabric-体验
+
+一、安装
+[root@tvm01 ~]# pip install fabric
+
+配置文件入口：
+fabfile.py
+
+示例代码：
+#!/bin/env python
+# 
+from fabric.api import *
+
+def hh(a,b):
+    print('a={0}, b={1}'.format(a,b))
+
+def ii():
+    local('hostname')
+    local('pwd')
+    local('date')
+
+def jj():
+    env.hosts=['192.168.20.42']
+    env.ssh_config_path='~/.ssh/config'
+
+def kk():
+    with cd('/tmp'):
+        run('mktemp tmp.XXX')
+        run('ls')
+        
+        
+
+二、基本功能
+1、参数传递
+[root@tvm01 fabtest]# fab hh:x,y
+a=x, b=y
+
+Done.
+[root@tvm01 fabtest]# fab hh:a=x,b=y
+a=x, b=y
+
+Done.
+
+2、获取命令列表
+[root@tvm01 fabtest]# fab --list
+Available commands:
+
+    hh
+    
+    
+3、执行本地的命令
+[root@tvm01 fabtest]# fab ii
+[localhost] local: hostname
+tvm01.test
+[localhost] local: pwd
+/opt/fabtest
+[localhost] local: date
+Fri Dec 11 14:38:22 CST 2015
+
+Done.
+
+
+4、执行远端的命令
+[root@tvm01 fabtest]# cat ~/.ssh/config 
+host 192.168.20.42
+    hostname 192.168.20.42
+    user Jack
+
+[root@tvm01 fabtest]# fab jj kk
+[192.168.20.42] Executing task 'kk'
+[192.168.20.42] run: mktemp tmp.XXX
+[192.168.20.42] out: tmp.UiZ
+[192.168.20.42] out: 
+
+[192.168.20.42] run: ls
+[192.168.20.42] out: test-2015-12-11.log  test.sh.log  tmp.RosBDQDi5S  tmp.UiZ
+[192.168.20.42] out: 
+
+
+Done.
+Disconnecting from 192.168.20.42... done.
+
+
+
+参考
+1、http://docs.fabfile.org/en/latest/tutorial.html
+
+
+
+
+
+
+
