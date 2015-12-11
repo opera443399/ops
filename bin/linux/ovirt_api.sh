@@ -1,7 +1,7 @@
 #!/bin/bash
 # 
-# 2015/12/8
-# __version__='0.2.8'
+# 2015/12/11
+# __version__='0.2.9'
 # for ovirt-engine-3.6.0.3
 
 #
@@ -32,7 +32,7 @@ function vm_uuid() {
     local f_xml="vms.xml"
     
     vm_list
-    s_vm_id=`grep -A 1 "<name>${s_vm_name}</name>" ${f_xml} |grep 'href=' |cut -d'"' -f2 |cut -d'/' -f4`
+    s_vm_id=`grep -vE 'description|comment' ${f_xml} |grep -A 1 "<name>${s_vm_name}</name>"|grep 'href=' |cut -d'"' -f2 |cut -d'/' -f4`
     if [ -z ${s_vm_id} ]; then
         echo '[ERROR] Not found: VM id'
         exit 1
@@ -217,7 +217,7 @@ function vm_runonce() {
                     <name>post-init</name>
                     <content>
 runcmd:
-- curl http://office.test/ovirt/test.sh |bash -
+- curl http://192.168.20.102/ovirt/test.sh |bash -
                     </content>
                     <type>plaintext</type>
                 </file>
