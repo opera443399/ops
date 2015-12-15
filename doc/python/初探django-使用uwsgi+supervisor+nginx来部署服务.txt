@@ -1,20 +1,6 @@
-run
----
-python manage.py runserver 0.0.0.0:80
+初探django-使用uwsgi+supervisor+nginx来部署服务
+2015/12/15
 
-admin
------
-http://0.0.0.0/admin/
-root
-111111
-
-debug
------
-www/setting.py: DEBUG=True
-如果：DEBUG=False，则django不处理静态文件，此时应该配置nginx或apache来处理静态文件
-
-uwsgi+supervisord+nginx
-----------------------
 一、安装
 [root@tvm01 ~]# yum install nginx
 [root@tvm01 ~]# pip2.7 install uwsgi
@@ -103,3 +89,12 @@ server {
     }
 }
 [root@tvm01 www]# service nginx start
+
+
+三、备注
+笔者当然也有参考网络文章如何配置apache，，未测试成功如何配置apahce服务使用uwsgi模块，后续再抽空琢磨。
+
+
+ZYXW、参考
+1、nginx + uwsgi + django + python 部署
+http://my.oschina.net/u/240562/blog/127298
