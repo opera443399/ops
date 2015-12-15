@@ -62,7 +62,7 @@ server 192.168.234.128 255.255.255.128      # 用于 vpn 隧道的网段
 ifconfig-pool-persist ipp.txt
 push "route 10.117.232.0 255.255.248.0"     # 推送服务端的本地网段的路由到客户端
 client-config-dir ccd                       # 客户端的配置文件存放目录
-route 192.168.20.0 255.255.255.0            # 增加到客户端的后端的子网的路由
+route 10.50.200.0 255.255.255.0            # 增加到客户端的后端的子网的路由
 push "dhcp-option DNS 8.8.8.8"
 push "dhcp-option DNS 8.8.4.4"
 keepalive 10 120
@@ -81,7 +81,7 @@ verb 3
 
 为客户端（还是以客户 pc 为例 ）建立一个独立的配置文件（文件的名称和上面的步骤中生成的key中的 common name 一致）：
 [root@test-server-us openvpn]# cat ccd/pc 
-iroute 192.168.20.0 255.255.255.0           # 保证客户端连接后，该客户端的后端的子网也可以访问vpn
+iroute 10.50.200.0 255.255.255.0           # 保证客户端连接后，该客户端的后端的子网也可以访问vpn
 ifconfig-push  192.168.234.162 192.168.234.161
 上述指定了 客户 pc 连接上来时，分配指定的IP地址 192.168.234.162
 
@@ -164,7 +164,7 @@ pc,127.0.0.1:48295,8283,9018,Wed Dec  9 16:21:35 2015
 ROUTING TABLE
 Virtual Address,Common Name,Real Address,Last Ref
 192.168.234.162,pc,127.0.0.1:48295,Wed Dec  9 16:23:50 2015
-192.168.20.0/24,pc,127.0.0.1:48295,Wed Dec  9 16:21:46 2015
+10.50.200.0/24,pc,127.0.0.1:48295,Wed Dec  9 16:21:46 2015
 GLOBAL STATS
 Max bcast/mcast queue length,0
 END
@@ -175,17 +175,17 @@ END
 1、IP of c/s
 【客户端】
 [root@tvm01 ~]# ip a |grep global
-    inet 192.168.20.32/24 brd 192.168.20.255 scope global eth1
+    inet 10.50.200.32/24 brd 10.50.200.255 scope global eth1
     inet 192.168.234.162 peer 192.168.234.161/32 scope global tun0
 [root@tvm01 ~]# route -n
 Kernel IP routing table
 Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 192.168.234.129 192.168.234.161 255.255.255.255 UGH   0      0        0 tun0
 192.168.234.161 0.0.0.0         255.255.255.255 UH    0      0        0 tun0
-192.168.20.0    0.0.0.0         255.255.255.0   U     0      0        0 eth1
+10.50.200.0    0.0.0.0         255.255.255.0   U     0      0        0 eth1
 10.117.232.0    192.168.234.161 255.255.248.0   UG    0      0        0 tun0
 169.254.0.0     0.0.0.0         255.255.0.0     U     1003   0        0 eth1
-0.0.0.0         192.168.20.1    0.0.0.0         UG    0      0        0 eth1
+0.0.0.0         10.50.200.1    0.0.0.0         UG    0      0        0 eth1
 
 
 【服务端】
@@ -199,7 +199,7 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 192.168.234.130 0.0.0.0         255.255.255.255 UH    0      0        0 tun0
 192.168.234.128 192.168.234.130 255.255.255.128 UG    0      0        0 tun0
 192.168.21.0    192.168.234.130 255.255.255.0   UG    0      0        0 tun0
-192.168.20.0    192.168.234.130 255.255.255.0   UG    0      0        0 tun0
+10.50.200.0    192.168.234.130 255.255.255.0   UG    0      0        0 tun0
 47.88.28.0      0.0.0.0         255.255.252.0   U     0      0        0 eth1
 10.117.232.0    0.0.0.0         255.255.248.0   U     0      0        0 eth0
 169.254.0.0     0.0.0.0         255.255.0.0     U     1002   0        0 eth0
@@ -228,10 +228,10 @@ PING 192.168.234.162 (192.168.234.162) 56(84) bytes of data.
 64 bytes from 192.168.234.162: icmp_seq=1 ttl=64 time=169 ms
 64 bytes from 192.168.234.162: icmp_seq=2 ttl=64 time=170 ms
 
-[root@test-server-us openvpn]# ping -c 2 192.168.20.32
-PING 192.168.20.32 (192.168.20.32) 56(84) bytes of data.
-64 bytes from 192.168.20.32: icmp_seq=1 ttl=64 time=169 ms
-64 bytes from 192.168.20.32: icmp_seq=2 ttl=64 time=170 ms
+[root@test-server-us openvpn]# ping -c 2 10.50.200.32
+PING 10.50.200.32 (10.50.200.32) 56(84) bytes of data.
+64 bytes from 10.50.200.32: icmp_seq=1 ttl=64 time=169 ms
+64 bytes from 10.50.200.32: icmp_seq=2 ttl=64 time=170 ms
 
 【小结】
 场景：tvm01 <-> test-server-us
@@ -253,7 +253,7 @@ Date: Wed, 09 Dec 2015 08:07:33 GMT
 Content-type: text/html; charset=UTF-8
 Content-Length: 860
 
-[root@test-server-us openvpn]# curl -I 192.168.20.32:8081  
+[root@test-server-us openvpn]# curl -I 10.50.200.32:8081  
 HTTP/1.0 200 OK
 Server: SimpleHTTP/0.6 Python/2.7.10
 Date: Wed, 09 Dec 2015 08:07:47 GMT
@@ -290,15 +290,15 @@ Content-Length: 570
 启用 tvm01 的 ip_forward
 [root@tvm01 ~]# echo 1 >/proc/sys/net/ipv4/ip_forward
 
-调整客户端 LAN 中一台 vm 的网关指向 tvm01（192.168.20.32）
+调整客户端 LAN 中一台 vm 的网关指向 tvm01（10.50.200.32）
 [root@tvm02 ~]# ip a |grep global
-    inet 192.168.20.42/24 brd 192.168.20.255 scope global eth1
+    inet 10.50.200.42/24 brd 10.50.200.255 scope global eth1
 [root@tvm02 ~]# route -n
 Kernel IP routing table
 Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
-192.168.20.0    0.0.0.0         255.255.255.0   U     0      0        0 eth1
+10.50.200.0    0.0.0.0         255.255.255.0   U     0      0        0 eth1
 169.254.0.0     0.0.0.0         255.255.0.0     U     1003   0        0 eth1
-0.0.0.0         192.168.20.32   0.0.0.0         UG    0      0        0 eth1
+0.0.0.0         10.50.200.32   0.0.0.0         UG    0      0        0 eth1
 
 【客户端】
 [root@tvm02 ~]# ping -c 2 192.168.234.129
@@ -331,17 +331,17 @@ Serving HTTP on 0.0.0.0 port 8071 ...
 192.168.234.129 - - [09/Dec/2015 09:56:19] "HEAD / HTTP/1.1" 200 -
 
 【服务端】
-[root@test-server-us openvpn]# ping -c 2 192.168.20.42
-PING 192.168.20.42 (192.168.20.42) 56(84) bytes of data.
-64 bytes from 192.168.20.42: icmp_seq=1 ttl=63 time=173 ms
-64 bytes from 192.168.20.42: icmp_seq=2 ttl=63 time=173 ms
+[root@test-server-us openvpn]# ping -c 2 10.50.200.42
+PING 10.50.200.42 (10.50.200.42) 56(84) bytes of data.
+64 bytes from 10.50.200.42: icmp_seq=1 ttl=63 time=173 ms
+64 bytes from 10.50.200.42: icmp_seq=2 ttl=63 time=173 ms
 
 [root@test-server-us opt]# python -m SimpleHTTPServer 8091
 Serving HTTP on 0.0.0.0 port 8091 ...
-192.168.20.42 - - [09/Dec/2015 17:53:04] "HEAD / HTTP/1.1" 200 -
-192.168.20.42 - - [09/Dec/2015 17:53:11] "HEAD / HTTP/1.1" 200 -
+10.50.200.42 - - [09/Dec/2015 17:53:04] "HEAD / HTTP/1.1" 200 -
+10.50.200.42 - - [09/Dec/2015 17:53:11] "HEAD / HTTP/1.1" 200 -
 
-[root@test-server-us openvpn]# curl -I 192.168.20.42:8071
+[root@test-server-us openvpn]# curl -I 10.50.200.42:8071
 HTTP/1.0 200 OK
 Server: SimpleHTTP/0.6 Python/2.6.6
 Date: Wed, 09 Dec 2015 01:56:19 GMT
@@ -366,7 +366,7 @@ Serving HTTP on 0.0.0.0 port 8071 ...
 10.117.234.200 - - [10/Dec/2015 13:12:47] "HEAD / HTTP/1.1" 200 -
 
 【服务端】
-[root@test-server-us-007 ~]# curl -I 192.168.20.42:8071
+[root@test-server-us-007 ~]# curl -I 10.50.200.42:8071
 HTTP/1.0 200 OK
 Server: SimpleHTTP/0.6 Python/2.6.6
 Date: Thu, 10 Dec 2015 05:12:47 GMT
@@ -389,10 +389,10 @@ test-server-us-007 可以获取 tvm02 的 LAN IP，反之亦然。
 
 同理：
 假设我们又增加了这条策略：
--A POSTROUTING -s 192.168.20.0/24 -j MASQUERADE
+-A POSTROUTING -s 10.50.200.0/24 -j MASQUERADE
 则 test-server-us-007 将获取不到来自 tvm02 的请求真实 IP，获取到的将是这个IP：192.168.234.162
 此时，可以尝试在上一条策略之前新增一条策略：
--A POSTROUTING -s 192.168.20.42/32 -j SNAT --to-source 192.168.20.42
+-A POSTROUTING -s 10.50.200.42/32 -j SNAT --to-source 10.50.200.42
 
 【小结】iptables 中 NAT 的策略 将影响到 服务器/客户端 获取到对端的 源IP/目的IP。
 

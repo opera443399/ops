@@ -12,7 +12,7 @@ PORT   STATE  SERVICE
 67/udp closed dhcps
 MAC Address: 00:0C:29:15:B6:37 (VMware)
 
-Nmap scan report for mirror.runmit.com (10.0.200.102)
+Nmap scan report for mirror.test.com (10.0.200.102)
 Host is up (0.00038s latency).
 PORT   STATE  SERVICE
 67/udp closed dhcps

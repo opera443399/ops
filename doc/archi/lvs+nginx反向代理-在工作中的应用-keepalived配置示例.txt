@@ -1,0 +1,357 @@
+lvs+nginx反向代理-在工作中的应用-keepalived配置示例
+2015/12/15
+
+一、【主】
+[root@test200_201 ~]# cat /etc/keepalived/keepalived.conf 
+#
+! Configuration File for keepalived
+
+global_defs {
+    router_id LVS_1
+}
+
+
+# vrrp for WAN
+vrrp_instance VI_1 {
+    state MASTER               
+    interface eth0             
+    
+    mcast_src_ip 1.2.3.201   
+    virtual_router_id 201     
+    priority 100               
+    advert_int 1               
+    garp_master_delay 1
+    notify_master "/usr/local/bin/lvs_notify.sh 'master' 'test201'"  
+    notify_backup "/usr/local/bin/lvs_notify.sh 'backup' 'test201'"  
+    authentication {
+        auth_type PASS         
+        auth_pass 1111      
+    }
+    virtual_ipaddress {
+        4.3.2.101/24 dev eth0 label eth0:101     
+    }
+}
+
+# vrrp fro LAN
+vrrp_instance VI_2 {
+    state BACKUP
+    interface eth1
+
+    mcast_src_ip 10.50.200.201
+    virtual_router_id 202
+    priority 50
+    advert_int 1
+    garp_master_delay 1
+    notify_master "/usr/local/bin/lvs_notify.sh 'master' 'test201'"
+    notify_backup "/usr/local/bin/lvs_notify.sh 'backup' 'test201'"
+    authentication {
+        auth_type PASS
+        auth_pass StaginG2
+    }
+    virtual_ipaddress {
+        10.50.200.21/24 dev eth1 label eth1:21
+        10.50.200.22/24 dev eth1 label eth1:22
+        10.50.200.23/24 dev eth1 label eth1:23
+    }
+}
+
+# include virtual_server config
+include /etc/keepalived/conf.d/*.conf
+
+
+
+二、【备】
+[root@test200_202 ~]# cat /etc/keepalived/keepalived.conf 
+#
+! Configuration File for keepalived
+
+global_defs {
+    router_id LVS_1
+}
+
+
+# vrrp for WAN
+vrrp_instance VI_1 {
+    state BACKUP               
+    interface eth0             
+    
+    mcast_src_ip 1.2.3.202   
+    virtual_router_id 201     
+    priority 50               
+    advert_int 1               
+    garp_master_delay 1
+    notify_master "/usr/local/bin/lvs_notify.sh 'master' 'test202'"  
+    notify_backup "/usr/local/bin/lvs_notify.sh 'backup' 'test202'"  
+    authentication {
+        auth_type PASS         
+        auth_pass 1111      
+    }
+    virtual_ipaddress {
+        4.3.2.101/24 dev eth0 label eth0:101     
+    }
+}
+
+# vrrp fro LAN
+vrrp_instance VI_2 {
+    state MASTER
+    interface eth1
+
+    mcast_src_ip 10.50.200.202
+    virtual_router_id 202
+    priority 100
+    advert_int 1
+    garp_master_delay 1
+    notify_master "/usr/local/bin/lvs_notify.sh 'master' 'test202'"
+    notify_backup "/usr/local/bin/lvs_notify.sh 'backup' 'test202'"
+    authentication {
+        auth_type PASS
+        auth_pass 2222
+    }
+    virtual_ipaddress {
+        10.50.200.21/24 dev eth1 label eth1:21
+        10.50.200.22/24 dev eth1 label eth1:22
+        10.50.200.23/24 dev eth1 label eth1:23
+    }
+}
+
+# include virtual_server config
+include /etc/keepalived/conf.d/*.conf
+
+
+
+3、【virtual_server】（主和备一致）
+[root@test200_201 ~]# cat /etc/keepalived/conf.d/nginx_proxy.conf   
+# nginx_proxy_wan
+virtual_server 4.3.2.101 80 {
+    delay_loop 6
+    lb_algo rr
+    lb_kind DR
+    #persistence_timeout 60
+    protocol TCP
+
+    real_server 4.3.2.169 80 {
+        weight 1
+        notify_up "/usr/local/bin/lvs_notify.sh 'real' 'test169' 'Up' '80'"
+        notify_down "/usr/local/bin/lvs_notify.sh 'real' 'test169' 'Down' '80'"
+        MISC_CHECK {
+
+            misc_path "/usr/local/bin/lvs_check_realserver.sh 4.3.2.169 80"
+            misc_timeout 5
+        }
+    }
+    real_server 4.3.2.179 80 {
+        weight 1
+        notify_up "/usr/local/bin/lvs_notify.sh 'real' 'test179'  'Up' '80'"
+        notify_down "/usr/local/bin/lvs_notify.sh 'real' 'test179' 'Down' '80'"
+        MISC_CHECK {
+
+            misc_path "/usr/local/bin/lvs_check_realserver.sh 4.3.2.179 80"
+            misc_timeout 5
+        }
+    }
+}
+
+# nginx_proxy_wan_https
+virtual_server 4.3.2.101 443 {
+    delay_loop 6
+    lb_algo rr
+    lb_kind DR
+    #persistence_timeout 60
+    protocol TCP
+
+    real_server 4.3.2.169 443 {
+        weight 1
+        notify_up "/usr/local/bin/lvs_notify.sh 'real' 'test169' 'Up' '443'"
+        notify_down "/usr/local/bin/lvs_notify.sh 'real' 'test169' 'Down' '443'"
+        MISC_CHECK {
+
+            misc_path "/usr/local/bin/lvs_check_realserver.sh 4.3.2.169 443"
+            misc_timeout 5
+        }
+    }
+    real_server 4.3.2.179 443 {
+        weight 1
+        notify_up "/usr/local/bin/lvs_notify.sh 'real' 'test179'  'Up' '443'"
+        notify_down "/usr/local/bin/lvs_notify.sh 'real' 'test179' 'Down' '443'"
+        MISC_CHECK {
+
+            misc_path "/usr/local/bin/lvs_check_realserver.sh 4.3.2.179 443"
+            misc_timeout 5
+        }
+    }
+}
+
+# nginx_proxy_wan_8080
+virtual_server 4.3.2.101 8080 {
+    delay_loop 6
+    lb_algo rr
+    lb_kind DR
+    #persistence_timeout 60
+    protocol TCP
+
+    real_server 4.3.2.169 8080 {
+        weight 1
+        notify_up "/usr/local/bin/lvs_notify.sh 'real' 'test169' 'Up' '8080'"
+        notify_down "/usr/local/bin/lvs_notify.sh 'real' 'test169' 'Down' '8080'"
+        MISC_CHECK {
+
+            misc_path "/usr/local/bin/lvs_check_realserver.sh 4.3.2.169 8080"
+            misc_timeout 5
+        }
+    }
+    real_server 4.3.2.179 8080 {
+        weight 1
+        notify_up "/usr/local/bin/lvs_notify.sh 'real' 'test179'  'Up' '8080'"
+        notify_down "/usr/local/bin/lvs_notify.sh 'real' 'test179' 'Down' '8080'"
+        MISC_CHECK {
+
+            misc_path "/usr/local/bin/lvs_check_realserver.sh 4.3.2.179 8080"
+            misc_timeout 5
+        }
+    }
+}
+
+# nginx_proxy_lan
+virtual_server 10.50.200.21 80 {
+    delay_loop 6
+    lb_algo rr
+    lb_kind DR
+    #persistence_timeout 60
+    protocol TCP
+
+    real_server 10.50.200.169 80 {
+        weight 1
+        notify_up "/usr/local/bin/lvs_notify.sh 'real' 'test169' 'Up' '80'"
+        notify_down "/usr/local/bin/lvs_notify.sh 'real' 'test169' 'Down' '80'"
+        MISC_CHECK {
+
+            misc_path "/usr/local/bin/lvs_check_realserver.sh 10.10.10.169 80"
+            misc_timeout 5
+        }
+    }
+    real_server 10.50.200.179 80 {
+        weight 1
+        notify_up "/usr/local/bin/lvs_notify.sh 'real' 'test179'  'Up' '80'"
+        notify_down "/usr/local/bin/lvs_notify.sh 'real' 'test179' 'Down' '80'"
+        MISC_CHECK {
+
+            misc_path "/usr/local/bin/lvs_check_realserver.sh 10.50.200.179 80"
+            misc_timeout 5
+        }
+    }
+}
+
+
+4、通知脚本
+[root@test200_201 ~]# cat /usr/local/bin/lvs_notify.sh
+#!/bin/bash
+svrtype="$1"
+svrid="$2"
+state="$3"
+port="$4"
+
+case $svrtype in
+master)
+        obj="$svrid State Change To Master"
+        msg="LVS-Master Server Up."
+        ;;
+backup)
+        case $state in
+        master)
+                obj="Master Server Down. $svrid State Change To Master"
+                msg="Master Server Down. Please Check Master Server."
+                ;;
+        backup)
+                obj="$svrid State Change To Backup"
+                msg="LVS-Backup Server Up."
+                ;;
+        esac
+        ;;
+real)
+        obj="Real Server $svrid Port $port $state"
+        msg="Real Server $svrid Port $port $state"
+        ;;
+esac
+
+/usr/bin/sendEmail -s smtp.test.com -f from@test.com -t me@test.com -xu from@test.com  -xp xxx   -u "$obj monitor from $HOSTNAME" -m "$msg"
+
+echo "`date +%F' '%T` $HOSTNAME $msg" >> /tmp/msg.txt
+
+
+5、检测脚本
+[root@test200_201 ~]# cat /usr/local/bin/lvs_check_realserver.sh
+#!/bin/bash
+
+host="$1"
+port="$2"
+
+i=0
+while  [ $i -lt 3 ]
+do
+        nc -z ${host} ${port}
+        if [ $? -eq 0 ]; then
+            break
+        fi
+
+        i=`expr $i + 1 `
+        sleep 1
+done
+
+if [ $i -eq 3 ];then
+        exit 1
+else
+        exit 0
+fi
+
+
+6、后端realserver（本例是nginx反向代理服务器）上管理vip的脚本
+[root@test200_169 ~]# cat /usr/local/bin/lvs_realserver.sh
+# description: Config realserver lo and apply noarp
+
+VIP1=10.50.200.21
+VIP2=4.3.2.101
+
+. /etc/rc.d/init.d/functions
+
+case "$1" in
+start)
+ifconfig lo:1 $VIP1 netmask 255.255.255.255 broadcast $VIP1
+ifconfig lo:2 $VIP2 netmask 255.255.255.255 broadcast $VIP2
+
+/sbin/route add -host $VIP1 dev lo:1
+/sbin/route add -host $VIP2 dev lo:2
+
+echo "1" >/proc/sys/net/ipv4/conf/lo/arp_ignore
+echo "2" >/proc/sys/net/ipv4/conf/lo/arp_announce
+echo "1" >/proc/sys/net/ipv4/conf/all/arp_ignore
+echo "2" >/proc/sys/net/ipv4/conf/all/arp_announce
+echo "2" > /proc/sys/net/ipv4/conf/eth0/rp_filter  # 替换掉网卡名
+echo "2" > /proc/sys/net/ipv4/conf/eth1/rp_filter  # 替换掉网卡名
+echo "2" > /proc/sys/net/ipv4/conf/all/rp_filter  # 替换掉网卡名
+sysctl -p >/dev/null 2>&1
+echo "RealServer Start OK"
+
+;;
+stop)
+
+ifconfig lo:1 down
+ifconfig lo:2 down
+
+route del $VIP1 >/dev/null 2>&1
+route del $VIP2 >/dev/null 2>&1
+
+echo "0" >/proc/sys/net/ipv4/conf/lo/arp_ignore
+echo "0" >/proc/sys/net/ipv4/conf/lo/arp_announce
+echo "0" >/proc/sys/net/ipv4/conf/all/arp_ignore
+echo "0" >/proc/sys/net/ipv4/conf/all/arp_announce
+echo "0" > /proc/sys/net/ipv4/conf/eth0/rp_filter  # 替换掉网卡名
+echo "0" > /proc/sys/net/ipv4/conf/eth1/rp_filter  # 替换掉网卡名
+echo "0" > /proc/sys/net/ipv4/conf/all/rp_filter  # 替换掉网卡名
+echo "RealServer Stoped"
+;;
+*)
+echo "Usage: $0 {start|stop}"
+exit 1
+esac
+
+exit 0

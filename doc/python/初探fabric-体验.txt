@@ -20,7 +20,7 @@ def ii():
     local('date')
 
 def jj():
-    env.hosts=['192.168.20.42']
+    env.hosts=['10.50.200.42']
     env.ssh_config_path='~/.ssh/config'
 
 def kk():
@@ -62,23 +62,23 @@ Done.
 
 4、执行远端的命令
 [root@tvm01 fabtest]# cat ~/.ssh/config 
-host 192.168.20.42
-    hostname 192.168.20.42
+host 10.50.200.42
+    hostname 10.50.200.42
     user Jack
 
 [root@tvm01 fabtest]# fab jj kk
-[192.168.20.42] Executing task 'kk'
-[192.168.20.42] run: mktemp tmp.XXX
-[192.168.20.42] out: tmp.UiZ
-[192.168.20.42] out: 
+[10.50.200.42] Executing task 'kk'
+[10.50.200.42] run: mktemp tmp.XXX
+[10.50.200.42] out: tmp.UiZ
+[10.50.200.42] out: 
 
-[192.168.20.42] run: ls
-[192.168.20.42] out: test-2015-12-11.log  test.sh.log  tmp.RosBDQDi5S  tmp.UiZ
-[192.168.20.42] out: 
+[10.50.200.42] run: ls
+[10.50.200.42] out: test-2015-12-11.log  test.sh.log  tmp.RosBDQDi5S  tmp.UiZ
+[10.50.200.42] out: 
 
 
 Done.
-Disconnecting from 192.168.20.42... done.
+Disconnecting from 10.50.200.42... done.
 
 
 

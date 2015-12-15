@@ -67,9 +67,9 @@ TYPE=Bridge
 DELAY=0
 STP=off
 ONBOOT=yes
-IPADDR=192.168.20.35
+IPADDR=10.50.200.35
 NETMASK=255.255.255.0
-GATEWAY=192.168.20.1
+GATEWAY=10.50.200.1
 BOOTPROTO=none
 MTU=1500
 DEFROUTE=yes
@@ -91,7 +91,7 @@ TYPE=Bridge
 DELAY=0
 STP=off
 ONBOOT=yes
-IPADDR=192.168.25.35
+IPADDR=10.50.205.35
 NETMASK=255.255.255.0
 BOOTPROTO=none
 MTU=1500
@@ -111,7 +111,7 @@ chkconfig xend off
 二、创建1个虚拟机
 1、使用提前准备好的模版和脚本来创建。
 （脚本后附）
-[root@n35 pvcreate]# sh vm_centos-create-2nic.sh tvm31 4 4096 100GB 4GB 192.168.20.31 192.168.20.1 192.168.25.31
+[root@n35 pvcreate]# sh vm_centos-create-2nic.sh tvm31 4 4096 100GB 4GB 10.50.200.31 10.50.200.1 10.50.205.31
   Logical volume "tvm31-disk" created
   Logical volume "tvm31-swap" created
 mke2fs 1.41.12 (17-May-2010)
@@ -182,7 +182,7 @@ Centos6-5.tgz  macgen.py  vm_centos-create-2nic.sh  vm_centos-create.sh
 if [ "$#" -ne "8" ];then
     echo "$0: incorrect parameter!"
     echo "usage: $0 <hostname> <cpucount> <memsize /MB> <disksize /GB> <diskswapsize> <ipaddress> <gateway> <ipaddress2>"
-    echo "example: $0 tvm-cms 2 2000 100GB 5GB 192.168.20.22 192.168.20.1 192.168.25.22 "
+    echo "example: $0 test-vm22 2 2000 100GB 5GB 10.50.200.22 10.50.200.1 10.50.205.22 "
     exit 1
 else
     set -e

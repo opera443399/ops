@@ -4,7 +4,7 @@
 if [ "$#" -ne "8" ];then
     echo "$0: incorrect parameter!"
     echo "usage: $0 <hostname> <cpucount> <memsize /MB> <disksize /GB> <diskswapsize> <ipaddress> <gateway> <ipaddress2>"
-    echo "example: $0 sz-local-vm-cms 2 2000 100GB 5GB 192.168.20.22 192.168.20.1 192.168.25.22 "
+    echo "example: $0 test-vm22 2 2000 100GB 5GB 10.50.200.22 10.50.200.1 10.50.205.22 "
     exit 1
 else
     set -e

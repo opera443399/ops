@@ -1,0 +1,83 @@
+lvs+nginx反向代理-在工作中的应用-nginx反向代理配置示例
+2015/12/15
+
+[root@test161 ~]# cat /etc/nginx/nginx.conf
+
+user  nginx;
+worker_processes  4;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    log_format  dm '$remote_addr [$time_local] "$request" '
+                   '"$http_content_type" "$request_body" "$http_referer" '
+                   '$status $request_time $body_bytes_sent';
+
+    access_log  /var/log/nginx/access.log  main;
+    error_log memory:32m debug;
+
+    sendfile        on;
+    client_max_body_size 1024M;
+    #tcp_nopush     on;
+
+    keepalive_timeout  65;
+
+    #gzip  on;
+
+    include /etc/nginx/conf.d/*.conf;
+    
+    
+[root@test161 ~]# cat /etc/nginx/conf.d/www.test.com-80.conf 
+upstream backend_test {
+        server 10.50.200.204:8080;
+        server 10.50.200.214:8080;
+    }
+
+server {
+    listen       80;
+    server_name  www.jeboo.com www.jeboo.cn stag.www.jeboo.com;
+
+    root  /usr/share/nginx/html;
+    index index.html index.htm;
+
+    access_log  /var/log/nginx/access.www.jeboo.com.log dm;
+    error_log  /var/log/nginx/error.www.jeboo.com.log;
+
+    error_page  404              /404.html;
+
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+
+    location / {
+        proxy_pass   http://backend_test;
+        proxy_redirect default ;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /ngx_status {
+        stub_status on;
+        access_log off;
+        allow 10.50.200.0/24;
+        deny all;
+    }
+}
+    
+    

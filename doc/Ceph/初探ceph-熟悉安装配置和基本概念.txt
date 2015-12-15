@@ -79,15 +79,15 @@ Netif: 2
 node的名称可以在hosts做映射，也可以配置一个简单的dns服务，但要注意和hostname一致，原因后文有述。
 我们配置一下hosts
 # cat /etc/hosts
-192.168.20.31 admin-node
-192.168.20.32 node1
-192.168.20.41 node2
-192.168.20.42 node3
+10.50.200.31 admin-node
+10.50.200.32 node1
+10.50.200.41 node2
+10.50.200.42 node3
 
 错误的配置示例：
 hostname=vm_node1
 hosts中是：
-192.168.20.32 node1
+10.50.200.32 node1
 则后续会遇到错误：
 [node1][INFO  ] Running command: sudo /sbin/service ceph -c /etc/ceph/ceph.conf start mon.vm_node1
 [node1][INFO  ] Running command: sudo ceph --cluster=ceph --admin-daemon /var/run/ceph/ceph-mon.node1.asok mon_status
@@ -186,7 +186,7 @@ ceph.conf  ceph.log  ceph.mon.keyring
 [global]
 fsid = b04a567c-67cb-4d3c-94ed-202aa490d5c4
 mon_initial_members = node1, node2, node3
-mon_host = 192.168.20.32,192.168.20.41,192.168.20.42
+mon_host = 10.50.200.32,10.50.200.41,10.50.200.42
 auth_cluster_required = cephx
 auth_service_required = cephx
 auth_client_required = cephx
@@ -250,7 +250,7 @@ ceph.bootstrap-mds.keyring  ceph.bootstrap-osd.keyring  ceph.client.admin.keyrin
 [root@admin-node my-cluster]# ceph -s
     cluster b04a567c-67cb-4d3c-94ed-202aa490d5c4
      health HEALTH_OK
-     monmap e2: 3 mons at {node1=192.168.20.32:6789/0,node2=192.168.20.41:6789/0,node3=192.168.20.42:6789/0}, election epoch 8, quorum 0,1,2 node1,node2,node3
+     monmap e2: 3 mons at {node1=10.50.200.32:6789/0,node2=10.50.200.41:6789/0,node3=10.50.200.42:6789/0}, election epoch 8, quorum 0,1,2 node1,node2,node3
      osdmap e13: 3 osds: 3 up, 3 in
       pgmap v20: 64 pgs, 1 pools, 0 bytes data, 0 objects
             15458 MB used, 3055 GB / 3070 GB avail
@@ -288,14 +288,14 @@ ceph quorum_status --format json-pretty
 调整ntp服务器的配置，admin-node配置为ntp服务器端，所有节点从admin-node定时同步时间后，查看状态，依然无效。
 [root@admin-node ~]# ceph health detail
 HEALTH_WARN clock skew detected on mon.node2, mon.node3
-mon.node2 addr 192.168.20.41:6789/0 clock skew 2.33112s > max 0.05s (latency 0.00191309s)
-mon.node3 addr 192.168.20.42:6789/0 clock skew 2.34557s > max 0.05s (latency 0.00459134s)
+mon.node2 addr 10.50.200.41:6789/0 clock skew 2.33112s > max 0.05s (latency 0.00191309s)
+mon.node3 addr 10.50.200.42:6789/0 clock skew 2.34557s > max 0.05s (latency 0.00459134s)
 
 等待一段时间后，才发现延迟在减低
 [root@admin-node ~]# ceph health detail
 HEALTH_WARN clock skew detected on mon.node2, mon.node3
-mon.node2 addr 192.168.20.41:6789/0 clock skew 0.141779s > max 0.05s (latency 0.0016405s)
-mon.node3 addr 192.168.20.42:6789/0 clock skew 0.142604s > max 0.05s (latency 0.00181181s)
+mon.node2 addr 10.50.200.41:6789/0 clock skew 0.141779s > max 0.05s (latency 0.0016405s)
+mon.node3 addr 10.50.200.42:6789/0 clock skew 0.142604s > max 0.05s (latency 0.00181181s)
 最终：
 [root@admin-node ~]# ceph health detail
 HEALTH_OK
