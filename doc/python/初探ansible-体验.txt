@@ -1,4 +1,5 @@
 初探ansible-体验
+2015/12/14
 
 一、安装
 [root@tvm02 ~]# yum install ansible
@@ -91,6 +92,7 @@ ls: cannot access /tmp/11: No such file or directory
 
 
 5、包管理
+安装
 [root@tvm02 ~]# ansible test -m yum -a "name=haproxy state=present"
 192.168.20.32 | success >> {
     "changed": true, 
@@ -105,12 +107,29 @@ ls: cannot access /tmp/11: No such file or directory
 192.168.20.32 | success | rc=0 >>
 haproxy: /usr/sbin/haproxy /etc/haproxy /usr/share/haproxy /usr/share/man/man1/haproxy.1.gz
 
+卸载
+[root@tvm02 ~]# ansible test -m yum -a "name=haproxy state=absent"
+192.168.20.32 | success >> {
+    "changed": true, 
+    "msg": "", 
+    "rc": 0, 
+    "results": [
+        "Loaded plugins: fastestmirror, security\nSetting up Remove Process\nResolving Dependencies\n--> Running transaction check\n---> Package haproxy.x86_64 0:1.5.4-2.el6 will be erased\n--> Finished Dependency Resolution\n\nDependencies Resolved\n\n================================================================================\n Package          Arch            Version                Repository        Size\n================================================================================\nRemoving:\n haproxy          x86_64          1.5.4-2.el6            @superd          2.4 M\n\nTransaction Summary\n================================================================================\nRemove        1 Package(s)\n\nInstalled size: 2.4 M\nDownloading Packages:\nRunning rpm_check_debug\nRunning Transaction Test\nTransaction Test Succeeded\nRunning Transaction\n\r  Erasing    : haproxy-1.5.4-2.el6.x86_64                                   1/1 \n\r  Verifying  : haproxy-1.5.4-2.el6.x86_64                                   1/1 \n\nRemoved:\n  haproxy.x86_64 0:1.5.4-2.el6                                                  \n\nComplete!\n"
+    ]
+}
+
 
 6、获取系统信息
 [root@tvm02 ~]# ansible test -m setup
 
 
 其他可以参考：http://docs.ansible.com/ansible/intro_adhoc.html
+
+
+四、palybook
+参考官方文档，低版本的ansible可能存在bug，在运行示例配置时，会报错。
+
+
 
 
 

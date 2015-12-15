@@ -1,6 +1,6 @@
-日期：2015/10/12 - 2015/11/17 time 09:50
-主机：n72, n73, n86, n93, vm220
-目的：初探oVirt-探索小结后再重构一次ovirt环境
+日期：2015/10/12 - 2015/12/14 time 11:11
+主机：n72, n73, n86, n93
+目的：初探oVirt-小结后重做一遍ovirt环境
 操作内容：
 一、基础环境
 1、本次测试环境使用4台物理机来测试：n72, n73, n86, n93
@@ -8,13 +8,11 @@ CPU：    Intel(R) Xeon(R) CPU E5-2603 v2 @ 1.80GHz
 内存：   32G    
 硬盘：   系统盘sda + 数据盘sdb
 
-
 ovirt-engine: e01(在n86上用virt-install手动创建的vm，安装vm和ovirt-engine的方法，前文有述略过不提)
 ovirt-hosts: n72, n73, n93
 ovirt-gluster: n72, n73, n93
 NFS: n86
-DNS: vm220 （局域网另行配置的一个DNS服务器）
-
+RSYNC: n93
 
 2、配置NFS服务(n86)
 1）安装服务
@@ -82,7 +80,7 @@ Export list for 10.50.200.86:
 1）几台主机的网络划分：
 管理网段：10.50.200.0/24
 
-2）【DNS服务器】
+2）hosts
 [root@vm220 ~]# yum -y install dnsmasq
 [root@vm220 ~]# cat /etc/hosts
 10.50.200.30 e01.test
@@ -92,20 +90,6 @@ Export list for 10.50.200.86:
 10.50.200.93 n93.test
 
 
-[root@vm220 ~]# cat /etc/resolv.conf 
-nameserver 10.50.200.93
-nameserver 223.5.5.5
-
-[root@vm220 ~]# service dnsmasq restart
-放行TCP和UDP的53端口。
-
-测试：
-[root@node93 ~]# nslookup e01.test                         
-Server:         10.50.200.220
-Address:        10.50.200.220#53
-
-Name:   e01.test
-Address: 10.50.200.30
 
 
 
@@ -346,7 +330,12 @@ history -c
 
 2、#####----- 【应用层面】 -----#####
 【备份】
-[root@e01 ~]# cd /backup && dt=`date +%Y%m%d_%H%M%S` && engine-backup --mode=backup --file=${dt}.bak --log=${dt}.bak.log >${dt}.run.log 2>&1
+d_bak="/tmp/ovirt_engine_backup/`date +%Y%m%d_%H%M%S`"
+f_log="/tmp/rsync_ovirt_bak.txt"
+[ -d ${d_bak} ] || mkdir -p ${d_bak}
+cd ${d_bak}
+engine-backup --mode=backup --file=ovirt-engine.bak --log=backup.log >${f_log} 2>&1
+
 【恢复】
 未验证。作为备用方案。
 请参考：http://www.ovirt.org/Ovirt-engine-backup#Restore
@@ -355,112 +344,9 @@ history -c
 
 3、#####----- 【kvm 层面】 -----#####
 1）克隆vm并归档（参考附录：脚本；挂载外边备份卷到目录：/backup）
-[root@n86 ~]# mkdir -p /data/backup/logs && /bin/bash /data/ops/bin/backupVM.sh >/data/backup/logs/clone_$(date +%Y%m%d).log 2>&1
-
-2）查看日志：
-[root@n86 ~]# cat /data/backup/logs/clone_20151027.log        
-mkdir: created directory `/data/backup/VMs/e01.test/20151027'
-#virsh# list --all
- 1     e01.test                       running
-[1] Tue Oct 27 13:14:08 CST 2015 [INFO] 准备克隆。
-Domain e01.test suspended
-
-#virsh# list --all
- 1     e01.test                       paused
-Allocating 'e01.test-vda-clone.qcow2'                    |  40 GB     00:23     
-
-Clone 'e01.test-clone' created successfully.
-Domain e01.test resumed
-
-#virsh# list --all
- 1     e01.test                       running
- -     e01.test-clone                 shut off
-[1] Tue Oct 27 13:14:32 CST 2015 [INFO] step 1 完成。
-[2] Tue Oct 27 13:14:32 CST 2015 [INFO] 收集 xml 和 images 并拷贝到本地存储。
-`/etc/libvirt/qemu/e01.test.xml' -> `/data/backup/VMs/e01.test/20151027/e01.test.xml'
-`/etc/libvirt/qemu/e01.test-clone.xml' -> `/data/backup/VMs/e01.test/20151027/e01.test-clone.xml'
-removed `/etc/libvirt/qemu/e01.test-clone.xml'
-`/data/kvm/images/e01.test-vda-clone.qcow2' -> `/data/backup/VMs/e01.test/20151027/e01.test-vda-clone.qcow2'
-[2] Tue Oct 27 13:14:32 CST 2015 [INFO] step 2 完成。
-[3] Tue Oct 27 13:14:32 CST 2015 [INFO] 归档到外部存储。
-`/data/backup/VMs/e01.test/20151027' -> `/backup/e01.test/20151027'
-`/data/backup/VMs/e01.test/20151027/e01.test.xml' -> `/backup/e01.test/20151027/e01.test.xml'
-`/data/backup/VMs/e01.test/20151027/e01.test-clone.xml' -> `/backup/e01.test/20151027/e01.test-clone.xml'
-`/data/backup/VMs/e01.test/20151027/e01.test-vda-clone.qcow2' -> `/backup/e01.test/20151027/e01.test-vda-clone.qcow2'
-[3] Tue Oct 27 13:15:19 CST 2015 [INFO] step 3 完成。
-[4-1] Tue Oct 27 13:15:19 CST 2015 [INFO] 移除克隆的 VM
-Domain e01.test-clone has been undefined
-
-[4-1] Tue Oct 27 13:15:19 CST 2015 [INFO] 列出目录：/data/backup/VMs/e01.test
-20151024
-20151025
-20151026
-20151027
-[4-1] Tue Oct 27 13:15:19 CST 2015 [INFO] 清理本地超过3天的副本。
-removed `/data/backup/VMs/e01.test/20151024/e01.test.xml'
-removed `/data/backup/VMs/e01.test/20151024/e01.test-clone.xml'
-removed `/data/backup/VMs/e01.test/20151024/e01.test-vda-clone.qcow2'
-removed directory: `/data/backup/VMs/e01.test/20151024'
-[4-1] Tue Oct 27 13:15:20 CST 2015 [INFO] 列出目录：/data/backup/VMs/e01.test
-20151025
-20151026
-20151027
-[4-1] Tue Oct 27 13:15:20 CST 2015 [INFO] step 4-1 完成。
-[4-2] Tue Oct 27 13:15:20 CST 2015 [INFO] 列出目录：/backup/e01.test
-20151020
-20151021
-20151022
-20151023
-20151024
-20151025
-20151026
-20151027
-[4-2] Tue Oct 27 13:15:20 CST 2015 [INFO] 清理外部存储超过7天的副本。
-removed `/backup/e01.test/20151020/e01.test.xml'
-removed `/backup/e01.test/20151020/e01.test-vda-clone.qcow2'
-removed `/backup/e01.test/20151020/e01.test-clone.xml'
-removed directory: `/backup/e01.test/20151020'
-[4-2] Tue Oct 27 13:15:21 CST 2015 [INFO] 列出目录：/backup/e01.test
-20151021
-20151022
-20151023
-20151024
-20151025
-20151026
-20151027
-[4-2] Tue Oct 27 13:15:21 CST 2015 [INFO] step 4-2 完成。
-
-
-
-3）备份的文件列表如下所示
-[root@n86 ~]# tree -L 1 /backup/e01.test/
-/backup/e01.test/
-├── 20151021
-├── 20151022
-├── 20151023
-├── 20151024
-├── 20151025
-├── 20151026
-└── 20151027
-
-7 directories, 0 files
-[root@n86 ~]# tree -L 1 /data/backup/VMs/e01.test/
-/data/backup/VMs/e01.test/
-├── 20151025
-├── 20151026
-└── 20151027
-
-3 directories, 0 files
-[root@n86 ~]# tree -L 1 /data/backup/VMs/e01.test/20151027
-/data/backup/VMs/e01.test/20151027
-├── e01.test-clone.xml
-├── e01.test-vda-clone.qcow2
-└── e01.test.xml
-
-0 directories, 3 files
-
-
-4）恢复
+[root@n86 bin]# sh /usr/local/bin/backupVM.sh
+     
+2）恢复
 对比xml可以发现，克隆的对象修改了以下内容：
 name
 uuid
@@ -592,28 +478,23 @@ node35.glusterfs:/e01_bak_kvm   11T   17G   11T   1% /backup
 
 
 五、附录2【backupVM.sh】   
-[root@n86 ~]# cat /data/ops/bin/backupVM.sh 
+1、脚本
+[root@n86 bin]# cat /usr/local/bin/backupVM.sh
 #!/bin/bash
 #
-# 2015/10/27
+# 2015/12/14
 
-s_vm='e01.test'                                         # 源 vm 的名称: e01.test
-s_vm_clone="${s_vm}-clone"                              # 克隆后的 vm 名称: e01.test-clone
+s_vm='e01.test'                                         # 源 vm 的名称
+s_vm_clone="${s_vm}-clone"                              # 克隆后的 vm 名称 
 d_vm_img='/data/kvm/images'                             # 源 vm 的磁盘镜像目录
 f_vm_img_clone="${d_vm_img}/${s_vm}-vda-clone.qcow2"    # 源 vm 的磁盘镜像文件路径
 d_bak_root="/data/backup/VMs/${s_vm}"                   # 本地 备份目录
-d_standby_root="/backup/${s_vm}"                        # 外部 备份目录
-s_date=$(date +%Y%m%d)                                  # 日期: 20151027
-s_date_3=$(date -d "3 days ago" +%Y%m%d)                # 日期: 20151024
-s_date_7=$(date -d "7 days ago" +%Y%m%d)                # 日期: 20151020
-d_clone="${d_bak_root}/${s_date}"                       # 当前备份存放目录: /data/backup/VMs/e01.test/20151027
-d_clone_3="${d_bak_root}/${s_date_3}"                   # 3天前备份存放目录: /data/backup/VMs/e01.test/20151024
-d_standby_7="${d_standby_root}/${s_date_7}"             # 7天前备份存放目录: /data/backup/VMs/e01.test/20151020
-mkdir -pv ${d_clone}
-mkdir -pv ${d_standby_root}
+s_date=$(date +%Y%m%d)                                  # 日期
+d_clone="${d_bak_root}/${s_date}"                       # 当前备份存放目录
+d_logs='/data/backup/logs'                              # 备份日志存放目录
+f_bak_log="${d_logs}/clone_${s_date}.log"               # 日志文件路径
 
-
-function clone_vm() {
+function do_clone_vm() {
     ### 【1】
     echo '#virsh# list --all' && virsh list --all |grep ${s_vm}
     echo "[1] `date` [INFO] 准备克隆。"
@@ -631,28 +512,96 @@ function clone_vm() {
     mv -fv ${f_vm_img_clone} ${d_clone} 
     echo "[2] `date` [INFO] step 2 完成。"
     ### 【3】
-    echo "[3] `date` [INFO] 归档到外部存储。"
-    cp -afv ${d_clone} ${d_standby_root}
-    echo "[3] `date` [INFO] step 3 完成。"
-    ### 【4-1】
-    echo "[4-1] `date` [INFO] 移除克隆的 VM"
+    echo "[3] `date` [INFO] 移除克隆的 VM"
     virsh undefine ${s_vm_clone}
-    echo "[4-1] `date` [INFO] 列出目录：${d_bak_root}" && ls ${d_bak_root}
-    echo "[4-1] `date` [INFO] 清理本地超过3天的副本。"
-    [ -d ${d_clone_3} ] && rm ${d_clone_3} -frv
-    echo "[4-1] `date` [INFO] 列出目录：${d_bak_root}" && ls ${d_bak_root}
-    echo "[4-1] `date` [INFO] step 4-1 完成。"
-    ### 【4-2】
-    echo "[4-2] `date` [INFO] 列出目录：${d_standby_root}" && ls ${d_standby_root}
-    echo "[4-2] `date` [INFO] 清理外部存储超过7天的副本。"
-    [ -d ${d_standby_7} ] && rm ${d_standby_7} -frv
-    echo "[4-2] `date` [INFO] 列出目录：${d_standby_root}" && ls ${d_standby_root}
-    echo "[4-2] `date` [INFO] step 4-2 完成。"
+    echo "[3] `date` [INFO] step 3 完成。"
 }
 
-##-
-clone_vm
 
-#mkdir -p /data/backup/logs && /bin/bash /data/ops/bin/backupVM.sh >/data/backup/logs/clone_$(date +%Y%m%d).log 2>&1
-# crontab
-#0 2 * * * /bin/bash /data/ops/bin/backupVM.sh >/data/backup/logs/clone_$(date +\%Y\%m\%d).log 2>&1 &
+function do_clean() {
+    echo "[4] `date` [INFO] 清理7天前的 VM"
+    find ${d_bak_root} -mtime +7 -print
+    find ${d_bak_root} -mtime +7 -delete
+    echo "[4] `date` [INFO] step 4 完成。"
+}
+
+
+function do_rsync() {
+    rsync -avP --delete --password-file=/etc/rsync.pass $1  backup@10.50.200.93::bak_kvm_images
+}
+
+
+function do_bak() {
+    mkdir -pv ${d_clone} ${d_logs}
+    do_clone_vm
+    do_clean
+    do_rsync ${d_bak_root}
+}
+
+
+function do_alert() {
+    do_bak >${f_bak_log} 2>&1
+    if [ $? -eq 0 ];then
+        retval="OK"
+    else
+        retval="Failed"
+    fi
+
+    ## sendEmail args
+    mail_bin="sendEmail -s smtp.xxx.com \
+                        -xu f@xxx.com \
+                        -xp xxx \
+                        -f f@xxx.com \
+                        -o message-charset=utf-8"
+    to="me@xxx.com"
+    subject="sz kvm backup ${retval}"
+    body="from ${HOSTNAME}: $0"
+    ${mail_bin} -t ${to} -u ${subject} -m ${body} -a ${f_bak_log}
+}
+
+do_alert
+
+
+
+2、日志：
+[root@n86 ~]# tail -f /data/backup/logs/clone_20151214.log  
+mkdir: created directory `/data/backup/VMs/e01.test/20151214'
+#virsh# list --all
+ 1     e01.test                       running
+[1] Mon Dec 14 11:00:00 CST 2015 [INFO] 准备克隆。
+Domain e01.test suspended
+
+#virsh# list --all
+ 1     e01.test                       paused
+Allocating 'e01.test-vda-clone.qcow2'                    |  40 GB     00:30     
+
+Clone 'e01.test-clone' created successfully.
+Domain e01.test resumed
+
+#virsh# list --all
+ 1     e01.test                       running
+ -     e01.test-clone                 shut off
+[1] Mon Dec 14 11:00:31 CST 2015 [INFO] step 1 完成。
+[2] Mon Dec 14 11:00:31 CST 2015 [INFO] 收集 xml 和 images 并拷贝到本地存储。
+`/etc/libvirt/qemu/e01.test.xml' -> `/data/backup/VMs/e01.test/20151214/e01.test.xml'
+`/etc/libvirt/qemu/e01.test-clone.xml' -> `/data/backup/VMs/e01.test/20151214/e01.test-clone.xml'
+removed `/etc/libvirt/qemu/e01.test-clone.xml'
+`/data/kvm/images/e01.test-vda-clone.qcow2' -> `/data/backup/VMs/e01.test/20151214/e01.test-vda-clone.qcow2'
+[2] Mon Dec 14 11:00:31 CST 2015 [INFO] step 2 完成。
+[3] Mon Dec 14 11:00:31 CST 2015 [INFO] 移除克隆的 VM
+Domain e01.test-clone has been undefined
+
+[3] Mon Dec 14 11:00:31 CST 2015 [INFO] step 3 完成。
+[4] Mon Dec 14 11:00:31 CST 2015 [INFO] 清理7天前的 VM
+/data/backup/VMs/e01.test/20151214/e01.test.xml
+[4] Mon Dec 14 11:00:31 CST 2015 [INFO] step 4 完成。
+sending incremental file list
+e01.test/
+e01.test/20151214/
+e01.test/20151214/e01.test-clone.xml
+        2508 100%    1.06MB/s    0:00:00 (xfer#1, to-check=1/10)
+e01.test/20151214/e01.test-vda-clone.qcow2
+  4993318912 100%   96.11MB/s    0:00:49 (xfer#2, to-check=0/10)
+
+sent 32253163 bytes  received 565392 bytes  452669.72 bytes/sec
+total size is 14975180132  speedup is 456.30

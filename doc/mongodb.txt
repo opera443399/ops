@@ -1,0 +1,451 @@
+初探mongodb-体验
+2015/12/14
+
+一、安装
+1、配置yum源（略）
+2、安装
+[root@mongo3 ~]# yum install mongo-10gen mongo-10gen-server
+或者从本地yum源安装：
+[root@mongo3 ~]# yum install mongodb-org* -y
+
+配置文件： /etc/mongod.conf file
+启动脚本：/etc/rc.d/init.d/mongod.
+数据目录：/var/lib/mongo
+日志：/var/log/mongo
+用户：mongod
+
+
+默认配置如下：
+[root@mongo3 ~]# cat /etc/mongod.conf |grep ^[^#]
+logpath=/var/log/mongodb/mongod.log
+logappend=true
+fork=true
+dbpath=/var/lib/mongo
+pidfilepath=/var/run/mongodb/mongod.pid
+bind_ip=127.0.0.1
+
+
+[root@mongo3 ~]# service mongod start
+[root@mongo3 ~]# chkconfig mongod on
+
+
+默认数据目录的内容：
+[root@mongo3 ~]# ls /var/lib/mongo/
+journal  local.0  local.ns  mongod.lock  storage.bson  _tmp
+
+默认端口：
+[root@mongo3 ~]# ss -antp src :27017
+State      Recv-Q Send-Q                    Local Address:Port                      Peer Address:Port 
+LISTEN     0      128                           127.0.0.1:27017                                *:*      users:(("mongod",10371,6))
+
+
+
+3、使用
+[root@mongo3 ~]# mongo
+> db.test.save( { a: 1 } )
+WriteResult({ "nInserted" : 1 })
+> db.test.find()
+{ "_id" : ObjectId("566e845f0f09499972b31548"), "a" : 1 }
+
+
+4、调整系统配置
+[root@mongo3 ~]# ulimit -n 64000
+[root@mongo3 ~]# ulimit -u 32000
+
+
+
+
+二、配置副本集
+[root@mongo3 ~]# sed -i -e 's/bind_ip=127.0.0.1/#bind_ip=127.0.0.1/g' -e 's/#replSet=setname/replSet=rs01/g' /etc/mongod.conf
+[root@mongo3 ~]# service mongod restart
+
+增加2个副本：mongo1, mongo2
+
+在mongo3上操作：
+> rs.initiate()
+{
+        "info2" : "no configuration explicitly specified -- making one",
+        "me" : "mongo3:27017",
+        "ok" : 1
+}
+rs01:OTHER> rs.conf()
+{
+        "_id" : "rs01",
+        "version" : 1,
+        "members" : [
+                {
+                        "_id" : 0,
+                        "host" : "mongo3:27017",
+                        "arbiterOnly" : false,
+                        "buildIndexes" : true,
+                        "hidden" : false,
+                        "priority" : 1,
+                        "tags" : {
+
+                        },
+                        "slaveDelay" : 0,
+                        "votes" : 1
+                }
+        ],
+        "settings" : {
+                "chainingAllowed" : true,
+                "heartbeatTimeoutSecs" : 10,
+                "getLastErrorModes" : {
+
+                },
+                "getLastErrorDefaults" : {
+                        "w" : 1,
+                        "wtimeout" : 0
+                }
+        }
+}
+rs01:PRIMARY> rs.add("mongo1")
+{ "ok" : 1 }
+rs01:PRIMARY> rs.add("mongo2")
+{ "ok" : 1 }
+
+
+查看状态：
+rs01:PRIMARY> rs.status()
+{
+        "set" : "rs01",
+        "date" : ISODate("2015-12-14T09:27:55.129Z"),
+        "myState" : 1,
+        "members" : [
+                {
+                        "_id" : 0,
+                        "name" : "mongo3:27017",
+                        "health" : 1,
+                        "state" : 1,
+                        "stateStr" : "PRIMARY",
+                        "uptime" : 416,
+                        "optime" : Timestamp(1450085267, 1),
+                        "optimeDate" : ISODate("2015-12-14T09:27:47Z"),
+                        "electionTime" : Timestamp(1450085236, 2),
+                        "electionDate" : ISODate("2015-12-14T09:27:16Z"),
+                        "configVersion" : 3,
+                        "self" : true
+                },
+                {
+                        "_id" : 1,
+                        "name" : "mongo1:27017",
+                        "health" : 1,
+                        "state" : 2,
+                        "stateStr" : "SECONDARY",
+                        "uptime" : 12,
+                        "optime" : Timestamp(1450085267, 1),
+                        "optimeDate" : ISODate("2015-12-14T09:27:47Z"),
+                        "lastHeartbeat" : ISODate("2015-12-14T09:27:55.074Z"),
+                        "lastHeartbeatRecv" : ISODate("2015-12-14T09:27:54.658Z"),
+                        "pingMs" : 1,
+                        "configVersion" : 3
+                },
+                {
+                        "_id" : 2,
+                        "name" : "mongo2:27017",
+                        "health" : 1,
+                        "state" : 2,
+                        "stateStr" : "SECONDARY",
+                        "uptime" : 8,
+                        "optime" : Timestamp(1450085267, 1),
+                        "optimeDate" : ISODate("2015-12-14T09:27:47Z"),
+                        "lastHeartbeat" : ISODate("2015-12-14T09:27:55.087Z"),
+                        "lastHeartbeatRecv" : ISODate("2015-12-14T09:27:55.106Z"),
+                        "pingMs" : 9,
+                        "configVersion" : 3
+                }
+        ],
+        "ok" : 1
+}
+
+
+查看副本集中primary是哪一个成员：
+rs01:SECONDARY> db.isMaster()
+{
+        "setName" : "rs01",
+        "setVersion" : 3,
+        "ismaster" : false,
+        "secondary" : true,
+        "hosts" : [
+                "mongo3:27017",
+                "mongo1:27017",
+                "mongo2:27017"
+        ],
+        "primary" : "mongo3:27017",
+        "me" : "mongo1:27017",
+        "maxBsonObjectSize" : 16777216,
+        "maxMessageSizeBytes" : 48000000,
+        "maxWriteBatchSize" : 1000,
+        "localTime" : ISODate("2015-12-14T01:41:36.427Z"),
+        "maxWireVersion" : 3,
+        "minWireVersion" : 0,
+        "ok" : 1
+}
+
+
+三、增加一个仲裁者
+本次示例，只是在mongo2上另外使用一个端口来提供服务：
+[root@mongo2 ~]# mkdir -p /data/db-temp
+[root@mongo2 ~]# mongod --port 27018 --dbpath /data/db-temp --replSet rs01 >>/var/log/mongodb/mongod_27018.log 2>&1 &
+
+
+在mongo3上操作：
+rs01:PRIMARY> rs.addArb("mongo2:27018")
+{ "ok" : 1 }
+rs01:PRIMARY> rs.conf()
+{
+        "_id" : "rs01",
+        "version" : 4,
+        "members" : [
+                {
+                        "_id" : 0,
+                        "host" : "mongo3:27017",
+                        "arbiterOnly" : false,
+                        "buildIndexes" : true,
+                        "hidden" : false,
+                        "priority" : 1,
+                        "tags" : {
+
+                        },
+                        "slaveDelay" : 0,
+                        "votes" : 1
+                },
+                {
+                        "_id" : 1,
+                        "host" : "mongo1:27017",
+                        "arbiterOnly" : false,
+                        "buildIndexes" : true,
+                        "hidden" : false,
+                        "priority" : 1,
+                        "tags" : {
+
+                        },
+                        "slaveDelay" : 0,
+                        "votes" : 1
+                },
+                {
+                        "_id" : 2,
+                        "host" : "mongo2:27017",
+                        "arbiterOnly" : false,
+                        "buildIndexes" : true,
+                        "hidden" : false,
+                        "priority" : 1,
+                        "tags" : {
+
+                        },
+                        "slaveDelay" : 0,
+                        "votes" : 1
+                },
+                {
+                        "_id" : 3,
+                        "host" : "mongo2:27018",
+                        "arbiterOnly" : true,
+                        "buildIndexes" : true,
+                        "hidden" : false,
+                        "priority" : 1,
+                        "tags" : {
+
+                        },
+                        "slaveDelay" : 0,
+                        "votes" : 1
+                }
+        ],
+        "settings" : {
+                "chainingAllowed" : true,
+                "heartbeatTimeoutSecs" : 10,
+                "getLastErrorModes" : {
+
+                },
+                "getLastErrorDefaults" : {
+                        "w" : 1,
+                        "wtimeout" : 0
+                }
+        }
+}
+
+
+四、配置3个节点的副本集和分片
+1、规划
+1）路由、配置、分片服务器和副本集的分布
+    m1                                  m2                                  m3
+------------------------------------------------------------------------------------------------
+mongos                              mongos                              mongos
+config server                       config server                       config server
+shard server 01[PRIMARY]           shard server 01[SECONDARY]         shard server 01[ARBITER]
+shard server 02[ARBITER]           shard server 02[PRIMARY]           shard server 02[SECONDARY]
+shard server 03[SECONDARY]         shard server 03[ARBITER]           shard server 03[PRIMARY]
+------------------------------------------------------------------------------------------------
+2）端口：
+config: 27021
+mongos: 27022
+sh01: 27001
+sh02: 27002
+sh03: 27003
+
+2、建立目录
+[root@mongo1 ~]# mkdir -p /data/mongodb/log/{mongos,config,sh01,sh02,sh03}
+[root@mongo1 ~]# mkdir -p /data/mongodb/data/{config,sh01,sh02,sh03}
+[root@mongo1 ~]# tree /data/
+/data/
+└── mongodb
+    ├── data
+    │   ├── config
+    │   ├── sh01
+    │   ├── sh02
+    │   └── sh03
+    └── log
+        ├── config
+        ├── mongos
+        ├── sh01
+        ├── sh02
+        └── sh03
+        
+
+3、启动配置服务[m1-3]
+mongod --configsvr --dbpath /data/mongodb/data/config --logpath /data/mongodb/log/config/access.log --port 27021 --fork
+
+4、启动mongos服务[m1-3]
+mongos --configdb mongo1:27021,mongo2:27021,mongo3:27021 --logpath /data/mongodb/log/mongos/access.log --port 27022 --fork
+
+5、启动3个shard[m1-3]
+mongod --shardsvr --replSet rs01 --port 27001 --dbpath /data/mongodb/data/sh01 --logpath /data/mongodb/log/sh01/access.log --fork
+mongod --shardsvr --replSet rs02 --port 27002 --dbpath /data/mongodb/data/sh02 --logpath /data/mongodb/log/sh02/access.log --fork
+mongod --shardsvr --replSet rs03 --port 27003 --dbpath /data/mongodb/data/sh03 --logpath /data/mongodb/log/sh03/access.log --fork
+
+6、分别在3个节点设置3个rs PRIMARY，并加入其他2个节点作为 SECONDARY 和 ARBITER
+【mongo1】
+[root@mongo1 ~]# mongo 127.0.0.1:27001
+rs01:PRIMARY> rs.initiate()
+rs01:PRIMARY> rs.add("mongo2:27001")
+{ "ok" : 1 }
+rs01:PRIMARY> rs.addArb("mongo3:27001")
+{ "ok" : 1 }
+
+
+【mongo2】
+[root@mongo2 ~]# mongo 127.0.0.1:27002
+> rs.initiate()
+rs02:PRIMARY> rs.add("mongo3:27002")
+{ "ok" : 1 }
+rs02:PRIMARY> rs.addArb("mongo1:27002")
+{ "ok" : 1 }
+
+
+【mongo3】
+> rs.initiate()
+rs03:PRIMARY> rs.add("mongo1:27003")
+{ "ok" : 1 }
+rs03:PRIMARY> rs.addArb("mongo2:27003")
+{ "ok" : 1 }
+
+
+7、在路由服务器上配置shard
+[root@mongo1 ~]# mongo 127.0.0.1:27022
+mongos> sh.addShard('rs01/mongo1:27001,mongo2:27001,mongo3:27001')
+mongos> sh.addShard('rs02/mongo1:27002,mongo2:27002,mongo3:27002')
+mongos> sh.addShard('rs03/mongo1:27003,mongo2:27003,mongo3:27003')
+mongos> sh.status()
+--- Sharding Status --- 
+  sharding version: {
+        "_id" : 1,
+        "minCompatibleVersion" : 5,
+        "currentVersion" : 6,
+        "clusterId" : ObjectId("566f7ae2b2a088a31698a7f3")
+}
+  shards:
+        {  "_id" : "rs01",  "host" : "rs01/mongo1:27001,mongo2:27001" }
+        {  "_id" : "rs02",  "host" : "rs02/mongo2:27002,mongo3:27002" }
+        {  "_id" : "rs03",  "host" : "rs03/mongo1:27003,mongo3:27003" }
+  balancer:
+        Currently enabled:  yes
+        Currently running:  no
+        Failed balancer rounds in last 5 attempts:  0
+        Migration Results for the last 24 hours: 
+                No recent migrations
+  databases:
+        {  "_id" : "admin",  "partitioned" : false,  "primary" : "config" }
+
+8、指定数据库自动sharding
+mongos> sh.enableSharding('testdb')
+{ "ok" : 1 }
+mongos> sh.status()
+--- Sharding Status --- 
+  sharding version: {
+        "_id" : 1,
+        "minCompatibleVersion" : 5,
+        "currentVersion" : 6,
+        "clusterId" : ObjectId("566f7ae2b2a088a31698a7f3")
+}
+  shards:
+        {  "_id" : "rs01",  "host" : "rs01/mongo1:27001,mongo2:27001" }
+        {  "_id" : "rs02",  "host" : "rs02/mongo2:27002,mongo3:27002" }
+        {  "_id" : "rs03",  "host" : "rs03/mongo1:27003,mongo3:27003" }
+  balancer:
+        Currently enabled:  yes
+        Currently running:  no
+        Failed balancer rounds in last 5 attempts:  0
+        Migration Results for the last 24 hours: 
+                No recent migrations
+  databases:
+        {  "_id" : "admin",  "partitioned" : false,  "primary" : "config" }
+        {  "_id" : "test",  "partitioned" : false,  "primary" : "rs01" }
+        {  "_id" : "testdb",  "partitioned" : true,  "primary" : "rs01" }
+
+9、指定数据库的集合和键值自动sharding        
+mongos> sh.shardCollection('testdb.table1', { id: 1 } )  
+mongos> sh.status()
+                        
+10、测试sharding
+客户端插入数据：
+[root@mongo3 ~]# mongo 127.0.0.1:27022
+mongos> use testdb;
+mongos> for (var i = 1; i <= 10000; i++) db.table1.save({ id: i, 'key1': 'value1' });
+查看状态：
+mongos> db.table1.stats()
+此时，可以注意到sharding的结果，大部分数据都在rs01上，因此，如何sharding是要讨论的一个问题。
+
+        
+        
+        
+五、备份
+1、常规
+使用 mongodump 和 mongorestore 备份和恢复 MongoDB 数据库
+
+2、通过文件系统快照
+创建快照
+lvcreate --size 100M --snapshot --name mdb-snap01 /dev/vg0/mongodb
+
+归档：
+umount /dev/vg0/mdb-snap01
+dd if=/dev/vg0/mdb-snap01 | gzip > mdb-snap01.tar.gz
+
+
+恢复快照：
+lvcreate --size 1G --name mdb-new vg0
+gzip -d -c mdb-snap01.tar.gz | dd of=/dev/vg0/mdb-new
+mount /dev/vg0/mdb-new /srv/mongodb
+
+
+直接从快照恢复，不压缩：
+umount /dev/vg0/mdb-snap01
+lvcreate --size 1G --name mdb-new vg0
+dd if=/dev/vg0/mdb-snap01 of=/dev/vg0/mdb-new
+mount /dev/vg0/mdb-new /srv/mongodb
+
+
+基于远程服务器：
+umount /dev/vg0/mdb-snap01
+dd if=/dev/vg0/mdb-snap01 | ssh username@example.com gzip > /opt/backup/mdb-snap01.tar.gz
+lvcreate --size 1G --name mdb-new vg0
+ssh username@example.com gzip -d -c /opt/backup/mdb-snap01.tar.gz | dd of=/dev/vg0/mdb-new
+mount /dev/vg0/mdb-new /srv/mongodb
+
+
+
+参考
+1、doc
+https://mongodb-documentation.readthedocs.org/en/latest/tutorial/install-mongodb-on-red-hat-centos-or-fedora-linux.html
+2、搭建高可用mongodb集群（四）—— 分片
+http://www.lanceyan.com/tech/arch/mongodb_shard1.html
+3、MongoDB水平分片集群学习笔记
+http://my.oschina.net/costaxu/blog/196980
