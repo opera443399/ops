@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2015/12/14
+# 2015/12/16
 
 s_vm='e01.test'                                         # 源 vm 的名称
 s_vm_clone="${s_vm}-clone"                              # 克隆后的 vm 名称 
@@ -25,7 +25,7 @@ function do_clone_vm() {
     echo "[1] `date` [INFO] step 1 完成。"
     ### 【2】
     echo "[2] `date` [INFO] 收集 xml 和 images 并拷贝到本地存储。"
-    cp -av /etc/libvirt/qemu/${s_vm}.xml ${d_clone}
+    cp -fv /etc/libvirt/qemu/${s_vm}.xml ${d_clone}
     mv -fv /etc/libvirt/qemu/${s_vm_clone}.xml ${d_clone}
     mv -fv ${f_vm_img_clone} ${d_clone} 
     echo "[2] `date` [INFO] step 2 完成。"
@@ -46,7 +46,7 @@ function do_clean() {
 
 function do_rsync() {
     echo "[5] `date` [INFO] 归档到外部存储。"
-    rsync -avP --delete --password-file=/etc/rsync.pass $1  backup@10.50.200.93::bak_kvm_images
+    rsync -av --delete --password-file=/etc/rsync.pass $1  backup@10.50.200.93::bak_kvm_images
     echo "[5] `date` [INFO] step 5 完成。"
 }
 

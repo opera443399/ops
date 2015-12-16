@@ -9,7 +9,7 @@ f_log="/tmp/rsync_ovirt_bak.txt"
 
 function do_rsync() {
     echo "[3] `date` [INFO] 归档到外部存储。"
-    rsync -avP --password-file=/etc/rsync.pass $1 backup@10.50.200.93::bak_ovirt_engine
+    rsync -av --delete --password-file=/etc/rsync.pass $1 backup@10.50.200.93::bak_ovirt_engine
     echo "[3] `date` [INFO] step 3 完成。"
 }
 
