@@ -79,3 +79,6 @@ awk '!a[$1]++' test.log
 
 展示df的简单版本，只显示磁盘分区和对应的used的值：
 df -h |sed '1d' |egrep -v ""/dev/shm"|"/dev/mapper"" |awk '{print $NF"\t"$(NF-1)}' |while read a b; do echo "$a used: $b"; done
+
+统计swap占用的进程：
+for i in `cd /proc;ls |grep "^[0-9]"|awk ' $0 >100'` ;do awk '/Swap:/{a=a+$2}END{print '"$i"',a/1024"M"}' /proc/$i/smaps ;done |sort -k2nr |head

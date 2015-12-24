@@ -1,5 +1,5 @@
 初探oVirt-使用小结FAQ
-2015/11/12 time 11:29
+2015/12/24 time 11:04
 
 
 【Q01】如何快速的部署 ovirt 环境
@@ -648,11 +648,73 @@ user updated successfully
 
 
 【Q14】host1下线后该host上的虚拟机处于问号（？，未知的，unknown）状态，无法迁移到host2上，怎么解决？
-状态：选择 已下线的节点host1 的右键菜单：“确认主机已经重启”
+A：选择 已下线的节点host1 的右键菜单：“确认主机已经重启”
 根据提示：在没有正确手动重启的主机上执行这个操作可能会导致虚拟机在多个主机上启动时存储损坏。
 确认操作即可。
 
 结果：符合预期。虚拟机自动迁移到 host2 上。
 注：若 host1 可能只是网络故障，并非处于重启或者关机的状态，则在修复上线前，建议先重启一次。
 
+【Q15】如何配置邮件告警
+A：使用ovirt-engine-notifier服务来根据指定是事件发出邮件通知。
+1）配置服务
+[root@engine ~]# vim /usr/share/ovirt-engine/services/ovirt-engine-notifier/ovirt-engine-notifier.conf
+MAIL_SERVER=smtp.xxx.com
+MAIL_PORT=465
+MAIL_USER=from@xxx.com
+MAIL_PASSWORD=xxxx
+MAIL_SMTP_ENCRYPTION=ssl
+HTML_MESSAGE_FORMAT=true
+MAIL_FROM=from@xxx.com
 
+[root@engine ~]# chkconfig ovirt-engine-notifier on
+[root@engine ~]# service ovirt-engine-notifier start
+
+2）配置用户
+在 ovirt-engine 页面选择：“系统”-“用户”
+选定用户（admin），在下方的菜单中选择：“事件通知器”-“管理事件”
+选定需要告警的事件，配置邮件接收者。
+重启一下服务：
+[root@engine ~]# service ovirt-engine-notifier restart
+
+3）测试
+迁移一个vm，观察延迟1-3分钟，将收到邮件。
+查看日志：
+[root@engine ~]# tail /var/log/ovirt-engine/notifier/notifier.log
+2015-12-24 10:40:57,692 INFO    [org.ovirt.engine.core.notifier.EngineMonitorService initServerUrl] Engine health servlet URL is "http://e01.test:80/ovirt-engine/services/health".
+2015-12-24 10:43:28,813 INFO    [org.ovirt.engine.core.notifier.transport.smtp.Smtp idle] Send mail subject='alertMessage (e01.test), [Migration started (VM: tttttt, Source: n34.test, Desti
+nation: n33.test, User: admin@internal).]' to='admin@xxx.com'
+2015-12-24 10:43:31,090 INFO    [org.ovirt.engine.core.notifier.transport.smtp.Smtp idle] Send mail subject='resolveMessage (e01.test), [Migration completed (VM: tttttt, Source: n34.test, D
+estination: n33.test, Duration: 1 minute 12 seconds, Total: 1 minute 12 seconds, Actual downtime: (N/A))]' to='admin@xxx.com'
+
+接收到的邮件1：
+主题：alertMessage (e01.test), [Migration started (VM: tttttt,Source: n34.test, Destination: n33.test, User: admin@internal).] 
+发件人：xxx
+时   间：2015年12月24日(星期四) 上午10:43	
+收件人： xxx
+
+内容：
+Time:2015-12-24 10:41:44.999
+Message:Migration started (VM: tttttt, Source: n34.test, Destination: n33.test, User: admin@internal).
+Severity:NORMAL
+User Name: admin@internal
+VM Name: tttttt
+Host Name: n34.test
+Template Name: tpl-m1
+Data Center Name: SZ
+
+接收到的邮件2：
+发件人：xxx
+时   间：2015年12月24日(星期四) 上午10:43	
+收件人： xxx
+主题：
+resolveMessage (e01.test), [Migration completed (VM: tttttt,Source: n34.test, Destination: n33.test, Duration: 1 minute 12 seconds,Total: 1 minute 12 seconds, Actual downtime: (N/A))]
+内容：
+Time:2015-12-24 10:42:57.125
+Message:Migration completed (VM: tttttt, Source: n34.test, Destination: n33.test, Duration: 1 minute 12 seconds, Total: 1 minute 12 seconds, Actual downtime: (N/A))
+Severity:NORMAL
+User Name: admin@internal
+VM Name: tttttt
+Host Name: n34.test
+Template Name: tpl-m1
+Data Center Name: SZ
