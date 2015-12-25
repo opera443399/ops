@@ -1,5 +1,46 @@
 curl的用法记录
+2015/12/25
 
+1、http请求跳转
+[root@n86 bin]# curl -I -L 10.50.200.32
+HTTP/1.1 302 FOUND
+Server: nginx/1.6.2
+Date: Fri, 25 Dec 2015 02:43:18 GMT
+Content-Type: text/html; charset=utf-8
+Connection: keep-alive
+X-Frame-Options: SAMEORIGIN
+Location: http://10.50.200.32/charade/
+
+HTTP/1.1 200 OK
+Server: nginx/1.6.2
+Date: Fri, 25 Dec 2015 02:43:18 GMT
+Content-Type: text/html; charset=utf-8
+Connection: keep-alive
+Vary: Cookie
+X-Frame-Options: SAMEORIGIN
+Set-Cookie: csrftoken=5dY37iQgcjQnYh1jZdrxptyIkTfUh3Rr; expires=Fri, 23-Dec-2016 02:43:18 GMT; Max-Age=31449600; Path=/
+
+
+2、https请求GET和PUT
+使用证书  curl -s --cacert ca.crt
+忽略证书  curl -s -k
+curl -s -k -u "user:passwd" -H "Content-type: application/xml" -X GET https://abc.com/api/vms
+
+curl -s -k \
+-u "user:passwd" \
+-H "Content-type: application/xml" \
+-d "
+<vm>
+<name>test03</name>
+<cluster><name>Host-Only</name></cluster>
+<template><name>centos6u5x64-small-01</name></template>
+</vm>
+" \
+"https://e01.test/api/vms"
+
+
+
+3、http状态
 hostname=www.qq.com
 
 1）得到http status
