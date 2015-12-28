@@ -1,0 +1,241 @@
+host xxx did no satisfy internal filter Memory because its swap value was illegal.
+
+### Description ###
+1. problem
+1) migrate vm {name:xyz001, mem(min, max) = (2G,4G)} from ovirt host n33 to n34, failed.
+2) shutting down vm {name: test001, mem(min, max) = (1G,1G)} on n34, update test001's config: Host->Start Running On: Specific(n34), then start test001, while, it's running on n33.
+
+2. err message 
+Error while executing action: migrate 
+[engine gui]
+xyz001:
+Cannot migrate VM. There is no host that satisfies current scheduling constraints. See below for details:
+The host n33.ovirt did not satisfy internal filter Memory because has availabe 1863 MB memory. Insufficient free memory to run the VM.
+The host n34.ovirt did not satisfy internal filter Memory because its swap value was illegal.
+
+
+[engine.log]
+INFO  [org.ovirt.engine.core.bll.MigrateVmCommand] (default task-23) [5916aa3b] Lock Acquired to object 'EngineLock:{exclusiveLocks='[73351885-9a92-4317-baaf-e4f2bed1171a=<VM, ACTION_TYPE_FAILED_VM_IS_BEING_MIGRATED$VmName test11>]', sharedLocks='null'}'
+INFO  [org.ovirt.engine.core.bll.scheduling.SchedulingManager] (default task-23) [5916aa3b] Candidate host 'n34' ('2ae3a219-ae9a-4347-b1e2-0e100360231e') was filtered out by 'VAR__FILTERTYPE__INTERNAL' filter 'Memory' (correlation id: null)
+INFO  [org.ovirt.engine.core.bll.scheduling.SchedulingManager] (default task-23) [5916aa3b] Candidate host 'n33' ('688aec34-5630-478e-ae5e-9d57990804e5') was filtered out by 'VAR__FILTERTYPE__INTERNAL' filter 'Memory' (correlation id: null)
+WARN  [org.ovirt.engine.core.bll.MigrateVmCommand] (default task-23) [5916aa3b] CanDoAction of action 'MigrateVm' failed for user admin@internal. Reasons: VAR__ACTION__MIGRATE,VAR__TYPE__VM,SCHEDULING_ALL_HOSTS_FILTERED_OUT,VAR__FILTERTYPE__INTERNAL,$hostName n33,$filterName Memory,$availableMem 1863,VAR__DETAIL__NOT_ENOUGH_MEMORY,SCHEDULING_HOST_FILTERED_REASON_WITH_DETAIL,VAR__FILTERTYPE__INTERNAL,$hostName n34,$filterName Memory,VAR__DETAIL__SWAP_VALUE_ILLEGAL,SCHEDULING_HOST_FILTERED_REASON_WITH_DETAIL
+INFO  [org.ovirt.engine.core.bll.MigrateVmCommand] (default task-23) [5916aa3b] Lock freed to object 'EngineLock:{exclusiveLocks='[73351885-9a92-4317-baaf-e4f2bed1171a=<VM, ACTION_TYPE_FAILED_VM_IS_BEING_MIGRATED$VmName test11>]', sharedLocks='null'}'
+
+
+3. DC
+Compatibility Version: 3.5
+
+4. Cluster
+Memory Optimization: For Server Load - Allow scheduling of 150% of physical memory
+Memory Balloon: Enable Memory Balloon Optimization
+Enable KSM: Share memory pages across all available memory (best KSM effectivness)
+
+5. HOST
+name: n33, n34
+mem: 32G
+
+6. VM
+[n33] 11 vms
+(min, max) = (2G,4G) = 8
+(min, max) = (2G,8G) = 1
+(min, max) = (2G,2G) = 2
+total: 22G/44G
+
+[n34] 7 vms
+(min, max) = (0.5G,1G) = 1
+(min, max) = (1G,2G) = 1
+(min, max) = (2G,2G) = 1
+(min, max) = (2G,4G) = 3
+(min, max) = (8G,8G) = 1
+total: 17.5G/25G
+--------------------------------------------
+(min, max) = (2G,4G) stands for: 
+Memory Size: 4G
+Physical Memory Guaranteed: 2G
+Memory Balloon Device Enabled: checked
+--------------------------------------------
+
+7. rpm version
+[root@n33 ~]# rpm -qa |grep vdsm
+vdsm-yajsonrpc-4.16.27-0.el6.noarch
+vdsm-jsonrpc-4.16.27-0.el6.noarch
+vdsm-cli-4.16.27-0.el6.noarch
+vdsm-python-zombiereaper-4.16.27-0.el6.noarch
+vdsm-xmlrpc-4.16.27-0.el6.noarch
+vdsm-python-4.16.27-0.el6.noarch
+vdsm-4.16.27-0.el6.x86_64
+
+[root@engine ~]# rpm -qa |grep ovirt
+ovirt-release36-001-2.noarch
+ovirt-engine-setup-base-3.6.0.3-1.el6.noarch
+ovirt-engine-setup-3.6.0.3-1.el6.noarch
+ovirt-image-uploader-3.6.0-1.el6.noarch
+ovirt-engine-wildfly-8.2.0-1.el6.x86_64
+ovirt-engine-setup-plugin-vmconsole-proxy-helper-3.6.0.3-1.el6.noarch
+ovirt-host-deploy-1.4.0-1.el6.noarch
+ovirt-engine-backend-3.6.0.3-1.el6.noarch
+ovirt-engine-webadmin-portal-3.6.0.3-1.el6.noarch
+ovirt-engine-jboss-as-7.1.1-1.el6.x86_64
+ovirt-engine-lib-3.6.0.3-1.el6.noarch
+ovirt-engine-setup-plugin-ovirt-engine-common-3.6.0.3-1.el6.noarch
+ovirt-engine-setup-plugin-ovirt-engine-3.6.0.3-1.el6.noarch
+ovirt-engine-setup-plugin-websocket-proxy-3.6.0.3-1.el6.noarch
+ovirt-engine-sdk-python-3.6.0.3-1.el6.noarch
+ovirt-iso-uploader-3.6.0-1.el6.noarch
+ovirt-vmconsole-proxy-1.0.0-1.el6.noarch
+ovirt-engine-extensions-api-impl-3.6.0.3-1.el6.noarch
+ovirt-engine-websocket-proxy-3.6.0.3-1.el6.noarch
+ovirt-engine-vmconsole-proxy-helper-3.6.0.3-1.el6.noarch
+ebay-cors-filter-1.0.1-0.1.ovirt.el6.noarch
+ovirt-host-deploy-java-1.4.0-1.el6.noarch
+ovirt-engine-tools-3.6.0.3-1.el6.noarch
+ovirt-engine-restapi-3.6.0.3-1.el6.noarch
+ovirt-engine-3.6.0.3-1.el6.noarch
+ovirt-engine-extension-aaa-jdbc-1.0.1-1.el6.noarch
+ovirt-engine-cli-3.6.0.1-1.el6.noarch
+ovirt-vmconsole-1.0.0-1.el6.noarch
+ovirt-engine-wildfly-overlay-001-2.el6.noarch
+ovirt-engine-dbscripts-3.6.0.3-1.el6.noarch
+ovirt-engine-userportal-3.6.0.3-1.el6.noarch
+ovirt-guest-tools-iso-3.6.0-0.2_master.fc22.noarch
+
+
+### DB ###
+[root@engine ~]# su postgres
+bash-4.1$ cd ~
+bash-4.1$ psql engine
+engine=# select vds_id, physical_mem_mb, mem_commited, vm_active, vm_count, reserved_mem, guest_overhead, transparent_hugepages_state, pending_vmem_size from vds_dynamic;
+                vds_id                | physical_mem_mb | mem_commited | vm_active | vm_count | reserved_mem | guest_overhead | transparent_hugepages_state | pending_vmem_size 
+--------------------------------------+-----------------+--------------+-----------+----------+--------------+----------------+-----------------------------+-------------------
+ 688aec34-5630-478e-ae5e-9d57990804e5 |           32057 |        45836 |        11 |       11 |          321 |             65 |                           2 |                 0
+ 2ae3a219-ae9a-4347-b1e2-0e100360231e |           32057 |        26120 |         7 |        7 |          321 |             65 |                           2 |                 0
+(2 rows)
+
+
+
+### memory ###
+[n33]
+# free -m
+             total       used       free     shared    buffers     cached
+Mem:         32057      31770        287          0         41       6347
+-/+ buffers/cache:      25381       6676
+Swap:        29999      10025      19974
+
+Physical Memory:                            32057 MB total, 25646 MB used, 6411 MB free
+Swap Size:                                  29999 MB total, 10025 MB used, 19974 MB free
+Max free Memory for scheduling new VMs:     1928.5 MB
+
+
+[n34]
+# free -m
+             total       used       free     shared    buffers     cached
+Mem:         32057      31713        344          0         78      13074
+-/+ buffers/cache:      18560      13497
+Swap:        29999       5098      24901
+
+Physical Memory:                            32057 MB total, 18593 MB used, 13464 MB free
+Swap Size:                                  29999 MB total, 5098 MB used, 24901 MB free
+Max free Memory for scheduling new VMs:     21644.5 MB
+
+
+
+### code ###
+##from: https://github.com/oVirt/ovirt-engine
+v3.6.0
+
+##from: D:\code\java\ovirt-engine\backend\manager\modules\dal\src\main\resources\bundles\AppErrors.properties
+VAR__DETAIL__SWAP_VALUE_ILLEGAL=$detailMessage its swap value was illegal
+
+##from: D:\code\java\ovirt-engine\backend\manager\modules\bll\src\main\java\org\ovirt\engine\core\bll\scheduling\policyunits\MemoryPolicyUnit.java
+#-----------code--------------1#
+    private boolean isVMSwapValueLegal(VDS host) {
+        if (!Config.<Boolean> getValue(ConfigValues.EnableSwapCheck)) {
+                    return true;
+                }
+    (omitted..)
+        return ((swap_total - swap_free - mem_available) * 100 / physical_mem_mb) <= Config.<Integer> getValue(ConfigValues.BlockMigrationOnSwapUsagePercentage)
+    (omitted..)
+    } 
+#-----------code--------------1#
+if EnableSwapCheck = False then return True, so we can simply disable this option? Any Suggestion?
+
+[root@engine ~]# engine-config --get BlockMigrationOnSwapUsagePercentage
+BlockMigrationOnSwapUsagePercentage: 0 version: general
+
+so,,
+Config.<Integer> getValue(ConfigValues.BlockMigrationOnSwapUsagePercentage) = 0
+so,,
+(swap_total - swap_free - mem_available) * 100 / physical_mem_mb <= 0
+so,,
+swap_total - swap_free - mem_available <= 0
+right?
+so,, if (swap_total - swap_free) <= mem_available then return True else return False
+
+
+#-----------code--------------2#
+       for (VDS vds : hosts) {
+            if (!isVMSwapValueLegal(vds)) {
+                log.debug("Host '{}' swap value is illegal", vds.getName());
+                messages.addMessage(vds.getId(), EngineMessage.VAR__DETAIL__SWAP_VALUE_ILLEGAL.toString());
+                continue;
+            }
+            if (!memoryChecker.evaluate(vds, vm)) {
+                int hostAavailableMem = SlaValidator.getInstance().getHostAvailableMemoryLimit(vds);
+                log.debug("Host '{}' has {} MB available. Insufficient memory to run the VM",
+                        vds.getName(),
+                        hostAavailableMem);
+                messages.addMessage(vds.getId(), String.format("$availableMem %1$d", hostAavailableMem));
+                messages.addMessage(vds.getId(), EngineMessage.VAR__DETAIL__NOT_ENOUGH_MEMORY.toString());
+                continue;
+            }
+            (omitted..)
+        }
+
+#-----------code--------------2#
+!isVMSwapValueLegal then throw exception, right?
+so,, when we migrate vm from n33 to n34, the swap status on n34 actually is:
+(swap_total - swap_free) > mem_available
+
+swap_used > mem_available? confused...
+
+so,, the logic is:
+1) check n33: swap[passed], then memory[failed], then goto (for..continue..loop)
+2) check n34: swap[failed], then goto (for..continue..loop)
+
+If I have misunderstood anything, please let me know.
+
+
+
+### conclusion ###
+1) n33 do not have enough memory. [yes, I know that.]
+2) n34 memory is illegal [why and how to solve it?]
+3) what I tried:
+--change config: BlockMigrationOnSwapUsagePercentage
+[root@engine ~]# engine-config --set BlockMigrationOnSwapUsagePercentage=75 -cver general
+[root@engine ~]# engine-config --get BlockMigrationOnSwapUsagePercentage
+BlockMigrationOnSwapUsagePercentage: 75 version: general
+
+Result: failed.
+
+--disable EnableSwapCheck
+How? Option not found from 'engine-config --list', should I update table field direct from db?
+
+
+--disk swap partition on host
+Should I do this operation?
+
+--update ovirt-engine?
+No useful infomation found in latest release note, should I do this operation?
+
+
+
+### help ###
+any help would be appreciated.
+
+
+ZYXW. Reference
+http://www.ovirt.org/Sla/FreeMemoryCalculation
+http://lists.ovirt.org/pipermail/users/2012-November/010858.html
+http://lists.ovirt.org/pipermail/users/2013-March/013201.html
+http://comments.gmane.org/gmane.comp.emulators.ovirt.user/19288
+http://jim.rippon.me.uk/2013/07/ovirt-testing-english-instructions-for.html
