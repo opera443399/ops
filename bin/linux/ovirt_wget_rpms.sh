@@ -1,10 +1,17 @@
 #!/bin/bash
-# 2015/11/6
+# 2015/12/28
 # cache rpms from ovirt to localhost
 # from: yum install http://resources.ovirt.org/pub/yum-repo/ovirt-release36.rpm
 # for:
 #   - ovirt-3.6.repo
 #   - ovirt-3.6-dependencies.repo
+# Supported Hosts
+#    Fedora 21, 22
+#    CentOS Linux 6.7 (3.5 only), 7.2
+#    Red Hat Enterprise Linux 6.7 (3.5 only), 7.2
+#    Scientific Linux 6.7 (3.5 only), 7.2
+# so,, you also need ovirt-3.5.repo to install vdsm related rpms on OS version: el6
+# or, cached el7 related rpms when you need to install vdsm on OS like centos7.
 
 function validate_wget() {
     cd $1
@@ -61,7 +68,7 @@ function update_repo() {
 }
 
 
-############################ ovirt-3.5.repo ###############################
+############################ ovirt-3.6.repo ###############################
 function file_repo() {
     cat <<'_EOF' >ovirt-3.6.repo
 [ovirt-3.6]

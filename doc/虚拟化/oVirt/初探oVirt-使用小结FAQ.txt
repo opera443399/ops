@@ -718,3 +718,38 @@ VM Name: tttttt
 Host Name: n34.test
 Template Name: tpl-m1
 Data Center Name: SZ
+
+
+【Q16】如何升级版本
+A：根据官网文档来操作即可。值得注意的地方是在3.5 -> 3.6 的升级过程中需要注意。
+在版本为3.6的engine上，建立了数据中心，默认是兼容3.6的，，如果创建3.5的集群，会遇到错误提示兼容性问题。
+el6的系统只支持到3.5版本的vdsm主机，如果需要3.6版本的vdsm主机，则需要el7的系统，因为对应的3.6版本的vdsm相关的rpm包仅存在于官方yum源的el7目录中。
+http://resources.ovirt.org/pub/ovirt-3.6/rpm/el7/noarch/
+参考官网的系统需求：
+http://www.ovirt.org/Download
+-----------------------------------------------------
+Minimum Hardware/Software
+    4 GB memory
+    20 GB disk space
+    
+Optional Hardware
+    Network storage
+    
+Recommended browsers
+    Latest Mozilla Firefox
+    Latest Google Chrome
+    IE10 and above
+    
+Supported Manager
+    Fedora 22 (3.6 only)
+    CentOS Linux 6.7, 7.2
+    Red Hat Enterprise Linux 6.7, 7.2
+    Scientific Linux 6.7, 7.2
+    
+Supported Hosts
+    Fedora 21, 22
+    CentOS Linux 6.7 (3.5 only), 7.2
+    Red Hat Enterprise Linux 6.7 (3.5 only), 7.2
+    Scientific Linux 6.7 (3.5 only), 7.2
+-----------------------------------------------------
+

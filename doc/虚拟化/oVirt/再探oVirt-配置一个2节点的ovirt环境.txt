@@ -1,4 +1,4 @@
-日期：2015/11/4 - 2015/11/17 time 09:50
+日期：2015/11/4 - 2015/12/28 time 15:58
 主机：e01, n33, n34
 目的：再探oVirt-配置一个2节点的ovirt环境
 操作内容：
@@ -48,6 +48,38 @@ engine-setup
 20151110
 缓存了3.6的rpm包后发现，诸如vdsm这类包，还是在3.5的版本中提供，因此，建议以3.5的作为基础版本，加上3.6的源，组合在一起提供服务。后续官方可能会将旧版本的rpm包整合到新版，待关注。
 
+20151228
+在版本为3.6的engine上，建立了数据中心，默认是兼容3.6的，，如果创建3.5的集群，会遇到错误提示兼容性问题。
+el6的系统只支持到3.5版本的vdsm主机，如果需要3.6版本的vdsm主机，则需要el7的系统，因为对应的3.6版本的vdsm相关的rpm包仅存在于官方yum源的el7目录中。
+http://resources.ovirt.org/pub/ovirt-3.6/rpm/el7/noarch/
+参考官网的系统需求：
+http://www.ovirt.org/Download
+-----------------------------------------------------
+Minimum Hardware/Software
+    4 GB memory
+    20 GB disk space
+    
+Optional Hardware
+    Network storage
+    
+Recommended browsers
+    Latest Mozilla Firefox
+    Latest Google Chrome
+    IE10 and above
+    
+Supported Manager
+    Fedora 22 (3.6 only)
+    CentOS Linux 6.7, 7.2
+    Red Hat Enterprise Linux 6.7, 7.2
+    Scientific Linux 6.7, 7.2
+    
+Supported Hosts
+    Fedora 21, 22
+    CentOS Linux 6.7 (3.5 only), 7.2
+    Red Hat Enterprise Linux 6.7 (3.5 only), 7.2
+    Scientific Linux 6.7 (3.5 only), 7.2
+-----------------------------------------------------
+    
 
 2、安装配置
 [root@engine ~]# yum install ovirt-engine
