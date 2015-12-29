@@ -1,5 +1,5 @@
 # ops
 
-  bin  
-  conf  
-  doc  
+    bin  
+    conf  
+    doc  
