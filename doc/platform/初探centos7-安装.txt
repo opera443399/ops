@@ -1,0 +1,241 @@
+初探centos7-安装
+
+一、安装
+1、新的安装界面
+2、新的分区方式
+默认为xfs分区，支持分区容量从ext4的16T扩大到500T
+
+
+二、进入系统
+1、系统版本
+[root@local ~]# cat /etc/system-release
+CentOS Linux release 7.2.1511 (Core)
+
+2、内核升级为3.10
+[root@local ~]# uname -r
+3.10.0-327.el7.x86_64
+
+3、使用grub2
+[root@local ~]# ll /etc/grub2.cfg 
+lrwxrwxrwx. 1 root root 22 Dec 29 15:15 /etc/grub2.cfg -> ../boot/grub2/grub.cfg
+
+4、runlevel改变
+[root@local ~]# ll /etc/systemd/system/default.target
+lrwxrwxrwx. 1 root root 37 Dec 29 15:19 /etc/systemd/system/default.target -> /lib/systemd/system/multi-user.target
+
+5、hostname配置变化
+[root@local ~]# cat /etc/hostname 
+local.centos7.test
+[root@local ~]# hostnamectl status
+   Static hostname: local.centos7.test
+         Icon name: computer-vm
+           Chassis: vm
+        Machine ID: de4091fb34364f4ab7266b983f8dc1cb
+           Boot ID: e32ee2c43e004aae87a0837665f05c3b
+    Virtualization: kvm
+  Operating System: CentOS Linux 7 (Core)
+       CPE OS Name: cpe:/o:centos:centos:7
+            Kernel: Linux 3.10.0-327.el7.x86_64
+      Architecture: x86-64
+      
+6、/bin,/sbin,/lib,/lib64 的路径改变
+[root@local ~]# ls / -l |sort |grep -E 'bin|lib'    
+lrwxrwxrwx.   1 root root    7 Dec 29 15:12 bin -> usr/bin
+lrwxrwxrwx.   1 root root    7 Dec 29 15:12 lib -> usr/lib
+lrwxrwxrwx.   1 root root    8 Dec 29 15:12 sbin -> usr/sbin
+lrwxrwxrwx.   1 root root    9 Dec 29 15:12 lib64 -> usr/lib64
+
+
+7、free 的格式改变
+[root@local ~]# free -m
+              total        used        free      shared  buff/cache   available
+Mem:           1838         105        1172           8         560        1564
+Swap:          2047           0        2047
+
+      
+8、用户id从1000开始
+[root@local ~]# useradd Jack
+[root@local ~]# id Jack
+uid=1000(Jack) gid=1000(Jack) groups=1000(Jack)
+
+9、限制使用su
+先看看Jack能否su root：
+[root@sz-local-vm41 ~]# su Jack
+[Jack@local root]$ su
+Password: 
+[root@local ~]# exit
+exit
+[Jack@local root]$ exit
+exit
+看起来一切如旧，开始调整配置
+[root@sz-local-vm41 ~]# vim /etc/pam.d/su
+# Uncomment the following line to require a user to be in the "wheel" group.
+auth            required        pam_wheel.so use_uid
+启用上面这行配置，再次测试
+[root@sz-local-vm41 ~]# su Jack          
+[Jack@local root]$ su
+Password: 
+su: Permission denied
+被拒绝，，符合预期
+[Jack@local root]$ exit
+exit
+
+10、升级了python版本
+[root@local ~]# rpm -qa |grep python-2.7
+python-2.7.5-34.el7.x86_64
+
+11、安装包
+yum group install "X Window System"
+
+
+
+三、使用 systemd 替代 service 和 chkconfig 来管理服务
+1、类型和路径
+Table 8.1. Available systemd Unit Types
+Unit Type	    File Extension	    Description
+Service unit	.service	        A system service.
+Target unit	    .target 	        A group of systemd units.
+Automount unit	.automount	        A file system automount point.
+Device unit	    .device	            A device file recognized by the kernel.
+Mount unit	    .mount	            A file system mount point.
+Path unit	    .path	            A file or directory in a file system.
+Scope unit	    .scope	            An externally created process.
+Slice unit	    .slice	            A group of hierarchically organized units that manage system processes.
+Snapshot unit	.snapshot	        A saved state of the systemd manager.
+Socket unit	    .socket	            An inter-process communication socket.
+Swap unit	    .swap	            A swap device or a swap file.
+Timer unit	    .timer	            A systemd timer.
+
+
+Table 8.2. Systemd Unit Locations
+Directory	                Description
+/usr/lib/systemd/system/	Systemd units distributed with installed RPM packages.
+/run/systemd/system/	    Systemd units created at run time. This directory takes precedence over the directory with installed service units.
+/etc/systemd/system/	    Systemd units created and managed by the system administrator. This directory takes precedence over the directory with runtime units.
+
+
+2、使用 Service units（.service 结尾的文件）来替代原来在 /etc/rc.d/init.d/中配置的服务控制脚本
+Table 8.3. Comparison of the service Utility with systemctl
+service	                        systemctl	                                    Description
+service name start              systemctl start name.service                    Starts a service.
+service name stop               systemctl stop name.service                     Stops a service.
+service name restart            systemctl restart name.service                  Restarts a service.
+service name condrestart        systemctl try-restart name.service              Restarts a service only if it is running.
+service name reload             systemctl reload name.service                   Reloads configuration.
+service name status             systemctl status name.service                   Checks if a service is running.
+                                systemctl is-active name.service
+
+service --status-all            systemctl list-units --type service --all       Displays the status of all services.
+
+
+Table 8.4. Comparison of the chkconfig Utility with systemctl
+chkconfig	                    systemctl	                                    Description
+chkconfig name on               systemctl enable name.service                   Enables a service.
+chkconfig name off              systemctl disable name.service                  Disables a service.
+chkconfig --list name           systemctl status name.service                   Checks if a service is enabled.
+                                systemctl is-enabled name.service
+chkconfig --list                systemctl list-unit-files --type service        Lists all services and checks if they are enabled.
+chkconfig --list                systemctl list-dependencies --after             Lists services that are ordered to start before the specified unit.
+chkconfig --list                systemctl list-dependencies --before            Lists services that are ordered to start after the specified unit.
+
+
+3、禁用和启用服务
+[root@local ~]# ls /etc/systemd/system/multi-user.target.wants/
+abrt-ccpp.service  abrt-oops.service    abrt-xorg.service  crond.service       kdump.service           postfix.service   rsyslog.service  tuned.service
+abrtd.service      abrt-vmcore.service  auditd.service     irqbalance.service  NetworkManager.service  remote-fs.target  sshd.service
+
+[root@local ~]# systemctl disable postfix.service 
+Removed symlink /etc/systemd/system/multi-user.target.wants/postfix.service.
+
+[root@local ~]# ls /etc/systemd/system/multi-user.target.wants/
+abrt-ccpp.service  abrt-oops.service    abrt-xorg.service  crond.service       kdump.service           remote-fs.target  sshd.service
+abrtd.service      abrt-vmcore.service  auditd.service     irqbalance.service  NetworkManager.service  rsyslog.service   tuned.service
+
+[root@local ~]# systemctl enable postfix.service                     
+Created symlink from /etc/systemd/system/multi-user.target.wants/postfix.service to /usr/lib/systemd/system/postfix.service.
+
+
+4、使用 Target unit （.target 结尾的文件）来组合不同运行级别上的 Service unit 的集合。
+Table 8.6. Comparison of SysV Runlevels with systemd Targets
+Runlevel	Target Units	                        Description
+0	        runlevel0.target, poweroff.target	    Shut down and power off the system.
+1	        runlevel1.target, rescue.target	        Set up a rescue shell.
+2	        runlevel2.target, multi-user.target	    Set up a non-graphical multi-user system.
+3	        runlevel3.target, multi-user.target	    Set up a non-graphical multi-user system.
+4	        runlevel4.target, multi-user.target	    Set up a non-graphical multi-user system.
+5	        runlevel5.target, graphical.target	    Set up a graphical multi-user system.
+6	        runlevel6.target, reboot.target	        Shut down and reboot the system.
+
+默认运行级别：
+[root@local ~]# systemctl get-default
+multi-user.target
+
+列出当前的target
+[root@local ~]# systemctl list-units --type target
+
+
+5、服务配置
+[root@local ~]# cat /usr/lib/systemd/system/postfix.service 
+[Unit]
+Description=Postfix Mail Transport Agent
+After=syslog.target network.target
+Conflicts=sendmail.service exim.service
+
+[Service]
+Type=forking
+PIDFile=/var/spool/postfix/pid/master.pid
+EnvironmentFile=-/etc/sysconfig/network
+ExecStartPre=-/usr/libexec/postfix/aliasesdb
+ExecStartPre=-/usr/libexec/postfix/chroot-update
+ExecStart=/usr/sbin/postfix start
+ExecReload=/usr/sbin/postfix reload
+ExecStop=/usr/sbin/postfix stop
+
+[Install]
+WantedBy=multi-user.target
+
+
+四、常用服务
+1、tigervnc
+yum install tigervnc-server
+cp /lib/systemd/system/vncserver@.service /etc/systemd/system/vncserver@.service
+vim /etc/systemd/system/vncserver@.service
+更新了用户和分辨率配置，主要是这两行：
+ExecStart=/usr/sbin/runuser -l root -c "/usr/bin/vncserver %i -geometry 1024x768"
+PIDFile=/root/.vnc/%H%i.pid
+
+systemctl daemon-reload
+systemctl start vncserver@:0.service
+systemctl enable vncserver@:0.service
+vncpasswd
+
+2、使用 Firewall 替代 iptables 来管理防火墙
+停止和启动服务：
+[root@local ~]# systemctl stop firewalld.service
+[root@local ~]# systemctl start firewalld.service
+列出：
+[root@local ~]# firewall-cmd --list-all
+放行端口：
+[root@local ~]# firewall-cmd --zone=public --add-port=5900/tcp
+[root@local ~]# firewall-cmd --zone=public --remove-port=5900/tcp
+配置持久化：
+[root@local ~]# firewall-cmd --zone=public --add-port=5900/tcp --permanent
+[root@local ~]# firewall-cmd --zone=public --remove-port=5900/tcp --permanent
+查看配置：
+[root@local ~]# cat /etc/firewalld/zones/public.xml 
+
+
+
+
+
+
+
+
+
+
+
+
+
+ZYXW、参考
+1、This page would list out some of the major differences between RHEL 7 and 6 variants and key features in RHEL 7 . 
+http://simplylinuxfaq.blogspot.com/p/major-difference-between-rhel-7-and-6.html
