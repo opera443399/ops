@@ -1,5 +1,5 @@
 初探oVirt-使用小结FAQ
-2015/12/24 time 11:04
+2015/12/30 time 15:58
 
 
 【Q01】如何快速的部署 ovirt 环境
@@ -753,3 +753,8 @@ Supported Hosts
     Scientific Linux 6.7 (3.5 only), 7.2
 -----------------------------------------------------
 
+
+【Q17】host xxx did no satisfy internal filter Memory because its swap value was illegal.
+A：细节在邮件列表中找这个thead：
+ovirt users mailing list:
+http://lists.ovirt.org/pipermail/users/2015-December/036891.html

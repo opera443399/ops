@@ -1,5 +1,5 @@
 linux bash shell 三言两语
-2015/12/9
+2015/12/30
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -317,8 +317,8 @@ UUID=$test /data                   xfs     defaults        0 0
 _EOF
 
 
-20. 模拟占用最少 1 GiB 内存
-python -c "while True: data='x'*1024*10**6" &
+20. 测试主机内存占用状况（模拟分配最少 1 GiB 内存）
+python -c "import time;d='a'*1024*10**6;time.sleep(3600)" &
 
 
 21. 排序的疑问

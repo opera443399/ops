@@ -3,16 +3,20 @@
 linux性能分析博大精深，各工具的详情请查看man和参考网络文章。
 
 一、查看主机流量
+1）nethogs
+默认监听eth0，可以通过参数来指定：
+nethogs eth1
+nethogs eth0 eth1
 
-1）iftop
+2）iftop
 iftop –n –f “port 80” 了解当前服务端口的流量情况。
 
 iftop –i eth0 –nN 了解指定网卡的流量情况。
 
-2）iptraf
+3）iptraf
 图像界面
 
-3）netstat
+4）netstat
 netstat -ant
 显示对应的进程：
 netstat -antp
@@ -21,7 +25,7 @@ tcp        1      0 10.0.200.10:39670           23.62.109.17:80             CLOS
 tcp        1      0 10.0.200.10:48423           23.62.109.73:80             CLOSE_WAIT  3082/clock-applet   
 tcp        0      0 :::80                       :::*                        LISTEN      23616/docker-proxy  
 
-4）ss
+5）ss
 查看tcp连接
 ss -ant
 ss -ant src :80 
@@ -33,7 +37,7 @@ State      Recv-Q Send-Q                                Local Address:Port      
 LISTEN     0      128                                              :::80                                              :::*      users:(("docker",23616,4))
 
 
-5）lsof
+6）lsof
 查看使用80端口的进程
 
 [root@test79 ~]# lsof -i :80   
@@ -41,7 +45,6 @@ COMMAND     PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
 clock-app  3082 root   15u  IPv4 733274      0t0  TCP 10.0.200.10:48423->a23-62-109-73.deploy.static.akamaitechnologies.com:http (CLOSE_WAIT)
 clock-app  3348 root   15u  IPv4 733273      0t0  TCP 10.0.200.10:39670->a23-62-109-17.deploy.static.akamaitechnologies.com:http (CLOSE_WAIT)
 docker    23616 root    4u  IPv6 319706      0t0  TCP *:http (LISTEN)
-
 
 
 

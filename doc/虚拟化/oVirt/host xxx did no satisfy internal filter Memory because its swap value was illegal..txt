@@ -1,4 +1,6 @@
-host xxx did no satisfy internal filter Memory because its swap value was illegal.
+=================================================== 01 ===================================================
+[ovirt-users] host xxx did no satisfy internal filter Memory because its swap value was illegal.
+[sorry, this is my first time to use mailing list, repost again, with content from html to plain text]
 
 ### Description ###
 1. problem
@@ -10,8 +12,8 @@ Error while executing action: migrate
 [engine gui]
 xyz001:
 Cannot migrate VM. There is no host that satisfies current scheduling constraints. See below for details:
-The host n33.ovirt did not satisfy internal filter Memory because has availabe 1863 MB memory. Insufficient free memory to run the VM.
-The host n34.ovirt did not satisfy internal filter Memory because its swap value was illegal.
+The host n33 did not satisfy internal filter Memory because has availabe 1863 MB memory. Insufficient free memory to run the VM.
+The host n34 did not satisfy internal filter Memory because its swap value was illegal.
 
 
 [engine.log]
@@ -221,7 +223,7 @@ Result: failed.
 How? Option not found from 'engine-config --list', should I update table field direct from db?
 
 
---disk swap partition on host
+--disable swap partition on host
 Should I do this operation?
 
 --update ovirt-engine?
@@ -233,9 +235,80 @@ No useful infomation found in latest release note, should I do this operation?
 any help would be appreciated.
 
 
+
 ZYXW. Reference
 http://www.ovirt.org/Sla/FreeMemoryCalculation
 http://lists.ovirt.org/pipermail/users/2012-November/010858.html
 http://lists.ovirt.org/pipermail/users/2013-March/013201.html
 http://comments.gmane.org/gmane.comp.emulators.ovirt.user/19288
 http://jim.rippon.me.uk/2013/07/ovirt-testing-english-instructions-for.html
+
+=================================================== 02 ===================================================
+[ovirt-users] host xxx did no satisfy internal filter Memory because its swap value was illegal.
+Hi,
+Let me simplify things.
+
+We do not allow swapping in general. The reason is that it kills the
+performance
+of all hosts.
+
+As you were able to see in our code (0 is the default config value we have)
+we expect the following expression:
+
+swap_total - swap_free - mem_available) * 100 / physical_mem_mb) <= 0
+
+And in your case we see the value is > 0.
+This means that swap_total < (swap_free+mem_available) or in general
+your host is swapping.
+
+Since the host is swapping, we do not allow to run a VM on it.
+
+Let me know if you have any further questions.
+Doron
+
+
+=================================================== 03 ===================================================
+[ovirt-users] Reply: host xxx did no satisfy internal filter Memory because its swap value was illegal.
+Hi Doron,
+[repost...I forgot to change html to plain test again when I replied a few hours ago...sorry about the format..]
+
+Thank you, I disabled swap on hosts, and migrated 2 vms from n33 to n34 an hour ago, everything's fine.
+ 
+1) Just a little confused about how to caculate the value.
+###and I quote,
+----
+And in your case we see the value is > 0.
+This means that swap_total < (swap_free+mem_available) or in general
+your host is swapping.
+----
+###data in my case:
+[n34]
+# free -m
+             total       used       free     shared    buffers     cached
+Mem:         32057      31713        344          0         78      13074
+-/+ buffers/cache:      18560      13497
+Swap:        29999       5098      24901
+
+Physical Memory:                            32057 MB total, 18593 MB used, 13464 MB free
+Swap Size:                                  29999 MB total, 5098 MB used, 24901 MB free
+Max free Memory for scheduling new VMs:     21644.5 MB
+----
+## formula in my case: 
+swap_total - swap_free > mem_available
+## substituting =>
+swap_total = 29999,  swap_free = 24901, mem_available = ?
+(mem_available  is 344 or 13497 ? Obviously the former value match the fomula, right?)
+
+
+2) suggestion
+Disable swap on ovirt host should be explicit indicated in the document.(for instance: http://www.ovirt.org/OVirt_Administration_Guide)
+
+
+
+
+
+
+
+
+
+
