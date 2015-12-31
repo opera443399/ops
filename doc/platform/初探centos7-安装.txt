@@ -1,4 +1,5 @@
 初探centos7-安装
+2015/12/31
 
 一、安装
 1、新的安装界面
@@ -84,9 +85,16 @@ exit
 [root@local ~]# rpm -qa |grep python-2.7
 python-2.7.5-34.el7.x86_64
 
-11、安装包
-yum group install "X Window System"
+11、示例安装rpm包
+[root@local ~]# mount /dev/sr0 /media
+[root@local ~]# cat /etc/yum.repos.d/dvd.repo 
+[dvd]
+name=dvd
+baseurl=file:///media/
+enabled=1
+gpgcheck=0
 
+[root@local ~]# yum --disablerepo=\* --enablerepo=dvd group install "gnome desktop"
 
 
 三、使用 systemd 替代 service 和 chkconfig 来管理服务
@@ -224,18 +232,86 @@ vncpasswd
 查看配置：
 [root@local ~]# cat /etc/firewalld/zones/public.xml 
 
+3、httpd
+1）服务
+[root@local ~]# yum install httpd
+[root@local ~]# systemctl start httpd.service
+[root@local ~]# systemctl enable httpd.service
+2）虚拟主机
+[root@local ~]# cp /usr/share/doc/httpd-2.4.6/httpd-vhosts.conf /etc/httpd/conf.d/vhosts.conf
+[root@local ~]# grep ^[^#] /etc/httpd/conf.d/vhosts.conf 
+<VirtualHost *:80>
+    ServerAdmin webmaster@office.test
+    DocumentRoot "/var/www/html/office.test"
+    ServerName office.test
+    ServerAlias www.office.test
+    ErrorLog "/var/log/httpd/office.test-error_log"
+    CustomLog "/var/log/httpd/office.test-access_log" common
+</VirtualHost>
+[root@local ~]# systemctl restart httpd.service
+[root@local ~]# mkdir /var/www/html/office.test
+[root@local ~]# echo 'abc' > /var/www/html/office.test/index.html
+更新防火墙配置：
+[root@local ~]# firewall-cmd --add-service http
+[root@local ~]# firewall-cmd --add-service http --permanent
+测试：
+[root@tvm02 ~]# curl office.test
+abc
 
+3）https
+[root@local ~]# yum install mod_ssl openssl
+[root@local ~]# grep SSLProtocol /etc/httpd/conf.d/ssl.conf
+#SSLProtocol all -SSLv2
+SSLProtocol -all +TLSv1 +TLSv1.1 +TLSv1.2
+[root@local ~]# systemctl restart httpd.service
+测试：
+[root@local ~]# openssl s_client -connect 127.0.0.1:443 -ssl3
+Secure Renegotiation IS NOT supported
+[root@local ~]# openssl s_client -connect 127.0.0.1:443 -tls1_2
+Secure Renegotiation IS supported
 
+使用已有的cert和key文件：
+[root@local ~]# grep ^SSLCertificate /etc/httpd/conf.d/ssl.conf
+SSLCertificateFile /etc/pki/tls/certs/localhost.crt
+SSLCertificateKeyFile /etc/pki/tls/private/localhost.key
 
+或，创建新的cert和key文件（发送给CA签名或自签名）：
+[root@local ~]# yum install crypto-utils
+[root@local ~]# genkey hostname
+跟着指引操作即可。
+调整配置文件，指向对应的crt和key文件的路径
+[root@local ~]# grep ^SSLCertificate /etc/httpd/conf.d/ssl.conf
+SSLCertificateFile /etc/pki/tls/certs/hostname.crt
+SSLCertificateKeyFile /etc/pki/tls/private/hostname.key
+[root@local ~]# systemctl restart httpd.service
+更新防火墙配置：
+[root@local ~]# firewall-cmd --add-service https
+[root@local ~]# firewall-cmd --add-service https --permanent
 
-
-
-
-
-
+更新配置：
+[root@local ~]# grep ^[^#] /etc/httpd/conf.d/vhosts.conf
+<VirtualHost *:443>
+    ServerAdmin webmaster@office.test
+    SSLEngine on
+    SSLCertificateFile /etc/pki/tls/certs/n41.test.crt
+    SSLCertificateKeyFile /etc/pki/tls/private/n41.test.key
+    DocumentRoot "/var/www/html/office.test"
+    ServerName office.test
+    ServerAlias www.office.test
+    ErrorLog "/var/log/httpd/office.test-443-error_log"
+    CustomLog "/var/log/httpd/office.test-443-access_log" common
+</VirtualHost>
+[root@local ~]# systemctl restart httpd.service
+测试：
+[root@tvm02 ~]# curl -k https://office.test
+abc
 
 
 
 ZYXW、参考
-1、This page would list out some of the major differences between RHEL 7 and 6 variants and key features in RHEL 7 . 
+1、rhel7 doc
+https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/System_Administrators_Guide
+2、This page would list out some of the major differences between RHEL 7 and 6 variants and key features in RHEL 7 . 
 http://simplylinuxfaq.blogspot.com/p/major-difference-between-rhel-7-and-6.html
+3、apache http ssl
+http://httpd.apache.org/docs/2.4/ssl/ssl_howto.html
