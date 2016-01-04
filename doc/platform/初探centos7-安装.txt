@@ -217,7 +217,10 @@ systemctl start vncserver@:0.service
 systemctl enable vncserver@:0.service
 vncpasswd
 
-2、使用 Firewall 替代 iptables 来管理防火墙
+
+
+2、防火墙
+使用 Firewall 替代 iptables 来管理防火墙
 停止和启动服务：
 [root@local ~]# systemctl stop firewalld.service
 [root@local ~]# systemctl start firewalld.service
@@ -232,7 +235,9 @@ vncpasswd
 查看配置：
 [root@local ~]# cat /etc/firewalld/zones/public.xml 
 
-3、httpd
+
+
+3、http服务
 1）服务
 [root@local ~]# yum install httpd
 [root@local ~]# systemctl start httpd.service
@@ -305,6 +310,14 @@ SSLCertificateKeyFile /etc/pki/tls/private/hostname.key
 测试：
 [root@tvm02 ~]# curl -k https://office.test
 abc
+
+
+
+4、NTP
+使用Chrony
+
+
+
 
 
 

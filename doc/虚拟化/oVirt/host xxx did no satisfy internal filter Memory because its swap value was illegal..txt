@@ -304,8 +304,18 @@ swap_total = 29999,  swap_free = 24901, mem_available = ?
 Disable swap on ovirt host should be explicit indicated in the document.(for instance: http://www.ovirt.org/OVirt_Administration_Guide)
 
 
+=================================================== 04 ===================================================
+Hi,
+Glad to hear all is well now. Just to recap regarding your question;
 
+All the values you mention are measured for every scheduling decision.
+The conclusion I gave you is based on the code. The actual numbers may
+vary so unless you check the values while the scheduler is working, every
+number we use is an approximation and it's hard to provide an exact numeric
+result other than the formula.
 
+Take care and happy new year,
+Doron
 
 
 
