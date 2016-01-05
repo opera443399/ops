@@ -313,11 +313,78 @@ abc
 
 
 
-4、NTP
-使用Chrony
+4、Chrony 和 NTP
+1）启动Chrony
+[root@local ~]# yum install chrony
+编辑配置，注释掉其他的server，增加一个本地server来测试
+[root@local ~]# vim /etc/chrony.conf 
+
+[root@local ~]# systemctl start chronyd 
+[root@local ~]# systemctl status chronyd
+[root@local ~]# systemctl enable chronyd
+
+2）检查同步
+[root@local ~]# chronyc tracking
+[root@local ~]# chronyc sources
+[root@local ~]# chronyc sourcestats
+[root@local ~]# chronyc tracking
+
+3）同步
+启动服务时，将生成一个key，这里会用到：
+[root@local ~]# cat /etc/chrony.keys    
+#1 a_key
+
+1 SHA1 HEX:0981828C41097692E12DCBE377D3CAF06EE7A2CD
+
+手动：
+[root@local ~]# chronyc              
+chrony version 2.1.1
+Copyright (C) 1997-2003, 2007, 2009-2015 Richard P. Curnow and others
+chrony comes with ABSOLUTELY NO WARRANTY.  This is free software, and
+you are welcome to redistribute it under certain conditions.  See the
+GNU General Public License version 2 for details.
+
+chronyc> authhash SHA1
+chronyc> password HEX:0981828C41097692E12DCBE377D3CAF06EE7A2CD
+200 OK
+chronyc> makestep
+200 OK
+chronyc> exit
+
+自动：
+[root@local ~]# chronyc -a makestep
+
+4）NTP
+（略，和旧版本的使用方法大致上一致）
+
+5）查看clocksource
+[root@local ~]# cd /sys/devices/system/clocksource/clocksource0/
+[root@local clocksource0]# cat available_clocksource
+kvm-clock tsc acpi_pm 
+[root@local clocksource0]# cat current_clocksource
+kvm-clock
+
+五、监控和自动化
+1、SYSTEM MONITORING TOOLS
+1）系统
+2）内存
+3）CPU
+4）块设备和文件系统
+5）硬件信息
+
+2、OpenLMI
+3、VIEWING AND MANAGING LOG FILES
+4、AUTOMATING SYSTEM TASKS
+5、AUTOMATIC BUG REPORTING TOOL (ABRT)
+6、OProfile
 
 
+六、内核、模块和驱动
+1、使用grub2
 
+2、手动升级kernel
+
+3、使用内核模块
 
 
 
