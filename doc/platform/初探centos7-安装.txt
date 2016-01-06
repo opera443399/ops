@@ -263,7 +263,7 @@ vncpasswd
 [root@tvm02 ~]# curl office.test
 abc
 
-3）https
+3）https SSL/TLS
 [root@local ~]# yum install mod_ssl openssl
 [root@local ~]# grep SSLProtocol /etc/httpd/conf.d/ssl.conf
 #SSLProtocol all -SSLv2
@@ -365,15 +365,102 @@ kvm-clock tsc acpi_pm
 kvm-clock
 
 五、监控和自动化
-1、SYSTEM MONITORING TOOLS
-1）系统
-2）内存
-3）CPU
-4）块设备和文件系统
-5）硬件信息
+1、系统监控工具
+1）块设备和文件系统
+[root@local ~]# lsblk
+[root@local ~]# blkid
+[root@local ~]# blkid -po udev /dev/vda5
+[root@local ~]# findmnt |grep '/data'
+[root@local ~]# df -h
 
-2、OpenLMI
-3、VIEWING AND MANAGING LOG FILES
+2）硬件信息
+[root@local ~]# lspci
+[root@local ~]# lspci -v
+[root@local ~]# lsusb
+[root@local ~]# lsusb -v
+[root@local ~]# lscpu
+
+
+2、OpenLMI(Open Linux Management Infrastructure)
+1）由以下3个部分组成：
+a）System management agents — Common Information Model providers or CIM providers.
+b）A standard object broker — is also known as a CIM Object Monitor or CIMOM.
+c）Client applications and scripts — call the system management agents through the standard object broker.
+
+Table 19.1. Available CIM Providers
+Package Name	            Description
+openlmi-account	            A CIM provider for managing user accounts.
+openlmi-logicalfile	        A CIM provider for reading files and directories.
+openlmi-networking	        A CIM provider for network management.
+openlmi-powermanagement	    A CIM provider for power management.
+openlmi-service	            A CIM provider for managing system services.
+openlmi-storage	            A CIM provider for storage management.
+openlmi-fan	                A CIM provider for controlling computer fans.
+openlmi-hardware	        A CIM provider for retrieving hardware information.
+openlmi-realmd	            A CIM provider for configuring realmd.
+openlmi-software            A CIM provider for software management.
+
+2）在 Managed System 上安装：
+yum install tog-pegasus
+yum install openlmi-{storage,networking,service,account,powermanagement}
+passwd pegasus
+systemctl start tog-pegasus.service
+systemctl enable tog-pegasus.service
+firewall-cmd --add-port 5989/tcp
+firewall-cmd --add-port 5989/tcp --permanent
+
+3）在 Client System 上安装：
+yum install openlmi-tools
+
+4）配置SSL/TLS
+Table 19.2. Certificate and Trust Store Locations
+Configuration Option	Location	                Description
+sslCertificateFilePath	/etc/Pegasus/server.pem	    Public certificate of the CIMOM.
+sslKeyFilePath	        /etc/Pegasus/file.pem	    Private key known only to the CIMOM.
+sslTrustStore	        /etc/Pegasus/client.pem	    The file or directory providing the list of trusted certificate authorities.
+
+如果修改了上面的文件，需要重启服务：
+systemctl restart tog-pegasus.service
+
+现在以自签名的证书来举例（机构签名的证书请参考文档：https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/System_Administrators_Guide/sect-Configuring-SSL-Certificates-for-OpenPegasus.html）
+为了让 Client System 信任 自签名的证书，从 Managed System 上 拷贝 server.pem 到 Client System 上，下面以本机同时作为 Client System 和 Managed System 为例
+[root@local ~]# scp root@127.0.0.1:/etc/Pegasus/server.pem  /etc/pki/ca-trust/source/anchors/pegasus-local.centos7.test.pem
+校验：
+[root@local ~]# sha1sum /etc/Pegasus/server.pem
+26de58c7027a8a7177711d9fd4353ceafc545b57  /etc/Pegasus/server.pem
+[root@local ~]# sha1sum /etc/pki/ca-trust/source/anchors/pegasus-local.centos7.test.pem 
+26de58c7027a8a7177711d9fd4353ceafc545b57  /etc/pki/ca-trust/source/anchors/pegasus-local.centos7.test.pem
+更新证书存储库
+[root@local ~]# update-ca-trust extract
+
+5）使用 LMISHELL
+[root@local ~]# lmishell
+> c = connect("local.centos7.test", "pegasus")
+password: 
+> quit()
+可以用 tab 键补齐命令。
+
+如果是连接到本机的 CIMOM 可以直接连接unix socket：
+[root@local ~]# lmishell
+> c = connect("localhost")
+
+验证 c 是否包含对象 LMIConnection
+> isinstance(c, LMIConnection)
+True
+也可以用这种方法：
+> c is None
+False
+
+还有不少命令行的用法请参考文档，大致是就是可以用脚本的方式组合命令来达到目的。
+
+
+
+3、管理日志
+1）rsyslog
+新的版本使用了 RainerScript 语法
+包括 input() 和 ruleset() 语句
+journal
+
 4、AUTOMATING SYSTEM TASKS
 5、AUTOMATIC BUG REPORTING TOOL (ABRT)
 6、OProfile
