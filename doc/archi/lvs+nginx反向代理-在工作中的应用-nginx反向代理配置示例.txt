@@ -1,6 +1,7 @@
 lvs+nginx反向代理-在工作中的应用-nginx反向代理配置示例
-2015/12/15
+2016/1/6
 
+一、nginx的主配置文件
 [root@test161 ~]# cat /etc/nginx/nginx.conf
 
 user  nginx;
@@ -40,7 +41,9 @@ http {
 
     include /etc/nginx/conf.d/*.conf;
     
-    
+}
+
+二、web服务示例(www.test.com)
 [root@test161 ~]# cat /etc/nginx/conf.d/www.test.com-80.conf 
 upstream backend_test {
         server 10.50.200.204:8080;
@@ -49,13 +52,13 @@ upstream backend_test {
 
 server {
     listen       80;
-    server_name  www.jeboo.com www.jeboo.cn stag.www.jeboo.com;
+    server_name  www.test.com;
 
     root  /usr/share/nginx/html;
     index index.html index.htm;
 
-    access_log  /var/log/nginx/access.www.jeboo.com.log dm;
-    error_log  /var/log/nginx/error.www.jeboo.com.log;
+    access_log  /var/log/nginx/access.www.test.com.log dm;
+    error_log  /var/log/nginx/error.www.test.com.log;
 
     error_page  404              /404.html;
 
