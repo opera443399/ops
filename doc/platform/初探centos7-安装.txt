@@ -16,15 +16,11 @@ CentOS Linux release 7.2.1511 (Core)
 [root@local ~]# uname -r
 3.10.0-327.el7.x86_64
 
-3、使用grub2
-[root@local ~]# ll /etc/grub2.cfg 
-lrwxrwxrwx. 1 root root 22 Dec 29 15:15 /etc/grub2.cfg -> ../boot/grub2/grub.cfg
-
-4、runlevel改变
+3、runlevel改变
 [root@local ~]# ll /etc/systemd/system/default.target
 lrwxrwxrwx. 1 root root 37 Dec 29 15:19 /etc/systemd/system/default.target -> /lib/systemd/system/multi-user.target
 
-5、hostname配置变化
+4、hostname配置变化
 [root@local ~]# cat /etc/hostname 
 local.centos7.test
 [root@local ~]# hostnamectl status
@@ -39,7 +35,7 @@ local.centos7.test
             Kernel: Linux 3.10.0-327.el7.x86_64
       Architecture: x86-64
       
-6、/bin,/sbin,/lib,/lib64 的路径改变
+5、/bin,/sbin,/lib,/lib64 的路径改变
 [root@local ~]# ls / -l |sort |grep -E 'bin|lib'    
 lrwxrwxrwx.   1 root root    7 Dec 29 15:12 bin -> usr/bin
 lrwxrwxrwx.   1 root root    7 Dec 29 15:12 lib -> usr/lib
@@ -47,19 +43,19 @@ lrwxrwxrwx.   1 root root    8 Dec 29 15:12 sbin -> usr/sbin
 lrwxrwxrwx.   1 root root    9 Dec 29 15:12 lib64 -> usr/lib64
 
 
-7、free 的格式改变
+6、free 的格式改变
 [root@local ~]# free -m
               total        used        free      shared  buff/cache   available
 Mem:           1838         105        1172           8         560        1564
 Swap:          2047           0        2047
 
       
-8、用户id从1000开始
+7、用户id从1000开始
 [root@local ~]# useradd Jack
 [root@local ~]# id Jack
 uid=1000(Jack) gid=1000(Jack) groups=1000(Jack)
 
-9、限制使用su
+8、限制使用su
 先看看Jack能否su root：
 [root@sz-local-vm41 ~]# su Jack
 [Jack@local root]$ su
@@ -81,20 +77,9 @@ su: Permission denied
 [Jack@local root]$ exit
 exit
 
-10、升级了python版本
+9、升级了python版本
 [root@local ~]# rpm -qa |grep python-2.7
 python-2.7.5-34.el7.x86_64
-
-11、示例安装rpm包
-[root@local ~]# mount /dev/sr0 /media
-[root@local ~]# cat /etc/yum.repos.d/dvd.repo 
-[dvd]
-name=dvd
-baseurl=file:///media/
-enabled=1
-gpgcheck=0
-
-[root@local ~]# yum --disablerepo=\* --enablerepo=dvd group install "gnome desktop"
 
 
 三、使用 systemd 替代 service 和 chkconfig 来管理服务
@@ -455,23 +440,83 @@ False
 
 
 
-3、管理日志
+3、日志管理
 1）rsyslog
 新的版本使用了 RainerScript 语法
 包括 input() 和 ruleset() 语句
-journal
+示例-配置服务端
+[root@local ~]# cat /etc/rsyslog.d/test.conf 
+template(name="TmplAuthpriv" type="string"
+         string="/var/log/remote/auth/%HOSTNAME%/%PROGRAMNAME:::secpath-replace%.log"
+        )
 
-4、AUTOMATING SYSTEM TASKS
-5、AUTOMATIC BUG REPORTING TOOL (ABRT)
-6、OProfile
+template(name="TmplMsg" type="string"
+         string="/var/log/remote/msg/%HOSTNAME%/%PROGRAMNAME:::secpath-replace%.log"
+        )
+
+module(load="imtcp")
+
+ruleset(name="remote1"){
+     authpriv.*   action(type="omfile" DynaFile="TmplAuthpriv")
+      *.info;mail.none;authpriv.none;cron.none action(type="omfile" DynaFile="TmplMsg")
+}
+
+input(type="imtcp" port="514" ruleset="remote1")
+
+[root@local ~]# firewall-cmd --zone=public --add-port=514/tcp
+[root@local ~]# firewall-cmd --zone=public --add-port=514/tcp--permanent
+systemctl restart rsyslog.service
+
+示例-配置客户端
+[root@tvm02 ~]# cat /etc/rsyslog.d/test.conf
+# udp => @ip:port tcp => @@ip:port, default port=514 
+*.* @@server_ip
+#使用&连接另一个action来丢弃(~)上面过滤的消息(不保存到本地的syslog中)
+& ~
+[root@tvm02 ~]# service rsyslog restart
+
+示例-测试
+[root@tvm02 ~]# logger 'hellllllllllllllllllllllllllllo'
+[root@tvm02 ~]# logger 'hellllllllllllllllllllllllllllllo'
+[root@local ~]# cat /var/log/remote/msg/tvm02/root.log 
+Jan  7 13:49:11 tvm02 root: hellllllllllllllllllllllllllllo
+Jan  7 14:01:58 tvm02 root: hellllllllllllllllllllllllllllllo
 
 
-六、内核、模块和驱动
-1、使用grub2
+2）journal
+显示最近10条日志
+[root@local ~]# journalctl -n 10
+指定日志的格式
+[root@local ~]# journalctl -n 10 -o verbose
+滚动显示最近10条
+[root@local ~]# journalctl -f
+根据日志类型优先级筛选
+[root@local ~]# journalctl -p err
+根据时间来筛选，从当前系统引导的时间开始
+[root@local ~]# journalctl -b
+指定时间和优先级来筛选
+[root@local ~]# journalctl -p warning --since="2016-1-6 23:59:59"
+根据指定的key=value来筛选
+[root@local ~]# journalctl _SYSTEMD_UNIT=crond.service
 
-2、手动升级kernel
 
-3、使用内核模块
+默认journal日志保存在内存或缓冲区中，如果要持久化保存，则：
+[root@local ~]# mkdir -p /var/log/journal
+[root@local ~]# systemctl restart systemd-journald
+
+
+4、使用grub2
+1)使用 grubby 来获取或调整menuentry的信息
+[root@local ~]# grubby --default-kernel
+[root@local ~]# grubby --default-index
+[root@local ~]# grubby --info=ALL
+[root@local ~]# grubby --remove-args="rhgb quiet" --args=console=ttyS0,115200 --update-kernel=DEFAULT
+
+2）grub2使用/etc/grub.d/目录下定义的脚本来生成menu
+其中：
+00_header：从文件 /etc/default/grub 加载了grub2的一些设置。
+40_custom：新增的内核可以在这里定义，然后通过 grub2-mkconfig -o /boot/grub2/grub.cfg  生成新的grub配置
+
 
 
 
