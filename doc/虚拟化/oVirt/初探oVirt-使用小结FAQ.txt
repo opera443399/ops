@@ -1,5 +1,5 @@
 初探oVirt-使用小结FAQ
-2015/12/30 time 15:58
+2016/1/8 time 15:58
 
 
 【Q01】如何快速的部署 ovirt 环境
@@ -758,3 +758,106 @@ Supported Hosts
 A：细节在邮件列表中找这个thead：
 ovirt users mailing list:
 http://lists.ovirt.org/pipermail/users/2015-December/036891.html
+
+【Q18】如何将系统封装成模版
+A：
+----------------------- centos6 ------------------------------
+1）配置epel源
+mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup
+wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-6.repo
+wget -O /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-6.repo
+yum makecache
+
+2）配置 ovirt-guest-agent
+yum -y install http://resources.ovirt.org/pub/yum-repo/ovirt-release36.rpm
+yum -y install ovirt-guest-agent
+service ovirt-guest-agent start
+chkconfig ovirt-guest-agent on
+
+重启vm后查看效果：符合预期。
+
+
+3）配置 cloud-init
+yum -y install cloud-init
+echo 'datasource_list: ["NoCloud", "ConfigDrive"]' >>/etc/cloud/cloud.cfg
+
+关闭vm后验证：符合预期。
+
+4）手动清理在创建虚拟机时可能导致冲突的配置
+--- 清理cloud-init ---
+rm /var/lib/cloud -fr
+
+--- 清理hostname ---
+cat <<'_EOF' >/etc/sysconfig/network
+NETWORKING=yes
+HOSTNAME=localhost.localdomain
+_EOF
+
+--- 清理网卡相关 ---
+sed -i -e '/UUID/d' -e '/HWADDR/d' -e '/ONBOOT/d' -e '/BOOTPROTO/d' \
+-e '/IPADDR/d' -e '/NETMASK/d' -e '/GATEWAY/d' \
+-e '/TYPE=Ethernet/a\ONBOOT=no\nBOOTPROTO=dhcp' /etc/sysconfig/network-scripts/ifcfg-eth*
+
+--- 清理ssh相关 ---
+rm -f /etc/ssh/ssh_host_*
+rm /root/.ssh -fr 
+
+--- 清理log ---
+find /var/log -type f -delete
+find /root -type f ! -name ".*" -delete
+
+
+--- 最后一步 ---
+手动配置（不想重置root密码和其他服务，如果通过sys-unconfig将会这样操作）
+--- 清理 udev 和history ---
+rm /etc/udev/rules.d/*-persistent-*.rules -f
+history -c
+
+--- 关机 ---
+# poweroff
+
+----------------------- centos7 ------------------------------
+1）配置epel源
+mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup
+wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
+wget -O /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
+yum makecache
+
+2）安装 ovirt-guest-agent
+yum -y install ovirt-guest-agent
+systemctl start ovirt-guest-agent.service 
+systemctl enable ovirt-guest-agent.service
+
+3）安装 cloud-init
+yum -y install cloud-init
+echo 'datasource_list: ["NoCloud", "ConfigDrive"]' >>/etc/cloud/cloud.cfg
+
+4）手动清理在创建虚拟机时可能导致冲突的配置
+--- 清理cloud-init ---
+rm /var/lib/cloud -fr
+
+--- 清理hostname ---
+cat <<'_EOF' >/etc/hostname 
+localhost.localdomain
+_EOF
+
+--- 清理网卡相关 ---
+sed -i -e '/UUID/d' -e '/ONBOOT/d' -e '/BOOTPROTO/d' -e '/IPADDR/d' -e '/NETMASK/d' -e '/GATEWAY/d' \
+-e '/TYPE=Ethernet/a\ONBOOT=no\nBOOTPROTO=dhcp' /etc/sysconfig/network-scripts/ifcfg-eth*
+
+--- 清理ssh相关 ---
+rm -f /etc/ssh/ssh_host_* /root/.ssh/*
+
+--- 清理log ---
+rm -f /root/anaconda-ks.cfg
+find /var/log -type f -delete
+
+
+--- 最后一步 ---
+手动配置（不想重置root密码和其他服务，如果通过sys-unconfig将会这样操作）
+--- 清理history ---
+history -c
+
+--- 关机 ---
+# poweroff
+

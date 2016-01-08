@@ -122,3 +122,10 @@ X-Cache: HIT from shenzhen.qq.com
 100  582k    0  582k    0     0  5349k      0 --:--:-- --:--:-- --:--:-- 5546k* Connection #0 to host 14.17.32.211 left intact
 
 * Closing connection #0
+
+
+5）得到请求响应时间
+[root@svr200-22 ~]# curl -o /dev/null -s -w "time_connect: %{time_connect}\ntime_starttransfer: %{time_starttransfer}\ntime_total: %{time_total}\n" ${hostname}
+time_connect: 0.046
+time_starttransfer: 0.078
+time_total: 0.078
