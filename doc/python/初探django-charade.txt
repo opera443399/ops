@@ -1,5 +1,5 @@
 初探django-charade
-2015/12/8
+2016/1/11
 在根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）
 
 一、准备环境
@@ -126,6 +126,9 @@ class Question(models.Model):
     question_text = models.CharField('问题', max_length=200)
     pub_date = models.DateTimeField('发布日期')
 
+    
+四、示例
+https://github.com/opera443399/ops/blob/master/doc/python/test-django/www/README.rst
 
 
 ZYXW、参考

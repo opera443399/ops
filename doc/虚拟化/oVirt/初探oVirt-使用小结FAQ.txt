@@ -1,5 +1,5 @@
 初探oVirt-使用小结FAQ
-2016/1/8 time 15:58
+2016/1/11 time 15:26
 
 
 【Q01】如何快速的部署 ovirt 环境
@@ -860,4 +860,45 @@ history -c
 
 --- 关机 ---
 # poweroff
+
+
+【Q19】遇到心跳超时的警报 Heartbeat exeeded
+A：
+engine页面事件记录：
+2016-1-6 上午11:31:33  Host n33.test power management was verified successfully.
+2016-1-6 上午11:31:33  Status of host n33.test was set to Up.
+2016-1-6 上午11:31:33  Executing power management status on Host n33.test using Proxy Host n34.test and Fence Agent ipmilan:10.50.200.43.
+2016-1-6 上午11:31:30  Invalid status on Data Center SZ. Setting Data Center status to Non Responsive (On host n33.test, Error: Network error during communication with the Host.).
+2016-1-6 上午11:31:30  Host n33.test is not responding. It will stay in Connecting state for a grace period of 80 seconds and after that an attempt to fence the host will be issued.
+2016-1-6 上午11:31:30  VDSM n33.test command failed: Heartbeat exeeded
+
+engine.log里面记录的日志内容也一致表明是engine检测node时，心跳超时。
+WARN  [org.ovirt.engine.core.vdsbroker.VdsManager] (org.ovirt.thread.pool-8-thread-27) [] Host 'n33.test' is not responding. It will stay in Connecting state for a grace period of 80 seconds and after that an attempt to fence the host will be issued.
+ERROR [org.ovirt.engine.core.vdsbroker.vdsbroker.ListVDSCommand] (DefaultQuartzScheduler_Worker-25) [] Command 'ListVDSCommand(HostName = n33.test, VdsIdAndVdsVDSCommandParametersBase:{runAsync='true', hostId='999be037-0298-4506-afb6-665b6f00db2e', vds='Host[n33.test,999be037-0298-4506-afb6-665b6f00db2e]'})' execution failed: VDSGenericException: VDSNetworkException: Heartbeat exeeded
+
+尝试调整心跳超时的间隔：
+[root@e01 ~]# engine-config -s vdsHeartbeatInSeconds=20 
+[root@e01 ~]# service ovirt-engine restart 
+未能解决，继续收到警报。
+突然发现，，engine和node的时间不一致，差距有3-5分钟，检查ntp服务器，手动执行同步命令失效，判断是ntp服务器异常。
+----
+ntpdate xxx
+报错：no server suitable for synchronization found
+判断是所有公网的ntp服务器无法正常请求到数据
+以下的定义是让NTP Server和其自身保持同步，如果在/etc/ntp.conf中定义的server都不可用时，将使用local时间作为ntp服务提供给ntp客户端。
+
+server 127.127.1.0
+fudge 127.127.1.0 stratum 8 
+----
+调整ntp服务器的配置，并同步时间后，问题解决。
+
+
+
+
+
+
+
+
+
+
 
