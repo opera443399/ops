@@ -1,4 +1,5 @@
 ﻿vim的用法简介
+2016/1/11
 
 --粘贴文本时遇到缩进乱了
 :set paste
@@ -21,10 +22,24 @@ VG
 
 --搜索
 /abc
+区分大小写ic or noic, \c or \C
+:set ic
+/cba
+:set noic
+/\cerr
+\Cerr
+
+--查看编码
+:set fileencoding
+
+--文本文件处理异常时如何显示当前文件是否有特殊符号
+:set list
 
 
---配置文件
-# cat ~/.vimrc
+
+--配置文件示例
+https://github.com/opera443399/ops/blob/master/conf/vim/.vimrc
+~# cat ~/.vimrc
 set nocompatible
 set enc=utf-8
 "-显示行号：
@@ -76,6 +91,3 @@ autocmd BufNewFile * normal G
 nnoremap <F2> :g/^\s*$/d<CR>
 
 
-
---文本文件处理异常时如何显示当前文件是否有特殊符号
-:set list
