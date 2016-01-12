@@ -2,7 +2,7 @@
 {% block title %}Scores Board{% endblock %}
 {% block content %}
 {% if board %}
-    <div class="nav">
+    <div class="row text-center">
         {% if board.has_previous %}
         <span>
             <a href="?page={{ board.previous_page_number }}">previous</a>
@@ -19,23 +19,32 @@
         </span>
         {% endif %}
     </div>
-    <table id="charade">
-        <th>team id</th>
-        <th>amount of words</th>
-        <th>scores</th>
-        <th>start</th>
-        <th>end</th>
-        {% for b in board %}
-        <tr class="{% cycle 'A' 'B' %}">
-            <td>{{ b.id }}</a></td>
-            <td>{{ b.amount }}</a></td>
-            <td>{{ b.scores }}</a></td>
-            <td>{{ b.dt_start }}</a></td>
-            <td>{{ b.dt_end }}</a></td>
-        </tr>
-        {% endfor %}
-    </table>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <caption class="text-center">Score Board</caption>
+            <thead>
+                <tr>
+                    <th>team id</th>
+                    <th>amount of words</th>
+                    <th>scores</th>
+                    <th>start</th>
+                    <th>end</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for b in board %}
+                <tr>
+                    <td>{{ b.id }}</a></td>
+                    <td>{{ b.amount }}</a></td>
+                    <td>{{ b.scores }}</a></td>
+                    <td>{{ b.dt_start }}</a></td>
+                    <td>{{ b.dt_end }}</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
 {% else %}
-    <p>Not available.</p>
+        <p class="text-warning">Not available.</p>
 {% endif %}
+    </div>
 {% endblock %}

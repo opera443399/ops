@@ -2,15 +2,16 @@
 {% block title %}explanation{% endblock %}
 {% block content %}
 {% if gametemporarytable %}
-    <div class="word  word_en">
-        {{ gametemporarytable.en }}
+    <div class="row text-center">
+        <p style="font-size: 160px;color: black;">{{ gametemporarytable.en }}</p>
     </div>
-    <div class="word">
-        中文：{{ gametemporarytable.zh }}
-        <br />
-        解释：{{ gametemporarytable.exp }}
+    <div class="row">
+        <p class="text-success">中文：{{ gametemporarytable.zh }}</p>
+        <p class="text-success">解释：{{ gametemporarytable.exp }}</p>
     </div>
 {% else %}
-    <p>Not available.</p>
+    <div class="row text-center">
+    <p class="text-warning">Not available.</p>
+    </div>
 {% endif %}
 {% endblock %}
