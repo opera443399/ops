@@ -7,7 +7,9 @@
     <meta name="Description" content="" />
     <meta name="Keywords" content="" />
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
-    <link rel="stylesheet" type="text/css" href="{% static 'charade/style.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'charade/css/style.css' %}" />
+    <script src="{% static 'charade/js/jquery-2.2.0.min.js' %}"></script>
+    <script src="{% static 'charade/js/main.js' %}"></script>
 </head>
 <body>
     <!-- Header -->
@@ -15,11 +17,23 @@
         <img class="header" src="{% static 'charade/images/header.jpg' %}" alt="Home" title="Home"></img>
     </a>
 
-    <p>
-    Hi, Chaos! Carpe diem, seize the day!
-    When we don't appreciate the good, when we take it for granted, the good depreciates.
-    Do it regularly as a ritual! #just remind you#
+    <p id="tips">
+    [English Corner] : Let's charade
     </p>
+    <pre id="quote">
+    Hi, Chaos!
+    Just do it, and do it regularly as a ritual.
+    When we don't appreciate the good, when we take
+    it for granted, the good depreciates.
+                               -- #just remind you#
+    </pre>
+    <pre id="help">
+    [help]:
+        1]. Input the number of words that the Game needs.
+        2]. Explain the word in English to the team members.
+        3]. Say the word directly is not allowed here.
+        4]. Guess the word.
+    </pre>
     <!-- End Header -->
     <!-- Content -->
     {% block content %}{% endblock %}

@@ -1,0 +1,10 @@
+$(document).ready(function(){
+    $("#quote").hide();
+    $("#help").hide();
+    $("#tips").click(function(){
+        $("#quote").slideToggle("slow");
+    });
+    $("#tips").hover(function(){
+        $("#help").fadeToggle("slow");
+    });
+});
