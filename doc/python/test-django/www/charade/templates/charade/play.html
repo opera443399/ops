@@ -1,11 +1,11 @@
 {% extends 'charade/base.html' %}
 {% block title %}play{% endblock %}
 {% block content %}
-{% if msgs %}
+    {% if msgs %}
     <div class="row">
         <p class="text-center"><strong>{{ msgs }}<strong></p>
     </div>
-{% endif %}
+    {% endif %}
     {% for w in word_list %}
     <form action="{% url 'charade:game_score' w.id %}" method="post">
         <div class="row text-center">

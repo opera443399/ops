@@ -9,12 +9,28 @@ $(document).ready(function(){
         $("#help").fadeToggle("slow");
     });
 
-    $("#setting").submit(function(){
-        var n = $("#amount").val()
+    $("#ready2go").click(function(){
+        var n = $("#amount").val();
         var r = /^[0-9]*$/;
-        if(!r.test(n)){
+        if(!n){
             event.preventDefault();
-            alert("Digit only. '" + n + "' is not valid.");
+            $("#warning").text("[Error] Set the number of the words before you play.");
+            $("#amount").focus();
+        }
+        else if (!r.test(n)){
+            event.preventDefault();
+            $("#warning").text("[Error] Digit only. The value you set '" + n + "' is not valid.");
+            $("#amount").focus();
+        }
+        else {
+            $("#warning").text("");
+            $("#warning").text("Ready!").fadeIn(1000).fadeOut(2000,function(){
+                $("#warning").text("Set!").fadeIn(1000).fadeOut(2000,function(){
+                    $("#warning").text("Go!").fadeIn(1000).fadeOut(2000,function(){
+                        $("#setting").submit();
+                    });
+                });
+            });
         }
     });
 });

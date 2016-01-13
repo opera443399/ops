@@ -43,8 +43,10 @@
             {% endfor %}
             </tbody>
         </table>
-{% else %}
-        <p class="text-warning">Not available.</p>
-{% endif %}
     </div>
+{% else %}
+    <div class="row">
+        <h1><p class="text-danger text-center">No records available.</p></h1>
+    </div>
+{% endif %}
 {% endblock %}

@@ -17,19 +17,19 @@
 </head>
 <body>
     <div class="container">
-        <!-- Public -->
+        <!-- Public Start -->
         <div class="row">
-            <div class="col-md-2">
-            <a href="/">
-                <img class="img-rounded" style="width: 48px; height: 48px;" 
-                    src="{% static 'charade/images/header.jpg' %}" 
-                    alt="Home" title="Home"></img>
-            </a>
+            <div class="col-md-3">
+                <a href="/">
+                    <img class="img-rounded" style="width: 48px; height: 48px;" 
+                        src="{% static 'charade/images/header.jpg' %}" 
+                        alt="Home" title="Home"></img>
+                </a>
             </div>
-            <div class="col-md-8">
-            <h1 id="tips" class="text-center">
-                <small id="tips1">[English Corner]:</small><strong id="tips2">Let's charade</strong>
-            </h1>
+            <div class="col-md-6">
+                <h1 id="tips" class="text-center">
+                    <small id="tips1">[English Corner]:</small><strong id="tips2">Let's charade</strong>
+                </h1>
             </div>
         </div>
         <div class="row">
@@ -52,10 +52,15 @@
                 </pre>
             </div>
         </div>
-        <!-- END Public -->
-        <!-- Content -->
+        <!-- End of Public -->
+        <!-- Warning Start -->
+        <div class="row">
+           <h1><p id="warning" class="text-danger text-center"></p></h1>
+        </div>
+        <!-- End of Warning -->
+        <!-- Content Start -->
         {% block content %}{% endblock %}
-        <!-- End Content -->
+        <!-- End of Content -->
     </div>
 </body>
 </html>
