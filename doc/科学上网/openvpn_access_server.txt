@@ -1,0 +1,18 @@
+openvpn access server
+
+这个是openvpn的商业版本，免费支持2个用户同时在线
+
+yum install net-tools
+wget http://swupdate.openvpn.org/as/openvpn-as-2.0.10-CentOS7.x86_64.rpm
+rpm -Uvh openvpn-as-2.0.10-CentOS7.x86_64.rpm
+passwd openvpn
+
+Admin  UI: https://0.0.0.0:943/admin
+管理员登录，使用刚才设置的密码
+
+Client UI: https://0.0.0.0:943/
+用户登录，可以下载openvpn的客户端配置文件。
+
+参考：
+1、Installing OpenVPN on CentOS 7
+https://www.vultr.com/docs/installing-openvpn-on-centos-7
