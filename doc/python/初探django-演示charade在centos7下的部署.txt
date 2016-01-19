@@ -1,8 +1,9 @@
 初探django-演示charade在centos7下的部署
 =======================================
-2016/1/15
+2016/1/18
 
 ####charade 是一个猜单词的小游戏。
+https://github.com/opera443399/charade
 
 prepare
 -------

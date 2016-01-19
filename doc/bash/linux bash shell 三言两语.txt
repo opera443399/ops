@@ -1,5 +1,5 @@
 linux bash shell 三言两语
-2015/12/30
+2016/1/18
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -21,7 +21,23 @@ else
     xxx
 fi
 
-整数比较：
+注意下面这2种判断方式：
+1）test， && 和 || 的用法 
+[root@tvm01 ~]# a=3
+[root@tvm01 ~]# test $a -eq 3 && echo 'a' || echo 'b'
+a
+[root@tvm01 ~]# test $a -eq 4 && echo 'a' || echo 'b' 
+b
+[root@tvm01 ~]# test $a -eq 4 && echo 'a' || echo 'b' && echo 'c'
+b
+c
+[root@tvm01 ~]# test $a -eq 3 && echo 'a' || echo 'b' && echo 'c' 
+a
+c
+2）不加if，也不用 test
+[ -d '/tmp/aaa' ] || mkdir -p /tmp/aaa
+
+3）整数比较：
 -eq 等于,如:if [ "$a" -eq "$b" ]   
 -ne 不等于,如:if [ "$a" -ne "$b" ]   
 -gt 大于,如:if [ "$a" -gt "$b" ]   
@@ -33,7 +49,7 @@ fi
 >   大于(需要双括号),如:(("$a" > "$b"))   
 >=  大于等于(需要双括号),如:(("$a" >= "$b")) 
 
-字符串比较：
+4）字符串比较：
 通常是这样做的：
 if [ X"$test" = X"test" ]
 
@@ -46,7 +62,7 @@ if [ X"$test" = X"test" ]
 -z 空字符串
 
 
-来点儿复杂的：
+5）来点儿复杂的：
 have_program() {
     hash "$1" >/dev/null 2>&1
 }

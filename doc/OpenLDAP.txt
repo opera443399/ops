@@ -18,28 +18,28 @@ Re-enter new password:
 olcRootPW: {SSHA}phFEEFqERbsIP84rONSKWpFY2jrd/rvD
 
 更改值：olcSuffix  和 distinguished name (DN) 
-例如：打算使用的域名是 "ovirt.3dstore"
-olcSuffix: dc=ovirt,dc=3dstore
+例如：打算使用的域名是 "ovirt.com"
+olcSuffix: dc=ovirt,dc=com
 ...
-olcRootDN: cn=Manager,dc=ovirt,dc=3dstore
+olcRootDN: cn=Manager,dc=ovirt,dc=com
 ...
 olcRootPW: {SSHA}phFEEFqERbsIP84rONSKWpFY2jrd/rvD
 
 
 新增2行：用来限制用户不许查询其他人的密码hash
-olcAccess: {0}to attrs=userPassword by self write by dn.base="cn=Manager,dc=ovirt,dc=3dstore" write by anonymous auth by * none
-olcAccess: {1}to * by dn.base="cn=Manager,dc=ovirt,dc=3dstore" write by self write by * read
+olcAccess: {0}to attrs=userPassword by self write by dn.base="cn=Manager,dc=ovirt,dc=com" write by anonymous auth by * none
+olcAccess: {1}to * by dn.base="cn=Manager,dc=ovirt,dc=com" write by self write by * read
 
 
 2）配置 olcDatabase\=\{1\}monitor.ldif
 [root@vm221 cn=config]# vim olcDatabase\=\{1\}monitor.ldif
 更改值：olcAccess，和上面的dc保持一致
 olcAccess: {0}to *  by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=externa
- l,cn=auth" read  by dn.base="cn=manager,dc=ovirt,dc=3dstore" read  by * none
+ l,cn=auth" read  by dn.base="cn=manager,dc=ovirt,dc=com" read  by * none
 
 
 3）到这里，我们配置了LDAP的管理帐号和密码
-帐号：cn=Manager,dc=ovirt,dc=3dstore
+帐号：cn=Manager,dc=ovirt,dc=com
 密码：passwd
  
  
@@ -57,21 +57,21 @@ Starting slapd:                                            [  OK  ]
 
 1）、先创建一个文件，导入到LDAP后即可删除
 [root@vm221 openldap]# cat ovirt.ldif 
-dn: dc=ovirt,dc=3dstore
+dn: dc=ovirt,dc=com
 objectClass: dcObject
 objectClass: organization
 dc: ovirt
 o : ovirt
 
 执行：
-[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=3dstore -w passwd -f ovirt.ldif 
-adding new entry "dc=ovirt,dc=3dstore"
+[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=com -w passwd -f ovirt.ldif 
+adding new entry "dc=ovirt,dc=com"
 
 注：也可以只用-W，而不是"-w passwd"来通过提示输入密码。
 
 2）、验证
-[root@vm221 openldap]# ldapsearch -x -LLL -b dc=ovirt,dc=3dstore
-dn: dc=ovirt,dc=3dstore
+[root@vm221 openldap]# ldapsearch -x -LLL -b dc=ovirt,dc=com
+dn: dc=ovirt,dc=com
 objectClass: dcObject
 objectClass: organization
 dc: ovirt
@@ -90,7 +90,7 @@ o:(Organizational)组织
 2、新增OU
 我们加一个OU，名称为users
 [root@vm221 openldap]# cat users.ldif 
-dn: ou=Users,dc=ovirt,dc=3dstore
+dn: ou=Users,dc=ovirt,dc=com
 objectClass: organizationalUnit
 ou: Users
 
@@ -98,13 +98,13 @@ ou: Users
 ou：(Organizational Unit)组织单位
 
 执行：
-[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=3dstore -w passwd -f users.ldif 
-adding new entry "ou=Users,dc=ovirt,dc=3dstore"
+[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=com -w passwd -f users.ldif 
+adding new entry "ou=Users,dc=ovirt,dc=com"
 
 
 3、新增一个用户
 [root@vm221 openldap]# cat jack_lee.ldif 
-dn: cn=Jack Lee,ou=Users,dc=ovirt,dc=3dstore
+dn: cn=Jack Lee,ou=Users,dc=ovirt,dc=com
 cn: Jack Lee
 sn: Lee
 objectClass: inetOrgPerson
@@ -117,31 +117,31 @@ sn：（surname）姓
 uid：唯一标识
 
 执行：
-[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=3dstore -w passwd -f jack_lee.ldif  
-adding new entry "cn=Jack Lee,ou=Users,dc=ovirt,dc=3dstore"
+[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=com -w passwd -f jack_lee.ldif  
+adding new entry "cn=Jack Lee,ou=Users,dc=ovirt,dc=com"
 
 
 4、新增组
 [root@vm221 openldap]# cat engineering.ldif
-dn: cn=Engineering,ou=Users,dc=ovirt,dc=3dstore
+dn: cn=Engineering,ou=Users,dc=ovirt,dc=com
 cn: Engineering
 objectClass: groupOfNames
-member: cn=Jack Lee,ou=Users,dc=ovirt,dc=3dstore
+member: cn=Jack Lee,ou=Users,dc=ovirt,dc=com
 
 执行：
-[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=3dstore -w passwd -f engineering.ldif 
-adding new entry "cn=Engineering,ou=Users,dc=ovirt,dc=3dstore"
+[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=com -w passwd -f engineering.ldif 
+adding new entry "cn=Engineering,ou=Users,dc=ovirt,dc=com"
 
 5、把用户加入组
 [root@vm221 openldap]# cat adduser2group.ldif 
-dn: cn=Engineering,ou=Users,dc=ovirt,dc=3dstore
+dn: cn=Engineering,ou=Users,dc=ovirt,dc=com
 changetype: modify
 add: member
-member: cn=Jack Lee,ou=Users,dc=ovirt,dc=3dstore
+member: cn=Jack Lee,ou=Users,dc=ovirt,dc=com
 
 执行：
-[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=3dstore -w passwd -f adduser2group.ldif 
-modifying entry "cn=Engineering,ou=Users,dc=ovirt,dc=3dstore"
+[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=com -w passwd -f adduser2group.ldif 
+modifying entry "cn=Engineering,ou=Users,dc=ovirt,dc=com"
 
 
 四、管理

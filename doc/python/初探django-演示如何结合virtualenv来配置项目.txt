@@ -1,10 +1,9 @@
-初探django-演示如何结合virtualenv来配置项目
+初探django-演示charade使用virtualenv来配置项目在centos7下部署
 =======================================
-2016/1/15
+2016/1/18
 
 ####charade 是一个猜单词的小游戏。
-
-##一、演示如何使用virtualenv（若不需要，请直接看下一节）
+https://github.com/opera443399/charade
 
 prepare
 -------
