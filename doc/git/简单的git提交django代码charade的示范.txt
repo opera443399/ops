@@ -1,0 +1,59 @@
+简单的git提交django代码charade的示范
+
+1、目标
+增加一个静态文件 favicon.ico
+改动代码
+提交到git
+
+2、收集静态文件，验证
+[root@tvm001 www]# python manage.py collectstatic
+
+You have requested to collect static files at the destination
+location as specified in your settings:
+
+    /opt/charade/www/static
+
+This will overwrite existing files!
+Are you sure you want to do this?
+
+Type 'yes' to continue, or 'no' to cancel: yes
+Copying '/opt/charade/www/charade/static/charade/images/favicon.ico'
+
+1 static file copied to '/opt/charade/www/static', 65 unmodified.
+
+
+3、验证通过，准备提交到git上
+1）add 所有文件
+[root@tvm001 charade]# git add .
+
+2）commit 写说明
+[root@tvm001 charade]# git commit -a
+add favicon.ico to app: charade
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# On branch master
+# Changes to be committed:
+#   (use "git reset HEAD <file>..." to unstage)
+#
+#   new file:   www/charade/static/charade/images/favicon.ico
+#   modified:   www/charade/templates/charade/base.html
+#   new file:   www/static/charade/images/favicon.ico
+#
+（保存:wq）
+[master 822773d] add favicon.ico to app: charade
+ 3 files changed, 1 insertion(+), 1 deletion(-)
+ create mode 100644 www/charade/static/charade/images/favicon.ico
+ create mode 100644 www/static/charade/images/favicon.ico
+ 
+3）push到master
+[root@tvm001 charade]# git push origin master
+Username for 'https://github.com': your_git_account
+Password for 'https://your_git_account@github.com': 
+Counting objects: 22, done.
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (12/12), 1.46 KiB | 0 bytes/s, done.
+Total 12 (delta 5), reused 0 (delta 0)
+To https://github.com/opera443399/charade.git
+   1714312..822773d  master -> master
+   
+   
