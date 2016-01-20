@@ -23,6 +23,9 @@ Copying '/opt/charade/www/charade/static/charade/images/favicon.ico'
 
 
 3、验证通过，准备提交到git上
+git config user.email "test@abc.com"
+git config user.name "test"
+
 1）add 所有文件
 [root@tvm001 charade]# git add .
 

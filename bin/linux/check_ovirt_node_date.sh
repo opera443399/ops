@@ -1,7 +1,7 @@
 #!/bin/bash
 # 
 # pc
-# 2016/1/19
+# 2016/1/20
 
 function do_record(){
     echo '-----------------------------' >>/tmp/ovirt/record.log
@@ -17,7 +17,12 @@ function do_alert(){
     to="admin@test.com"
 
     subject="ovirt node datetime inconsistency."
-    body="from ${HOSTNAME}: $0"
+    s='\n\n'
+    while read line
+    do
+        s="${s}${line}\n"
+    done </tmp/ovirt/test_node_date.log
+    body="from ${HOSTNAME}: $0 ${s}"
     ${mail_bin} -t ${to} -u ${subject} -m ${body} -a '/tmp/ovirt/test_node_date.log'
 }
 

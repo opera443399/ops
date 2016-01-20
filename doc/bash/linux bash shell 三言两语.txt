@@ -1,5 +1,5 @@
 linux bash shell 三言两语
-2016/1/18
+2016/1/20
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -136,12 +136,13 @@ while getopts "h" option; do
 done
 
 和read结合的用法:
-while read reposdir; do
-    if [ -d "$reposdir" ]; then
-        cd "$reposdir"
-        break;
-    fi
-done < reposdir_list
+从文件中逐行读入内容，拼接字符串
+s='\n\n'
+while read line
+do
+    s="${s}${line}\n"
+done </tmp/a.txt
+echo -e $s
 
 
 和read ignore结合的用法：

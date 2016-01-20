@@ -1,6 +1,6 @@
 初探django-演示charade在centos7下的部署
 =======================================
-2016/1/18
+2016/1/20
 
 ####charade 是一个猜单词的小游戏。
 https://github.com/opera443399/charade
@@ -90,6 +90,14 @@ uwsgi+supervisord+nginx
         [root@tvm001 www]# cat /etc/supervisor.d/uwsgi.ini
         [program:uwsgi]
         command=/usr/bin/uwsgi --socket 127.0.0.1:8090 --chdir /opt/charade/www --module www.wsgi
+        user=nobody
+        autostart=true
+        autorestart=true
+        stdout_logfile=/tmp/charade.stdout.log
+        stderr_logfile=/tmp/charade.stderr.log
+
+        注：这里配置了 user，对应的，project的目录也应该是这个用户才能对示例中的本地数据库有读写权限。
+        [root@tvm001 www]# chown nobody:nobody -R /opt/charade/www
         
     6）启动 uwsgi 服务：
     
