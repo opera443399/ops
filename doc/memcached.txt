@@ -1,0 +1,60 @@
+memcached
+
+1、安装
+
+yum install memcached
+
+2、运行
+
+memcached -d -m 128 -l 127.0.0.1 -p 11211 -c 256 -u root -P /tmp/memcached_11211.pid
+
+-d 后台
+-m 内存
+-l IP
+-p 端口
+-c 并发数
+-u 用户
+-P pid
+
+3、基本操作
+1）连接
+[root@tvm01 charade]# telnet 127.0.0.1 11211
+Trying 127.0.0.1...
+Connected to 127.0.0.1.
+Escape character is '^]'.
+
+2）set
+用法：set key的名称 flag 过期时间 字节大小
+举例：
+set uid 0 0 5
+aaaaaaaaaa
+CLIENT_ERROR bad data chunk
+上面长度不对，失败了，再试试：
+set uid 0 0 5
+aaaaa
+STORED
+
+3）get
+用法：get key的名称
+举例：
+get uid
+VALUE uid 0 5
+aaaaa
+END
+
+
+4、python安装memcache
+[root@tvm001 ~]# pip install python-memcached
+[root@tvm001 ~]# python -c "import memcache;print memcache.__version__"
+1.57
+
+5、centos7使用memcached
+[root@tvm001 ~]# cat /etc/sysconfig/memcached
+PORT="11211"
+USER="memcached"
+MAXCONN="1024"
+CACHESIZE="64"
+OPTIONS=""
+
+[root@tvm001 ~]# systemctl start memcached
+[root@tvm001 ~]# systemctl enable memcached

@@ -1,20 +1,13 @@
 初探django-charade
-2016/1/11
+2016/1/22
 在根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）
 
 一、准备环境
-1、启动项目
-1）python和django环境
-[root@tvm01 ~]# pip2.7 install django==1.8.7
-[root@tvm01 ~]# pip2.7 install pytz
-[root@tvm01 ~]# python -c "import django; print(django.get_version())"
-1.8.7
-
-
-2）建立项目
-[root@tvm01 ~]# mkdir django && cd django
-[root@tvm01 django]# django-admin startproject www
-[root@tvm01 django]# cd www/
+1、建立项目
+[root@tvm01 ~]# mkdir /opt/charade
+[root@tvm01 ~]# cd /opt/charade
+[root@tvm01 charade]# django-admin startproject www
+[root@tvm01 charade]# cd www/
 
 
 2、备注
@@ -126,9 +119,99 @@ class Question(models.Model):
     question_text = models.CharField('问题', max_length=200)
     pub_date = models.DateTimeField('发布日期')
 
+4、使用用户认证系统组件
+1）配置 www/urls.py
+urlpatterns = [
+    url(r'^accounts/login/$', auth_views.login),
+    url(r'^accounts/logout/$', auth_views.logout, {'next_page': '/'}),
+]
+
+2）配置 www/settings.py
+TEMPLATES = [
+    {
+        'DIRS': [os.path.join(BASE_DIR, 'templates'),],
+]
+
+3）写一个模版：login.html
+[root@tvm01 www]# cat templates/registration/login.html 
+{% extends "charade/base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="row text-center">
+    {% if form.errors %}
+        <p>Your username and password didn't match. Please try again.</p>
+    {% endif %}
+    {% if next %}
+        {% if user.is_authenticated %}
+        <p>Your account doesn't have access to this page. To proceed,
+        please login with an account that has access.</p>
+        {% else %}
+        <p>Please login to see this page.</p>
+        {% endif %}
+    {% endif %}
+</div>
+<div class="row text-center">
+<div class="col-md-4"></div>
+<div class="col-md-4">
+    <form class="form-horizontal" method="post" action="{% url 'django.contrib.auth.views.login' %}">
+    {% csrf_token %}
+    <div class="form-group">
+        <label class="control-label" for="id_username">username:</label>
+        {{ form.username }}
+    </div>
+    <div class="form-group">
+        <label class="control-label" for="id_password">password:</label>
+        {{ form.password }}
+    </div>
+    <div class="form-group">
+        <input type="submit" class="btn btn-primary" value="login" />
+        <input type="hidden" name="next" value="{{ next }}" />
+    </div>
+    </form>
+</div>
+<div class="col-md-4"></div>
+</div>
+{% endblock %}
+
+4）使用修饰符
+配置 charade/views.py
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def game_board(request):
+
+在需要login的view前修饰一下，则render的页面会要求登录。
+
+
+
+5、使用cache组件
+1）配置 www/settings.py
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:11211',
+    }
+}
+
+2）配置linux系统安装memcached并启动服务（略）
+3）python安装memcache
+[root@tvm001 ~]# pip install python-memcached
+[root@tvm001 ~]# python -c "import memcache;print memcache.__version__"
+1.57
+4）使用修饰符
+配置 charade/views.py
+from django.views.decorators.cache import cache_page
+
+@cache_page(60 * 15)
+def show_about(request):
+
+被修饰的view将会被cache，抓包可以发现
+Cache-Control:max-age=900
+
+
     
 四、示例
-https://github.com/opera443399/ops/blob/master/doc/python/test-django/www/README.rst
+https://github.com/opera443399/charade.git
 
 
 ZYXW、参考
