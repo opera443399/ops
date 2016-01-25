@@ -1,0 +1,85 @@
+cisofy
+https://cisofy.com/checklist/linux-security/
+
+
+Linux Security Checklist
+
+
+Introduction
+
+Security starts with the process of hardening a system. This Linux security checklist is to help you testing the most important areas. The result of checklist should be confirming that the proper security controls are implemented. Since this document is just a checklist, hardening details are omitted.
+
+This guide focuses on system administrators, security professionals and auditors
+
+Automated testing
+Please refer to Lynis for automated testing of these security controls.
+
+
+Linux Security: Checklist
+
+Security control	Check
+ 
+Installation
+Check installation medium (cd-rom/dvd/ISO) by using checksum	
+Determine integrity of the installation medium. Security starts here.
+Use a minimal base installation	
+The less software installed on the system, the lower the attack surface. Also better for performance and decluttering of the system in general.
+Create separated filesystems for /home, /tmp	
+Depending on the usage, create a separate filesystem to protect filling up the root filesystem
+ 
+Boot and Disk
+Use disk encryption (LUKS)	
+When appropriate use encryption to thwart unauthorized people having access to your data (e.g. disk stolen, repair shop, conference)
+Configure mount options on some file systems like /tmp	
+Disable execute or binaries with suid by defining noexec,nodev,nosuid and mode on /tmp and /run.
+Configure BIOS password	
+Limit access to BIOS by authorized people only.
+Limit bootable devices	
+Only allow the devices to be booted (e.g. disk). Disable boot from cd/dvd or USB, if unauthorized people have access to the machine.
+Harden boot loader	
+Set a password for accessing single user mode.
+ 
+Denial of Service (DoS)
+Install anti brute-force tool for authentication attempts.	
+Deter brute force authentication attacks (e.g. with fail2ban).
+ 
+Deterrence
+Set a login banner to warn guests of the system that it will be monitored.	
+Deter unauthorized people to use the system.
+ 
+Network
+Check open network ports	
+Determine what services are listening with netstat -nlp, nmap localhost
+Use firewall like iptables/NFTables	
+Limit access to the minimal amount of services need for the purpose of the machine. All internal or local communication should not be possible.
+ 
+Intrusion Detection
+Install and configure file integrity tool (AIDE, Samhain, AFICK)	
+Monitor for most important files (crown jewels). If they are altered, raise an event to investigate.
+Install and configure malware scanner	
+Although Linux is less sceptible to viruses and worms, there is plenty of malicious scripts. Run a malware scanner like ClamAV, Rootkit Hunter, LMD or OSSEC.
+Configure system logging to a remote machine	
+For purposes of detection, forensics and archiving, remote logging is a great method to directly store events on a remote location.
+ 
+Passwords
+Configure password aging (chage)	
+ 
+Users and Permissions
+Make use of sudoers (/etc/sudoers)	
+Limit permissions for normal users. Only allow a minimum amount of users to have root access.
+Disable or remove accounts	
+Change shell of system accounts, so they can't have a shell. Remove old users where possible, but determine upfront if they own any files.
+ 
+System availability
+Configure monitoring	
+Monitor system resources and hardware status.
+» Disable CTRL-ALT-DEL	
+Disable the common combination, to prevent unexpected reboots (e.g. by Windows administrators).
+» Create backups and check restores	
+Especially after the installation, make sure your backup is working. Check your backups by performing test restores.
+ 
+Software
+Remove unneeded software	
+Disable and remove unneeded software. Old packages or installations (including PHP based tools) can increase the risk of a succesful break-in.
+Configure automated patching	
+Some distros can automate security patching. While there is a minimal risk of unavailability of a service, it outweighs the risk of security break-ins due to vulnerable software.
