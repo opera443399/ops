@@ -1,0 +1,67 @@
+用户管理示例
+
+
+一、日志
+1、使用script
+
+增加到 /etc/profile 中：
+exec /usr/bin/script -t 2>/var/log/user/$USER-$UID-`date +%Y%m%d%H%M`.date  -a -f -q /var/log/user/$USER-$UID-`date +%Y%m%d%H%M`.log
+
+
+2、自行编写脚本
+
+3、history
+export HISTTIMEFORMAT="%F %T "
+export HISTFILESIZE=50000
+export HISTSIZE=50000
+
+
+二、密码策略
+1、密码过期时间、长度等
+配置文件： /etc/login.defs
+
+这是centos6的一个默认配置的示例：
+[root@tvm02 ~]# grep ^[^#] /etc/login.defs 
+MAIL_DIR        /var/spool/mail
+# Password aging controls:
+#
+#   PASS_MAX_DAYS   Maximum number of days a password may be used.
+#   PASS_MIN_DAYS   Minimum number of days allowed between password changes.
+#   PASS_MIN_LEN    Minimum acceptable password length.
+#   PASS_WARN_AGE   Number of days warning given before a password expires.
+#
+PASS_MAX_DAYS   99999
+PASS_MIN_DAYS   0
+PASS_MIN_LEN    5
+PASS_WARN_AGE   7
+UID_MIN                   500
+UID_MAX                 60000
+GID_MIN                   500
+GID_MAX                 60000
+CREATE_HOME     yes
+UMASK           077
+USERGROUPS_ENAB yes
+ENCRYPT_METHOD SHA512 
+
+
+2、复杂度
+配置文件：/etc/pam.d/system-auth
+[root@tvm02 ~]# vim /etc/pam.d/system-auth
+password    requisite     pam_cracklib.so retry=5 difok=3 minlen=10 ucredit=-1 lcredit=-2 dcredit=-3
+
+retry：改变输入密码的次数，默认值：1
+difok：这个参数设置新、旧密码字符不相同的数量，默认值：5
+minlen：新的最低可接受的最小长度
+ucredit：限制新密码中至少有多少个大写字符
+lcredit：限制新密码中至少有多少个小写字符
+dcredit：限制新密码中至少有多少个数字
+
+具体可查阅文档：
+[root@tvm02 ~]# man pam_cracklib
+
+
+
+3、命令
+chage
+
+

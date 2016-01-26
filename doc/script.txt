@@ -1,0 +1,65 @@
+script
+
+一、简单示例
+[root@tvm02 ~]# script
+Script started, file is typescript
+[root@tvm02 ~]# echo a
+a
+[root@tvm02 ~]# history |grep wget |wc -l
+10
+[root@tvm02 ~]# date
+Tue Jan 26 10:55:51 CST 2016
+[root@tvm02 ~]# exit
+exit
+Script done, file is typescript
+[root@tvm02 ~]# cat typescript 
+Script started on Tue 26 Jan 2016 10:55:32 AM CST
+[root@tvm02 ~]# echo a
+a
+[root@tvm02 ~]# history |grep wget |wc -l
+10
+[root@tvm02 ~]# date
+Tue Jan 26 10:55:51 CST 2016
+[root@tvm02 ~]# exit
+exit
+
+Script done on Tue 26 Jan 2016 10:55:55 AM CST
+
+
+二、使用
+
+增加到 /etc/profile 中：
+exec /usr/bin/script -t 2>/var/log/user/$USER-$UID-`date +%Y%m%d%H%M`.date  -a -f -q /var/log/user/$USER-$UID-`date +%Y%m%d%H%M`.log
+
+     Options:
+
+     -a      Append the output to file or typescript, retaining the prior con-
+             tents.
+
+     -c COMMAND
+             Run the COMMAND rather than an interactive shell.  This makes it
+             easy for a script to capture the output of a program that behaves
+             differently when its stdout is not a tty.
+
+     -f      Flush output after each write. This is nice for telecooperation:
+             One person does ‘mkfifo foo; script -f foo’ and another can
+             supervise real-time what is being done using ‘cat foo’.
+
+     -q      Be quiet.
+
+     -t      Output timing data to standard error. This data contains two
+             fields, separated by a space. The first field indicates how much
+             time elapsed since the previous output. The second field indi-
+             cates how many characters were output this time. This information
+             can be used to replay typescripts with realistic typing and out-
+             put delays.
+             
+     The script ends when the forked shell exits (a control-D to exit the
+     Bourne shell (sh(1)), and exit, logout or control-d (if ignoreeof is not
+     set) for the C-shell, csh(1)).
+
+     Certain interactive commands, such as vi(1), create garbage in the type-
+     script file.  Script works best with commands that do not manipulate the
+     screen, the results are meant to emulate a hardcopy terminal.             
+             
+             
