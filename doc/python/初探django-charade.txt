@@ -1,5 +1,5 @@
 初探django-charade
-2016/1/22
+2016/1/27
 在根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）
 
 一、准备环境
@@ -208,6 +208,23 @@ def show_about(request):
 被修饰的view将会被cache，抓包可以发现
 Cache-Control:max-age=900
 
+
+6、语法差异
+从1.8到1.9，有几个地方要注意
+1）Reversing by dotted path is deprecated
+[root@tvm001 www]# python manage.py test
+Creating test database for alias 'default'...
+...../usr/lib/python2.7/site-packages/django/template/defaulttags.py:499: RemovedInDjango110Warning: Reversing by dotted path is deprecated (django.contrib.auth.views.login).
+  url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+
++.. deprecated:: 1.8
++
++    The dotted Python path syntax is deprecated and will be removed in
++    Django 2.0:::
++
++        {% url 'path.to.some_view' v1 v2 %}
+
+全部调整为 name or namespance 的方式即可。
 
     
 四、示例
