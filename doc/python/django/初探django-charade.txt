@@ -1,5 +1,5 @@
 初探django-charade
-2016/1/27
+2016/1/28
 在根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）
 
 一、准备环境
@@ -101,9 +101,15 @@ import django
 print(django.__path__)"
 ['/usr/local/lib/python2.7/site-packages/django']
 
-2）修改模版
+2）创建目录，拷贝并修改模版
 [root@tvm01 mysite]# mkdir templates/admin -p
 [root@tvm01 mysite]# cp /usr/local/lib/python2.7/site-packages/django/contrib/admin/templates/admin/base_site.html templates/admin/base_site.html
+
+3）配置 www/settings.py
+TEMPLATES = [
+    {
+        'DIRS': [os.path.join(BASE_DIR, 'templates'),],
+]
 
 
 3、支持中文
@@ -122,15 +128,13 @@ class Question(models.Model):
 4、使用用户认证系统组件
 1）配置 www/urls.py
 urlpatterns = [
-    url(r'^accounts/login/$', auth_views.login),
-    url(r'^accounts/logout/$', auth_views.logout, {'next_page': '/'}),
+    （略）
+    url(r'^accounts/login/$', auth_views.login, name='auth_login'),
+    url(r'^accounts/logout/$', auth_views.logout, {'next_page': '/'}, name='auth_logout'),
 ]
 
 2）配置 www/settings.py
-TEMPLATES = [
-    {
-        'DIRS': [os.path.join(BASE_DIR, 'templates'),],
-]
+注：前面在改动admin模版时，已经操作过这一步，请参考
 
 3）写一个模版：login.html
 [root@tvm01 www]# cat templates/registration/login.html 
@@ -153,7 +157,7 @@ TEMPLATES = [
 <div class="row text-center">
 <div class="col-md-4"></div>
 <div class="col-md-4">
-    <form class="form-horizontal" method="post" action="{% url 'django.contrib.auth.views.login' %}">
+    <form class="form-horizontal" method="post" action="{% url 'auth_login' %}">
     {% csrf_token %}
     <div class="form-group">
         <label class="control-label" for="id_username">username:</label>
@@ -226,20 +230,47 @@ Creating test database for alias 'default'...
 
 全部调整为 name or namespance 的方式即可。
 
+
+2）Namespacing URL names
+1.9的版本是这样的：
+【polls/urls.py】
+app_name = 'polls'
+【mysite/urls.py】
+urlpatterns = [
+    url(r'^polls/', include('polls.urls')),
     
+1.8的版本则是这样的：
+【polls/urls.py】
+没有定义 app_name
+【mysite/urls.py】
+url(r'^polls/', include('polls.urls', namespace="polls")),
+
+可以打开2个版本的文档，搜索 namespacing 这一段来对比：
+https://docs.djangoproject.com/en/1.9/intro/tutorial03/
+https://docs.djangoproject.com/en/1.8/intro/tutorial03/
+
+
+
+
+
+
 四、示例
 https://github.com/opera443399/charade.git
 
 
 ZYXW、参考
 1、Getting started
-模型：https://docs.djangoproject.com/en/1.8/intro/tutorial01/
-后台：https://docs.djangoproject.com/en/1.8/intro/tutorial02/
-视图：https://docs.djangoproject.com/en/1.8/intro/tutorial03/
-https://docs.djangoproject.com/en/1.8/intro
-https://docs.djangoproject.com/en/1.8/topics/
-https://docs.djangoproject.com/en/1.8/topics/pagination/
-https://docs.djangoproject.com/en/1.8/ref/templates/builtins/#ref-templates-builtins-tags
+模型：https://docs.djangoproject.com/en/1.9/intro/tutorial01/
+后台：https://docs.djangoproject.com/en/1.9/intro/tutorial02/
+视图：https://docs.djangoproject.com/en/1.9/intro/tutorial03/
+表单：https://docs.djangoproject.com/en/1.9/intro/tutorial04/
+测试：https://docs.djangoproject.com/en/1.9/intro/tutorial05/
+静态文件：https://docs.djangoproject.com/en/1.9/intro/tutorial06/
+管理后台：https://docs.djangoproject.com/en/1.9/intro/tutorial07/
+分页：https://docs.djangoproject.com/en/1.9/topics/pagination/
+模版系统标签：https://docs.djangoproject.com/en/1.9/ref/templates/builtins/#ref-templates-builtins-tags
+https://docs.djangoproject.com/en/1.9/intro
+https://docs.djangoproject.com/en/1.9/topics/
 
 2、Django 基础教程
 http://www.ziqiangxuetang.com/django/django-tutorial.html

@@ -1,0 +1,198 @@
+初探django-打包app的方法
+2016/1/28
+
+一、目标
+打包app：polls
+
+二、在原project外，创建一个目录 django-polls，复制 project mysite 下面的 polls 这个app到该目录
+[root@tvm01 test-django]# pwd
+/opt/test-django
+[root@tvm01 test-django]# mkdir django-polls
+[root@tvm01 test-django]# cp -a mysite/polls/ django-polls/
+[root@tvm01 test-django]# cd django-polls/
+
+三、创建文件 README.rst
+[root@tvm01 django-polls]# cat README.rst
+=====
+Polls
+=====
+
+Polls is a simple Django app to conduct Web-based polls. For each
+question, visitors can choose between a fixed number of answers.
+
+Detailed documentation is in the "docs" directory.
+
+
+Install & Uninstall
+-------------------
+pip install --user django-polls/dist/django-polls-0.1.tar.gz
+pip uninstall django-polls
+
+Quick start
+-----------
+
+1. Add "polls" to your INSTALLED_APPS setting like this::
+
+    INSTALLED_APPS = (
+        ...
+        'polls',
+    )
+
+2. Include the polls URLconf in your project urls.py like this::
+
+    url(r'^polls/', include('polls.urls')),
+
+3. Run `python manage.py migrate` to create the polls models.
+
+4. Start the development server and visit http://127.0.0.1:8000/admin/
+   to create a poll (you'll need the Admin app enabled).
+
+5. Visit http://127.0.0.1:8000/polls/ to participate in the poll.
+
+
+四、创建文件 LICENSE
+[root@tvm01 django-polls]# cat LICENSE 
+apps are distributed under the BSD license
+
+
+五、创建 setup.py 提供关于 build and install 这个 app 的信息
+[root@tvm01 django-polls]# cat setup.py 
+import os
+from setuptools import setup
+
+with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as readme:
+    README = readme.read()
+
+# allow setup.py to be run from any path
+os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
+
+setup(
+    name='django-polls',
+    version='0.1',
+    packages=['polls'],
+    include_package_data=True,
+    license='BSD License',  # example license
+    description='A simple Django app to conduct Web-based polls.',
+    long_description=README,
+    url='http://www.example.com/',
+    author='Your Name',
+    author_email='yourname@example.com',
+    classifiers=[
+        'Environment :: Web Environment',
+        'Framework :: Django',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: BSD License', # example license
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        # Replace these appropriately if you are stuck on Python 2.
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.2',
+        'Programming Language :: Python :: 3.3',
+        'Topic :: Internet :: WWW/HTTP',
+        'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
+    ],
+)
+
+
+六、创建文件 MANIFEST.in 来包含其他文件，否则只是包含了 Python modules and packages
+[root@tvm01 django-polls]# cat MANIFEST.in 
+include LICENSE
+include README.rst
+recursive-include polls/static *
+recursive-include polls/templates *
+recursive-include docs *
+
+注：还要创建一个空的目录 docs，这里放入关于这个 app 的详细文档（可选）。
+
+
+七、构建
+[root@tvm01 django-polls]# python setup.py sdist
+running sdist
+running egg_info
+writing django_polls.egg-info/PKG-INFO
+writing top-level names to django_polls.egg-info/top_level.txt
+writing dependency_links to django_polls.egg-info/dependency_links.txt
+reading manifest file 'django_polls.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no files found matching '*' under directory 'docs'
+writing manifest file 'django_polls.egg-info/SOURCES.txt'
+running check
+creating django-polls-0.1
+creating django-polls-0.1/django_polls.egg-info
+creating django-polls-0.1/polls
+creating django-polls-0.1/polls/static
+creating django-polls-0.1/polls/static/polls
+creating django-polls-0.1/polls/static/polls/images
+creating django-polls-0.1/polls/templates
+creating django-polls-0.1/polls/templates/polls
+making hard links in django-polls-0.1...
+hard linking LICENSE -> django-polls-0.1
+hard linking MANIFEST.in -> django-polls-0.1
+hard linking README.rst -> django-polls-0.1
+hard linking setup.py -> django-polls-0.1
+hard linking django_polls.egg-info/PKG-INFO -> django-polls-0.1/django_polls.egg-info
+hard linking django_polls.egg-info/SOURCES.txt -> django-polls-0.1/django_polls.egg-info
+hard linking django_polls.egg-info/dependency_links.txt -> django-polls-0.1/django_polls.egg-info
+hard linking django_polls.egg-info/top_level.txt -> django-polls-0.1/django_polls.egg-info
+hard linking polls/__init__.py -> django-polls-0.1/polls
+hard linking polls/admin.py -> django-polls-0.1/polls
+hard linking polls/models.py -> django-polls-0.1/polls
+hard linking polls/tests.py -> django-polls-0.1/polls
+hard linking polls/urls.py -> django-polls-0.1/polls
+hard linking polls/views.py -> django-polls-0.1/polls
+hard linking polls/static/polls/style.css -> django-polls-0.1/polls/static/polls
+hard linking polls/static/polls/images/background.png -> django-polls-0.1/polls/static/polls/images
+hard linking polls/templates/polls/detail.html -> django-polls-0.1/polls/templates/polls
+hard linking polls/templates/polls/index.html -> django-polls-0.1/polls/templates/polls
+hard linking polls/templates/polls/results.html -> django-polls-0.1/polls/templates/polls
+Writing django-polls-0.1/setup.cfg
+Creating tar archive
+removing 'django-polls-0.1' (and everything under it)
+
+上面的操作，将创建一个目录和文件：
+[root@tvm01 django-polls]# ls dist/
+django-polls-0.1.tar.gz
+
+
+八、使用 app
+因为刚才我们刚才是复制了这个app的目录，原来的 mysite 这个project下还有一个polls。
+现在，我们删掉这个polls，此时 mysite 将无法正常工作。现在我们来安装 polls
+
+1、安装
+[root@tvm01 django-polls]# pip2 install --user dist/django-polls-0.1.tar.gz 
+Processing ./dist/django-polls-0.1.tar.gz
+Installing collected packages: django-polls
+  Running setup.py install for django-polls
+Successfully installed django-polls
+
+2、测试
+[root@tvm01 mysite]# python manage.py runserver 0.0.0.0:8001
+Performing system checks...
+
+System check identified no issues (0 silenced).
+January 28, 2016 - 15:15:33
+Django version 1.9.1, using settings 'mysite.settings'
+Starting development server at http://0.0.0.0:8001/
+Quit the server with CONTROL-C.
+[28/Jan/2016 15:15:50] "HEAD /polls/ HTTP/1.1" 200 0
+
+在另一个终端执行：
+[root@tvm01 ~]# curl -I http://127.0.0.1:8001/polls/
+HTTP/1.0 200 OK
+Date: Thu, 28 Jan 2016 07:15:50 GMT
+Server: WSGIServer/0.1 Python/2.7.10
+X-Frame-Options: SAMEORIGIN
+Content-Type: text/html; charset=utf-8
+
+符合预期。
+
+3、卸载
+[root@tvm01 django-polls]# pip uninstall django-polls
+
+
+ZYXW、参考
+1、Getting started
+可重用的app：https://docs.djangoproject.com/en/1.9/intro/reusable-apps/
+
+
+
