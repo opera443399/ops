@@ -1,5 +1,5 @@
 初探django-charade
-2016/1/28
+2016/2/15
 在根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）
 
 一、准备环境
@@ -108,7 +108,10 @@ print(django.__path__)"
 3）配置 www/settings.py
 TEMPLATES = [
     {
+    （略）
         'DIRS': [os.path.join(BASE_DIR, 'templates'),],
+    （略）
+    },
 ]
 
 
@@ -125,46 +128,74 @@ class Question(models.Model):
     question_text = models.CharField('问题', max_length=200)
     pub_date = models.DateTimeField('发布日期')
 
+    
 4、使用用户认证系统组件
-1）配置 www/urls.py
-urlpatterns = [
-    （略）
-    url(r'^accounts/login/$', auth_views.login, name='auth_login'),
-    url(r'^accounts/logout/$', auth_views.logout, {'next_page': '/'}, name='auth_logout'),
-]
+1）创建一个app
+[root@tvm01 www]# django-admin startapp accounts
 
 2）配置 www/settings.py
-注：前面在改动admin模版时，已经操作过这一步，请参考
+[root@tvm01 www]# vim www/settings.py
+INSTALLED_APPS = [
+    （略）
+    'accounts',
+    （略）
+]
 
-3）写一个模版：login.html
-[root@tvm01 www]# cat templates/registration/login.html 
+3）配置 www/urls.py
+[root@tvm01 www]# vim www/urls.py
+urlpatterns = [
+    （略）
+    url(r'^accounts/', include('accounts.urls')),
+    （略）
+]
+
+4）配置 accounts/urls.py
+[root@tvm01 www]# vim accounts/urls.py
+from django.conf.urls import url
+from django.contrib.auth import views as auth_views
+
+app_name = 'accounts'
+urlpatterns = [
+    #################################### accounts
+    #
+    url(r'^login/$', auth_views.login, name='login'),
+    url(r'^logout/$', auth_views.logout, {'next_page': '/'}, name='logout'),
+]
+
+5）配置模版
+[root@tvm01 www]# mkdir accounts/templates/accounts -p
+[root@tvm01 www]# cat accounts/templates/accounts/login.html    
 {% extends "charade/base.html" %}
-{% block title %}Login{% endblock %}
+{% load staticfiles %}
+{% block titles %}Login{% endblock %}
+{% block js4this %}
+    <script src="{% static 'charade/js/charade-login.js' %}"></script>
+{% endblock %}
 {% block content %}
 <div class="row text-center">
     {% if form.errors %}
-        <p>Your username and password didn't match. Please try again.</p>
+        <p class="text-danger">Your username and password didn't match. Please try again.</p>
     {% endif %}
     {% if next %}
         {% if user.is_authenticated %}
-        <p>Your account doesn't have access to this page. To proceed,
+        <p class="text-warning">Your account doesn't have access to this page. To proceed,
         please login with an account that has access.</p>
         {% else %}
-        <p>Please login to see this page.</p>
+        <p class="text-info">Please login to see this page.</p>
         {% endif %}
     {% endif %}
 </div>
 <div class="row text-center">
 <div class="col-md-4"></div>
 <div class="col-md-4">
-    <form class="form-horizontal" method="post" action="{% url 'auth_login' %}">
+    <form class="form-horizontal" method="post" action="{% url 'accounts:login' %}">
     {% csrf_token %}
     <div class="form-group">
-        <label class="control-label" for="id_username">username:</label>
+        <label class="control-label" for="id_username">username :</label>
         {{ form.username }}
     </div>
     <div class="form-group">
-        <label class="control-label" for="id_password">password:</label>
+        <label class="control-label" for="id_password">password :</label>
         {{ form.password }}
     </div>
     <div class="form-group">
@@ -177,7 +208,7 @@ urlpatterns = [
 </div>
 {% endblock %}
 
-4）使用修饰符
+6）使用修饰符
 配置 charade/views.py
 from django.contrib.auth.decorators import login_required
 
@@ -250,7 +281,16 @@ https://docs.djangoproject.com/en/1.9/intro/tutorial03/
 https://docs.djangoproject.com/en/1.8/intro/tutorial03/
 
 
+3）在 startapp 时，将创建一个 app.py，可以为该 app 设置一些全局的变量。
+例如：
+[root@tvm01 www]# cat accounts/apps.py
+from __future__ import unicode_literals
 
+from django.apps import AppConfig
+
+
+class AccountsConfig(AppConfig):
+    name = 'accounts'
 
 
 

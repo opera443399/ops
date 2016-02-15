@@ -1,3 +1,4 @@
+1、安装
 wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tgz \
 && tar zxvf Python-3.4.3.tgz \
 && cd Python-3.4.3 \
@@ -6,7 +7,18 @@ wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tgz \
 && make install
 
 
-简单的post方法
+2、针对2的版本，需要指定coding
+例如：
+# -*- coding: utf-8 -*-
+###################################
+# @ Django 1.9.1
+# @ 2016-02-15
+# @ pc
+###################################
+
+
+
+3、简单的post方法
 import requests
 
 url='http://www.psxq.gov.cn/app/inquiry/createVote.jsp'
