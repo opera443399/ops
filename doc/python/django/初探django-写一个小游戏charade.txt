@@ -295,6 +295,33 @@ class AccountsConfig(AppConfig):
     name = 'accounts'
 
 
+7、国际化
+1）在代码中
+from django.utils.translation import ugettext_lazy as _
+help_text=_('Enter the same password as above, for verification.')
+
+2）在模版中
+{% load i18n %}
+{% block titles %}{% trans 'Registration' %}{% endblock %}
+
+3）本地语言翻译文件
+django查找翻译文件的顺序：
+在 settings 中定义了 LOCALE_PATHS 优先处理
+在 INSTALLED_APPS 中定义的 app 目录下的 locale 目录
+在 django/conf/locale 目录
+
+创建翻译文件，以 app 目录下的 locale 目录为例说明：
+[root@tvm01 accounts]# mkdir locale
+创建或更新消息文件：
+[root@tvm01 accounts]# django-admin makemessages -l zh-hans
+processing locale zh-hans
+[root@tvm01 accounts]# ls locale/zh-hans/LC_MESSAGES/
+django.po
+更新上面这个文件后，编译：
+[root@tvm01 accounts]# django-admin compilemessages
+
+【注：测试后，翻译未生效，待研究】
+
 
 四、示例
 https://github.com/opera443399/charade.git
@@ -317,6 +344,7 @@ https://docs.djangoproject.com/en/1.9/topics/
 模型表单：https://docs.djangoproject.com/en/1.9/topics/forms/modelforms/
 模版系统标签：https://docs.djangoproject.com/en/1.9/ref/templates/builtins/#ref-templates-builtins-tags
 app：https://docs.djangoproject.com/en/1.9/ref/applications/
+i18n: https://docs.djangoproject.com/es/1.9/topics/i18n/translation/#localization-how-to-create-language-files
 
 2、Django 基础教程
 http://www.ziqiangxuetang.com/django/django-tutorial.html
