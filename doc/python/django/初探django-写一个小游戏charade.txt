@@ -1,5 +1,5 @@
-初探django-charade
-2016/2/15
+初探django-写一个小游戏charade
+2016/2/17
 在根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）
 
 一、准备环境
@@ -163,6 +163,8 @@ urlpatterns = [
 ]
 
 5）配置模版
+本次示例的模版是自己照着django官网auth文档中“All authentication views”这一块提到的模版写的，其实，也可以用django的form来生成模版内容，详情请参考github源码的示例
+
 [root@tvm01 www]# mkdir accounts/templates/accounts -p
 [root@tvm01 www]# cat accounts/templates/accounts/login.html    
 {% extends "charade/base.html" %}
@@ -300,6 +302,9 @@ https://github.com/opera443399/charade.git
 
 ZYXW、参考
 1、Getting started
+https://docs.djangoproject.com/en/1.9/
+https://docs.djangoproject.com/en/1.9/intro
+https://docs.djangoproject.com/en/1.9/topics/
 模型：https://docs.djangoproject.com/en/1.9/intro/tutorial01/
 后台：https://docs.djangoproject.com/en/1.9/intro/tutorial02/
 视图：https://docs.djangoproject.com/en/1.9/intro/tutorial03/
@@ -308,9 +313,10 @@ ZYXW、参考
 静态文件：https://docs.djangoproject.com/en/1.9/intro/tutorial06/
 管理后台：https://docs.djangoproject.com/en/1.9/intro/tutorial07/
 分页：https://docs.djangoproject.com/en/1.9/topics/pagination/
+认证：https://docs.djangoproject.com/en/1.9/topics/auth/default/
+模型表单：https://docs.djangoproject.com/en/1.9/topics/forms/modelforms/
 模版系统标签：https://docs.djangoproject.com/en/1.9/ref/templates/builtins/#ref-templates-builtins-tags
-https://docs.djangoproject.com/en/1.9/intro
-https://docs.djangoproject.com/en/1.9/topics/
+app：https://docs.djangoproject.com/en/1.9/ref/applications/
 
 2、Django 基础教程
 http://www.ziqiangxuetang.com/django/django-tutorial.html
