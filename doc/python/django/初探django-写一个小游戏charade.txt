@@ -1,5 +1,5 @@
 初探django-写一个小游戏charade
-2016/2/17
+2016/2/18
 在根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）
 
 一、准备环境
@@ -295,32 +295,100 @@ class AccountsConfig(AppConfig):
     name = 'accounts'
 
 
-7、国际化
+7、国际化和本地化
 1）在代码中
+a）在项目的 settings.py 中增加中间件，目的是检测 LANGUAGE_CODE（下面的示例用到了，当然，不需要获取 LANGUAGE_CODE 时，不用即可）:
+[root@tvm01 www]# vim www/settings.py
+MIDDLEWARE_CLASSES = [
+    （略）
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    （略）
+]
+b）在 apps 的 views.py 中定义
+[root@tvm01 www]# vim charade/views.py
 from django.utils.translation import ugettext_lazy as _
-help_text=_('Enter the same password as above, for verification.')
+def show_lang(request):
+    """test i18n only"""
+    msgs = _('language code: %s')
+    context = msgs % request.LANGUAGE_CODE
+    return HttpResponse(context)
+    
 
-2）在模版中
+2）在模版中使用
+模版的示例如下：
 {% load i18n %}
-{% block titles %}{% trans 'Registration' %}{% endblock %}
+{% block titles %}{% trans 'str to translate' %}{% endblock %}
+
+首先，load i18n
+其次，使用{% trans 'xxx' %} 来指定要翻译的语句
 
 3）本地语言翻译文件
 django查找翻译文件的顺序：
-在 settings 中定义了 LOCALE_PATHS 优先处理
-在 INSTALLED_APPS 中定义的 app 目录下的 locale 目录
-在 django/conf/locale 目录
+->在 settings 中定义了 LOCALE_PATHS 优先处理
+->在 INSTALLED_APPS 中定义的 app 目录下的 locale 目录
+->在 django/conf/locale 目录
 
 创建翻译文件，以 app 目录下的 locale 目录为例说明：
-[root@tvm01 accounts]# mkdir locale
-创建或更新消息文件：
-[root@tvm01 accounts]# django-admin makemessages -l zh-hans
-processing locale zh-hans
-[root@tvm01 accounts]# ls locale/zh-hans/LC_MESSAGES/
-django.po
-更新上面这个文件后，编译：
-[root@tvm01 accounts]# django-admin compilemessages
+a）建立目录
+[root@tvm01 www]# cd charade
+[root@tvm01 charade]# mkdir locale
 
-【注：测试后，翻译未生效，待研究】
+b）创建或更新消息文件
+[root@tvm01 charade]# django-admin makemessages -l zh
+processing locale zh
+c）更新这个文件的内容
+[root@tvm01 charade]# ls locale/zh/LC_MESSAGES/
+django.po
+d）编译
+[root@tvm01 charade]# django-admin compilemessages
+f）重载服务后观察页面是否符合需求。
+
+4）用户切换语言
+a）设定可选语言
+[root@tvm01 www]# vim www/settings.py
+LANGUAGES = [
+    ('en', 'English'),
+    ('zh-cn', 'zh'),
+]
+
+b）启用 django 自带的语言偏好设置的视图
+[root@tvm01 www]# vim www/urls.py
+urlpatterns = [
+    （略）
+    url(r'^i18n/', include('django.conf.urls.i18n')),
+]
+
+c）在已有的页面模版中包括以下表单来提供语言切换这个小功能
+[root@tvm01 www]# vim charade/templates/charade/ready.html
+（略）
+{% block content %}
+（略）
+    <!-- Language Start -->
+    <div class="row text-right">
+        <form action="{% url 'set_language' %}" method="post">{% csrf_token %}
+            <input name="next" type="hidden" value="{{ redirect_to }}" />
+            <select name="language">
+                {% get_current_language as LANGUAGE_CODE %}
+                {% get_available_languages as LANGUAGES %}
+                {% get_language_info_list for LANGUAGES as languages %}
+                {% for language in languages %}
+                    <option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected="selected"{% endif %}>
+                        {{ language.name_local }} ({{ language.code }})
+                    </option>
+                {% endfor %}
+            </select>
+            <input type="submit" value="Go" />
+        </form>
+    </div>
+    <!-- End of Language -->
+（略）
+{% endblock %}
+
+d）验证是否符合预期
+再次访问页面，将出现一个下拉菜单，选择语言后，单击“Go”，此时，将在session中记录语言偏好。
+
 
 
 四、示例
@@ -344,7 +412,11 @@ https://docs.djangoproject.com/en/1.9/topics/
 模型表单：https://docs.djangoproject.com/en/1.9/topics/forms/modelforms/
 模版系统标签：https://docs.djangoproject.com/en/1.9/ref/templates/builtins/#ref-templates-builtins-tags
 app：https://docs.djangoproject.com/en/1.9/ref/applications/
-i18n: https://docs.djangoproject.com/es/1.9/topics/i18n/translation/#localization-how-to-create-language-files
+i18n: https://docs.djangoproject.com/es/1.9/topics/i18n/translation/
+
 
 2、Django 基础教程
 http://www.ziqiangxuetang.com/django/django-tutorial.html
+
+3、Django 国际化实例及原理分析
+http://www.ibm.com/developerworks/cn/web/1101_jinjh_djangoi18n/
