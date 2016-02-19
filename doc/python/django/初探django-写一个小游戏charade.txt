@@ -1,5 +1,5 @@
 初探django-写一个小游戏charade
-2016/2/18
+2016/2/19
 在根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）
 
 一、准备环境
@@ -420,3 +420,6 @@ http://www.ziqiangxuetang.com/django/django-tutorial.html
 
 3、Django 国际化实例及原理分析
 http://www.ibm.com/developerworks/cn/web/1101_jinjh_djangoi18n/
+
+4、define css class in django forms
+http://stackoverflow.com/questions/401025/define-css-class-in-django-forms
