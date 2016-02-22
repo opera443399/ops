@@ -1,4 +1,4 @@
-日期：2015/11/23 - 2015/12/16 time 13:15
+日期：2015/11/23 - 2016/2/22 time 18:17
 主机：n35，a02
 目的：再探oVirt-迁移xen虚拟机的disk到ovirt中新建的vm的disk上
 操作内容：
@@ -115,12 +115,19 @@ proc                    /proc                   proc    defaults        0 0
 /dev/vda3 /
 
 2）注意事项
-[root@a02 ~]# mount -o loop /dev/vdb3 /mnt/
+[root@a02 ~]# mount -o loop /dev/vda3 /mnt/
 
 调整grub（如果是做模版，可以提前调整好grub的配置，这样下面3个步骤可以省略）
-[root@a02 ~]# mount -o loop /dev/vdb1 /mnt/boot/
+[root@a02 ~]# mount -o loop /dev/vda1 /mnt/boot/
 [root@a02 ~]# vim /mnt/boot/grub/grub.conf 
-root=/dev/vda3
+default=0
+timeout=5
+splashimage=(hd0,0)/grub/splash.xpm.gz【注意这里的路径，由于/boot是独立的分区，磁盘位置标志和路径并非(hd0)/boot/grub/xxxx，下同】
+hiddenmenu
+title CentOS (2.6.32-431.23.3.el6.x86_64)
+        root (hd0,0)【注意这里的磁盘位置标志】
+        kernel /vmlinuz-2.6.32-431.23.3.el6.x86_64 ro root=/dev/vda3 rd_NO_LUKS rd_NO_LVM LANG=en_US.UTF-8 rd_NO_MD SYSFONT=latarcyrheb-sun16 crashkernel=auto  KEYBOARDTYPE=pc KEYTABLE=us rd_NO_DM rhgb quiet【注意这里的路径，并且将root=xxx调整为根分区的路径，例如：root=/dev/vda3】
+        initrd /initramfs-2.6.32-431.23.3.el6.x86_64.img【注意这里的路径】
 [root@a02 ~]# umount /mnt/boot/
 
 （关闭xen虚拟机，挂载磁盘，同步数据，略）
