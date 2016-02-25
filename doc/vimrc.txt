@@ -1,0 +1,82 @@
+vim配置为IDE
+
+一、在github上选择一个中意的配置文件
+例如：
+https://github.com/humiaozuzu/dot-vimrc
+
+
+二、安装
+1、安装前，请先备份旧的配置文件，例如：
+~]# mkdir /tmp/bak && cd ~ && mv .vim/ .vimrc /tmp/bak/ 
+
+2、先克隆下来：
+~]# git clone git://github.com/humiaozuzu/dot-vimrc.git ~/.vim
+~]# ln -s ~/.vim/vimrc ~/.vimrc
+
+
+3、使用Vundle来管理插件
+先克隆下来：
+~]# git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
+
+
+命令行打开vim（因为插件不存在，将会提示错误，先忽略，直接进入vim界面），输入以下指令来启动插件安装的过程（自动安装）
+~]# vim
+:BundleInstall
+
+
+三、调整配置
+1、改变配色方案
+~]# vim .vimrc
+找到这一段：
+"--------                   
+" Vim UI                    
+"--------                   
+" color scheme              
+set background=dark                    
+color solarized
+
+目前，有以下几种方案可选：
+
+blackboard
+fisa
+distinguished
+monokai
+solarized
+Tomorrow
+Tomorrow-Night
+Tomorrow-Night-Blue
+Tomorrow-Night-Bright
+Tomorrow-Night-Eighties
+vividchalk     
+
+替换名称，再次打开即可看到效果，每个人的终端配置不一样，请找到适合自己的方案。
+
+2、改变Nerd-Tree的位置
+~]# vim .vimrc
+找到这一段：
+" Nerd Tree
+调整到左边：
+let NERDTreeWinPos = "left"
+
+3、改变tagbar的位置
+~]# vim .vimrc
+找到这一段：
+" Tagbar         
+调整到右边
+let g:tagbar_left=0
+
+
+
+四、快捷键
+F5：         打开/关闭 ctags，需要在系统中安装依赖【yum install ctags】
+F6：         打开/关闭 目录树 Nerd-Tree【在这个界面，按下“?”获取帮助信息，按下shift+i键，可以显示/隐藏系统文件（.xxx） 】
+F12：        打开/关闭 鼠标
+Ctrl+h：     向左移动到另一个分割窗口
+Ctrl+j：     向下移动到另一个分割窗口
+Ctrl+k：     向上移动到另一个分割窗口
+Ctrl+l：     向右移动到另一个分割窗口
+
+
+
+参考：
+https://github.com/humiaozuzu/dot-vimrc
