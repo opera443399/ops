@@ -5,17 +5,17 @@
 
 '''
 
-ç”¨æ³•: 
+ÓÃ·¨: 
     mailman.py "to" "subject" "body" "attachments"
 
-è¯´æ˜:
-[-] 1ä¸ªæ”¶ä»¶äºº:
+ËµÃ÷:
+[-] 1¸öÊÕ¼şÈË:
         ./mailman.py 'a@example.com' "test subject" "simple test content"
 
-[-] å¤šä¸ªæ”¶ä»¶äºº:
+[-] ¶à¸öÊÕ¼şÈË:
         ./mailman.py "a@example.com;b@example.com" "test again" "another simple test"
 
-[-] å¸¦é™„ä»¶:
+[-] ´ø¸½¼ş:
         ./mailman.py 'c@example.com' 'test1' 'test att' '/tmp/a.log' '/tmp/1.log'
 
 --
@@ -28,9 +28,9 @@ from email.mime.multipart import MIMEMultipart
 from email import encoders
 import smtplib, os, sys, logging, base64
 
-# å‘ä»¶äºº
-email_from_1 = {'smtp':'smtp.exmail.qq.com', 'account':'test@mailman.pcswo.com', 'password':'mailmaN2015', 'nickname':'zbx_test', 'greeting':'Dear Sir'}
-# å‘ä»¶äººï¼Œå¤‡ç”¨
+# ·¢¼şÈË
+email_from_1 = {'smtp':'smtp.exmail.qq.com', 'account':'test@xxx.com', 'password':'xxx', 'nickname':'some_test', 'greeting':'Dear Sir'}
+# ·¢¼şÈË£¬±¸ÓÃ
 email_from_2 = {'smtp':'smtp.126.com', 'account':'xxx@126.com', 'password':'xxx', 'nickname':'zbx_test_bak', 'greeting':'Dear Sir'}
 
 

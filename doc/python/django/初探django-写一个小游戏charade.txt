@@ -390,6 +390,49 @@ d）验证是否符合预期
 再次访问页面，将出现一个下拉菜单，选择语言后，单击“Go”，此时，将在session中记录语言偏好。
 
 
+8、邮件
+1）配置smtp帐号信息
+[root@tvm01 www]# vim www/settings.py
+# email
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_USE_TLS = False
+EMAIL_HOST = 'smtp.xxx.com'
+EMAIL_PORT = 25
+EMAIL_HOST_USER = 'test@xxx.com'
+EMAIL_HOST_PASSWORD = 'TestEmail'
+DEFAULT_FROM_EMAIL = 'TestEmail <test@xxx.com>'
+
+2）在 views.py 中可以这样尝试发邮件：
+from django.core.mail import EmailMultiAlternatives
+from django.conf import settings
+
+def validate_new_user(request, user):
+    tpl_email_subject = 'accounts/activation_email_subject.html'
+    tpl_email_body = 'accounts/activation_email_body.html'
+
+    website_domain = request.META['SERVER_NAME']
+
+    context_subject = {'website_domain': website_domain}
+    subject = render_to_string(tpl_email_subject, context_subject)
+    email_subject = ''.join(subject.splitlines())
+   
+       
+    context_body = {                        
+        'protocol': 'https' if request.is_secure() else 'http',
+        'website_domain': website_domain,   
+    }                                       
+    email_body = render_to_string(tpl_email_body, context_body)
+                                                                                              
+    email_from = settings.DEFAULT_FROM_EMAIL
+    email_to = [user.email]                 
+                                            
+    msg = EmailMultiAlternatives(email_subject,
+                                 email_body,
+                                 email_from,
+                                 email_to)  
+    msg.content_subtype = "html"            
+    msg.send() 
+
 
 四、示例
 https://github.com/opera443399/charade.git

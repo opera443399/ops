@@ -1,4 +1,5 @@
 vim配置为IDE
+2016/2/26
 
 一、在github上选择一个中意的配置文件
 例如：
@@ -7,7 +8,7 @@ https://github.com/humiaozuzu/dot-vimrc
 
 二、安装
 1、安装前，请先备份旧的配置文件，例如：
-~]# mkdir /tmp/bak && cd ~ && mv .vim/ .vimrc /tmp/bak/ 
+~]# mkdir -p /tmp/bakvimrc && cd ~ && mv -f .vim/ .vimrc /tmp/bakvimrc/ 
 
 2、先克隆下来：
 ~]# git clone git://github.com/humiaozuzu/dot-vimrc.git ~/.vim
@@ -22,6 +23,7 @@ https://github.com/humiaozuzu/dot-vimrc
 命令行打开vim（因为插件不存在，将会提示错误，先忽略，直接进入vim界面），输入以下指令来启动插件安装的过程（自动安装）
 ~]# vim
 :BundleInstall
+界面打开后，出现一个插件的列表，注意左下角的状态提示正在下载插件，插件名称前面是+号表示已经下载，完成后的状态是“Done”。
 
 
 三、调整配置
