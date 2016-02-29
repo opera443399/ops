@@ -1,5 +1,5 @@
 简单的git提交django代码charade的示范
-2016/1/20
+2016/2/29
 
 1、目标
 增加一个静态文件 favicon.ico
@@ -59,7 +59,12 @@ Counting objects: 22, done.
 Compressing objects: 100% (10/10), done.
 Writing objects: 100% (12/12), 1.46 KiB | 0 bytes/s, done.
 Total 12 (delta 5), reused 0 (delta 0)
-To https://github.com/opera443399/charade.git
+To https://github.com/tester01/charade.git
    1714312..822773d  master -> master
+   
+   
+4、关于提交时的编辑器问题
+如果vim使用了插件，则 git commit -a时将提示加载插件异常，解决办法：
+git config --global core.editor 'vim --noplugin'
    
    
