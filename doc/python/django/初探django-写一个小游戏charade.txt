@@ -1,5 +1,5 @@
 初探django-写一个小游戏charade
-2016/2/26
+2016/3/4
 在根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）
 
 一、准备环境
@@ -433,6 +433,27 @@ def validate_new_user(request, user):
     msg.content_subtype = "html"            
     msg.send() 
 
+    
+9、如何在 class-based views 中使用 decorator 来修饰呢？
+例如，对 upload 这个 app 做登录限制。
+如果按照之前的做法（第4节第6小结提到），则将出现如下错误：
+AttributeError: 'function' object has no attribute 'as_view'
+
+此时，有2种解决办法，具体请参考这里的介绍：
+https://docs.djangoproject.com/en/1.9/topics/class-based-views/intro/#decorating-class-based-views
+此处示例第一种，在URLconf中配置：
+[root@tvm01 www]# vim upload/urls.py
+from django.contrib.auth.decorators import login_required
+
+（略）
+urlpatterns = [
+    （略）
+    url(r'^list/$', login_required(views.PictureListView.as_view()), name='pic-list'),
+]
+
+
+
+
 
 四、示例
 https://github.com/opera443399/charade.git
@@ -456,7 +477,7 @@ https://docs.djangoproject.com/en/1.9/topics/
 模版系统标签：https://docs.djangoproject.com/en/1.9/ref/templates/builtins/#ref-templates-builtins-tags
 app：https://docs.djangoproject.com/en/1.9/ref/applications/
 i18n: https://docs.djangoproject.com/es/1.9/topics/i18n/translation/
-
+修饰符: https://docs.djangoproject.com/en/1.9/topics/class-based-views/intro/#decorating-class-based-views
 
 2、Django 基础教程
 http://www.ziqiangxuetang.com/django/django-tutorial.html
