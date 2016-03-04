@@ -1,0 +1,74 @@
+xinetd的使用方法小记
+2016/3/4
+
+1、准备工作
+yum install xinetd httpd
+[root@sz-local-vm42 html]# pwd
+/var/www/html
+[root@sz-local-vm42 html]# ls
+index.html
+[root@sz-local-vm42 html]# cat index.html 
+test me
+
+
+2、配置一个自定义的服务，交给xinetd来管理
+[root@sz-local-vm42 html]# tail -n 1 /etc/services    
+lb-feedback     3333/tcp                # haproxy lb-feedback
+
+[root@sz-local-vm42 html]# cat /etc/xinetd.d/lb-feedback 
+# default: on
+# description: lb-feedback socket server
+service lb-feedback
+{
+    disable = no
+    flags = REUSE
+    socket_type = stream
+    wait = no
+    port = 3333
+    user = root
+    server = /usr/bin/lb-feedback.sh
+    log_on_failure += USERID
+}
+
+[root@sz-local-vm42 html]# cat /usr/bin/lb-feedback.sh
+#!/bin/bash
+
+curl -s 127.0.0.1 |grep "test me" >/dev/null 2>&1
+[ $? == 0 ] && echo "up" || echo "down"
+[root@sz-local-vm42 html]# chmod +x /usr/bin/lb-feedback.sh
+
+[root@sz-local-vm42 html]# service xinetd restart
+
+
+3、测试
+[root@sz-local-vm42 html]# telnet 127.0.0.1 3333
+Trying 127.0.0.1...
+Connected to 127.0.0.1.
+Escape character is '^]'.
+up
+Connection closed by foreign host.
+
+
+4、应用
+在 haproxy 中 使用 agent-check 来探测后端的服务，确保服务除了端口之外，返回的状态是符合预期的。
+示例配置片段如下：
+[root@sz-local-vm42 html]# tail -n 6 /etc/haproxy/haproxy.cfg  
+listen  p80
+    bind    *:3389
+    mode    tcp
+    option  tcplog
+    server  app1 127.0.0.1:80 check agent-check agent-port 3333 inter 2000 rise 2 fall 3 minconn 0 maxconn 0 on-marked-down shutdown-sessions
+
+上述配置表明，haproxy会定期对后端server做健康检查，使用agent-check，建立TCP 连接到agent-port定义的端口（本例中是3333端口），来获得ASCII数据。
+
+注意：“on-marked-down shutdown-sessions”选项，将通知haproxy关闭所有标记为down的后端服务器。
+
+
+ZYXW、参考
+1、官网doc
+http://cbonte.github.io/haproxy-dconv/configuration-1.6.html
+
+2、Open Source Windows Service For Reporting Server Load Back To HAProxy (Load Balancer Feedback Agent).
+http://www.loadbalancer.org/blog/open-source-windows-service-for-reporting-server-load-back-to-haproxy-load-balancer-feedback-agent
+
+
