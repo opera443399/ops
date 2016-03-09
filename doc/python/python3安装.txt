@@ -1,4 +1,4 @@
-1、安装
+一、安装
 wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tgz \
 && tar zxvf Python-3.4.3.tgz \
 && cd Python-3.4.3 \
@@ -7,7 +7,8 @@ wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tgz \
 && make install
 
 
-2、针对2的版本，需要指定coding
+二、技巧
+1、针对2的版本，需要指定coding
 例如：
 # -*- coding: utf-8 -*-
 ###################################
@@ -16,6 +17,9 @@ wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tgz \
 # @ pc
 ###################################
 
+
+2、json
+echo '{"json":"obj"}' | python -m json.tool
 
 
 3、简单的post方法
@@ -31,3 +35,4 @@ data={
 }
 
 requests.post(url,data)
+
