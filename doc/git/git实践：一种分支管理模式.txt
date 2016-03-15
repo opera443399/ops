@@ -1,0 +1,42 @@
+git实践：一种分支管理模式
+
+http://aqnote.com/tools/git/git_practice_branch_manage
+
+Copyright © 2016 - Powered by 御道（YUDAO）
+
+分支定义
+
+master 主干分支，只能由ops提交代码；开发不能修改；
+release/A.B.C 开发指定版本分支，主要提供开发使用
+release/A.B.C-hotfix-D 指定版本的修复分支
+流转过程
+
+A.新建1.0.0分支
+
+ master> git checkout -b release/1.0.0-dev master #从master拉一个本地分支，并进入release/1.0.0-dev
+ release/1.0.0-dev> git push origin release/1.0.0-dev:release/1.0.0-dev #推送分支到服务器，共同开发
+ release/1.0.0-dev>   # 开发分支
+B.提交1.0.0测试分支
+
+release/1.0.0-dev> git commit -a -m "1.0.0-dev finish"  #结束分支开发
+release/1.0.0-dev> git push #提交1.0.0 分支到服务器
+release/1.0.0-dev> git checkout -b release/1.0.0 master # 从master拉一个release/1.0.0分支，主要是获取开发过程变动的代码
+release/1.0.0> git push origin release/1.0.0:release/1.0.0 #推送分支到服务器
+release/1.0.0> git rebase # 定义基线
+release/1.0.0> git merge --no-ff release/1.0.0-dev # 合并当前开发内容到测试分支
+release/1.0.0> git push # 提供测试分支
+release/1.0.0> # 修复bugs
+C.1.0.0第一次fix
+
+release/1.0.0> git checkout -b release/1.0.0-hotfix-1 master #拉出第一个fix分支
+release/1.0.0-hotfix-1> ＃ 重复B的动作
+X.循环到n轮测试
+
+N.发布完，合并分支
+
+relase/1.0.0-n> git checkout master # 获取主干
+master> git rebase #设置基线
+master> git merge --no-ff release/1.0.0-n # 合并分支
+master> #解决冲突
+master> git commit -m "" # 提交代码
+master> git push  
