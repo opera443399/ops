@@ -22,7 +22,24 @@ wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tgz \
 echo '{"json":"obj"}' | python -m json.tool
 
 
-3、简单的post方法
+3、简单的get方法
+~]# cat sb.py 
+#!/bin/env python
+#
+
+import requests
+
+uid = 'pp'
+url = 'https://suum.szsi.gov.cn/suum/check.do?method=checkIsAgent&userId={0}'.format(uid)
+r = requests.get(url)
+print '%s -> %s' % (uid, r.text)
+
+
+4、简单的post方法
+~]# cat sb.py 
+#!/bin/env python
+#
+
 import requests
 
 url='http://www.psxq.gov.cn/app/inquiry/createVote.jsp'
@@ -35,4 +52,3 @@ data={
 }
 
 requests.post(url,data)
-
