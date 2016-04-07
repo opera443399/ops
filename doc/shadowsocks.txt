@@ -10,8 +10,34 @@ yum install python-setuptools && easy_install pip
 pip install shadowsocks
 
 二、启动服务
-/usr/bin/python /usr/bin/ssserver -p 443 -k your_password_here -m aes-256-cfb --user nobody -d start
+示例：在本机启动服务，监听的是tcp 443端口，记得要打开对应的防火墙喔。
+~]# ssserver -p 443 -k your_password_here -m aes-256-cfb --user nobody -d start
 
+
+
+三、客户端
+1、windows
+在github上搜索下载客户端，简单配置即可使用
+
+2、linux
+示例：指定服务端的IP和端口为 1.2.3.4:443，本机代理的IP和端口是：192.168.200.1:1080
+~]# sslocal -s 1.2.3.4 -p 443 -b 192.168.200.1 -l 1080 -k "111222333" -d start
+
+帮助文档：
+~]# sslocal -h
+
+
+3、ios
+首先，假设在IP为 192.168.200.1 上启用了ss客户端，并允许局域网访问，同时提供一个url访问pac配置：
+http://192.168.200.1/proxy.pac
+
+配置文件的内容如下：
+~]# cat proxy.pac
+function FindProxyForURL(url, host) { return "SOCKS 192.168.200.1:1080"; }
+
+其次，在手机上连接wifi，配置wifi使用代理-自动，填写上面的url
+
+开始浏览网页吧。
 
 
 

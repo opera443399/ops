@@ -148,6 +148,9 @@ modifying entry "cn=Engineering,ou=Users,dc=ovirt,dc=com"
 ApacheDirectoryStudio
 http://ftp.cuhk.edu.hk/pub/packages/apache.org/directory/studio/2.0.0.v20150606-M9/ApacheDirectoryStudio-2.0.0.v20150606-M9-win32.win32.x86_64.zip
 
+测试：
+ldapsearch -h xxx  -D "domain\username" -w xxx -b 'CN=username,OU=depart,OU=somegroup,DC=domain,DC=com,DC=cn'
+
 
 ZYXW、参考
 http://docs.adaptivecomputing.com/viewpoint/hpc/Content/topics/1-setup/installSetup/settingUpOpenLDAPOnCentos6.htm
