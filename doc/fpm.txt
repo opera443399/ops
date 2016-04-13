@@ -33,9 +33,9 @@ DNS1=192.168.56.254
 [root@tvm-rpm ~]# yum install ruby rubygems ruby-devel
 
 更换gem的源：
-[root@tvm-rpm ~]# gem sources --remove http://rubygems.org/ 
 [root@tvm-rpm ~]# gem sources -a http://mirrors.aliyun.com/rubygems/
 [root@tvm-rpm ~]# gem sources -a https://ruby.taobao.org/
+[root@tvm-rpm ~]# gem sources --remove http://rubygems.org/ 
 [root@tvm-rpm ~]# gem sources -l
 *** CURRENT SOURCES ***
 

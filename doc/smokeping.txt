@@ -1,0 +1,293 @@
+制作smokeping的rpm包
+2016/4/13
+
+一、软件包安装
+1、基础包安装
+~]# yum install gcc make rpm-build rpm-devel wget -y
+
+2、假设已经安装过yum源对应的epel包，则直接执行下面的命令获取perl相关的包
+~]# yum install cpanspec rrdtool-perl perl-ExtUtils-MakeMaker -y
+
+
+二、源码编译smokeping
+1、下载源码
+~]# wget http://oss.oetiker.ch/smokeping/pub/smokeping-2.6.11.tar.gz
+~]# tar zxvf smokeping-2.6.11.tar.gz
+~]# cd smokeping-2.6.11
+
+2、安装第三方的perl依赖库
+~]# ./setup/build-perl-modules.sh /opt/thirdparty
+~]# perl -v | egrep -o "v5\.[0-9]{1,3}\.[0-9]{1,3}"
+~]# export PERL5LIB=/opt/thirdparty/lib/perl5/:/usr/lib64/perl5/5.10.0/:/usr/lib64/perl5/vendor_perl/
+
+3、编译安装：
+~]# ./configure --prefix=/opt/smokeping
+~]# mkdir /tmp/build; DESTDIR=/tmp/build gmake install
+
+
+三、准备制作安装包
+1、拷贝第三方的perl依赖库
+~]# cp -rv /opt/thirdparty /tmp/build/opt/
+
+2、创建要用到的一些目录
+~]# mkdir -p /tmp/build/etc/rc.d/init.d /tmp/build/etc/logrotate.d /tmp/build/etc/sysconfig /tmp/build/opt/smokeping/{cache,data,var}
+
+3、创建启动脚本
+~]# cat /tmp/build/etc/rc.d/init.d/smokeping
+#!/bin/sh
+#
+# smokeping
+#
+# chkconfig: 23 92 8
+# description: smokeping
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+. /etc/profile
+
+# Load init config from sysconfig if present:
+if [ -f /etc/sysconfig/smokeping ]; then
+    . /etc/sysconfig/smokeping
+fi
+
+RETVAL=0
+PROG="smokeping"
+DIR="/opt/smokeping"
+LOGFILE="$DIR/var/log/smokeping.log"
+DAEMON="$DIR/bin/smokeping"
+
+start() {
+    # If TYPE = Slave:
+    if [ "x$TYPE" = "xslave" ]||[ "x$TYPE" = "xSLAVE" ]||[ "x$TYPE" = "xSlave" ]; then
+        # If Master URL is defined:
+        if [ ! "x$MASTER_URL" = "x" ]; then
+            $DAEMON --master-url=$MASTER_URL --cache-dir=$DIR/cache/ --shared-secret=$DIR/secret.txt --logfile=$LOGFILE
+            RETVAL=$?
+        # If Master URL is not defined:
+        else
+            echo "Slave configured, but no MasterURL defined."
+            RETVAL=1
+        fi
+    # If TYPE is not Slave (or not defined), run as Master.
+    else
+        $DAEMON --logfile=$LOGFILE
+        RETVAL=$?
+    fi
+    echo "Starting $PROG:"
+    [ $RETVAL -eq 0 ] && echo 'done' || echo 'failed'
+    return $RETVAL
+}
+
+stop() {
+    echo "Stopping $PROG:"
+    CGIPID=$(ps -ef | grep "smokeping_cgi" | grep -v grep | awk '{print $2}')
+    if [ "x$CGIPID" = "x" ]; then
+        pkill -u smokeping && kill $CGIPID
+        RETVAL=$?
+    else
+        pkill -u smokeping
+        RETVAL=$?
+    fi
+    [ $RETVAL -eq 0 ] && echo 'done' || echo 'failed'
+    return $RETVAL
+}
+
+# See how we were called.
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart|reload)
+        stop
+        start
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+esac
+
+exit $RETVAL
+
+配置为可执行：
+~]# chmod a+x /tmp/build/etc/rc.d/init.d/smokeping
+
+
+4、配置文件，便于在启动脚本中定义这个服务是master还是slave模式
+~]# cat /tmp/build/etc/sysconfig/smokeping
+TYPE=master
+#TYPE=slave
+#MASTER_URL=http://smokeping.mydomain.com/smokeping.fcgi
+
+
+5、日志滚动
+~]# cat /tmp/build/etc/logrotate.d/smokeping
+/opt/smokeping/var/log/*.log {
+  daily
+  delaycompress
+  compress
+  rotate 7
+  copytruncate
+  missingok
+}
+
+6、调整 smokeping.fcgi 备用
+~]# cp -p /tmp/build/opt/smokeping/htdocs/smokeping.fcgi{.dist,}
+
+调整 smokeping_secrets 的权限：
+~]# chmod 600 /tmp/build/opt/smokeping/etc/smokeping_secrets.dist
+
+
+7、创建 RPM 预置脚本 供 用户、目录、服务等管理
+1）安装前
+~]# cat /tmp/before-install
+## user to use smokeping
+useradd apache
+exit 0
+
+
+2）安装后
+~]# cat /tmp/after-install 
+%if 0%{?el5}%{?el6}
+/sbin/chkconfig --add smokeping
+%else
+%systemd_post smokeping.service
+%endif
+# There's definitely a better way of doing this...
+chown -R apache:apache /opt/smokeping
+
+
+3）卸载前
+~]# cat /tmp/before-remove 
+%if 0%{?el5}%{?el6}
+if [ $1 = 0 ] ; then
+/sbin/service smokeping stop >/dev/null 2>&1
+/sbin/chkconfig --del smokeping
+fi
+%else
+%systemd_preun smokeping.service
+%endif
+
+
+4）卸载后
+~]# cat /tmp/after-remove 
+%if 0%{?el7}%{?fedora}
+%systemd_postun smokeping.service
+if [ $1 -ge 1 ] ; then
+# Package upgrade, not uninstall
+/usr/bin/systemctl try-restart smokeping.service >/dev/null 2>&1 || :
+fi
+%endif
+
+
+四、使用FPM来打包
+1、配置ruby环境
+
+~]# yum install ruby rubygems ruby-devel
+~]# ruby -v
+ruby 1.8.7 (2011-06-30 patchlevel 352) [x86_64-linux]
+
+2、安装fpm
+~]# gem install fpm -V
+~]# fpm --version
+1.5.0
+
+3、打包smokeping
+~]# cd /tmp/build/
+build]# fpm -s dir -t rpm -n "smokeping" -v "2.6.11" --iteration "1" --epoch "1" \
+--rpm-auto-add-directories \
+--workdir "/tmp" \
+--after-install "/tmp/after-install" \
+--before-install "/tmp/before-install" \
+--after-remove "/tmp/after-remove" \
+--before-remove "/tmp/before-remove" \
+--url "http://oss.oetiker.ch/smokeping/" \
+--description 'Smokeping is a network latency monitoring utility.' \
+--license "GNU GPL 3.0" \
+--category "Applications/Databases" \
+--provides "smokeping" \
+-a all -m "PC" --vendor "PC" \
+-d 'perl >= 5.8.8, rrdtool-perl, perl-Config-Grammar, perl-Digest-HMAC, perl-CGI, perl-FCGI, fping, perl-libwww-perl' \
+-e opt etc
+
+Created package {:path=>"smokeping-2.6.11-1.noarch.rpm"}
+
+rpm包拷贝到其他地方备用
+build]# cp -a smokeping-2.6.11-1.noarch.rpm /tmp
+
+
+4、打包 perl-Config-Grammar
+build]# cd ~
+~]# cpanspec -p PC --follow --verbose Config::Grammar
+~]# mkdir -p rpmbuild/SOURCES/
+~]# mv Config-Grammar-1.11.tar.gz rpmbuild/SOURCES/
+~]# yum install perl-Test-Simple -y
+~]# rpmbuild -bb perl-Config-Grammar.spec
+
+rpm包拷贝到其他地方备用
+~]# cp rpmbuild/RPMS/noarch/perl-Config-Grammar-1.10-1.el6.noarch.rpm /tmp
+
+
+五、测试
+1、将上述2个rpm包拷贝到测试机安装。
+[root@sz-local-vm42 ~]# yum install rrdtool-perl perl-Digest-HMAC perl-FCGI fping
+[root@sz-local-vm42 ~]# ls *.rpm
+perl-Config-Grammar-1.11-1.el6.noarch.rpm  smokeping-2.6.11-1.noarch.rpm
+[root@sz-local-vm42 ~]# yum install *.rpm
+
+2、配置web
+[root@sz-local-vm42 ~]# yum install httpd mod_fcgid -y
+
+[root@sz-local-vm42 ~]# ln -s /opt/smokeping/cache/ /opt/smokeping/htdocs/cache
+[root@sz-local-vm42 ~]# cat /etc/httpd/conf.d/smokeping.conf
+Alias /smokeping/ "/opt/smokeping/htdocs/"
+<Directory "/opt/smokeping/">
+    AllowOverride none
+    Options All
+    AddHandler cgi-script .fcgi .cgi
+    Order allow,deny
+    Allow from all
+    DirectoryIndex smokeping.fcgi
+</Directory>
+
+
+调整配置（略）
+[root@sz-local-vm42 ~]# cp -p /opt/smokeping/etc/config{.dist,}
+
+启动服务：
+[root@sz-local-vm42 ~]# service smokeping restart
+[root@sz-local-vm42 ~]# service httpd restart
+
+
+六、异常处理
+1、提示ruby的版本需要超过1.9
+升级ruby版本
+~]# gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+~]# curl -sSL https://get.rvm.io | bash -s stable --ruby --rails            
+
+重新登录一次：
+~]# ruby -v
+ruby 2.3.0p0 (2015-12-25 revision 53290) [x86_64-linux]
+
+2、提示找不到库文件 lzma.so 等
+[root@tvm-rpm ~]# yum install xz-devel
+
+3、提示 libselinux 的版本不匹配
+多半是在安装 openssl-devel 时出现的这个提示，需降级selinux的版本
+yum downgrade libselinux*
+
+4、web界面出现500错误，日志提示exec没有权限
+需要禁用selinux
+
+
+ZYXW、参考
+1、Building Smokeping Packages on CentOS 6 + RHEL 6
+https://dgunix.com/303-building-smokeping-packages-on-centos-6-rhel-6/
+
+
+
+
+
+
