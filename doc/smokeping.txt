@@ -1,5 +1,5 @@
 制作smokeping的rpm包
-2016/4/13
+2016/4/14
 
 一、软件包安装
 1、基础包安装
@@ -36,7 +36,8 @@
 ~]# cat /tmp/build/etc/rc.d/init.d/smokeping
 #!/bin/sh
 #
-# smokeping
+# smokeping init script
+# updated via PC @ 2016/4/14
 #
 # chkconfig: 23 92 8
 # description: smokeping
@@ -75,21 +76,24 @@ start() {
     fi
     echo "Starting $PROG:"
     [ $RETVAL -eq 0 ] && echo 'done' || echo 'failed'
-    return $RETVAL
 }
 
 stop() {
     echo "Stopping $PROG:"
-    CGIPID=$(ps -ef | grep "smokeping_cgi" | grep -v grep | awk '{print $2}')
-    if [ "x$CGIPID" = "x" ]; then
-        pkill -u smokeping && kill $CGIPID
-        RETVAL=$?
-    else
-        pkill -u smokeping
+    PID=$(ps -ef | grep 'smokeping \[FPing\]' | grep -v grep | awk '{print $2}')
+    if [ ! "x$PID" = "x" ]; then
+        kill $PID
         RETVAL=$?
     fi
     [ $RETVAL -eq 0 ] && echo 'done' || echo 'failed'
-    return $RETVAL
+}
+
+status() {
+    echo
+    echo "------------------* Status *---------------------"
+    echo "UID        PID  PPID  C STIME TTY          TIME CMD"
+    ps -ef | grep 'smokeping \[FPing\]' | grep -v grep
+    echo
 }
 
 # See how we were called.
@@ -100,12 +104,15 @@ case "$1" in
   stop)
         stop
         ;;
-  restart|reload)
+  restart)
         stop
         start
         ;;
+  status)
+        status
+        ;;
   *)
-        echo "Usage: $0 {start|stop|restart}"
+        echo "Usage: $0 {start|stop|restart|status}"
         exit 1
 esac
 
@@ -253,13 +260,17 @@ Alias /smokeping/ "/opt/smokeping/htdocs/"
 </Directory>
 
 
-调整配置（略）
+调整smokeping的配置（略）
 [root@sz-local-vm42 ~]# cp -p /opt/smokeping/etc/config{.dist,}
 
 启动服务：
 [root@sz-local-vm42 ~]# service smokeping restart
 [root@sz-local-vm42 ~]# service httpd restart
+[root@sz-local-vm42 ~]# setenforce 0
+[root@sz-local-vm42 ~]# service iptables stop
 
+3、结果
+符合预期。
 
 六、异常处理
 1、提示ruby的版本需要超过1.9

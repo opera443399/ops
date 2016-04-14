@@ -2,7 +2,7 @@
 ================================ mysqldump ========================================
 
 # mysqldump -h 127.0.0.1 -P 3306 -u root -p -R -E -B mysql --triggers=true > mysql.sql 
-# mysqldump -h 127.0.0.1 -u root -p redmine >redmine.sql  ��û��create db����䣩
+# mysqldump -h 127.0.0.1 -u root -p redmine >redmine.sql  （没有create db的语句）
 # mysqldump -h 127.0.0.1 -u root -p -B mysqlmtop >mysqlmtop.sql
 
 # mysqldump -h 127.0.0.1 -P 3307 -u root -p d_abc  t1 >d_abc.t1.sql
@@ -10,10 +10,18 @@
 
 # mysqldump -h 127.0.0.1 -P 3306 -u root --password=xxx -B db_name > db_name.sql
 
-��ͬ��mysql�汾��Ҫ���뵼��mysql�⣬�޸�sql��ע�͵�event��proc���Ĵ���
+不同的mysql版本，要导入导出mysql库，修改sql，注释掉event和proc表的创建
 
 
-����ַ���ΪLatin1�ģ�
+针对字符集为Latin1的：
 # mysqldump -h 127.0.0.1 -P ${s_port} -u root --password=${s_password} --hex-blob -R -E -e -q --triggers --default-character-set=latin1 ${s_db} ${s_table}
 
 
+
+简单的手工插入数据操作：
+
+1）插入数据前，先检查数据列表是否存在重复内容。
+2）插入数据时，建议这样操作：
+mysql -h xxx -u xxx -f -p xxx <sql_tmp.txt
+
+其中，参数“-f”表示强制，如果有重复数据等错误，可以跳过继续操作，而不是中断。

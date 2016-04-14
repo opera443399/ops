@@ -1,0 +1,22 @@
+华为交换机配置
+【telnet 密码更改】
+<Quidway>system-view
+[Quidway]user-interface vty 0 4
+[Quidway-ui-vty0-4]set authentication password
+
+【增加新的管理员的用户和密码】
+[Quidway]aaa
+[Quidway-aaa]local-user huawei password cipher your_pass_here
+[Quidway-aaa]local-user huawei service-type http
+[Quidway-aaa]local-user huawei privilege level 3
+
+【交换机web服务】
+启用web服务的方式：telnet到交换机，执行如下命令：
+<Quidway>dir
+找到web文件（以这个为例：s5700si-v200r003c00.001.web.7z），加载：
+<Quidway>system-view
+[Quidway]http server load s5700si-v200r003c00.001.web.7z
+[Quidway]http secure-server enable
+https://ip/
+
+更新交换机配置后，记得保存。
