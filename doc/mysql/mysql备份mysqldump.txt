@@ -10,6 +10,12 @@
 
 # mysqldump -h 127.0.0.1 -P 3306 -u root --password=xxx -B db_name > db_name.sql
 
+只导出表结构：
+# mysqldump -uzabbix -pzabbix --no-data zabbix >zabbix_db_no_data.sql
+导出时，忽略某个表：
+# mysqldump -uzabbix -pzabbix --ignore-table=zabbix.history_uint zabbix >zabbix_db-without-history_uint.sql
+
+
 不同的mysql版本，要导入导出mysql库，修改sql，注释掉event和proc表的创建
 
 

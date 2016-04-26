@@ -1,7 +1,7 @@
 #!/bin/bash
 # 
-# 2015/12/11
-# __version__='0.2.9'
+# 2016/4/26
+# __version__='0.2.10'
 # for ovirt-engine-3.6.0.3
 
 #
@@ -308,7 +308,7 @@ s_vm_name=$2
 case ${s_action} in
     list)
         vm_list
-        grep -A1 '</actions>' vms.xml |grep name |sed -nr 's/<name>(.*)<\/name>/\1/p' |sed 's/\ //g'
+        grep -E '<(name|comment|state)>' vms.xml |grep -vE '(Etc}|GMT|internal)' |sed 's/ //g' |sed -E 's/<\/(name|comment|state)>//g' |sed 's/<name>/--------\nname\t: /g' |sed 's/<//g' |sed 's/>/\t: /g'
         ;;
     start|stop)
         vm_${s_action} ${s_vm_name}
