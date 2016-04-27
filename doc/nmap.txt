@@ -1,9 +1,9 @@
 nmap用法记录
-
+2016/4/27
 
 1、扫描udp端口
 
-[root@vm_1_1 ~]# nmap -p 67 -sU 10.0.200.100-105
+~]# nmap -p 67 -sU 10.0.200.100-105
 
 Starting Nmap 5.51 ( http://nmap.org ) at 2015-11-24 09:58 CST
 Nmap scan report for 10.0.200.101
@@ -37,7 +37,7 @@ Nmap done: 6 IP addresses (4 hosts up) scanned in 0.57 seconds
 
 
 2、扫描网段，获取MAC和IP地址的对应关系
-[root@vm_1_1 ~]# nmap  -sP 10.0.205.0/24|awk  '{printf "%s ", $0}'  |sed 's/Nmap/\nNmap/g'|grep "00:50:56"  | sed -r 's/.*[^0-9]([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*([0-9|a-f|A-F]{2}:[0-9|a-f|A-F]{2}:[0-9|a-f|A-F]{2}:[0-9|a-f|A-F]{2}:[0-9|a-f|A-F]{2}:[0-9|a-f|A-F]{2}).*/\1=\2/'
+~]# nmap  -sP 10.0.205.0/24|awk  '{printf "%s ", $0}'  |sed 's/Nmap/\nNmap/g'|grep "00:50:56"  | sed -r 's/.*[^0-9]([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*([0-9|a-f|A-F]{2}:[0-9|a-f|A-F]{2}:[0-9|a-f|A-F]{2}:[0-9|a-f|A-F]{2}:[0-9|a-f|A-F]{2}:[0-9|a-f|A-F]{2}).*/\1=\2/'
 （略）
 10.0.205.214=00:50:56:9E:7C:63
 10.0.205.215=00:50:56:9E:07:7D
@@ -46,3 +46,47 @@ Nmap done: 6 IP addresses (4 hosts up) scanned in 0.57 seconds
 10.0.205.218=00:50:56:9E:4C:0C
 10.0.205.219=00:50:56:9E:48:A6
 （略）
+
+
+3、典型用法，扫描端口
+~]# nmap -sS 10.0.200.10
+
+Starting Nmap 5.51 ( http://nmap.org ) at 2016-04-26 03:53 CST
+Nmap scan report for 10.0.200.10
+Host is up (0.0053s latency).
+Not shown: 995 filtered ports
+PORT     STATE SERVICE
+80/tcp   open  http
+443/tcp  open  https
+3389/tcp open  ms-term-serv
+7103/tcp open  unknown
+8099/tcp open  unknown
+
+Nmap done: 1 IP address (1 host up) scanned in 25.41 seconds
+
+
+4、检查OS类型
+~]# nmap -O 10.0.200.10
+
+Starting Nmap 5.51 ( http://nmap.org ) at 2016-04-27 07:11 CST
+Nmap scan report for 10.0.200.10
+Host is up (0.0053s latency).
+Not shown: 995 filtered ports
+PORT     STATE SERVICE
+80/tcp   open  http
+443/tcp  open  https
+3389/tcp open  ms-term-serv
+7103/tcp open  unknown
+8099/tcp open  unknown
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Device type: general purpose|WAP
+Running (JUST GUESSING): Microsoft Windows 7|Vista|2008 (90%), Linux 2.4.X (85%)
+Aggressive OS guesses: Microsoft Windows 7 Professional (90%), Microsoft Windows Vista SP0 or SP1, Server 2008 SP1, or Windows 7 (90%), Microsoft Windows Server 2008 (88%), Microsoft Windows Vista Home Premium SP1 (87%), Microsoft Windows Server 2008 Beta 3 (86%), Tomato 1.27 (Linux 2.4.20) (85%)
+No exact OS matches for host (test conditions non-ideal).
+
+OS detection performed. Please report any incorrect results at http://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 22.43 seconds
+
+
+
+
