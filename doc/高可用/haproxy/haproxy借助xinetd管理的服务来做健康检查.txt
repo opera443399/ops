@@ -1,0 +1,89 @@
+haproxy借助xinetd管理的服务来做健康检查
+2016/4/28
+
+1、准备工作
+主机test_1(haproxy) -> 主机test_2(http)
+
+2、配置test_2，启动一个简单的web服务来做测试
+
+[root@test_2 html]# yum install httpd
+[root@test_2 html]# pwd
+/var/www/html
+[root@test_2 html]# ls
+index.html
+[root@test_2 html]# cat index.html 
+test me
+
+
+3、配置test_1，启动haproxy，xinetd（一个自定义的服务，交给xinetd来管理）
+[root@test_1 ~]# yum install haproxy xinetd
+
+脚本检查backend的服务，判断返回内容是否有效：
+[root@test_1 ~]## cat /usr/local/bin/haproxy-chk-3333.sh
+#!/bin/bash
+
+curl -s 10.200.60.42 |grep "test me" >/dev/null 2>&1
+[ $? == 0 ] && echo "up" || echo "down"
+
+[root@test_1 ~]# chmod +x /usr/local/bin/haproxy-chk-3333.sh
+
+
+将上述脚本交给xinetd来管理：
+[root@test_1 ~]# cat /etc/xinetd.d/haproxy-chk-3333
+# default: on
+# description: haproxy-chk-3333 socket server
+service haproxy-chk-3333
+{
+    disable = no
+    flags = REUSE
+    socket_type = stream
+    wait = no
+    port = 3333
+    user = root
+    server = /usr/local/bin/haproxy-chk-3333.sh
+    log_on_failure += USERID
+}
+
+注：上述xinetd的配置中，可以使用“server_args”来给server传递参数
+
+[root@test_1 ~]# tail -n 1 /etc/services    
+haproxy-chk-3333     3333/tcp                # haproxy-chk-3333
+
+[root@test_1 ~]# service xinetd restart
+
+
+4、测试
+[root@test_1 ~]# telnet 127.0.0.1 3333
+Trying 127.0.0.1...
+Connected to 127.0.0.1.
+Escape character is '^]'.
+up
+Connection closed by foreign host.
+
+
+返回值，符合预期。
+
+
+5、应用到haproxy的检测中。
+在 haproxy 中 使用 agent-check 来探测后端的服务，确保服务除了端口之外，返回的状态是符合预期的。
+示例配置片段如下：
+[root@test_1 ~]# tail -n 6 /etc/haproxy/haproxy.cfg  
+listen  p80
+    bind    *:80
+    mode    tcp
+    option  tcplog
+    server  app1 10.200.60.42:80 check agent-check addr 127.0.0.1 agent-port 3333 inter 2000 rise 2 fall 3 minconn 0 maxconn 0 on-marked-down shutdown-sessions
+
+上述配置表明，haproxy会定期对后端server做健康检查，使用agent-check，建立TCP 连接到agent-port定义的端口（本例中是3333端口），来获得ASCII数据。
+
+注意：“on-marked-down shutdown-sessions”选项，将通知haproxy关闭所有标记为down的后端服务器。
+
+
+ZYXW、参考
+1、官网doc
+http://cbonte.github.io/haproxy-dconv/configuration-1.6.html
+
+2、Open Source Windows Service For Reporting Server Load Back To HAProxy (Load Balancer Feedback Agent).
+http://www.loadbalancer.org/blog/open-source-windows-service-for-reporting-server-load-back-to-haproxy-load-balancer-feedback-agent
+
+
