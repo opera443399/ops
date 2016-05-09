@@ -1,0 +1,595 @@
+docker深入2-熟悉和找不同
+2016/5/9
+
+一、基础环境
+1、系统版本
+[Jack@n36.test ~]$ cat /etc/redhat-release 
+CentOS Linux release 7.1.1503 (Core) 
+[Jack@n36.test ~]$ uname -a                
+Linux n36.test 3.10.0-229.el7.x86_64 #1 SMP Fri Mar 6 11:36:42 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux
+
+2、安装服务
+[Jack@n36.test ~]$ rpm -ivh epel-release-7-2.noarch.rpm 
+[Jack@n36.test ~]$ cat /etc/yum.repos.d/docker.repo 
+[dockerrepo]
+name=Docker Repository
+baseurl=https://yum.dockerproject.org/repo/main/centos/$releasever/
+enabled=1
+gpgcheck=1
+gpgkey=https://yum.dockerproject.org/gpg
+
+[Jack@n36.test ~]$ yum install docker-engine -y
+调整 docker daemon 的参数：
+[root@n36.test ~]# cat /lib/systemd/system/docker.service  |grep Exec
+ExecStart=/usr/bin/docker daemon -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock
+
+[Jack@n36.test ~]$ systemctl start docker
+[Jack@n36.test ~]$ systemctl enable docker
+
+[Jack@n36.test ~]$ docker version
+Client:
+ Version:      1.11.1
+ API version:  1.23
+ Go version:   go1.5.4
+ Git commit:   5604cbe
+ Built:        Wed Apr 27 00:34:42 2016
+ OS/Arch:      linux/amd64
+
+Server:
+ Version:      1.11.1
+ API version:  1.23
+ Go version:   go1.5.4
+ Git commit:   5604cbe
+ Built:        Wed Apr 27 00:34:42 2016
+ OS/Arch:      linux/amd64
+ 
+[Jack@n36.test ~]$ useradd Jack
+[Jack@n36.test ~]$ usermod -a -G docker Jack
+
+
+二、网络 - network
+1、默认网络
+1）列出
+[Jack@n36.test ~]$ docker network ls
+NETWORK ID          NAME                DRIVER
+c51455ac8fcc        bridge              bridge              
+e4c367655b00        host                host                
+dd54c0f95cc6        none                null
+
+默认有上述3个network，如果不指定其他的network，则默认使用bridge这个（兼容旧版本的docker0），建议新建一个network来使用。
+
+2）在默认网络上创建一个container：
+[Jack@n36.test ~]$ docker run -itd --name=networktest ubuntu
+
+3）查看：
+[Jack@n36.test ~]$ docker network inspect bridge
+[
+    {
+        "Name": "bridge",
+        "Id": "c51455ac8fcc120894316a21d624922a8169b2651783c302d9cb0d168fc2cd5d",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": null,
+            "Config": [
+                {
+                    "Subnet": "172.17.0.0/16",
+                    "Gateway": "172.17.0.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Containers": {
+            "9da191d38aabe925af08ecc865262078e5270e38e299797da769f469fa5fc375": {
+                "Name": "networktest",
+                "EndpointID": "9f3e8b49a4134b1c4c52aa8f2f550597e39c26b63debbbb5010e440b2e957a4a",
+                "MacAddress": "02:42:ac:11:00:02",
+                "IPv4Address": "172.17.0.2/16",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {
+            "com.docker.network.bridge.default_bridge": "true",
+            "com.docker.network.bridge.enable_icc": "true",
+            "com.docker.network.bridge.enable_ip_masquerade": "true",
+            "com.docker.network.bridge.host_binding_ipv4": "0.0.0.0",
+            "com.docker.network.bridge.name": "docker0",
+            "com.docker.network.driver.mtu": "1500"
+        },
+        "Labels": {}
+    }
+]
+
+4）断开：
+[Jack@n36.test ~]$ docker network disconnect bridge networktest
+
+
+
+2、单个子网 - bridge network
+1）创建一个bridge network：
+[Jack@n36.test ~]$ docker network create -d bridge my-bridge-network
+
+[Jack@n36.test ~]$ docker network ls
+NETWORK ID          NAME                DRIVER
+4ee5a6583c1e        bridge              bridge              
+f8d1f395e72c        host                host                
+2636761cec6b        my-bridge-network   bridge              
+7ce7122f84ed        none                null                
+[Jack@n36.test ~]$ docker network inspect my-bridge-network
+[
+    {
+        "Name": "my-bridge-network",
+        "Id": "2636761cec6b87f9f8af14028eba6a6b16454ecacea5c499f211a088c7791d55",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": {},
+            "Config": [
+                {
+                    "Subnet": "172.18.0.0/16",
+                    "Gateway": "172.18.0.1/16"
+                }
+            ]
+        },
+        "Internal": false,
+        "Containers": {},
+        "Options": {},
+        "Labels": {}
+    }
+]
+
+2）如何使用新创建的network
+【web-01】创建container时，指定network
+[Jack@n36.test ~]$ docker run -d --net=my-bridge-network --name web-01 training/webapp python app.py                                                                           
+
+[Jack@n36.test ~]$ docker inspect --format='{{json .NetworkSettings.Networks}}'  web-01
+{"my-bridge-network":{"IPAMConfig":null,"Links":null,"Aliases":null,"NetworkID":"2636761cec6b87f9f8af14028eba6a6b16454ecacea5c499f211a088c7791d55","EndpointID":"7469d9ec794ccec1128c8c9abde392a089eb48df69ec802ba730537adbcb8277","Gateway":"172.18.0.1","IPAddress":"172.18.0.3","IPPrefixLen":16,"IPv6Gateway":"","GlobalIPv6Address":"","GlobalIPv6PrefixLen":0,"MacAddress":"02:42:ac:12:00:03"}}
+
+如上所示，network是"my-bridge-network"
+
+【web-02】使用默认的network，后续再调整
+[Jack@n36.test ~]$ docker run -d --name web-02 training/webapp python app.py
+
+[Jack@n36.test ~]$ docker inspect --format='{{json .NetworkSettings.Networks}}'  web-02
+{"bridge":{"IPAMConfig":null,"Links":null,"Aliases":null,"NetworkID":"4ee5a6583c1e6b243213146da53d5db4a5da211234d8c647c5a4080c72cba97c","EndpointID":"d681a12a5b3dc4827f19efdbb7b0c1928b20f690a0bd1c096639c97db67eb2b8","Gateway":"172.17.0.1","IPAddress":"172.17.0.3","IPPrefixLen":16,"IPv6Gateway":"","GlobalIPv6Address":"","GlobalIPv6PrefixLen":0,"MacAddress":"02:42:ac:11:00:03"}}
+
+如上所示，network是"bridge"
+OK，咱们先断开这个默认的network：
+[Jack@n36.test ~]$ docker network disconnect bridge web-02 
+[Jack@n36.test ~]$ docker inspect --format='{{json .NetworkSettings.Networks}}'  web-02
+{}
+再连接到新的network上：
+[Jack@n36.test ~]$ docker network connect my-bridge-network web-02
+[Jack@n36.test ~]$ docker inspect --format='{{json .NetworkSettings.Networks}}'  web-02
+{"my-bridge-network":{"IPAMConfig":{},"Links":null,"Aliases":null,"NetworkID":"2636761cec6b87f9f8af14028eba6a6b16454ecacea5c499f211a088c7791d55","EndpointID":"12d5cd4e6b755154cce8b0e68eea868104ee871550993eb4f579e4585b0825da","Gateway":"172.18.0.1","IPAddress":"172.18.0.4","IPPrefixLen":16,"IPv6Gateway":"","GlobalIPv6Address":"","GlobalIPv6PrefixLen":0,"MacAddress":"02:42:ac:12:00:04"}}
+
+
+3）测试
+先获取IP地址：
+[Jack@n36.test ~]$ docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' web-01
+172.18.0.3
+[Jack@n36.test ~]$ docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' web-02
+172.18.0.4
+
+测试网络可达：
+[Jack@n36.test ~]$ docker exec -it web-01 bash
+root@f5ffea989162:/opt/webapp# ping -c 2 172.18.0.4
+PING 172.18.0.4 (172.18.0.4) 56(84) bytes of data.
+64 bytes from 172.18.0.4: icmp_seq=1 ttl=64 time=0.097 ms
+64 bytes from 172.18.0.4: icmp_seq=2 ttl=64 time=0.056 ms
+
+--- 172.18.0.4 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 999ms
+rtt min/avg/max/mdev = 0.056/0.076/0.097/0.022 ms
+root@f5ffea989162:/opt/webapp# exit
+exit
+[Jack@n36.test ~]$ docker exec -it web-02 bash
+root@684084bdfa7b:/opt/webapp# ping -c 2 172.18.0.3
+PING 172.18.0.3 (172.18.0.3) 56(84) bytes of data.
+64 bytes from 172.18.0.3: icmp_seq=1 ttl=64 time=0.139 ms
+64 bytes from 172.18.0.3: icmp_seq=2 ttl=64 time=0.056 ms
+
+--- 172.18.0.3 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 999ms
+rtt min/avg/max/mdev = 0.056/0.097/0.139/0.042 ms
+root@684084bdfa7b:/opt/webapp# exit
+exit
+
+小结：网络互通，符合预期。
+
+
+4）创建 network 时，指定参数
+[Jack@n36.test ~]$ docker network create -d bridge --subnet 172.25.0.0/16 net_env_test
+[Jack@n36.test ~]$ docker run -d --net=net_env_test --name a1 training/webapp python app.py
+[Jack@n36.test ~]$ docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' a1
+172.25.0.2
+[Jack@n36.test ~]$ docker run -d --net=net_env_test --ip=172.25.0.22 --name a2 training/webapp python app.py
+[Jack@n36.test ~]$ docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' a2
+172.25.0.22
+
+
+
+3、多个子网 - overlay network
+先决条件：
+1）需要一个 K/V 存储， Engine 支持 Consul, Etcd, and ZooKeeper (Distributed store) 
+2）集群中的 hosts 可以访问 K/V 存储
+3）建议使用 swarm 来配置和管理 hosts
+
+（先跳转到 swarm 这一节去操作）
+【n35】
+先清理掉之前测试创建的 network，咱们从头开始创建一个 overlay 类型的 network：
+[Jack@n35.test ~]$ docker network create --driver overlay --subnet=10.50.200.0/24 net_env_overlay
+Error response from daemon: error getting pools config from store: store for address space GlobalDefault not found
+
+
+需要调整 docker daemon 的参数：--cluster-store and --cluster-advertise, 指向 K/V 存储服务。
+
+
+[root@n35.test ~]# vim /lib/systemd/system/docker.service
+参数增加：
+--cluster-store=consul://10.111.20.35:8500 --cluster-advertise=em2:2375
+
+其中：
+--cluster-store 指向 consul 服务节点，本例是：consul://10.111.20.35:8500
+--cluster-advertise 指向本机提供服务的 IP/网卡:端口，本例是：em2:2375，其中，em2 对应 10.111.20.35
+参考：https://docs.docker.com/engine/userguide/networking/get-started-overlay/
+
+
+完整的参数如下：
+[root@n35.test ~]# cat /lib/systemd/system/docker.service |grep Exec
+ExecStart=/usr/bin/docker daemon -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock --cluster-store=consul://10.111.20.35:8500 --cluster-advertise=em2:2375
+[root@n35.test ~]# systemctl daemon-reload
+[root@n35.test ~]# systemctl restart docker
+
+
+端口放行：
+firewall-cmd --zone=public --add-port=4789/udp
+firewall-cmd --zone=public --add-port=7946/tcp
+firewall-cmd --zone=public --add-port=7946/udp
+firewall-cmd --zone=public --add-port=4789/udp --permanent
+firewall-cmd --zone=public --add-port=7946/tcp --permanent
+firewall-cmd --zone=public --add-port=7946/udp --permanent
+参考：https://docs.docker.com/engine/userguide/networking/dockernetworks/
+
+【n36】操作同上
+
+OK，开始创建一个 overlay 类型的 network 吧，是不是期待已久呀：
+[Jack@n35.test ~]$ docker network create --driver overlay --subnet=10.50.200.0/24 net_env_overlay
+注：在n35上执行后，查看n36，将自动创建 net_env_overlay，这点和 bridge 类型的驱动还是有差异。
+[Jack@n36.test ~]$ docker network ls -f name=overlay
+NETWORK ID          NAME                DRIVER
+4963a5d7ff51        net_env_overlay     overlay 
+
+
+
+
+三、存储-data
+1、挂载本地目录到 container 中
+创建时，docker自动映射 container 中创建一个目录到本地路径
+[Jack@n36.test ~]$ docker run -d --name web-03 -v /webapp training/webapp python app.py
+8a8961ecb24bfc114c5cefb3e18dd1748c65e12d4bca2f1d30b9494808295034
+[Jack@n36.test ~]$ docker inspect web-03
+（略）
+        "Mounts": [
+            {
+                "Name": "7a7dae60913a52643ac102e26718ab7e35268e36721c1a2f0d9c5e04fcd1137c",
+                "Source": "/var/lib/docker/volumes/7a7dae60913a52643ac102e26718ab7e35268e36721c1a2f0d9c5e04fcd1137c/_data",
+                "Destination": "/webapp",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+（略）
+
+尝试拷贝文件到/webapp这个目录下：
+[Jack@n36.test ~]$ docker exec -it web-03 bash
+root@8a8961ecb24b:/opt/webapp# ls /webapp/
+root@8a8961ecb24b:/opt/webapp# ls /opt/webapp/
+Procfile  app.py  requirements.txt  tests.py
+root@8a8961ecb24b:/opt/webapp# cp -a /opt/webapp/* /webapp/
+
+注意：即使删除这个 container 后，期间使用到的 Source 对应的路径 并未被移除。
+
+2、挂载指定的本地目录到 container 中
+创建一个目录/src/webapp，并准备几个文件，用于挂载到 container 中使用：
+[root@n36.test ~]# ls /var/lib/docker/volumes/7a7dae60913a52643ac102e26718ab7e35268e36721c1a2f0d9c5e04fcd1137c/_data
+app.py  Procfile  requirements.txt  tests.py
+[root@n36.test ~]# mkdir -p /src/webapp
+[root@n36.test ~]# cp -a /var/lib/docker/volumes/7a7dae60913a52643ac102e26718ab7e35268e36721c1a2f0d9c5e04fcd1137c/_data/* /src/webapp/
+
+创建一个 container 并挂载：
+[Jack@n36.test ~]$ docker run -d -P --name web-04 -v /src/webapp:/opt/webapp training/webapp python app.py
+
+
+
+3、挂载共享存储的指定路径，例如：iSCSI, NFS, or FC
+需要安装插件。
+
+4、挂载数据卷 container
+创建一个 container 作为一个公共的数据卷，供其他的 container 来挂载：
+[Jack@n36.test ~]$ docker create --name web-05 -v /src/webapp:/opt/webapp training/webapp /bin/true
+创建一个 container 来挂载上边这个卷：
+[Jack@n36.test ~]$ docker run -d -P --volumes-from web-05  --name web-06 training/webapp python app.py  
+
+调整/src/webapp里边的内容，可以对应的查看到 web-06 里边的变化，符合预期。
+
+
+5、移除卷
+Docker 删除 container 时，数据卷的内容是持久保存的。有以下2种卷：
+named volumes：      /foo:/bar
+anonymous volumes：  /bar
+匿名卷需要在删除 container 时，通知 Docker Engine daemon 清理掉这样的卷，这种情况，要使用参数： --rm ，示例：
+[Jack@n36.test ~]$ docker run --rm -P --name web-07 -v /webapp -v /src/webapp:/opt/webapp training/webapp python app.py  
+ * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
+ 
+注意：--rm 并不能在 -d 模式下运行，因而，这种情况，适用于短暂运行一个 container 并不需要保留数据的场景。
+[Jack@n36.test root]$ docker inspect web-07
+（略）
+        "Mounts": [
+            {
+                "Source": "/src/webapp",
+                "Destination": "/opt/webapp",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            },
+            {
+                "Name": "2da5222cb7e93e4cd796f56331e8884006be8c8d48e02649c636ed7f59a3c420",
+                "Source": "/var/lib/docker/volumes/2da5222cb7e93e4cd796f56331e8884006be8c8d48e02649c636ed7f59a3c420/_data",
+                "Destination": "/webapp",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+（略）
+
+[root@n36.test ~]# 
+[root@n36.test ~]# ls /var/lib/docker/volumes/2da5222cb7e93e4cd796f56331e8884006be8c8d48e02649c636ed7f59a3c420/_data
+(按下 CTRL+C 退出前后)
+[root@n36.test ~]# ls /var/lib/docker/volumes/2da5222cb7e93e4cd796f56331e8884006be8c8d48e02649c636ed7f59a3c420/_data
+ls: cannot access /var/lib/docker/volumes/2da5222cb7e93e4cd796f56331e8884006be8c8d48e02649c636ed7f59a3c420/_data: No such file or directory
+[root@n36.test ~]# 
+
+
+
+
+四、Docker Machine
+（待续）
+
+五、Docker Swarm
+1、基础
+1）节点：n35，n36
+节点用途                        节点名称
+Swarm(manager0, manager1)	    n35, n36
+Swarm(node0, node1)             n35, n36
+Consul(consul0)                 n35,
+
+2）更新防火墙
+放行端口：2375, 4000, 8500
+firewall-cmd --zone=public --add-port=2375/tcp
+firewall-cmd --zone=public --add-port=4000/tcp
+firewall-cmd --zone=public --add-port=8500/tcp
+firewall-cmd --zone=public --add-port=2375/tcp --permanent
+firewall-cmd --zone=public --add-port=4000/tcp --permanent
+firewall-cmd --zone=public --add-port=8500/tcp --permanent
+
+[root@n35.test ~]# firewall-cmd --list-all
+public (default, active)
+  interfaces: em1 em2
+  sources: 
+  services: dhcpv6-client ssh
+  ports: 4000/tcp 2375/tcp 8500/tcp
+  masquerade: no
+  forward-ports: 
+  icmp-blocks: 
+  rich rules: 
+
+  
+2、配置：Swarm cluster
+1）consul
+这里演示单节点的 consul 服务（和节点 swarm-manager0 公用一个主机）
+【n35】
+[Jack@n35.test ~]$ docker run --restart=always -d -p 8500:8500 --name=consul0 progrium/consul -server -bootstrap
+
+-server: 以服务端模式运行
+-bootstrap: 本节点可以自选举为集群管理员
+管理界面：
+http://10.111.20.35:8500/
+
+
+2）Swarm manager
+【n35】
+[Jack@n35.test ~]$ docker run --restart=always -d -p 4000:4000 --name=swarm-m0 swarm manage -H :4000 --replication --advertise 10.111.20.35:4000 consul://10.111.20.35:8500
+【n36】
+[Jack@n36.test ~]$ docker run --restart=always -d -p 4000:4000 --name=swarm-m1 swarm manage -H :4000 --replication --advertise 10.111.20.36:4000 consul://10.111.20.35:8500
+
+
+3）加入 Swarm cluster
+【n35】
+[Jack@n35.test ~]$ docker run --restart=always -d --name=swarm-c0 swarm join --advertise=10.111.20.35:2375 consul://10.111.20.35:8500
+【n36】
+[Jack@n36.test ~]$ docker run --restart=always -d --name=swarm-c1 swarm join --advertise=10.111.20.36:2375 consul://10.111.20.35:8500
+
+
+4）状态
+【n35】
+[Jack@n35.test ~]$ docker -H :4000 info
+Containers: 5
+ Running: 5
+ Paused: 0
+ Stopped: 0
+Images: 9
+Server Version: swarm/1.2.1
+Role: primary
+Strategy: spread
+Filters: health, port, containerslots, dependency, affinity, constraint
+Nodes: 2
+ n35.test: 10.111.20.35:2375
+  └ ID: OPRX:E23Z:WERA:HXON:YPWW:OPOI:5VVU:5V34:IQZQ:YH3A:E6HW:GNXE
+  └ Status: Healthy
+  └ Containers: 3
+  └ Reserved CPUs: 0 / 8
+  └ Reserved Memory: 0 B / 32.78 GiB
+  └ Labels: executiondriver=, kernelversion=3.10.0-229.el7.x86_64, operatingsystem=CentOS Linux 7 (Core), storagedriver=devicemapper
+  └ Error: (none)
+  └ UpdatedAt: 2016-05-09T09:01:24Z
+  └ ServerVersion: 1.11.1
+ n36.test: 10.111.20.36:2375
+  └ ID: HKJT:YSMI:S6W5:R6NO:IKL3:3THU:ANUA:IIJ6:HBWV:Y2WM:G2GZ:CZ3C
+  └ Status: Healthy
+  └ Containers: 2
+  └ Reserved CPUs: 0 / 8
+  └ Reserved Memory: 0 B / 32.78 GiB
+  └ Labels: executiondriver=, kernelversion=3.10.0-229.el7.x86_64, operatingsystem=CentOS Linux 7 (Core), storagedriver=devicemapper
+  └ Error: (none)
+  └ UpdatedAt: 2016-05-09T09:00:58Z
+  └ ServerVersion: 1.11.1
+Plugins: 
+ Volume: 
+ Network: 
+Kernel Version: 3.10.0-229.el7.x86_64
+Operating System: linux
+Architecture: amd64
+CPUs: 16
+Total Memory: 65.55 GiB
+Name: 7faf618b42ad
+Docker Root Dir: 
+Debug mode (client): false
+Debug mode (server): false
+WARNING: No kernel memory limit support
+
+
+【n36】
+[Jack@n36.test ~]$ docker -H :4000 info
+（略）
+Role: replica
+Primary: 10.111.20.35:4000
+（略）
+
+
+5）查看应用
+[Jack@n36.test ~]$ docker -H :4000 ps
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                                                                                  NAMES
+eb4707cea5ec        progrium/consul     "/bin/start -server -"   11 minutes ago      Up 7 minutes        53/tcp, 53/udp, 8300-8302/tcp, 8400/tcp, 8301-8302/udp, 10.111.20.35:8500->8500/tcp   n35.test/consul0
+
+[Jack@n36.test ~]$ docker -H :4000 ps -a -f name=swarm
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                                    NAMES
+f63e3fc27169        swarm               "/swarm join --advert"   2 minutes ago       Up 2 minutes        2375/tcp                                 n36.test/swarm-c1
+a4325d414b2f        swarm               "/swarm join --advert"   2 minutes ago       Up 2 minutes        2375/tcp                                 n35.test/swarm-c0
+cb4a708cb54b        swarm               "/swarm manage -H :40"   2 minutes ago       Up 2 minutes        2375/tcp, 10.111.20.36:4000->4000/tcp   n36.test/swarm-m1
+7faf618b42ad        swarm               "/swarm manage -H :40"   2 minutes ago       Up 2 minutes        2375/tcp, 10.111.20.35:4000->4000/tcp   n35.test/swarm-m0
+
+
+
+6）在集群中启动应用，使用 bridge network
+【n35】
+docker network create -d bridge --subnet 172.30.0.0/16 net_env_dev
+【n36】
+docker network create -d bridge --subnet 172.30.0.0/16 net_env_dev
+
+[Jack@n36.test ~]$ for i in $(seq 1 6); do docker -H :4000 run -d --net=net_env_dev --name y00$i training/webapp python app.py;done
+
+[Jack@n36.test ~]$ docker -H :4000 ps -f name=x
+CONTAINER ID        IMAGE               COMMAND             CREATED              STATUS              PORTS               NAMES
+7d348749e82f        training/webapp     "python app.py"     About a minute ago   Up 59 seconds       5000/tcp            n36.test/x006
+870ab808477f        training/webapp     "python app.py"     About a minute ago   Up About a minute   5000/tcp            n36.test/x005
+11af0502f27a        training/webapp     "python app.py"     About a minute ago   Up About a minute   5000/tcp            n36.test/x003
+3bd44a575f10        training/webapp     "python app.py"     About a minute ago   Up About a minute   5000/tcp            n36.test/x001
+9cf8f07660fb        training/webapp     "python app.py"     4 minutes ago        Up 4 minutes        5000/tcp            n35.test/x004
+cc40de776659        training/webapp     "python app.py"     4 minutes ago        Up 4 minutes        5000/tcp            n35.test/x002
+[Jack@n36.test ~]$ docker -H :4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' `docker -H :4000 ps -f name=y -q`
+172.30.0.5
+172.30.0.4
+172.30.0.3
+172.30.0.2
+172.30.0.3
+172.30.0.2
+
+小结：：上述状态可以看出，2个主机的网络是单机网络，没有互联。
+
+（需要 overlay 类型的 network 驱动，跳转回去琢磨 overlay 的配置）
+
+
+7）在集群中启动应用，使用 overlay network
+[Jack@n36.test ~]$ for i in $(seq 1 6); do docker -H :4000 run -d --net=net_env_overlay --name y00$i training/webapp python app.py;done
+
+[Jack@n36.test ~]$ docker -H :4000 ps -f name=y
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+6878d3550ff1        training/webapp     "python app.py"     19 seconds ago      Up 17 seconds       5000/tcp            n35.test/y006
+f213f7b25f0b        training/webapp     "python app.py"     19 seconds ago      Up 18 seconds       5000/tcp            n36.test/y005
+38d60d2a18b4        training/webapp     "python app.py"     20 seconds ago      Up 19 seconds       5000/tcp            n35.test/y004
+7bab06d2c45c        training/webapp     "python app.py"     21 seconds ago      Up 19 seconds       5000/tcp            n36.test/y003
+55a39ae9e286        training/webapp     "python app.py"     22 seconds ago      Up 20 seconds       5000/tcp            n35.test/y002
+3a4136b237af        training/webapp     "python app.py"     23 seconds ago      Up 21 seconds       5000/tcp            n36.test/y001
+
+[Jack@n36.test ~]$ docker -H :4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' `docker -H :4000 ps -f name=y -q`
+10.50.200.7
+10.50.200.6
+10.50.200.5
+10.50.200.4
+10.50.200.3
+10.50.200.2
+
+
+测试连通性
+n36: y1,y2,y5,y6
+n35: y3,y4
+
+[Jack@n36.test ~]$ docker -H :4000 exec -it y001 bash
+root@3a4136b237af:/opt/webapp# ip a |grep glo
+    inet 10.50.200.2/24 scope global eth0
+    inet 172.18.0.2/16 scope global eth1
+
+    
+测试1： y1(10.50.200.2) ping y2(10.50.200.3)
+root@3a4136b237af:/opt/webapp# ping 10.50.200.3 -c 1
+PING 10.50.200.3 (10.50.200.3) 56(84) bytes of data.
+64 bytes from 10.50.200.3: icmp_seq=1 ttl=64 time=0.572 ms
+
+
+测试2： y1(10.50.200.2) ping y3(10.50.200.4)
+root@3a4136b237af:/opt/webapp# ping 10.50.200.4 -c 1
+PING 10.50.200.4 (10.50.200.4) 56(84) bytes of data.
+64 bytes from 10.50.200.4: icmp_seq=1 ttl=64 time=0.173 ms
+
+
+
+注：10.111.20.0/24 这个网络是物理上做的交换机大二层网络，无路由，仅交换；如果是有路由那个网段上做 overlay，则根据之前的一次测试结果，得出连通性是不可达的。
+小结：1.9 版本新引入的 overlay 驱动，让不同的 host 中的 docker 应用网络互联的功能，符合预期。
+
+
+
+
+六、疑惑
+Q1、network的管理中，创建一个bridge时，新的bridge的网段是docker自行分配的，可以自定义吗？
+A：
+It is highly recommended to use the --subnet option when creating a network. If the --subnet is not specified, the docker daemon automatically chooses and assigns a subnet for the network and it could overlap with another subnet in your infrastructure that is not managed by docker. Such overlaps can cause connectivity issues or failures when containers are connected to that network.
+
+
+
+
+
+ZYXW、参考
+1、官网文档
+安装：https://docs.docker.com/engine/installation/linux/centos/
+入门：https://docs.docker.com/engine/quickstart/
+网络：
+https://docs.docker.com/engine/userguide/containers/networkingcontainers/
+https://docs.docker.com/engine/userguide/networking/dockernetworks/
+https://docs.docker.com/engine/userguide/networking/work-with-networks/
+https://docs.docker.com/engine/userguide/networking/get-started-overlay/
+
+插件：https://docs.docker.com/engine/extend/plugins/
+卷：https://docs.docker.com/engine/userguide/containers/dockervolumes/
+consul：https://hub.docker.com/r/progrium/consul/
+swarm：https://docs.docker.com/swarm/install-manual/
+
+
