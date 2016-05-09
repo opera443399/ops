@@ -236,7 +236,9 @@ Error response from daemon: error getting pools config from store: store for add
 其中：
 --cluster-store 指向 consul 服务节点，本例是：consul://10.111.20.35:8500
 --cluster-advertise 指向本机提供服务的 IP/网卡:端口，本例是：em2:2375，其中，em2 对应 10.111.20.35
-参考：https://docs.docker.com/engine/userguide/networking/get-started-overlay/
+参考：
+https://docs.docker.com/swarm/networking/
+https://docs.docker.com/engine/userguide/networking/get-started-overlay/
 
 
 完整的参数如下：
@@ -590,6 +592,7 @@ https://docs.docker.com/engine/userguide/networking/get-started-overlay/
 插件：https://docs.docker.com/engine/extend/plugins/
 卷：https://docs.docker.com/engine/userguide/containers/dockervolumes/
 consul：https://hub.docker.com/r/progrium/consul/
-swarm：https://docs.docker.com/swarm/install-manual/
-
+swarm：
+https://docs.docker.com/swarm/install-manual/
+https://docs.docker.com/swarm/plan-for-production/
 
