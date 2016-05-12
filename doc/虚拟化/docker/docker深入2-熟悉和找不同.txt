@@ -1,5 +1,5 @@
-docker深入2-熟悉和找不同
-2016/5/9
+docker深入2-熟悉v1.11和找不同
+2016/5/12
 
 一、基础环境
 1、系统版本
@@ -236,9 +236,12 @@ Error response from daemon: error getting pools config from store: store for add
 其中：
 --cluster-store 指向 consul 服务节点，本例是：consul://10.111.20.35:8500
 --cluster-advertise 指向本机提供服务的 IP/网卡:端口，本例是：em2:2375，其中，em2 对应 10.111.20.35
+注：生产环境，建议配置 Discovery service HA 来提供服务，本例是复用了配置 swarm 时启用的一个 consul 节点。
+
 参考：
 https://docs.docker.com/swarm/networking/
 https://docs.docker.com/engine/userguide/networking/get-started-overlay/
+https://docs.docker.com/swarm/plan-for-production/
 
 
 完整的参数如下：
@@ -370,17 +373,26 @@ ls: cannot access /var/lib/docker/volumes/2da5222cb7e93e4cd796f56331e8884006be8c
 1、基础
 1）节点：n35，n36
 节点用途                        节点名称
-Swarm(manager0, manager1)	    n35, n36
-Swarm(node0, node1)             n35, n36
-Consul(consul0)                 n35,
+Swarm(manager1, manager2)	    n35, n36
+Swarm(node1, node2)             n35, n36
+Consul(node1, node2)            n35, n36
 
 2）更新防火墙
-放行端口：2375, 4000, 8500
+放行端口：
+【swarm】
 firewall-cmd --zone=public --add-port=2375/tcp
 firewall-cmd --zone=public --add-port=4000/tcp
+【consul】
+firewall-cmd --zone=public --add-port=8300-8302/tcp
+firewall-cmd --zone=public --add-port=8301-8302/udp
+firewall-cmd --zone=public --add-port=8400/tcp
 firewall-cmd --zone=public --add-port=8500/tcp
+持久：
 firewall-cmd --zone=public --add-port=2375/tcp --permanent
 firewall-cmd --zone=public --add-port=4000/tcp --permanent
+firewall-cmd --zone=public --add-port=8300-8302/tcp --permanent
+firewall-cmd --zone=public --add-port=8301-8302/udp --permanent
+firewall-cmd --zone=public --add-port=8400/tcp --permanent
 firewall-cmd --zone=public --add-port=8500/tcp --permanent
 
 [root@n35.test ~]# firewall-cmd --list-all
@@ -388,7 +400,7 @@ public (default, active)
   interfaces: em1 em2
   sources: 
   services: dhcpv6-client ssh
-  ports: 4000/tcp 2375/tcp 8500/tcp
+  ports: 4000/tcp 8301-8302/udp 4789/udp 7946/udp 7946/tcp 8500/tcp 8400/tcp 2375/tcp 8300-8302/tcp
   masquerade: no
   forward-ports: 
   icmp-blocks: 
@@ -397,28 +409,51 @@ public (default, active)
   
 2、配置：Swarm cluster
 1）consul
-这里演示单节点的 consul 服务（和节点 swarm-manager0 公用一个主机）
+这里演示2节点的 consul 服务（和节点 swarm-manager1/2 共用一个主机）
 【n35】
-[Jack@n35.test ~]$ docker run --restart=always -d -p 8500:8500 --name=consul0 progrium/consul -server -bootstrap
+[root@n35.test ~]# mkdir /data/docker -p && chown Jack:Jack /data/docker
+[Jack@n35.test ~]$ mkdir /data/docker/consul
+[Jack@n35.test ~]$ docker run -d --restart=always -v /data/docker/consul:/data \
+-p 10.111.20.35:8300:8300 \
+-p 10.111.20.35:8301:8301 \
+-p 10.111.20.35:8301:8301/udp \
+-p 10.111.20.35:8302:8302 \
+-p 10.111.20.35:8302:8302/udp \
+-p 10.111.20.35:8400:8400 \
+-p 10.111.20.35:8500:8500 \
+-p 172.17.0.1:53:53/udp \
+--name=consul-node1 progrium/consul -server -advertise 10.111.20.35 -bootstrap-expect 2
 
--server: 以服务端模式运行
--bootstrap: 本节点可以自选举为集群管理员
-管理界面：
-http://10.111.20.35:8500/
+【n36】
+[root@n36.test ~]# mkdir /data/docker -p && chown Jack:Jack /data/docker
+[Jack@n36.test ~]$ mkdir /data/docker/consul
+[Jack@n36.test ~]$ docker run -d --restart=always -v /data/docker/consul:/data \
+-p 10.111.20.36:8300:8300 \
+-p 10.111.20.36:8301:8301 \
+-p 10.111.20.36:8301:8301/udp \
+-p 10.111.20.36:8302:8302 \
+-p 10.111.20.36:8302:8302/udp \
+-p 10.111.20.36:8400:8400 \
+-p 10.111.20.36:8500:8500 \
+-p 172.17.0.1:53:53/udp \
+--name=consul-node2 progrium/consul -server -advertise 10.111.20.36 -join 10.111.20.35
+
+
+参考：https://hub.docker.com/r/progrium/consul/
 
 
 2）Swarm manager
 【n35】
-[Jack@n35.test ~]$ docker run --restart=always -d -p 4000:4000 --name=swarm-m0 swarm manage -H :4000 --replication --advertise 10.111.20.35:4000 consul://10.111.20.35:8500
+[Jack@n35.test ~]$ docker run -d --restart=always -p 4000:4000 --name=swarm-m1 swarm manage -H :4000 --replication --advertise 10.111.20.35:4000 consul://10.111.20.35:8500
 【n36】
-[Jack@n36.test ~]$ docker run --restart=always -d -p 4000:4000 --name=swarm-m1 swarm manage -H :4000 --replication --advertise 10.111.20.36:4000 consul://10.111.20.35:8500
+[Jack@n36.test ~]$ docker run -d --restart=always -p 4000:4000 --name=swarm-m2 swarm manage -H :4000 --replication --advertise 10.111.20.36:4000 consul://10.111.20.35:8500
 
 
 3）加入 Swarm cluster
 【n35】
-[Jack@n35.test ~]$ docker run --restart=always -d --name=swarm-c0 swarm join --advertise=10.111.20.35:2375 consul://10.111.20.35:8500
+[Jack@n35.test ~]$ docker run -d --restart=always --name=swarm-node1 swarm join --advertise=10.111.20.35:2375 consul://10.111.20.35:8500
 【n36】
-[Jack@n36.test ~]$ docker run --restart=always -d --name=swarm-c1 swarm join --advertise=10.111.20.36:2375 consul://10.111.20.35:8500
+[Jack@n36.test ~]$ docker run -d --restart=always --name=swarm-node2 swarm join --advertise=10.111.20.36:2375 consul://10.111.20.35:8500
 
 
 4）状态
@@ -477,21 +512,7 @@ Primary: 10.111.20.35:4000
 （略）
 
 
-5）查看应用
-[Jack@n36.test ~]$ docker -H :4000 ps
-CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                                                                                  NAMES
-eb4707cea5ec        progrium/consul     "/bin/start -server -"   11 minutes ago      Up 7 minutes        53/tcp, 53/udp, 8300-8302/tcp, 8400/tcp, 8301-8302/udp, 10.111.20.35:8500->8500/tcp   n35.test/consul0
-
-[Jack@n36.test ~]$ docker -H :4000 ps -a -f name=swarm
-CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                                    NAMES
-f63e3fc27169        swarm               "/swarm join --advert"   2 minutes ago       Up 2 minutes        2375/tcp                                 n36.test/swarm-c1
-a4325d414b2f        swarm               "/swarm join --advert"   2 minutes ago       Up 2 minutes        2375/tcp                                 n35.test/swarm-c0
-cb4a708cb54b        swarm               "/swarm manage -H :40"   2 minutes ago       Up 2 minutes        2375/tcp, 10.111.20.36:4000->4000/tcp   n36.test/swarm-m1
-7faf618b42ad        swarm               "/swarm manage -H :40"   2 minutes ago       Up 2 minutes        2375/tcp, 10.111.20.35:4000->4000/tcp   n35.test/swarm-m0
-
-
-
-6）在集群中启动应用，使用 bridge network
+5）在集群中启动应用，使用 bridge network
 【n35】
 docker network create -d bridge --subnet 172.30.0.0/16 net_env_dev
 【n36】
@@ -520,7 +541,7 @@ cc40de776659        training/webapp     "python app.py"     4 minutes ago       
 （需要 overlay 类型的 network 驱动，跳转回去琢磨 overlay 的配置）
 
 
-7）在集群中启动应用，使用 overlay network
+6）在集群中启动应用，使用 overlay network
 [Jack@n36.test ~]$ for i in $(seq 1 6); do docker -H :4000 run -d --net=net_env_overlay --name y00$i training/webapp python app.py;done
 
 [Jack@n36.test ~]$ docker -H :4000 ps -f name=y
@@ -569,13 +590,85 @@ PING 10.50.200.4 (10.50.200.4) 56(84) bytes of data.
 
 
 
+六、快速使用一个私有的 registry 的步骤
+1、拉取 image 并运行 container
+[Jack@n35.test ~]$ /data/docker/registry
+[Jack@n35.test ~]$ docker pull registry
+[Jack@n35.test ~]$ docker run -d --restart=always -p 5000:5000 -v /data/docker/registry:/tmp/registry --name=reg4work registry
 
-六、疑惑
+2、调整 docker 启动参数，增加 --insecure-registry=my_reg_ip_or_domain:5000
+[root@n35.test ~]# vim /lib/systemd/system/docker.service
+ExecStart=/usr/bin/docker daemon -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock --cluster-store=consul://10.111.20.35:8500 --cluster-advertise=em2:2375 --insecure-registry=10.111.20.35:5000
+
+[root@n35.test ~]# systemctl daemon-reload 
+[root@n35.test ~]# systemctl restart docker
+
+3、标记并推送 image
+[Jack@n35.test ~]$ docker tag consul:latest 10.111.20.35:5000/jack/consul:latest
+[Jack@n35.test ~]$ docker images |grep consul
+10.111.20.35:5000/jack/consul     latest              09ea64205e55        10 months ago       69.4 MB
+progrium/consul                    latest              09ea64205e55        10 months ago       69.4 MB
+
+[Jack@n35.test ~]$ docker push 10.111.20.35:5000/jack/consul
+The push refers to a repository [10.111.20.35:5000/jack/consul]
+5f70bf18a086: Image successfully pushed 
+d46ded49a20c: Image successfully pushed 
+af8c1839c171: Image successfully pushed 
+18fc328d2a80: Image successfully pushed 
+655df57eba5d: Image successfully pushed 
+2472fd5d1e44: Image successfully pushed 
+33cdef66dc09: Image successfully pushed 
+f70996ac24ae: Image successfully pushed 
+e4b1687664d8: Image successfully pushed 
+70f8ad72ed07: Image successfully pushed 
+1feb7d205df9: Image successfully pushed 
+f3ab176661f3: Image successfully pushed 
+745737c319fa: Image successfully pushed 
+
+4、查看 registry 中的 images
+[Jack@n35.test ~]$ curl 10.111.20.35:5000/v1/search |python -m json.tool
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   221  100   221    0     0  18698      0 --:--:-- --:--:-- --:--:-- 20090
+{
+    "num_results": 4,
+    "query": "",
+    "results": [
+        {
+            "description": "",
+            "name": "jack/swarm"
+        },
+        {
+            "description": "",
+            "name": "jack/consul"
+        },
+        {
+            "description": "",
+            "name": "jack/webapp"
+        },
+        {
+            "description": "",
+            "name": "jack/registry"
+        }
+    ]
+}
+
+[Jack@n35.test ~]$ tree -L 2 /data/docker/registry/repositories/
+/data/docker/registry/repositories/
+└── jack
+    ├── consul
+    ├── registry
+    ├── swarm
+    └── webapp
+
+5 directories, 0 files
+
+
+
+七、疑惑
 Q1、network的管理中，创建一个bridge时，新的bridge的网段是docker自行分配的，可以自定义吗？
 A：
 It is highly recommended to use the --subnet option when creating a network. If the --subnet is not specified, the docker daemon automatically chooses and assigns a subnet for the network and it could overlap with another subnet in your infrastructure that is not managed by docker. Such overlaps can cause connectivity issues or failures when containers are connected to that network.
-
-
 
 
 
