@@ -1,5 +1,5 @@
 docker深入2-熟悉v1.11和找不同
-2016/5/12
+2016/5/18
 
 一、基础环境
 1、系统版本
@@ -19,10 +19,6 @@ gpgcheck=1
 gpgkey=https://yum.dockerproject.org/gpg
 
 [Jack@n36.test ~]$ yum install docker-engine -y
-调整 docker daemon 的参数：
-[root@n36.test ~]# cat /lib/systemd/system/docker.service  |grep Exec
-ExecStart=/usr/bin/docker daemon -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock
-
 [Jack@n36.test ~]$ systemctl start docker
 [Jack@n36.test ~]$ systemctl enable docker
 
@@ -407,6 +403,11 @@ public (default, active)
   rich rules: 
 
   
+3）调整 docker daemon 的参数，开放 tcp 2375 端口。
+[root@n36.test ~]# cat /lib/systemd/system/docker.service  |grep Exec
+ExecStart=/usr/bin/docker daemon -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock
+
+  
 2、配置：Swarm cluster
 1）consul
 这里演示2节点的 consul 服务（和节点 swarm-manager1/2 共用一个主机）
@@ -669,6 +670,11 @@ f3ab176661f3: Image successfully pushed
 Q1、network的管理中，创建一个bridge时，新的bridge的网段是docker自行分配的，可以自定义吗？
 A：
 It is highly recommended to use the --subnet option when creating a network. If the --subnet is not specified, the docker daemon automatically chooses and assigns a subnet for the network and it could overlap with another subnet in your infrastructure that is not managed by docker. Such overlaps can cause connectivity issues or failures when containers are connected to that network.
+
+
+Q2、在使用swarm的过程中，为 docker 服务增加参数 “-H tcp://0.0.0.0:2375”，则将引入 Remote API 的安全问题。
+A：参考这里：http://drops.wooyun.org/papers/15892
+
 
 
 
