@@ -529,7 +529,7 @@ CONTAINER ID        IMAGE               COMMAND             CREATED             
 3bd44a575f10        training/webapp     "python app.py"     About a minute ago   Up About a minute   5000/tcp            n36.test/x001
 9cf8f07660fb        training/webapp     "python app.py"     4 minutes ago        Up 4 minutes        5000/tcp            n35.test/x004
 cc40de776659        training/webapp     "python app.py"     4 minutes ago        Up 4 minutes        5000/tcp            n35.test/x002
-[Jack@n36.test ~]$ docker -H :4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' `docker -H :4000 ps -f name=y -q`
+[Jack@n36.test ~]$ docker -H :4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' `docker -H :4000 ps -f name=x -q`
 172.30.0.5
 172.30.0.4
 172.30.0.3
@@ -672,8 +672,24 @@ A：
 It is highly recommended to use the --subnet option when creating a network. If the --subnet is not specified, the docker daemon automatically chooses and assigns a subnet for the network and it could overlap with another subnet in your infrastructure that is not managed by docker. Such overlaps can cause connectivity issues or failures when containers are connected to that network.
 
 
-Q2、在使用swarm的过程中，为 docker 服务增加参数 “-H tcp://0.0.0.0:2375”，则将引入 Remote API 的安全问题。
-A：参考这里：http://drops.wooyun.org/papers/15892
+Q2、在使用swarm的过程中，为 docker 服务增加参数 “-H tcp://0.0.0.0:2375”，则将引入 Remote API 的安全问题，如何去设计应对？
+A：
+1）影响请参考这里：http://drops.wooyun.org/papers/15892
+
+2）处理办法可以参考：
+a）合理的配置IP/防火墙策略：
+指定明确的IP：tcp://x.x.x.x:2375  来替换 tcp://0.0.0.0:2375
+防火墙只允许指定的IP/网段来访问 tcp 2375 端口
+
+b）配置证书：请参考：https://docs.docker.com/engine/security/https/
+【CA, server, client 证书的生成示意图】
+
+                              | ca-key.pem -> ca.pem |
+                              |......................|
+                              /......................\
+| server-key.pem->server.csr |           ↓            | key.pem->client.csr |
+              ↓                      <------->                  ↓
+|       server-cert.pem      |                        |      cert.pem       |
 
 
 
@@ -694,4 +710,5 @@ consul：https://hub.docker.com/r/progrium/consul/
 swarm：
 https://docs.docker.com/swarm/install-manual/
 https://docs.docker.com/swarm/plan-for-production/
+Remote API: https://docs.docker.com/engine/reference/api/docker_remote_api/
 
