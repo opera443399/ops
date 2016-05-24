@@ -3,14 +3,14 @@ docker深入2-熟悉v1.11和找不同
 
 一、基础环境
 1、系统版本
-[Jack@n36 ~]$ cat /etc/redhat-release 
+[root@n36 ~]# cat /etc/redhat-release 
 CentOS Linux release 7.1.1503 (Core) 
-[Jack@n36 ~]$ uname -a                
+[root@n36 ~]# uname -a                
 Linux n36 3.10.0-229.el7.x86_64 #1 SMP Fri Mar 6 11:36:42 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux
 
 2、安装服务
-[Jack@n36 ~]$ rpm -ivh epel-release-7-2.noarch.rpm 
-[Jack@n36 ~]$ cat /etc/yum.repos.d/docker.repo 
+[root@n36 ~]# rpm -ivh epel-release-7-2.noarch.rpm 
+[root@n36 ~]# cat /etc/yum.repos.d/docker.repo 
 [dockerrepo]
 name=Docker Repository
 baseurl=https://yum.dockerproject.org/repo/main/centos/$releasever/
@@ -18,11 +18,11 @@ enabled=1
 gpgcheck=1
 gpgkey=https://yum.dockerproject.org/gpg
 
-[Jack@n36 ~]$ yum install docker-engine -y
-[Jack@n36 ~]$ systemctl start docker
-[Jack@n36 ~]$ systemctl enable docker
+[root@n36 ~]# yum install docker-engine -y
+[root@n36 ~]# systemctl start docker
+[root@n36 ~]# systemctl enable docker
 
-[Jack@n36 ~]$ docker version
+[root@n36 ~]# docker version
 Client:
  Version:      1.11.1
  API version:  1.23
@@ -39,8 +39,9 @@ Server:
  Built:        Wed Apr 27 00:34:42 2016
  OS/Arch:      linux/amd64
  
-[Jack@n36 ~]$ useradd Jack
-[Jack@n36 ~]$ usermod -a -G docker Jack
+[root@n36 ~]# useradd Jack
+[root@n36 ~]# usermod -a -G docker Jack
+[root@n36 ~]# su Jack
 
 
 二、网络 - network
