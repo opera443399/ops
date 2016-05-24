@@ -2,11 +2,12 @@ docker深入2-使用registrator和consul-template自动注册和变更服务
 2016/5/24
 
 一、示例
+测试环境基于文档：docker深入2-熟悉和找不同.txt
 
     host-n35                        host-n36
 -----------------------------------------------------
-conf                    ------      conf
-consul-tempalte         ------      consul-tempalte
+                                    conf
+                                    consul-tempalte
 ----------------------------------------
 webapp(container)       ------      webapp(container) 
 ----------------------------------------
@@ -170,9 +171,11 @@ docker run -d --restart=always -v /var/run/docker.sock:/tmp/docker.sock --name r
 ]
 
 3、使用 consul-template
-安装 consul-template
+目的：在一台测试机上安装 consul-template 来从 consul 获取数据，更新本地的某个配置文件。
 从下述页面选择一个版本：
 https://releases.hashicorp.com/consul-template/
+
+注3：将 n36 充当测试机。
 
 [root@n36 ~] curl https://releases.hashicorp.com/consul-template/0.14.0/consul-template_0.14.0_linux_amd64.zip -o consul-template.zip && unzip consul-template.zip && mv ./consul-template /usr/bin/
 
@@ -190,6 +193,8 @@ server {{.Address}}:{{.Port}}{{end}}
 server 10.111.222.36:32774
 server 10.111.222.35:32768
 ^CReceived interrupt, cleaning up...
+
+生成的结果如上所示，符合预期。
 
 测试请求是否正常：
 [Jack@n36 ~]$ curl 10.111.222.36:32774
@@ -211,7 +216,28 @@ z002
 
 符合预期。
 
-保留一个疑惑：在 overlay 网络下，配置 consul 集群时，DNS 端口使用哪个 IP 来提供服务？ registrator 是否能检测到服务并注册成功呢？
+
+
+
+
+
+
+
+
+三、疑惑
+Q、在 overlay 网络下，配置 consul 集群时，DNS 端口使用哪个 IP 来提供服务？ registrator 是否能检测到服务并注册成功呢？
+A：笔者了解到以下2个方面需要注意：
+1、配置 consul 时，指定了映射 53 端口到外部的IP，这个 ip 应该如何选择需要琢磨下。
+2、配置 registrator 时，可以指定 docker 参数 --net，也可以指定 registrator 的参数 -internal，用途需要琢磨下。
+Docker Options
+--net=host	recommended	Helps Registrator get host-level IP and hostname
+
+Registrator Options
+-internal		Use exposed ports instead of published ports
+
+
+
+
 
 
 
