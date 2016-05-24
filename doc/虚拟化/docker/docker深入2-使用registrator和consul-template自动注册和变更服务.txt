@@ -1,0 +1,232 @@
+docker深入2-使用registrator和consul-template自动注册和变更服务
+2016/5/24
+
+一、示例
+
+    host-n35                        host-n36
+-----------------------------------------------------
+conf                    ------      conf
+consul-tempalte         ------      consul-tempalte
+----------------------------------------
+webapp(container)       ------      webapp(container) 
+----------------------------------------
+registrator_35          ------      registrator_36
+consul-node1            ------      consul-node2
+-----------------------------------------------------
+
+二、配置
+1、配置 consul 集群
+调整防火墙：
+firewall-cmd --zone=public --add-port=8300-8302/tcp
+firewall-cmd --zone=public --add-port=8301-8302/udp
+firewall-cmd --zone=public --add-port=8400/tcp
+firewall-cmd --zone=public --add-port=8500/tcp
+firewall-cmd --zone=public --add-port=53/tcp
+firewall-cmd --zone=public --add-port=53/udp
+
+持久：
+firewall-cmd --zone=public --add-port=2375/tcp --permanent
+firewall-cmd --zone=public --add-port=4000/tcp --permanent
+firewall-cmd --zone=public --add-port=8300-8302/tcp --permanent
+firewall-cmd --zone=public --add-port=8301-8302/udp --permanent
+firewall-cmd --zone=public --add-port=8400/tcp --permanent
+firewall-cmd --zone=public --add-port=8500/tcp --permanent
+firewall-cmd --zone=public --add-port=53/tcp --permanent
+firewall-cmd --zone=public --add-port=53/udp --permanent
+
+注1：如下配置简化了 IP 映射的细节，直接使用 0.0.0.0 来提供服务。
+注2：cunsul 的 service 要使用 dns 来提供域名解析，这样 registrator 才能顺利的注册服务到 consul 上来。
+【n35】
+docker run -d --restart=always -v /data/docker/consul:/data \
+-p 8300:8300 \
+-p 8301:8301 \
+-p 8301:8301/udp \
+-p 8302:8302 \
+-p 8302:8302/udp \
+-p 8400:8400 \
+-p 8500:8500 \
+-p 53:53 \
+-p 53:53/udp \
+--name=consul-node1 progrium/consul -server -advertise 10.111.222.35 -bootstrap-expect 2
+
+【n36】
+docker run -d --restart=always -v /data/docker/consul:/data \
+-p 8300:8300 \
+-p 8301:8301 \
+-p 8301:8301/udp \
+-p 8302:8302 \
+-p 8302:8302/udp \
+-p 8400:8400 \
+-p 8500:8500 \
+-p 53:53 \
+-p 53:53/udp \
+--name=consul-node2 progrium/consul -server -advertise 10.111.222.36 -join 10.111.222.35
+
+【查看 n35 日志】
+[Jack@n35 ~]$ docker logs -f consul-node1
+    2016/05/23 08:58:58 [INFO] serf: EventMemberJoin: 0db39e28b326 10.111.222.36
+    2016/05/23 08:58:58 [INFO] consul: adding server 0db39e28b326 (Addr: 10.111.222.36:8300) (DC: dc1)
+    2016/05/23 08:58:58 [INFO] consul: Attempting bootstrap with nodes: [10.111.222.35:8300 10.111.222.36:8300]
+    2016/05/23 08:58:58 [WARN] raft: Heartbeat timeout reached, starting election
+    2016/05/23 08:58:58 [INFO] raft: Node at 10.111.222.35:8300 [Candidate] entering Candidate state
+    2016/05/23 08:58:58 [WARN] raft: Remote peer 10.111.222.36:8300 does not have local node 10.111.222.35:8300 as a peer
+    2016/05/23 08:58:58 [INFO] raft: Election won. Tally: 2
+    2016/05/23 08:58:58 [INFO] raft: Node at 10.111.222.35:8300 [Leader] entering Leader state
+    2016/05/23 08:58:58 [INFO] consul: cluster leadership acquired
+    2016/05/23 08:58:58 [INFO] consul: New leader elected: be67d37cbf68
+    2016/05/23 08:58:58 [INFO] raft: pipelining replication to peer 10.111.222.36:8300
+    2016/05/23 08:58:58 [INFO] consul: member 'be67d37cbf68' joined, marking health alive
+    2016/05/23 08:58:58 [INFO] consul: member '0db39e28b326' joined, marking health alive
+
+    
+【查看 n36 日志】
+[Jack@n36 ~]$ docker logs -f consul-node2
+    2016/05/23 08:58:58 [INFO] consul: adding server be67d37cbf68 (Addr: 10.111.222.35:8300) (DC: dc1)
+    2016/05/23 08:58:58 [INFO] consul: New leader elected: be67d37cbf68
+
+    
+    
+2、配置 registrator 来注册 docker container 的信息到上述 consul 集群中。
+【n35】
+docker run -d --restart=always -v /var/run/docker.sock:/tmp/docker.sock --name registrator_35 gliderlabs/registrator consul://10.111.222.35:8500
+
+【n36】
+docker run -d --restart=always -v /var/run/docker.sock:/tmp/docker.sock --name registrator_36 gliderlabs/registrator consul://10.111.222.36:8500
+
+【查看 n35 日志】
+[Jack@n35 ~]$ docker logs -f registrator_35
+2016/05/23 09:05:08 Starting registrator v7 ...
+2016/05/23 09:05:08 Using consul adapter: consul://10.111.222.35:8500
+2016/05/23 09:05:08 Connecting to backend (0/0)
+2016/05/23 09:05:08 consul: current leader  10.111.222.35:8300
+2016/05/23 09:05:08 Listening for Docker events ...
+2016/05/23 09:05:08 Syncing services on 3 containers
+2016/05/23 09:05:08 ignored: 205155915c61 no published ports
+2016/05/23 09:05:08 added: be67d37cbf68 205155915c61:consul-node1:53
+2016/05/23 09:05:08 added: be67d37cbf68 205155915c61:consul-node1:8300
+2016/05/23 09:05:08 added: be67d37cbf68 205155915c61:consul-node1:53:udp
+2016/05/23 09:05:08 added: be67d37cbf68 205155915c61:consul-node1:8302
+2016/05/23 09:05:08 added: be67d37cbf68 205155915c61:consul-node1:8302:udp
+2016/05/23 09:05:08 added: be67d37cbf68 205155915c61:consul-node1:8400
+2016/05/23 09:05:08 added: be67d37cbf68 205155915c61:consul-node1:8500
+2016/05/23 09:05:08 added: be67d37cbf68 205155915c61:consul-node1:8301:udp
+2016/05/23 09:05:08 added: be67d37cbf68 205155915c61:consul-node1:8301
+2016/05/23 09:05:08 added: 312c4fdb40d0 205155915c61:reg4work:5000
+
+【查看 n36 日志】
+[Jack@n36 ~]$ docker logs -f registrator_36
+2016/05/23 09:05:23 Starting registrator v7 ...
+2016/05/23 09:05:23 Using consul adapter: consul://10.111.222.36:8500
+2016/05/23 09:05:23 Connecting to backend (0/0)
+2016/05/23 09:05:23 consul: current leader  10.111.222.35:8300
+2016/05/23 09:05:23 Listening for Docker events ...
+2016/05/23 09:05:23 Syncing services on 2 containers
+2016/05/23 09:05:23 ignored: 1f61c2d2bcf9 no published ports
+2016/05/23 09:05:23 added: 0db39e28b326 1f61c2d2bcf9:consul-node2:8302:udp
+2016/05/23 09:05:24 added: 0db39e28b326 1f61c2d2bcf9:consul-node2:8500
+2016/05/23 09:05:24 added: 0db39e28b326 1f61c2d2bcf9:consul-node2:8301
+2016/05/23 09:05:24 added: 0db39e28b326 1f61c2d2bcf9:consul-node2:53:udp
+2016/05/23 09:05:24 added: 0db39e28b326 1f61c2d2bcf9:consul-node2:8300
+2016/05/23 09:05:24 added: 0db39e28b326 1f61c2d2bcf9:consul-node2:8301:udp
+2016/05/23 09:05:24 added: 0db39e28b326 1f61c2d2bcf9:consul-node2:8302
+2016/05/23 09:05:24 added: 0db39e28b326 1f61c2d2bcf9:consul-node2:53
+2016/05/23 09:05:24 added: 0db39e28b326 1f61c2d2bcf9:consul-node2:8400
+
+
+分别在 2 个 host 上启动 1 个 container，观察是否自动被注册到 consul 中：
+[Jack@n36 ~]$ docker run -d -P --name z001 training/webapp python app.py
+66ef0c6ce19b6c33e13d772ada5504732c032046bb9cd2410ec48545111aa140
+[Jack@n35 ~]$ docker run -d -P --name z002 training/webapp python app.py 
+7fde646e0c29370ff1375f4692f4dc64c14eda490997d736cb2cc2a0712ce039
+
+再次查看日志：
+【查看 n35 日志】
+2016/05/23 09:09:11 added: 7fde646e0c29 205155915c61:z002:5000
+【查看 n36 日志】
+2016/05/23 09:08:38 added: 66ef0c6ce19b 1f61c2d2bcf9:z001:5000
+
+
+通过 API 来查看 webapp 的内容：
+[Jack@n36 ~]$ curl -s 10.111.222.35:8500/v1/catalog/service/webapp |python -mjson.tool
+[
+    {
+        "Address": "10.111.222.36",
+        "Node": "0db39e28b326",
+        "ServiceAddress": "",
+        "ServiceID": "1f61c2d2bcf9:z001:5000",
+        "ServiceName": "webapp",
+        "ServicePort": 32774,
+        "ServiceTags": null
+    },
+    {
+        "Address": "10.111.222.35",
+        "Node": "be67d37cbf68",
+        "ServiceAddress": "",
+        "ServiceID": "205155915c61:z002:5000",
+        "ServiceName": "webapp",
+        "ServicePort": 32768,
+        "ServiceTags": null
+    }
+]
+
+3、使用 consul-template
+安装 consul-template
+从下述页面选择一个版本：
+https://releases.hashicorp.com/consul-template/
+
+[root@n36 ~] curl https://releases.hashicorp.com/consul-template/0.14.0/consul-template_0.14.0_linux_amd64.zip -o consul-template.zip && unzip consul-template.zip && mv ./consul-template /usr/bin/
+
+生成一个简易的模版来测试：
+[Jack@n36 ~]$ echo -e '{{range service "webapp"}}\nserver {{.Address}}:{{.Port}}{{end}}' > /tmp/consul.ctmpl
+[Jack@n36 ~]$ cat /tmp/consul.ctmpl
+{{range service "webapp"}}
+server {{.Address}}:{{.Port}}{{end}}
+
+启动 consul-template 来看看模版生成的内容是啥：
+[Jack@n36 ~]$ consul-template -consul 10.111.222.35:8500 -template /tmp/consul.ctmpl:/tmp/consul.result -dry
+结果如下：
+> /tmp/consul.result
+
+server 10.111.222.36:32774
+server 10.111.222.35:32768
+^CReceived interrupt, cleaning up...
+
+测试请求是否正常：
+[Jack@n36 ~]$ curl 10.111.222.36:32774
+Hello world![Jack@n36 ~]$ 
+[Jack@n36 ~]$ curl 10.111.222.35:32768
+Hello world![Jack@n36 ~]$ 
+[Jack@n36 ~]$
+
+
+4、移除 webapp 后观察变化
+[Jack@n35 ~]$ docker rm -f z002
+z002
+【查看 n35 日志】
+[Jack@n35 ~]$ docker logs -f registrator_35
+2016/05/23 09:53:23 removed: 7fde646e0c29 205155915c61:z002:5000
+
+[Jack@n35 ~]$ docker logs -f consul-node1
+    2016/05/23 09:53:23 [INFO] agent: Deregistered service '205155915c61:z002:5000'
+
+符合预期。
+
+保留一个疑惑：在 overlay 网络下，配置 consul 集群时，DNS 端口使用哪个 IP 来提供服务？ registrator 是否能检测到服务并注册成功呢？
+
+
+
+
+ZYXW、参考
+1、consul
+https://hub.docker.com/r/progrium/consul/
+
+2、registrator
+http://gliderlabs.com/registrator/latest/user/run/
+
+3、consul-template
+https://github.com/hashicorp/consul-template
+https://releases.hashicorp.com/consul-template/
+
+4、其他
+https://jlordiales.me/2015/04/01/consul-template/
+http://sirile.github.io/2015/07/28/scaling-with-discovery-on-docker-swarm-with-consul-registrator-and-haproxy-with-prometheus-monitoring-and-elk-log-aggregation.html
