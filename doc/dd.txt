@@ -1,0 +1,9 @@
+记录dd的用法
+2016/5/25
+
+1、生成一个空文件
+
+dd if=/dev/zero of=/mnt/TEST/FILE bs=1M count=1000
+
+
+

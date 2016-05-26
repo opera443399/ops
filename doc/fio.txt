@@ -8,34 +8,209 @@
 2、安装
 yum -y install fio
 
-二、测试方法
+二、测试方法示例
+
 1、写 吞吐率 4M 
-fio --filename=1111 --direct=1 --ioengine=libaio --rw=write --bs=4M --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-w-4M
-2、读 吞吐率 4M 
-fio --filename=1111 --direct=1 --ioengine=libaio --rw=read --bs=4M --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-r-4M
-3、写 IOps 4k   
-fio --filename=2222 --direct=1 --ioengine=libaio --rw=randwrite --bs=4k --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-randw-4M
-4、读 IOps 4k 
-fio --filename=2222 --direct=1 --ioengine=libaio --rw=randread --bs=4k --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-randr-4M
-
-
-
-三、样例 - 测试glustefs性能（未优化）
-1、写 吞吐率 4M 
-fio --filename=1111 --direct=1 --ioengine=libaio --rw=write --bs=4M --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-w-4M
-56388KB/s
+fio --direct=1 --ioengine=libaio --filename=/mnt/TEST_IOPS/tttt --rw=write --bs=4M --size=10G --runtime=300 --iodepth=16 --name=4M.write
 
 2、读 吞吐率 4M 
-fio --filename=1111 --direct=1 --ioengine=libaio --rw=read --bs=4M --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-r-4M
-64643KB/s
+fio --direct=1 --ioengine=libaio --filename=/mnt/TEST_IOPS/tttt --rw=read --bs=4M --size=10G --runtime=300 --iodepth=16 --name=4M.read
 
-3、写 IOps 4k   
-fio --filename=2222 --direct=1 --ioengine=libaio --rw=randwrite --bs=4k --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-randw-4M
-3823
+3、写 IOps 4K
+fio --direct=1 --ioengine=libaio --filename=/mnt/TEST_IOPS/tttt --rw=randwrite --bs=4k --size=10G --runtime=300 --iodepth=16 --name=4K.randwrite
 
-4、读 IOps 4k 
-fio --filename=2222 --direct=1 --ioengine=libaio --rw=randread --bs=4k --size=50G --runtime=300 --iodepth=16 --group_reporting --name=t-randr-4M
-95
+4、读 IOps 4K
+fio --direct=1 --ioengine=libaio --filename=/mnt/TEST_IOPS/tttt --rw=randread --bs=4k --size=10G --runtime=300 --iodepth=16 --name=4K.randread
+
+5、读写 IOps 4K
+fio --direct=1 --ioengine=libaio --filename=/mnt/TEST_IOPS/tttt --rw=rw --bs=4k --size=10G --runtime=300 --iodepth=16 --name=4K.rw
+
+6、随机读写 IOps 4K
+fio --direct=1 --ioengine=libaio --filename=/mnt/TEST_IOPS/tttt --rw=randrw --bs=4k --size=10G --runtime=300 --iodepth=16 --name=4K.randrw
 
 
+三、参数说明
+只列出 man 里面介绍的部分参数来说明
+OPTIONS
+  --runtime             Runtime in seconds                                          限制运行时间
+  
+JOB PARAMETERS
+   Parameter List
+       name=str
+              May  be  used  to  override  the  job name.  On the command line, this
+              parameter has the special purpose of signalling the  start  of  a  new
+              job.
+              
+       filename=str
+              fio  normally  makes up a file name based on the job name, thread num-
+              ber, and file number. If you want to share files between threads in  a
+              job  or  several jobs, specify a filename for each of them to override
+              the default.  If the I/O engine is file-based, you can specify a  num-
+              ber  of  files  by separating the names with a ‘:’ character. ‘-’ is a
+              reserved name, meaning stdin or stdout, depending  on  the  read/write
+              direction set.
+              
+       readwrite=str, rw=str
+              Type of I/O pattern.  Accepted values are:
 
+                      read   Sequential reads.
+
+                      write  Sequential writes.
+
+                     randread
+                             Random reads.
+
+                     randwrite
+                             Random writes.
+
+                     rw, readwrite
+                             Mixed sequential reads and writes.
+
+                      randrw Mixed random reads and writes.
+
+              For mixed I/O, the default split is 50/50. For certain types of io the
+              result may still be skewed a bit, since the speed may be different. It
+              is possible to specify a number of IO’s to do  before  getting  a  new
+              offset,  this  is  done by appending a ‘:<nr> to the end of the string
+              given. For a random read, it would look like rw=randread:8 for passing
+              in an offset modifier with a value of 8. If the postfix is used with a
+              sequential IO pattern, then the value specified will be added  to  the
+              generated  offset  for  each  IO. For instance, using rw=write:4k will
+              skip 4k for every write. It turns sequential  IO  into  sequential  IO
+              with holes. See the rw_sequencer option. 
+              
+       size=int
+              Total size of I/O for this job.  fio will run until  this  many  bytes
+              have  been  transfered,  unless limited by other options (runtime, for
+              instance).  Unless nrfiles and filesize options are given, this amount
+              will  be  divided between the available files for the job. If not set,
+              fio will use the full size of the given files or devices. If  the  the
+              files  do  not  exist, size must be given. It is also possible to give
+              size as a percentage between 1 and 100. If size=20% is given, fio will
+              use 20% of the full size of the given files or devices.
+              
+       ioengine=str
+              Defines how the job issues I/O.  The following types are defined:
+
+                      sync   Basic  read(2)  or  write(2)  I/O.  fseek(2) is used to
+                             position the I/O location.
+
+                      psync  Basic pread(2) or pwrite(2) I/O.
+
+                      vsync  Basic readv(2) or writev(2) I/O. Will  emulate  queuing
+                             by coalescing adjacents IOs into a single submission.
+
+                      libaio Linux  native  asynchronous  I/O. This ioengine defines
+                             engine specific options.
+
+                     posixaio
+                             POSIX   asynchronous   I/O   using   aio_read(3)    and
+                             aio_write(3).
+
+                     solarisaio
+                             Solaris native asynchronous I/O.
+
+                     windowsaio
+                             Windows native asynchronous I/O.
+
+                      mmap   File  is  memory  mapped  with  mmap(2) and data copied
+                             using memcpy(3).
+
+                      splice splice(2) is used to transfer the data and  vmsplice(2)
+                             to transfer data from user-space to the kernel.
+
+                     syslet-rw
+                             Use  the syslet system calls to make regular read/write
+                             asynchronous.
+
+                      sg     SCSI generic sg v3 I/O. May be either synchronous using
+                             the  SG_IO  ioctl,  or if the target is an sg character
+                             device, we use read(2) and  write(2)  for  asynchronous
+                             I/O.
+
+                      null   Doesn’t  transfer  any  data, just pretends to.  Mainly
+                             used to exercise fio itself and for debugging and test-
+                             ing purposes.
+
+                      net    Transfer over the network.  The protocol to be used can
+                             be defined with the protocol parameter.   Depending  on
+                             the  protocol, filename, hostname, port, or listen must
+                             be specified.  This ioengine  defines  engine  specific
+                             options.
+                             
+                     netsplice
+                             Like  net,  but  uses  splice(2) and vmsplice(2) to map
+                             data and send/receive.  This  ioengine  defines  engine
+                             specific options.
+
+                      cpuio  Doesn’t transfer any data, but burns CPU cycles accord-
+                             ing to cpuload and cpucycles parameters.
+
+                      guasi  The GUASI I/O engine is  the  Generic  Userspace  Asyn-
+                             chronous Syscall Interface approach to asycnronous I/O.
+                             See <http://www.xmailserver.org/guasi-lib.html>.
+
+                      rdma   The RDMA I/O engine supports both RDMA memory semantics
+                             (RDMA_WRITE/RDMA_READ)     and     channel    semantics
+                             (Send/Recv) for the InfiniBand, RoCE and  iWARP  proto-
+                             cols.
+
+                     external
+                             Loads  an  external I/O engine object file.  Append the
+                             engine filename as ‘:enginepath’.
+
+                      falloc    IO engine that does regular linux  native  fallocate
+                             callt to simulate data transfer as fio ioengine
+                               DDIR_READ      does     fallocate(,mode     =    FAL-
+                             LOC_FL_KEEP_SIZE,)
+                               DIR_WRITE does fallocate(,mode = 0)
+                               DDIR_TRIM     does     fallocate(,mode     =     FAL-
+                             LOC_FL_KEEP_SIZE|FALLOC_FL_PUNCH_HOLE)
+
+                     e4defrag
+                             IO engine that does regular EXT4_IOC_MOVE_EXT ioctls to
+                             simulate  defragment  activity  request  to  DDIR_WRITE
+                             event
+
+       iodepth=int
+              Number  of  I/O  units  to  keep in flight against the file. Note that
+              increasing iodepth beyond 1  will  not  affect  synchronous  ioengines
+              (except  for  small  degress  when verify_async is in use). Even async
+              engines my impose OS restrictions causing the desired depth not to  be
+              achieved.   This may happen on Linux when using libaio and not setting
+              direct=1, since buffered IO is not async on that OS. Keep  an  eye  on
+              the  IO  depth  distribution  in  the  fio  output  to verify that the
+              achieved depth is as expected. Default: 1.
+
+       direct=bool
+              If true, use non-buffered I/O (usually O_DIRECT).  Default: false.
+
+       rwmixread=int
+              Percentage of a mixed workload that should be reads. Default: 50.
+
+       rwmixwrite=int
+              Percentage of a mixed workload that should be  writes.   If  rwmixread
+              and rwmixwrite are given and do not sum to 100%, the latter of the two
+              overrides the first. This may interfere with a given rate setting,  if
+              fio  is  asked  to limit reads or writes to a certain rate. If that is
+              the case, then the distribution may be skewed. Default: 50.
+              
+       numjobs=int
+              Number  of  clones (processes/threads performing the same workload) of
+              this job.  Default: 1.
+
+       group_reporting
+              If set, display per-group reports instead of per-job when  numjobs  is
+              specified.
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
