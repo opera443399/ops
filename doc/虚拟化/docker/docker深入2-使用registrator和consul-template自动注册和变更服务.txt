@@ -1,5 +1,5 @@
 docker深入2-使用registrator和consul-template自动注册和变更服务
-2016/5/24
+2016/6/1
 
 一、示例
 测试环境基于文档：docker深入2-熟悉和找不同.txt
@@ -186,15 +186,14 @@ https://releases.hashicorp.com/consul-template/
 server {{.Address}}:{{.Port}}{{end}}
 
 启动 consul-template 来看看模版生成的内容是啥：
-[Jack@n36 ~]$ consul-template -consul 10.111.222.35:8500 -template /tmp/consul.ctmpl:/tmp/consul.result -dry
+[Jack@n36 ~]$ consul-template -consul 10.111.222.35:8500 -template "/tmp/consul.ctmpl:/tmp/consul.result" -once
 结果如下：
-> /tmp/consul.result
+[Jack@n36 ~]$ cat /tmp/consul.result
 
 server 10.111.222.36:32774
 server 10.111.222.35:32768
-^CReceived interrupt, cleaning up...
 
-生成的结果如上所示，符合预期。
+如上所示，符合预期。
 
 测试请求是否正常：
 [Jack@n36 ~]$ curl 10.111.222.36:32774
@@ -225,8 +224,17 @@ z002
 
 
 三、疑惑
-Q、在 overlay 网络下，配置 consul 集群时，DNS 端口使用哪个 IP 来提供服务？ registrator 是否能检测到服务并注册成功呢？
-A：笔者了解到以下2个方面需要注意：
+Q1、consul 服务注意事项？
+A：
+-bootstrap-expect 3：表明需要有3个节点，才能启动集群。
+-bootstrap：单个节点使用这个标记来立即启动服务，而不是用来等待集群的创建。
+-advertise：来申明 consul 使用哪个 IP 来提供服务。
+-join：指定第一个 consul 服务的 IP 来加入集群。
+
+
+Q2、registrator 服务注意事项？
+A：在 overlay 网络下，配置 consul 集群时，DNS 端口使用哪个 IP 来提供服务？ registrator 是否能检测到服务并注册成功呢？
+笔者了解到以下2个方面需要注意：
 1、配置 consul 时，指定了映射 53 端口到外部的IP，这个 ip 应该如何选择需要琢磨下。
 2、配置 registrator 时，可以指定 docker 参数 --net，也可以指定 registrator 的参数 -internal，用途需要琢磨下。
 Docker Options
@@ -236,9 +244,83 @@ Registrator Options
 -internal		Use exposed ports instead of published ports
 
 
+Q3、consul-template 服务注意事项？
+A：
+-consul  指定 consul 服务的IP:PORT。
+-template 指定 输入模版:输出模版:命令。
+-once 表明 在命令行运行一次就退出。
+-dry  表明 将结果输出到控制台，并不写入磁盘文件，且命令也不启动。
 
 
 
+Q4、如果只有一台服务器，如何体验？
+A：以【n36】为例：
+1）启动一个 consul 服务
+[Jack@n36 ~]$ docker run -d --restart=always -v /data/docker/consul-test:/data \
+-p 8300:8300 \
+-p 8301:8301 \
+-p 8301:8301/udp \
+-p 8302:8302 \
+-p 8302:8302/udp \
+-p 8400:8400 \
+-p 8500:8500 \
+-p 53:53 \
+-p 53:53/udp \
+--name=consul-test progrium/consul -server -advertise 10.111.222.36 -bootstrap
+
+
+2）启动一个 registrator 服务
+[Jack@n36 ~]$ docker run -d --restart=always -v /var/run/docker.sock:/tmp/docker.sock --name registrator_36 gliderlabs/registrator consul://10.111.222.36:8500
+
+
+3）启动 docker 容器，registrator 将自动注册容器信息到 consul 中。
+[Jack@n36 ~]$ docker run -d -P --name z001 training/webapp python app.py
+[Jack@n36 ~]$ docker run -d -P --name z002 training/webapp python app.py
+[Jack@n36 ~]$ docker run -d -P --name z003 training/webapp python app.py
+
+
+4）查看 consul 中注册的内容
+[Jack@n36 ~]$ curl -s 10.111.222.36:8500/v1/catalog/service/webapp |python -mjson.tool
+
+
+5）查看 consul-template 生成的结果
+[Jack@n36 ~]$ consul-template -consul 10.111.222.36:8500 -template "/tmp/consul.ctmpl:/tmp/consul.result" -once
+
+
+6）应用到 haproxy 上
+[root@n36 ~]# yum install haproxy
+[root@n36 ~]# cp -a /etc/haproxy/haproxy.cfg{,.ctmpl}
+
+调整 haproxy 模版：
+[root@n36 ~]# vim /etc/haproxy/haproxy.cfg.ctmpl
+（略）
+backend app
+    balance     roundrobin
+    {{range service "webapp"}}
+    server app-{{.Port}} {{.Address}}:{{.Port}} check{{end}}
+    
+
+生成配置并重启服务：
+[root@n36 ~]# consul-template -consul 10.111.222.36:8500 -template "/etc/haproxy/haproxy.cfg.ctmpl:/etc/haproxy/haproxy.cfg:systemctl restart haproxy.service" -once
+
+验证配置：
+[root@n36 ~]# cat /etc/haproxy/haproxy.cfg
+（略）
+backend app
+    balance     roundrobin
+    
+    server app-32774 10.111.222.36:32774 check
+    server app-32775 10.111.222.36:32775 check
+    server app-32776 10.111.222.36:32776 check
+
+检查 haproxy 服务的状态
+[root@n36 ~]# systemctl status haproxy.service
+
+
+符合预期。
+注：如果 status 显示 haproxy 绑定端口失败，权限异常等问题，导致启动服务失败，则要先考虑是否启用了 selinux，很简单，按照如下操作调整设置即可验证是否受其影响。
+临时关闭：setenforce 0
+查看状态：sestatus 
 
 
 
@@ -252,7 +334,9 @@ http://gliderlabs.com/registrator/latest/user/run/
 3、consul-template
 https://github.com/hashicorp/consul-template
 https://releases.hashicorp.com/consul-template/
-
-4、其他
 https://jlordiales.me/2015/04/01/consul-template/
 http://sirile.github.io/2015/07/28/scaling-with-discovery-on-docker-swarm-with-consul-registrator-and-haproxy-with-prometheus-monitoring-and-elk-log-aggregation.html
+
+4、haproxy
+http://serverfault.com/questions/654599/weird-interaction-with-systemctl-with-haproxy-on-centos-7
+
