@@ -1,5 +1,5 @@
 docker深入2-熟悉v1.11和找不同
-2016/5/24
+2016/6/2
 
 一、基础环境
 1、系统版本
@@ -598,7 +598,7 @@ PING 10.50.200.4 (10.50.200.4) 56(84) bytes of data.
 [Jack@n35 ~]$ docker pull registry
 [Jack@n35 ~]$ docker run -d --restart=always -p 5000:5000 -v /data/docker/registry:/tmp/registry --name=reg4work registry
 
-2、调整 docker 启动参数，增加 --insecure-registry=my_reg_ip_or_domain:5000
+2、调整 docker 启动参数，增加 "--insecure-registry my_reg_ip_or_domain:5000"，否则将在 push 时出现 EOF 的报错，每一个 docker 节点都需要配置。
 [root@n35 ~]# vim /lib/systemd/system/docker.service
 ExecStart=/usr/bin/docker daemon -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock --cluster-store=consul://10.111.222.35:8500 --cluster-advertise=em2:2375 --insecure-registry=10.111.222.35:5000
 

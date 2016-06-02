@@ -231,6 +231,66 @@ A：
 -advertise：来申明 consul 使用哪个 IP 来提供服务。
 -join：指定第一个 consul 服务的 IP 来加入集群。
 
+使用 dig 来获取信息：
+[root@n36 ~]# yum install bind-utils -y 
+[Jack@n36 ~]$ curl -s 10.111.222.36:8500/v1/catalog/service/webapp |python -mjson.tool
+[
+    {
+        "Address": "10.111.222.36",
+        "Node": "8b716e39cc09",
+        "ServiceAddress": "",
+        "ServiceID": "6402f685c105:z001:5000",
+        "ServiceName": "webapp",
+        "ServicePort": 32770,
+        "ServiceTags": null
+    },
+    {
+        "Address": "10.111.222.36",
+        "Node": "8b716e39cc09",
+        "ServiceAddress": "",
+        "ServiceID": "6402f685c105:z002:5000",
+        "ServiceName": "webapp",
+        "ServicePort": 32771,
+        "ServiceTags": null
+    },
+    {
+        "Address": "10.111.222.36",
+        "Node": "8b716e39cc09",
+        "ServiceAddress": "",
+        "ServiceID": "6402f685c105:z003:5000",
+        "ServiceName": "webapp",
+        "ServicePort": 32772,
+        "ServiceTags": null
+    }
+]
+[Jack@n36 ~]$ dig @10.111.222.36 webapp.service.consul SRV                            
+
+; <<>> DiG 9.9.4-RedHat-9.9.4-29.el7_2.3 <<>> @10.111.222.36 webapp.service.consul SRV
+; (1 server found)
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 22230
+;; flags: qr aa rd ra; QUERY: 1, ANSWER: 3, AUTHORITY: 0, ADDITIONAL: 3
+
+;; QUESTION SECTION:
+;webapp.service.consul.         IN      SRV
+
+;; ANSWER SECTION:
+webapp.service.consul.  0       IN      SRV     1 1 32772 8b716e39cc09.node.dc1.consul.
+webapp.service.consul.  0       IN      SRV     1 1 32770 8b716e39cc09.node.dc1.consul.
+webapp.service.consul.  0       IN      SRV     1 1 32771 8b716e39cc09.node.dc1.consul.
+
+;; ADDITIONAL SECTION:
+8b716e39cc09.node.dc1.consul. 0 IN      A       10.111.222.36
+8b716e39cc09.node.dc1.consul. 0 IN      A       10.111.222.36
+8b716e39cc09.node.dc1.consul. 0 IN      A       10.111.222.36
+
+;; Query time: 2 msec
+;; SERVER: 10.111.222.36#53(10.111.222.36)
+;; WHEN: Thu Jun 02 16:30:43 CST 2016
+;; MSG SIZE  rcvd: 378
+
+
 
 Q2、registrator 服务注意事项？
 A：在 overlay 网络下，配置 consul 集群时，DNS 端口使用哪个 IP 来提供服务？ registrator 是否能检测到服务并注册成功呢？
@@ -324,9 +384,49 @@ backend app
 
 
 
+Q5、突然发现执行大部分 docker 指令时，要等待很久才会有结果，系统的资源占用并不高，似乎是 docker 服务比较卡顿，这是为何？
+A：请检查 docker 服务是否存在异常，提供一个实例如下所述。
+执行命令：
+[Jack@n36 ~]$ docker network ls
+发现等待了半天才有回应。
+使用 strace 查看：
+[root@n36 ~]# time strace -p `ps -ef |grep 'docker network' |grep -v grep |awk '{print $2}'`
+Process 14169 attached
+futex(0x21ec290, FUTEX_WAIT, 0, NULL)   = 0
+epoll_wait(5, {}, 128, 0)               = 0
+select(0, NULL, NULL, NULL, {0, 100})   = 0 (Timeout)
+futex(0xc820030e90, FUTEX_WAKE, 1)      = 1
+futex(0x21ec290, FUTEX_WAIT, 0, NULL <unfinished ...>
++++ exited with 0 +++
+
+real    1m11.029s
+user    0m0.021s
+sys     0m0.026s
+
+果然等待了很久。
+
+检查服务状态和系统日志：
+[root@n36 ~]# systemctl status docker.service -l
+[root@n36 ~]# tail -f /var/log/message
+
+发现有节点连接失败的情况，继续查看 docker 服务的配置：
+[root@n36 ~]# cat /lib/systemd/system/docker.service  |grep daemon
+ExecStart=/usr/bin/docker daemon -H tcp://10.111.222.35:2375 -H unix:///var/run/docker.sock --cluster-store=consul://10.111.222.35:8500 --cluster-advertise=em2:2375 --insecure-registry 10.111.222.35:5000
+
+consul 和 registry 服务所指向的节点 10.111.222.35 已经因为异常而下线，而 docker 服务在启动后不断的尝试连接到该节点的服务上。
+
+尝试修正上述节点带来的影响后，重启服务。
+[root@n36 ~]# systemctl daemon-reload
+[root@n36 ~]# systemctl restart docker
+再次执行 docker 指令，无异常。
+
+
+
 ZYXW、参考
 1、consul
 https://hub.docker.com/r/progrium/consul/
+https://blog.coding.net/blog/intro-consul?type=hot
+http://blog.csdn.net/viewcode/article/details/45915179
 
 2、registrator
 http://gliderlabs.com/registrator/latest/user/run/
