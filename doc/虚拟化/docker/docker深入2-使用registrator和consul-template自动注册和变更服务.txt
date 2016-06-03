@@ -1,5 +1,5 @@
 docker深入2-使用registrator和consul-template自动注册和变更服务
-2016/6/1
+2016/6/3
 
 一、示例
 测试环境基于文档：docker深入2-熟悉和找不同.txt
@@ -361,7 +361,7 @@ backend app
     
 
 生成配置并重启服务：
-[root@n36 ~]# consul-template -consul 10.111.222.36:8500 -template "/etc/haproxy/haproxy.cfg.ctmpl:/etc/haproxy/haproxy.cfg:systemctl restart haproxy.service" -once
+[root@n36 ~]# consul-template -consul 10.111.222.36:8500 -template "/etc/haproxy/haproxy.cfg.ctmpl:/etc/haproxy/haproxy.cfg:systemctl reload haproxy.service" -once
 
 验证配置：
 [root@n36 ~]# cat /etc/haproxy/haproxy.cfg
