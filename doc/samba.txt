@@ -6,7 +6,7 @@
 [global]
 
         workgroup = WORKGROUP
-        server string = EC Samba Server on server200-20
+        server string = Test Samba Server
 
 
         hosts allow = 127. 10.
@@ -41,7 +41,7 @@ Server role: ROLE_STANDALONE
 Press enter to see a dump of your service definitions
 
 [global]
-        server string = EC Samba Server on test200-20
+        server string = Test Samba Server
         security = SHARE
         log file = /var/log/samba/log.%m
         max log size = 50
