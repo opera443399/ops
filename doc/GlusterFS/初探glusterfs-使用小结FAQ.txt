@@ -1,5 +1,5 @@
 初探glusterfs-使用小结FAQ
-2015/11/4 time 17:58
+2016/6/21
 
 1、快速建立一个卷来提供服务的流程示例
 【数据盘分区】
@@ -32,11 +32,11 @@ mkdir /data/gv1/brick1 -p
 【提供data域】
 创建卷gv0作为主数据域：
 # gluster volume create gv0 replica 2 transport tcp \
-10.60.200.11:/data/gv2/brick1 \
-10.60.200.12:/data/gv2/brick1 
+10.60.200.11:/data/gv1/brick1 \
+10.60.200.12:/data/gv1/brick1 
 
 【启动】
-# gluster volume start gv2
+# gluster volume start gv1
 
 【查看现状】
 # gluster volume info
