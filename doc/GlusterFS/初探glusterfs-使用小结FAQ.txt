@@ -1,5 +1,5 @@
 初探glusterfs-使用小结FAQ
-2016/6/21
+2016/6/22
 
 1、快速建立一个卷来提供服务的流程示例
 【数据盘分区】
@@ -117,5 +117,111 @@ Brick1: 10.60.200.11:/data/gv1/brick1
 Brick2: 10.60.200.12:/data/gv1/brick1
 Brick3: 10.60.200.21:/data/gv1/brick1
 Brick4: 10.60.200.22:/data/gv1/brick1
+
+
+5、故障修复实例：2个副本的复制卷，其中一个挂掉且不能上线后，怎么处理？
+1）现状
+gluster> volume info
+Volume Name: gv1
+Type: Replicate
+Volume ID: 32b1866c-1743-4dd9-9429-6ecfdfa168a2
+Status: Started
+Number of Bricks: 1 x 2 = 2
+Transport-type: tcp
+Bricks:
+Brick1: 10.60.200.11:/data/gv1/brick1
+Brick2: 10.60.200.12:/data/gv1/brick1
+
+2）假设
+10.60.200.11 挂掉
+
+准备替代的brick：
+10.60.200.31:/data/gv1/brick1
+
+3）操作
+在 10.60.200.12 上执行 peer probe 来将新的节点加入集群：
+gluster> peer probe 10.60.200.31
+
+执行 replace-brick 操作：
+gluster> volume replace-brick gv1 10.60.200.11:/data/gv1/brick1 10.60.200.31:/data/gv1/brick1 commit force
+volume replace-brick: success: replace-brick commit successful
+
+查看状态：
+gluster> volume status
+Status of volume: gv1
+Gluster process                                         Port    Online  Pid
+------------------------------------------------------------------------------
+Brick 10.60.200.31:/data/gv1/brick1                     49153   Y       9188
+Brick 10.60.200.12:/data/gv1/brick1                     49152   Y       23944
+NFS Server on localhost                                 N/A     N       N/A
+Self-heal Daemon on localhost                           N/A     Y       14839
+NFS Server on 10.60.200.31                              N/A     N       N/A
+Self-heal Daemon on 10.60.200.31                        N/A     N       9199
+ 
+Task Status of Volume ovirt-data
+------------------------------------------------------------------------------
+There are no active volume tasks
+ 
+gluster> volume info
+ 
+Volume Name: gv1
+Type: Replicate
+Volume ID: 6a2f6489-bb8f-43d9-b46b-6258d95c7571
+Status: Started
+Number of Bricks: 1 x 2 = 2
+Transport-type: tcp
+Bricks:
+Brick1: 10.60.200.31:/data/gv1/brick1
+Brick2: 10.60.200.12:/data/gv1/brick1
+
+
+查看 heal 的状态：
+gluster> volume heal gv1 info
+Brick 10.60.200.31:/data/gv1/brick1
+Number of entries: 0
+
+Brick 10.60.200.12:/data/gv1/brick1
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/1d04adc8-9921-4e1c-b192-84fba64224db/bd3c9ecf-8100-42db-9db5-038dd95a4d54 - Possibly undergoing heal
+
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/1a719266-2b0e-4f6a-9586-825e5998c67b/74b85a40-847e-43ca-a74e-a09d5274339f 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/2d7f2fee-c796-4458-a7c2-86cb2e227834/2ef4b3fa-1656-4d15-8bd4-3356eab2d37e - Possibly undergoing heal
+
+/09cb8372-a68d-47dc-962e-70b5225be6bc/dom_md/outbox 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/master/vms 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/master/tasks 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/48722b60-7ce6-4714-942a-4cace1076c84/cba01bf2-5011-43d2-b724-d6bca8d49477 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/6b4c4ca2-8fab-476c-9321-f23872618837 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/b89e79cf-98bb-44a5-b9a0-33bbff2e4e22 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/560a7b8c-fbfe-4495-b315-e46593b4523e 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/e4c55db2-b33a-4c0d-8bc0-dc0c421ca302 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/e18d032d-c70b-4104-98b5-a3f7fb8d2e27 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/f5e408f3-eded-4bd2-93fd-205cbcd41714 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/2a629e0c-0029-480e-87f4-ac5f417a4448 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/48722b60-7ce6-4714-942a-4cace1076c84/cba01bf2-5011-43d2-b724-d6bca8d49477.meta 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/48722b60-7ce6-4714-942a-4cace1076c84/cba01bf2-5011-43d2-b724-d6bca8d49477.lease 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/5f11ddd0-9f74-4845-80ed-d3e5dc081d80/6c090128-6a01-4c0e-a3e2-df4a95e30894 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/2d7f2fee-c796-4458-a7c2-86cb2e227834/2ef4b3fa-1656-4d15-8bd4-3356eab2d37e.meta 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/2d7f2fee-c796-4458-a7c2-86cb2e227834/2ef4b3fa-1656-4d15-8bd4-3356eab2d37e.lease 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/5f11ddd0-9f74-4845-80ed-d3e5dc081d80/bc95b575-99fe-4cdf-a341-aeeed053e2b3 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/5f11ddd0-9f74-4845-80ed-d3e5dc081d80/bc95b575-99fe-4cdf-a341-aeeed053e2b3.meta 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/5f11ddd0-9f74-4845-80ed-d3e5dc081d80/bc95b575-99fe-4cdf-a341-aeeed053e2b3.lease 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/5f11ddd0-9f74-4845-80ed-d3e5dc081d80/6c090128-6a01-4c0e-a3e2-df4a95e30894.meta 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/5f11ddd0-9f74-4845-80ed-d3e5dc081d80/6c090128-6a01-4c0e-a3e2-df4a95e30894.lease 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/1d04adc8-9921-4e1c-b192-84fba64224db/bd3c9ecf-8100-42db-9db5-038dd95a4d54.meta 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/1d04adc8-9921-4e1c-b192-84fba64224db/bd3c9ecf-8100-42db-9db5-038dd95a4d54.lease 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/1a719266-2b0e-4f6a-9586-825e5998c67b/74b85a40-847e-43ca-a74e-a09d5274339f.meta 
+/09cb8372-a68d-47dc-962e-70b5225be6bc/images/1a719266-2b0e-4f6a-9586-825e5998c67b/74b85a40-847e-43ca-a74e-a09d5274339f.lease 
+Number of entries: 28
+
+
+等待完成后：
+gluster> volume heal gv1 info
+Brick 10.60.200.31:/data/gv1/brick1
+Number of entries: 0
+
+Brick 10.60.200.12:/data/gv1/brick1
+Number of entries: 0
+
+
 
 
