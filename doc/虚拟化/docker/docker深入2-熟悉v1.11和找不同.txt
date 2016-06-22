@@ -1,5 +1,5 @@
 docker深入2-熟悉v1.11和找不同
-2016/6/2
+2016/6/22
 
 一、基础环境
 1、系统版本
@@ -693,6 +693,49 @@ b）配置证书：请参考：https://docs.docker.com/engine/security/https/
 |       server-cert.pem      |                        |      cert.pem       |
 
 
+Q3、最近注意到v1.12针对swarm做了较大改进，可以介绍一下吗？
+A：参考：https://docs.docker.com/engine/swarm/
+docker engine v1.12.0-rc1 的文档中，新增了 swarm mode 这样一种方式。
+
+基本操作：
+initializing a cluster of Docker Engines in swarm mode
+adding nodes to the swarm
+deploying application services to the swarm
+managing the swarm once you have everything running
+
+设计了新的指令：
+swarm init
+swarm join
+service create
+service inspect
+service ls
+service rm
+service scale
+service tasks
+service update
+
+例如：
+$ docker swarm init --listen-addr <MANAGER-IP>:<PORT>
+$ docker swarm join <MANAGER-IP>:<PORT>
+
+$ docker service create --replicas 1 --name helloworld alpine ping docker.com
+$ docker service ls
+$ docker service inspect --pretty helloworld
+$ docker service tasks helloworld
+$ docker service scale <SERVICE-ID>=<NUMBER-OF-TASKS>
+$ docker service rm helloworld
+
+$ docker service create --replicas 3 --name redis --update-delay 10s --update-parallelism 1 redis:3.0.6
+$ docker service inspect redis --pretty
+$ docker service update --image redis:3.0.7 redis
+
+$ docker node ls
+$ docker node update --availability drain worker1
+$ docker node inspect --pretty worker1
+$ docker node update --availability active worker1
+
+更具体的请参考示例教程：https://docs.docker.com/engine/swarm/swarm-tutorial/  来了解操作模式。
+对新版本的特性保持关注。
 
 
 
