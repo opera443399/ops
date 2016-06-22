@@ -1,4 +1,6 @@
 find博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
+2016/6/22
+
 另，附上几个blog的文章，后续可能会更新这个列表：
 Linux文件查找命令find,xargs详述 http://boyun.sh.cn/bio/?p=773
 
@@ -86,4 +88,8 @@ find /path -type f | xargs rename .baksh “.sh”
 [Jack@s80 ~]$ find -inum 916302 -delete
 [Jack@s80 ~]$ ls
 
+
+找到指定类型的文件并统计行数
+# find www -type f -name '*.html' -o -name '*.css' -o -name '*.js' -o -name '*.py' |grep -vE 'jquery|bootstrap|npm|migration' |grep -v 'www\/static' |xargs cat - |grep '^[^#]' |wc -l
+1911
 

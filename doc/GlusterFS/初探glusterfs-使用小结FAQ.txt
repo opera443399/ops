@@ -1,6 +1,7 @@
 初探glusterfs-使用小结FAQ
 2016/6/22
 
+一、配置相关
 1、快速建立一个卷来提供服务的流程示例
 【数据盘分区】
 如果分区所在设备已经挂载，要先卸载并删掉现有系统。
@@ -100,7 +101,8 @@ gluster volume set gv1 nfs.disable off
 ---配置卷
 
 
-4、扩容
+二、调整相关
+1、扩容
 volume add-brick gv_test1 replica 2 10.60.200.21:/data/gv1/brick1 10.60.200.22:/data/gv1/brick1
 
 
@@ -119,7 +121,8 @@ Brick3: 10.60.200.21:/data/gv1/brick1
 Brick4: 10.60.200.22:/data/gv1/brick1
 
 
-5、故障修复实例：2个副本的复制卷，其中一个挂掉且不能上线后，怎么处理？
+三、故障相关
+1、修复实例：2个副本的复制卷，其中一个挂掉且不能上线后，怎么处理？
 1）现状
 gluster> volume info
 Volume Name: gv1
@@ -223,5 +226,10 @@ Brick 10.60.200.12:/data/gv1/brick1
 Number of entries: 0
 
 
+
+
+ZYXW、参考
+1、[Gluster-users] Replacing a failed brick
+https://www.gluster.org/pipermail/gluster-users/2013-August/014000.html
 
 
