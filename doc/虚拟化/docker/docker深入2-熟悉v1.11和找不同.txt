@@ -1,5 +1,5 @@
 docker深入2-熟悉v1.11和找不同
-2016/6/22
+2016/6/23
 
 一、基础环境
 1、系统版本
@@ -760,6 +760,6 @@ https://hub.docker.com/r/progrium/consul/
 3、swarm
 https://docs.docker.com/swarm/install-manual/
 https://docs.docker.com/swarm/plan-for-production/
-
-
+https://yq.aliyun.com/articles/55866?spm=5176.100239.bloglist.46.RjZPRd
+https://docs.docker.com/engine/swarm/swarm-tutorial/
 
