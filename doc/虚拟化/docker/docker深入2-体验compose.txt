@@ -1,0 +1,185 @@
+docker深入2-体验compose
+2016/6/23
+
+一、示例
+测试环境基于文档：docker深入2-熟悉v1.11和找不同.txt
+目标：熟悉 docker compose 的使用。
+------------------------------------------------------
+---------------------- n36.test ----------------------
+
+------------------------------------------------------
+
+
+二、配置
+1、安装 docker-compose
+参考页面：https://github.com/docker/compose/releases
+
+curl -L https://github.com/docker/compose/releases/download/1.7.1/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+
+2、测试
+[Jack@sz-local-36 ~]$ docker-compose --version
+docker-compose version 1.7.1, build 0a9ab35
+
+
+三、初体验
+1、配置一个应用
+[Jack@sz-local-36 ~]$ mkdir /data/docker/compose-test
+[Jack@sz-local-36 ~]$ cd /data/docker/compose-test/
+
+使用 flask+redis 建立一个简单的web页面。
+[Jack@sz-local-36 compose-test]$ cat app.py 
+from flask import Flask
+from redis import Redis
+
+app = Flask(__name__)
+redis = Redis(host='redis', port=6379)
+
+@app.route('/')
+def hello():
+    redis.incr('hits')
+    return 'Hello World! I have been seen %s times.' % redis.get('hits')
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", debug=True)
+    
+该应用的依赖：
+[Jack@sz-local-36 compose-test]$ cat requirements.txt 
+flask
+redis
+
+
+2、准备镜像
+1）编写 dockerfile 来构建镜像 “web”
+[Jack@sz-local-36 compose-test]$ cat Dockerfile 
+FROM python:2.7
+ADD . /code
+WORKDIR /code
+RUN pip install -r requirements.txt
+CMD python app.py
+
+[Jack@sz-local-36 compose-test]$ docker build -t web .
+
+2、从仓库拉取“redis”镜像
+[Jack@sz-local-36 compose-test]$ docker pull redis
+
+3、定义服务
+[Jack@sz-local-36 compose-test]$ cat docker-compose.yml 
+version: '2'
+services:
+  web:
+    image: web
+    ports:
+     - "5000:5000"
+    volumes:
+     - .:/code
+    depends_on:
+     - redis
+  redis:
+    image: redis
+   
+镜像 web 来自上一步构建
+镜像 redis 来自仓库，已经提前准备好
+（当然了，web镜像也可以当场 build，redis镜像也可以当场 pull，看需求决定。）
+
+
+4、启动
+[Jack@sz-local-36 compose-test]$ docker-compose up
+Creating composetest_redis_1
+Creating composetest_web_1
+Attaching to composetest_redis_1, composetest_web_1
+redis_1  |                 _._                                                  
+redis_1  |            _.-``__ ''-._                                             
+redis_1  |       _.-``    `.  `_.  ''-._           Redis 3.2.1 (00000000/0) 64 bit
+redis_1  |   .-`` .-```.  ```\/    _.,_ ''-._                                   
+redis_1  |  (    '      ,       .-`  | `,    )     Running in standalone mode
+redis_1  |  |`-._`-...-` __...-.``-._|'` _.-'|     Port: 6379
+redis_1  |  |    `-._   `._    /     _.-'    |     PID: 1
+redis_1  |   `-._    `-._  `-./  _.-'    _.-'                                   
+redis_1  |  |`-._`-._    `-.__.-'    _.-'_.-'|                                  
+redis_1  |  |    `-._`-._        _.-'_.-'    |           http://redis.io        
+redis_1  |   `-._    `-._`-.__.-'_.-'    _.-'                                   
+redis_1  |  |`-._`-._    `-.__.-'    _.-'_.-'|                                  
+redis_1  |  |    `-._`-._        _.-'_.-'    |                                  
+redis_1  |   `-._    `-._`-.__.-'_.-'    _.-'                                   
+redis_1  |       `-._    `-.__.-'    _.-'                                       
+redis_1  |           `-._        _.-'                                           
+redis_1  |               `-.__.-'                                               
+redis_1  | 
+redis_1  | 1:M 23 Jun 07:29:38.855 # WARNING: The TCP backlog setting of 511 cannot be enforced because /proc/sys/net/core/somaxconn is set to the lower value of 128.
+redis_1  | 1:M 23 Jun 07:29:38.855 # Server started, Redis version 3.2.1
+redis_1  | 1:M 23 Jun 07:29:38.855 # WARNING overcommit_memory is set to 0! Background save may fail under low memory condition. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+redis_1  | 1:M 23 Jun 07:29:38.855 # WARNING you have Transparent Huge Pages (THP) support enabled in your kernel. This will create latency and memory usage issues with Redis. To fix this issue run the command 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' as root, and add it to your /etc/rc.local in order to retain the setting after a reboot. Redis must be restarted after THP is disabled.
+redis_1  | 1:M 23 Jun 07:29:38.855 * The server is now ready to accept connections on port 6379
+web_1    |  * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
+web_1    |  * Restarting with stat
+web_1    |  * Debugger is active!
+web_1    |  * Debugger pin code: 621-396-368
+web_1    | 172.20.0.1 - - [23/Jun/2016 07:29:52] "GET / HTTP/1.1" 200 -
+web_1    | 172.20.0.1 - - [23/Jun/2016 07:29:53] "GET / HTTP/1.1" 200 -
+web_1    | 172.20.0.1 - - [23/Jun/2016 07:29:53] "GET / HTTP/1.1" 200 -
+web_1    | 172.20.0.1 - - [23/Jun/2016 07:29:54] "GET / HTTP/1.1" 200 -
+web_1    | 172.20.0.1 - - [23/Jun/2016 07:29:54] "GET / HTTP/1.1" 200 -
+web_1    | 172.20.0.1 - - [23/Jun/2016 07:29:55] "GET / HTTP/1.1" 200 -
+
+5、在另一个窗口来测试
+[Jack@sz-local-36 compose-test]$ docker ps -a -f name=compose
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                    NAMES
+9decfef8566b        web                 "/bin/sh -c 'python a"   2 minutes ago       Up 2 seconds        0.0.0.0:5000->5000/tcp   composetest_web_1
+eebf07d7c102        redis               "docker-entrypoint.sh"   2 minutes ago       Up 2 seconds        6379/tcp                 composetest_redis_1
+
+请求：
+[Jack@sz-local-36 ~]$ curl 127.0.0.1:5000     
+Hello World! I have been seen 1 times.[Jack@sz-local-36 ~]$ curl 127.0.0.1:5000
+Hello World! I have been seen 2 times.[Jack@sz-local-36 ~]$ curl 127.0.0.1:5000
+Hello World! I have been seen 3 times.[Jack@sz-local-36 ~]$ curl 127.0.0.1:5000
+Hello World! I have been seen 4 times.[Jack@sz-local-36 ~]$ curl 127.0.0.1:5000
+Hello World! I have been seen 5 times.[Jack@sz-local-36 ~]$ curl 127.0.0.1:5000
+Hello World! I have been seen 6 times.[Jack@sz-local-36 ~]$ 
+
+符合预期。
+
+6、其他命令
+1）后台运行
+[Jack@sz-local-36 compose-test]$ docker-compose up -d
+
+2）任务管理
+[Jack@sz-local-36 compose-test]$ docker-compose ps   
+       Name                      Command               State           Ports          
+-------------------------------------------------------------------------------------
+composetest_redis_1   docker-entrypoint.sh redis ...   Up      6379/tcp               
+composetest_web_1     /bin/sh -c python app.py         Up      0.0.0.0:5000->5000/tcp 
+
+3）执行一次性的命令
+[Jack@sz-local-36 compose-test]$ docker-compose run web env
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+HOSTNAME=cc7a996c06da
+TERM=xterm
+LANG=C.UTF-8
+GPG_KEY=C01E1CAD5EA2C4F0B8E3571504C367C218ADD4FF
+PYTHON_VERSION=2.7.11
+PYTHON_PIP_VERSION=8.1.2
+HOME=/root
+
+[Jack@sz-local-36 compose-test]$ docker-compose run web ip a |grep global
+    inet 172.20.0.4/16 scope global eth0
+
+4）停止服务
+[Jack@sz-local-36 compose-test]$ docker-compose stop
+Stopping composetest_web_1 ... done
+Stopping composetest_redis_1 ... done
+
+
+四、小结
+1、安装 docker-compose
+2、准备镜像
+3、准备yml文件，定义好服务之间的依赖
+4、使用 docker-compose 来启动服务
+
+官网 docs 上还有一些示例，后续实验一下。
+
+
+ZYXW、参考
+1、docs
+https://docs.docker.com/compose/install/
+https://docs.docker.com/compose/gettingstarted/
