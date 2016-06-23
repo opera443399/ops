@@ -18,17 +18,17 @@ curl -L https://github.com/docker/compose/releases/download/1.7.1/docker-compose
 chmod +x /usr/local/bin/docker-compose
 
 2、测试
-[Jack@sz-local-36 ~]$ docker-compose --version
+[Jack@n36 ~]$ docker-compose --version
 docker-compose version 1.7.1, build 0a9ab35
 
 
 三、初体验
 1、配置一个应用
-[Jack@sz-local-36 ~]$ mkdir /data/docker/compose-test
-[Jack@sz-local-36 ~]$ cd /data/docker/compose-test/
+[Jack@n36 ~]$ mkdir /data/docker/compose-test
+[Jack@n36 ~]$ cd /data/docker/compose-test/
 
 使用 flask+redis 建立一个简单的web页面。
-[Jack@sz-local-36 compose-test]$ cat app.py 
+[Jack@n36 compose-test]$ cat app.py 
 from flask import Flask
 from redis import Redis
 
@@ -44,27 +44,27 @@ if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True)
     
 该应用的依赖：
-[Jack@sz-local-36 compose-test]$ cat requirements.txt 
+[Jack@n36 compose-test]$ cat requirements.txt 
 flask
 redis
 
 
 2、准备镜像
 1）编写 dockerfile 来构建镜像 “web”
-[Jack@sz-local-36 compose-test]$ cat Dockerfile 
+[Jack@n36 compose-test]$ cat Dockerfile 
 FROM python:2.7
 ADD . /code
 WORKDIR /code
 RUN pip install -r requirements.txt
 CMD python app.py
 
-[Jack@sz-local-36 compose-test]$ docker build -t web .
+[Jack@n36 compose-test]$ docker build -t web .
 
 2、从仓库拉取“redis”镜像
-[Jack@sz-local-36 compose-test]$ docker pull redis
+[Jack@n36 compose-test]$ docker pull redis
 
 3、定义服务
-[Jack@sz-local-36 compose-test]$ cat docker-compose.yml 
+[Jack@n36 compose-test]$ cat docker-compose.yml 
 version: '2'
 services:
   web:
@@ -84,7 +84,7 @@ services:
 
 
 4、启动
-[Jack@sz-local-36 compose-test]$ docker-compose up
+[Jack@n36 compose-test]$ docker-compose up
 Creating composetest_redis_1
 Creating composetest_web_1
 Attaching to composetest_redis_1, composetest_web_1
@@ -123,35 +123,35 @@ web_1    | 172.20.0.1 - - [23/Jun/2016 07:29:54] "GET / HTTP/1.1" 200 -
 web_1    | 172.20.0.1 - - [23/Jun/2016 07:29:55] "GET / HTTP/1.1" 200 -
 
 5、在另一个窗口来测试
-[Jack@sz-local-36 compose-test]$ docker ps -a -f name=compose
+[Jack@n36 compose-test]$ docker ps -a -f name=compose
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                    NAMES
 9decfef8566b        web                 "/bin/sh -c 'python a"   2 minutes ago       Up 2 seconds        0.0.0.0:5000->5000/tcp   composetest_web_1
 eebf07d7c102        redis               "docker-entrypoint.sh"   2 minutes ago       Up 2 seconds        6379/tcp                 composetest_redis_1
 
 请求：
-[Jack@sz-local-36 ~]$ curl 127.0.0.1:5000     
-Hello World! I have been seen 1 times.[Jack@sz-local-36 ~]$ curl 127.0.0.1:5000
-Hello World! I have been seen 2 times.[Jack@sz-local-36 ~]$ curl 127.0.0.1:5000
-Hello World! I have been seen 3 times.[Jack@sz-local-36 ~]$ curl 127.0.0.1:5000
-Hello World! I have been seen 4 times.[Jack@sz-local-36 ~]$ curl 127.0.0.1:5000
-Hello World! I have been seen 5 times.[Jack@sz-local-36 ~]$ curl 127.0.0.1:5000
-Hello World! I have been seen 6 times.[Jack@sz-local-36 ~]$ 
+[Jack@n36 ~]$ curl 127.0.0.1:5000     
+Hello World! I have been seen 1 times.[Jack@n36 ~]$ curl 127.0.0.1:5000
+Hello World! I have been seen 2 times.[Jack@n36 ~]$ curl 127.0.0.1:5000
+Hello World! I have been seen 3 times.[Jack@n36 ~]$ curl 127.0.0.1:5000
+Hello World! I have been seen 4 times.[Jack@n36 ~]$ curl 127.0.0.1:5000
+Hello World! I have been seen 5 times.[Jack@n36 ~]$ curl 127.0.0.1:5000
+Hello World! I have been seen 6 times.[Jack@n36 ~]$ 
 
 符合预期。
 
 6、其他命令
 1）后台运行
-[Jack@sz-local-36 compose-test]$ docker-compose up -d
+[Jack@n36 compose-test]$ docker-compose up -d
 
 2）任务管理
-[Jack@sz-local-36 compose-test]$ docker-compose ps   
+[Jack@n36 compose-test]$ docker-compose ps   
        Name                      Command               State           Ports          
 -------------------------------------------------------------------------------------
 composetest_redis_1   docker-entrypoint.sh redis ...   Up      6379/tcp               
 composetest_web_1     /bin/sh -c python app.py         Up      0.0.0.0:5000->5000/tcp 
 
 3）执行一次性的命令
-[Jack@sz-local-36 compose-test]$ docker-compose run web env
+[Jack@n36 compose-test]$ docker-compose run web env
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 HOSTNAME=cc7a996c06da
 TERM=xterm
@@ -161,11 +161,11 @@ PYTHON_VERSION=2.7.11
 PYTHON_PIP_VERSION=8.1.2
 HOME=/root
 
-[Jack@sz-local-36 compose-test]$ docker-compose run web ip a |grep global
+[Jack@n36 compose-test]$ docker-compose run web ip a |grep global
     inet 172.20.0.4/16 scope global eth0
 
 4）停止服务
-[Jack@sz-local-36 compose-test]$ docker-compose stop
+[Jack@n36 compose-test]$ docker-compose stop
 Stopping composetest_web_1 ... done
 Stopping composetest_redis_1 ... done
 
