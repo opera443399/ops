@@ -1,15 +1,15 @@
 docker深入2-使用自定义的网络来配置zookeeper集群
-2016/6/23
+2016/6/24
 
 一、示例
 测试环境基于文档：docker深入2-熟悉v1.11和找不同.txt
 目标：熟悉自定义网络的应用
-------------------------------------------------------
----------------------- n36.test ----------------------
-zk1                                        172.30.40.1
-zk2   -> docker network(net_env_test) ->   172.30.40.2
-zk3                                        172.30.40.3
-------------------------------------------------------
+-------------------------------------------------------
+---------------------- n36.test -----------------------
+zk1                                        172.30.200.1
+zk2   -> docker network(net_env_test) ->   172.30.200.2
+zk3                                        172.30.200.3
+-------------------------------------------------------
 
 
 二、镜像和网络
@@ -20,41 +20,48 @@ zk3                                        172.30.40.3
 [Jack@n36 ~]$ docker network create --subnet 172.30.0.0/16 --gateway 172.30.0.1 --ip-range 172.30.0.0/17 net_env_test
 fe455726968a326cbae52a4260cfd1d013884f897f442fdaafa43f6fa2dffcc3
 
+注：解释一下这里的网络配置
+刚才我们创建的这个 network 所属的网段是：172.30.0.0/16
+可用于自动分配的ip范围是：172.30.0.0/17(172.30.0.1 - 172.30.127.254)
+这意味着，我们保留了一段IP用于手动分配：172.30.128.0/17(172.30.128.1 - 172.30.255.254)
+因此，这个也算是一个IP规划的小技巧，仅供参考。
+
+
 三、启动zookeeper集群，指定IP地址
 [Jack@n36 ~]$ docker run -d \
 --name zk1 \
 --net net_env_test \
---ip 172.30.40.1 \
+--ip 172.30.200.1 \
 -e SERVER_ID=1 \
--e ADDITIONAL_ZOOKEEPER_1=server.1=172.30.40.1:2888:3888 \
--e ADDITIONAL_ZOOKEEPER_2=server.2=172.30.40.2:2888:3888 \
--e ADDITIONAL_ZOOKEEPER_3=server.3=172.30.40.3:2888:3888 \
+-e ADDITIONAL_ZOOKEEPER_1=server.1=172.30.200.1:2888:3888 \
+-e ADDITIONAL_ZOOKEEPER_2=server.2=172.30.200.2:2888:3888 \
+-e ADDITIONAL_ZOOKEEPER_3=server.3=172.30.200.3:2888:3888 \
 registry.aliyuncs.com/denverdino/zookeeper:3.4.8 
  
 [Jack@n36 ~]$ docker run -d \
 --name zk2 \
 --net net_env_test \
---ip 172.30.40.2 \
+--ip 172.30.200.2 \
 -e SERVER_ID=2 \
--e ADDITIONAL_ZOOKEEPER_1=server.1=172.30.40.1:2888:3888 \
--e ADDITIONAL_ZOOKEEPER_2=server.2=172.30.40.2:2888:3888 \
--e ADDITIONAL_ZOOKEEPER_3=server.3=172.30.40.3:2888:3888 \
+-e ADDITIONAL_ZOOKEEPER_1=server.1=172.30.200.1:2888:3888 \
+-e ADDITIONAL_ZOOKEEPER_2=server.2=172.30.200.2:2888:3888 \
+-e ADDITIONAL_ZOOKEEPER_3=server.3=172.30.200.3:2888:3888 \
 registry.aliyuncs.com/denverdino/zookeeper:3.4.8
 
 [Jack@n36 ~]$ docker run -d \
 --name zk3 \
 --net net_env_test \
---ip 172.30.40.3 \
+--ip 172.30.200.3 \
 -e SERVER_ID=3 \
--e ADDITIONAL_ZOOKEEPER_1=server.1=172.30.40.1:2888:3888 \
--e ADDITIONAL_ZOOKEEPER_2=server.2=172.30.40.2:2888:3888 \
--e ADDITIONAL_ZOOKEEPER_3=server.3=172.30.40.3:2888:3888 \
+-e ADDITIONAL_ZOOKEEPER_1=server.1=172.30.200.1:2888:3888 \
+-e ADDITIONAL_ZOOKEEPER_2=server.2=172.30.200.2:2888:3888 \
+-e ADDITIONAL_ZOOKEEPER_3=server.3=172.30.200.3:2888:3888 \
 registry.aliyuncs.com/denverdino/zookeeper:3.4.8
 
 [Jack@n36 ~]$ docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' `docker ps -f name=zk[1-3] -q`
-172.30.40.3
-172.30.40.2
-172.30.40.1
+172.30.200.3
+172.30.200.2
+172.30.200.1
 
 [Jack@n36 ~]$ docker ps -f name=zk[1-3]
 CONTAINER ID        IMAGE                                              COMMAND               CREATED             STATUS              PORTS                          NAMES
@@ -67,15 +74,15 @@ c2feaffe2ce7        registry.aliyuncs.com/denverdino/zookeeper:3.4.8   "/opt/zoo
 1、连通性
 [Jack@n36 ~]$ docker exec -it zk1 bash
 bash-4.3# ping zk2
-PING zk2 (172.30.40.2): 56 data bytes
-64 bytes from 172.30.40.2: seq=0 ttl=64 time=0.173 ms
+PING zk2 (172.30.200.2): 56 data bytes
+64 bytes from 172.30.200.2: seq=0 ttl=64 time=0.173 ms
 ^C
 --- zk2 ping statistics ---
 1 packets transmitted, 1 packets received, 0% packet loss
 round-trip min/avg/max = 0.173/0.173/0.173 ms
 bash-4.3# ping zk3
-PING zk3 (172.30.40.3): 56 data bytes
-64 bytes from 172.30.40.3: seq=0 ttl=64 time=0.101 ms
+PING zk3 (172.30.200.3): 56 data bytes
+64 bytes from 172.30.200.3: seq=0 ttl=64 time=0.101 ms
 ^C
 --- zk3 ping statistics ---
 1 packets transmitted, 1 packets received, 0% packet loss
@@ -102,10 +109,10 @@ bash-4.3# bin/zkCli.sh -server zk3:2181
 2016-06-23 03:27:28,068 [myid:] - INFO  [main:Environment@100] - Client environment:user.dir=/opt/zookeeper
 2016-06-23 03:27:28,070 [myid:] - INFO  [main:ZooKeeper@438] - Initiating client connection, connectString=zk3:2181 sessionTimeout=30000 watcher=org.apache.zookeeper.ZooKeeperMain$MyWatcher@3eb07fd3
 Welcome to ZooKeeper!
-2016-06-23 03:27:28,109 [myid:] - INFO  [main-SendThread(zk3.net_env_test:2181):ClientCnxn$SendThread@1032] - Opening socket connection to server zk3.net_env_test/172.30.40.3:2181. Will not attempt to authenticate using SASL (unknown error)
+2016-06-23 03:27:28,109 [myid:] - INFO  [main-SendThread(zk3.net_env_test:2181):ClientCnxn$SendThread@1032] - Opening socket connection to server zk3.net_env_test/172.30.200.3:2181. Will not attempt to authenticate using SASL (unknown error)
 JLine support is enabled
-2016-06-23 03:27:28,205 [myid:] - INFO  [main-SendThread(zk3.net_env_test:2181):ClientCnxn$SendThread@876] - Socket connection established to zk3.net_env_test/172.30.40.3:2181, initiating session
-2016-06-23 03:27:28,215 [myid:] - INFO  [main-SendThread(zk3.net_env_test:2181):ClientCnxn$SendThread@1299] - Session establishment complete on server zk3.net_env_test/172.30.40.3:2181, sessionid = 0x3557b3d3ba80001, negotiated timeout = 30000
+2016-06-23 03:27:28,205 [myid:] - INFO  [main-SendThread(zk3.net_env_test:2181):ClientCnxn$SendThread@876] - Socket connection established to zk3.net_env_test/172.30.200.3:2181, initiating session
+2016-06-23 03:27:28,215 [myid:] - INFO  [main-SendThread(zk3.net_env_test:2181):ClientCnxn$SendThread@1299] - Session establishment complete on server zk3.net_env_test/172.30.200.3:2181, sessionid = 0x3557b3d3ba80001, negotiated timeout = 30000
 
 WATCHER::
 
