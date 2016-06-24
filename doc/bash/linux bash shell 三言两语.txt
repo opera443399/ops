@@ -1,5 +1,5 @@
 linux bash shell 三言两语
-2016/5/24
+2016/6/24
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -398,3 +398,9 @@ e
 22、临时启用一个端口来测试
 python -m SimpleHTTPServer 8081
 这个简单的http服务器，还可以当作ftp用
+
+
+23、示例随机字符的生成：得到一个MAC地址的3种方式
+echo "AA:BB:`dd if=/dev/urandom count=1 2>/dev/null |md5sum |sed -e 's/^\(..\)\(..\)\(..\)\(..\).*$/\1:\2:\3:\4/'`"
+echo "AA:BB:`for i in {1..4};do printf "%0.2X:" $[ $RANDOM % 0x100 ]; done |sed 's/:$/\n/'`"
+echo "AA:BB:`od /dev/urandom -w4 -tx1 -An |sed -e 's/ //' -e 's/ /:/g' |head -n 1`"
