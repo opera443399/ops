@@ -1,4 +1,5 @@
 Linux系统自带的日志滚动压缩服务logrotated
+2016/6/29
 
 举例说明：
 
@@ -28,3 +29,19 @@ _CONF
 然后，在计划任务中配置：
 59 23 * * * /usr/sbin/logrotate -f /data/log/logrotate.d/haproxy
 
+
+
+再举一个例子，安装 nginx 后，自带了一个配置：
+~]# cat /etc/logrotate.d/nginx 
+/var/log/nginx/*log {
+    create 0644 nginx nginx
+    daily
+    rotate 10
+    missingok
+    notifempty
+    compress
+    sharedscripts
+    postrotate
+        /bin/kill -USR1 `cat /run/nginx.pid 2>/dev/null` 2>/dev/null || true
+    endscript
+}
