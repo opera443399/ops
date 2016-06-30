@@ -1,5 +1,5 @@
 简单的git提交django代码charade的示范
-2016/2/29
+2016/6/30
 
 1、目标
 增加一个静态文件 favicon.ico
@@ -27,6 +27,12 @@ Copying '/opt/charade/www/charade/static/charade/images/favicon.ico'
 配置git帐号：
 [root@tvm001 charade]# git config user.name "tester01"
 [root@tvm001 charade]# git config user.email "tester01@abc.com"
+
+git push时，会报错：
+error: The requested URL returned error: 403 Forbidden while accessing https://github.com/tester01/charade.git/info/refs
+
+fatal: HTTP request failed
+解决办法：
 [root@tvm001 charade]# git remote set-url origin https://tester01@github.com/tester01/charade.git
 
 1）add 所有文件
