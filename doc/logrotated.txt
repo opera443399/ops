@@ -1,7 +1,7 @@
-LinuxÏµÍ³×Ô´øµÄÈÕÖ¾¹ö¶¯Ñ¹Ëõ·şÎñlogrotated
+Linuxç³»ç»Ÿè‡ªå¸¦çš„æ—¥å¿—æ»šåŠ¨å‹ç¼©æœåŠ¡logrotated
 2016/6/29
 
-¾ÙÀıËµÃ÷£º
+ä¸¾ä¾‹è¯´æ˜ï¼š
 
 cat <<_CONF > /etc/logrotate.d/haproxy
 /var/log/haproxy/haproxy.log
@@ -17,21 +17,21 @@ rotate 2
 _CONF
 
 
-ÉÏÊö½«Ôö¼ÓÒ»¸ölogrotatedµÄÅäÖÃÎÄ¼ş/etc/logrotate.d/haproxy
-È»ºóÊ¹ÓÃlogrotateµÄÄ¬ÈÏÉèÖÃÀ´×öÈÕÖ¾¹ö¶¯Ñ¹Ëõ£º
+ä¸Šè¿°å°†å¢åŠ ä¸€ä¸ªlogrotatedçš„é…ç½®æ–‡ä»¶/etc/logrotate.d/haproxy
+ç„¶åä½¿ç”¨logrotateçš„é»˜è®¤è®¾ç½®æ¥åšæ—¥å¿—æ»šåŠ¨å‹ç¼©ï¼š
 /etc/logrotate.conf 
 
 
-Ò²¿ÉÒÔÊÖ¶¯µ÷ÓÃ£º
-¼ÙÉèÎÒÃÇµÄÅäÖÃÎÄ¼ş·ÅÔÚ£º
+ä¹Ÿå¯ä»¥æ‰‹åŠ¨è°ƒç”¨ï¼š
+å‡è®¾æˆ‘ä»¬çš„é…ç½®æ–‡ä»¶æ”¾åœ¨ï¼š
 /data/log/logrotate.d/haproxy
 
-È»ºó£¬ÔÚ¼Æ»®ÈÎÎñÖĞÅäÖÃ£º
+ç„¶åï¼Œåœ¨è®¡åˆ’ä»»åŠ¡ä¸­é…ç½®ï¼š
 59 23 * * * /usr/sbin/logrotate -f /data/log/logrotate.d/haproxy
 
 
 
-ÔÙ¾ÙÒ»¸öÀı×Ó£¬°²×° nginx ºó£¬×Ô´øÁËÒ»¸öÅäÖÃ£º
+å†ä¸¾ä¸€ä¸ªä¾‹å­ï¼Œå®‰è£… nginx åï¼Œè‡ªå¸¦äº†ä¸€ä¸ªé…ç½®ï¼š
 ~]# cat /etc/logrotate.d/nginx 
 /var/log/nginx/*log {
     create 0644 nginx nginx
