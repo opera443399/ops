@@ -1,0 +1,337 @@
+docker深入2-使用jenkins镜像
+2016/6/30
+
+一、示例
+测试环境基于文档：docker深入2-熟悉v1.11和找不同.txt
+目标：熟悉使用jenkins镜像，从 github 拉取代码，构建镜像；
+-------------------------------------------------------
+---------------------- n36.test -----------------------
+                       github
+                          ↓
+                    jenkins(docker)         172.17.0.13
+                    slave_36                172.17.0.1
+                          ↓
+                 execute shell on salve host slave_36
+                          ↓
+---------------- build image(slave_36) ----------------
+                          ↓
+---------------- run container(slave_36) --------------
+                          ↓
+---------------- push to local registry ---------------
+-------------------------------------------------------
+
+
+二、在 docker 环境中配置 jenkins 镜像
+1、获取
+[Jack@n36 jenkins-test]$ docker pull jenkins
+
+2、运行
+[Jack@n36 jenkins-test]$ mkdir /data/docker/jenkins-test
+[Jack@n36 jenkins-test]$ docker run -d --restart=always -p 8080:8080 -p 50000:50000 -v /data/docker/jenkins-test:/var/jenkins_home --name jenkins_36 jenkins
+
+3、配置 jenkins 主服务器的ssh key，用于后续增加 salve 节点时，使用 public key 来验证。
+1)获取 container 的IP
+[Jack@n36 jenkins-test]$ docker inspect -f '{{ .NetworkSettings.IPAddress }}' jenkins_36
+172.17.0.13
+2)进入 container，生成 ssh key
+[Jack@n36 jenkins-test]$ docker exec -it jenkins_36 /bin/bash
+jenkins@7da65fcf10ef:/$ ssh-keygen -t rsa -b 2048 -C 'jenkins@docker'
+jenkins@7da65fcf10ef:/$ cat ~/.ssh/id_rsa.pub
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCyvJ8+M2qmxI0lUYt0XWzSQoz7BVttQ/MeFeQlaL+Cf1Wf5WQgP01niDNOiPNEZohSBd9Q6Fc6j2uLWjMot76IGRaQDDPbqvtVs+WHiqFiiTjz/NOIDzS0QsQq4uJau5a+m/mYLqcH3piAwvMGGOOFWtJXPtmpUX31zz0KbO8FnQigYq0vemsKnGw/lezxMbc0WlOesDX1WVtPPgSzWPlwpC3hVYhIVQqjeBVCTrg1tuNG1voyhOwEg6MvPHUrxpWxcYfDj/rM2O6UKSxUjbMCL0LE5gLSsc2iCo9pk8i9/eiMM4S5nWo0Obdv9PG1dQO698DRQMvHzkSZ8hU91LV1 jenkins@docker
+
+3)将上述 id_rsa.pub 的内容拷贝到目标机器(本例是：172.17.0.1)
+创建一个用户 jenkins 并加入 docker 组，用于后续的场景。
+[root@n36 ~]# useradd jenkins
+[root@n36 ~]# usermod -a -G docker jenkins
+[root@n36 ~]# su jenkins
+[jenkins@n36 root]$ cd ~
+[jenkins@n36 ~]$ cat .ssh/authorized_keys 
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCyvJ8+M2qmxI0lUYt0XWzSQoz7BVttQ/MeFeQlaL+Cf1Wf5WQgP01niDNOiPNEZohSBd9Q6Fc6j2uLWjMot76IGRaQDDPbqvtVs+WHiqFiiTjz/NOIDzS0QsQq4uJau5a+m/mYLqcH3piAwvMGGOOFWtJXPtmpUX31zz0KbO8FnQigYq0vemsKnGw/lezxMbc0WlOesDX1WVtPPgSzWPlwpC3hVYhIVQqjeBVCTrg1tuNG1voyhOwEg6MvPHUrxpWxcYfDj/rM2O6UKSxUjbMCL0LE5gLSsc2iCo9pk8i9/eiMM4S5nWo0Obdv9PG1dQO698DRQMvHzkSZ8hU91LV1 jenkins@docker
+注意这个文件的权限，默认创建的文件是权限位是664，将导致ssh时被拒绝。
+[jenkins@n36 ~]$ ls -l .ssh/authorized_keys  
+-rw-rw-r-- 1 jenkins jenkins 396 Jun 30 10:17 .ssh/authorized_keys
+设置该文件的权限位为644：
+[jenkins@n36 ~]$ chmod 644 .ssh/authorized_keys
+[jenkins@n36 ~]$ ls -l .ssh/authorized_keys  
+-rw-r--r-- 1 jenkins jenkins 396 Jun 30 10:17 .ssh/authorized_keys
+
+
+4)测试从 jenkins 主节点 ssh 登录到 slave 节点的连通性
+jenkins@7da65fcf10ef:/$ ssh jenkins@172.17.0.1
+Enter passphrase for key '/var/jenkins_home/.ssh/id_rsa': 
+Last login: Thu Jun 30 10:45:02 2016
+[jenkins@n36 ~]$ exit
+logout
+Connection to 172.17.0.1 closed.
+jenkins@7da65fcf10ef:/$ 
+
+符合预期。
+
+4、登录
+访问：http://IP:8080/
+访问后的首要步骤：
+选择菜单：“Jenkins-系统管理-Configure Global Security”
+先增加一个管理员帐号密码，设置一下安全选项。
+在插件管理页面，安装git插件。
+
+5、增加一个节点：slave_36，专门用于执行 docker bulid 任务
+提示：先手动 ssh 测试一下连通性。(如步骤3所示)
+
+选择菜单：“Jenkins-系统管理-管理节点-新建节点”
+调整部分配置：
+------------------------------------------------------------------------------
+	Name:                    slave_36
+    远程工作目录:              /home/jenkins
+    用法:                      只允许运行绑定到这台机器的Job
+    启动方法:                launch slave agents on unix machines via ssh
+    Host:                    172.17.0.1
+    Credentials:             (可选 ssh password 或 key 认证)
+保存
+------------------------------------------------------------------------------  
+
+
+三、在 jenkins 中配置一个任务
+1、事先在github上创建一个示例仓库，用于后续配置的任务的构建。
+https://github.com/opera443399/docker-example-flask.git
+
+2、创建一个任务
+项目名称: docker-example-flask
+(勾选)Restrict where this project can be run
+        -Label Expression: slave_36
+
+源码管理:
+(勾选)Git
+        Repositories	
+            Repository URL:	https://github.com/opera443399/docker-example-flask.git
+
+构建:
+        Execute shell
+            Command:
+------------------------------------------------------------------------------
+old_image_id=$(docker images |grep example_flask |awk '{print $3}')
+docker build -t example_flask .
+new_image_id=$(docker images |grep example_flask |awk '{print $3}')
+if [ ! ${old_image_id} == ${new_image_id} ]; then
+    # remove the old one
+    docker ps -f ancestor="${old_image_id}"
+    docker rm -f `docker ps -f ancestor="${old_image_id}" -q`
+    docker rmi -f ${old_image_id}
+    # new
+    docker run -d -P --name j_test_web example_flask
+    docker ps -f ancestor="example_flask:latest"
+else
+    echo -n -e "\n\033[10;1;32m[JENKINS] `date`, the image is not changed.\033[0m\n"
+fi
+------------------------------------------------------------------------------
+保存
+
+
+3、开始构建(git源码有变更的场景)
+控制台输出
+
+Started by user admin
+Building remotely on slave_36 (build) in workspace /home/jenkins/workspace/docker-example-flask
+ > git rev-parse --is-inside-work-tree # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/opera443399/docker-example-flask.git # timeout=10
+Fetching upstream changes from https://github.com/opera443399/docker-example-flask.git
+ > git --version # timeout=10
+ > git -c core.askpass=true fetch --tags --progress https://github.com/opera443399/docker-example-flask.git +refs/heads/*:refs/remotes/origin/*
+ > git rev-parse refs/remotes/origin/master^{commit} # timeout=10
+ > git rev-parse refs/remotes/origin/origin/master^{commit} # timeout=10
+Checking out Revision 788c804b7b60c7b5baaf288c51e586520a6509e2 (refs/remotes/origin/master)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 788c804b7b60c7b5baaf288c51e586520a6509e2
+ > git rev-list d559e16977562f1ef694981ae36d5a0b6ffef394 # timeout=10
+[docker-example-flask] $ /bin/sh -xe /tmp/hudson7169564271462058918.sh
+++ docker images
+++ grep example_flask
+++ awk '{print $3}'
++ old_image_id=7695dc790c4a
++ docker build -t example_flask .
+Sending build context to Docker daemon 73.73 kB
+
+Step 1 : FROM python:2.7
+ ---> a047e3d0ae2b
+Step 2 : MAINTAINER PC
+ ---> Using cache
+ ---> 7309291ae3ee
+Step 3 : ADD . /code
+ ---> 41c5fceb2b42
+Removing intermediate container 9e75b73bfa1c
+Step 4 : WORKDIR /code
+ ---> Running in 79da8e972cdc
+ ---> 8006fea20324
+Removing intermediate container 79da8e972cdc
+Step 5 : RUN pip install -r requirements.txt
+ ---> Running in 8d5fe6d5dccc
+Collecting flask (from -r requirements.txt (line 1))
+  Downloading Flask-0.11.1-py2.py3-none-any.whl (80kB)
+Collecting Jinja2>=2.4 (from flask->-r requirements.txt (line 1))
+  Downloading Jinja2-2.8-py2.py3-none-any.whl (263kB)
+Collecting Werkzeug>=0.7 (from flask->-r requirements.txt (line 1))
+  Downloading Werkzeug-0.11.10-py2.py3-none-any.whl (306kB)
+Collecting click>=2.0 (from flask->-r requirements.txt (line 1))
+  Downloading click-6.6.tar.gz (283kB)
+Collecting itsdangerous>=0.21 (from flask->-r requirements.txt (line 1))
+  Downloading itsdangerous-0.24.tar.gz (46kB)
+Collecting MarkupSafe (from Jinja2>=2.4->flask->-r requirements.txt (line 1))
+  Downloading MarkupSafe-0.23.tar.gz
+Building wheels for collected packages: click, itsdangerous, MarkupSafe
+  Running setup.py bdist_wheel for click: started
+  Running setup.py bdist_wheel for click: finished with status 'done'
+  Stored in directory: /root/.cache/pip/wheels/b0/6d/8c/cf5ca1146e48bc7914748bfb1dbf3a40a440b8b4f4f0d952dd
+  Running setup.py bdist_wheel for itsdangerous: started
+  Running setup.py bdist_wheel for itsdangerous: finished with status 'done'
+  Stored in directory: /root/.cache/pip/wheels/fc/a8/66/24d655233c757e178d45dea2de22a04c6d92766abfb741129a
+  Running setup.py bdist_wheel for MarkupSafe: started
+  Running setup.py bdist_wheel for MarkupSafe: finished with status 'done'
+  Stored in directory: /root/.cache/pip/wheels/a3/fa/dc/0198eed9ad95489b8a4f45d14dd5d2aee3f8984e46862c5748
+Successfully built click itsdangerous MarkupSafe
+Installing collected packages: MarkupSafe, Jinja2, Werkzeug, click, itsdangerous, flask
+Successfully installed Jinja2-2.8 MarkupSafe-0.23 Werkzeug-0.11.10 click-6.6 flask-0.11.1 itsdangerous-0.24
+ ---> 297ed80fec8b
+Removing intermediate container 8d5fe6d5dccc
+Step 6 : EXPOSE 5000
+ ---> Running in ad33430d8b2e
+ ---> 5e1db80d4757
+Removing intermediate container ad33430d8b2e
+Step 7 : CMD python app.py
+ ---> Running in df4bda895fe7
+ ---> 6048478c513f
+Removing intermediate container df4bda895fe7
+Successfully built 6048478c513f
+++ docker images
+++ grep example_flask
+++ awk '{print $3}'
++ new_image_id=6048478c513f
++ '[' '!' 7695dc790c4a == 6048478c513f ']'
++ docker ps -f ancestor=7695dc790c4a
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                     NAMES
+cd126b19c4c1        7695dc790c4a        "/bin/sh -c 'python a"   20 minutes ago      Up 20 minutes       0.0.0.0:32787->5000/tcp   j_test_web
+++ docker ps -f ancestor=7695dc790c4a -q
++ docker rm -f cd126b19c4c1
+cd126b19c4c1
++ docker rmi -f 7695dc790c4a
+Deleted: sha256:7695dc790c4a33c9fb0c07006348cb5b5246048cb51042bc7b2bf2f290bdd134
+Deleted: sha256:5f1c3cfa393f09aadb423976093baad347c863721617cb33d9fbdd30fee809c9
+Deleted: sha256:b1ff2861e554388f7d308994d078c4284f0fa703b1da658bddf2ce9b04d46874
+Deleted: sha256:28f2ed44d78025d93c812843c3f67f5a5ce128ed926fc7ef629b4bbd636845c2
+Deleted: sha256:19f3284fb1028912fd747d0275f5f6217db079ecbf09484bcb7c932d7ea8dbbd
+Deleted: sha256:cc65cc66e7090e1c1f946e50156f439261696d4196bca43f8a2a5e0ea8dfcd64
+Deleted: sha256:258168542dc755c574104316f33cb12afad463af092496e98da7ce497b374494
++ docker run -d -P --name j_test_web example_flask
+ba80b0671533fb77a4cbd9dfb8d90f118f98d9a1df925d5f6032b077e54afc5c
++ docker ps -f ancestor=example_flask:latest
+CONTAINER ID        IMAGE               COMMAND                  CREATED                  STATUS                  PORTS                     NAMES
+ba80b0671533        example_flask       "/bin/sh -c 'python a"   Less than a second ago   Up Less than a second   0.0.0.0:32788->5000/tcp   j_test_web
+Finished: SUCCESS
+
+
+4、验证
+image在构建过程中：
+[jenkins@n36 docker-example-flask]$ docker images
+REPOSITORY                                   TAG                 IMAGE ID            CREATED             SIZE
+<none>                                       <none>              297ed80fec8b        2 seconds ago       694.6 MB
+example_flask                                latest              7695dc790c4a        21 minutes ago      694.6 MB
+
+构建完毕后：
+[jenkins@n36 docker-example-flask]$ docker images
+REPOSITORY                                   TAG                 IMAGE ID            CREATED              SIZE
+example_flask                                latest              6048478c513f        About a minute ago   694.6 MB
+
+测试的container的状态：
+[jenkins@n36 docker-example-flask]$ docker ps -f ancestor=example_flask:latest
+CONTAINER ID        IMAGE               COMMAND                  CREATED              STATUS              PORTS                     NAMES
+ba80b0671533        example_flask       "/bin/sh -c 'python a"   About a minute ago   Up About a minute   0.0.0.0:32788->5000/tcp   j_test_web
+
+[jenkins@n36 docker-example-flask]$ curl 172.17.0.1:32788                     
+Hello World! [docker-example-flask]
+
+变更过程，符合预期。
+
+
+5、再次构建(git源码无变更的场景)
+控制台输出
+
+Started by user admin
+Building remotely on slave_36 (build) in workspace /home/jenkins/workspace/docker-example-flask
+ > git rev-parse --is-inside-work-tree # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/opera443399/docker-example-flask.git # timeout=10
+Fetching upstream changes from https://github.com/opera443399/docker-example-flask.git
+ > git --version # timeout=10
+ > git -c core.askpass=true fetch --tags --progress https://github.com/opera443399/docker-example-flask.git +refs/heads/*:refs/remotes/origin/*
+ > git rev-parse refs/remotes/origin/master^{commit} # timeout=10
+ > git rev-parse refs/remotes/origin/origin/master^{commit} # timeout=10
+Checking out Revision 788c804b7b60c7b5baaf288c51e586520a6509e2 (refs/remotes/origin/master)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 788c804b7b60c7b5baaf288c51e586520a6509e2
+ > git rev-list 788c804b7b60c7b5baaf288c51e586520a6509e2 # timeout=10
+[docker-example-flask] $ /bin/sh -xe /tmp/hudson161989549268955481.sh
+++ docker images
+++ grep example_flask
+++ awk '{print $3}'
++ old_image_id=6048478c513f
++ docker build -t example_flask .
+Sending build context to Docker daemon 73.73 kB
+
+Step 1 : FROM python:2.7
+ ---> a047e3d0ae2b
+Step 2 : MAINTAINER PC
+ ---> Using cache
+ ---> 7309291ae3ee
+Step 3 : ADD . /code
+ ---> Using cache
+ ---> 41c5fceb2b42
+Step 4 : WORKDIR /code
+ ---> Using cache
+ ---> 8006fea20324
+Step 5 : RUN pip install -r requirements.txt
+ ---> Using cache
+ ---> 297ed80fec8b
+Step 6 : EXPOSE 5000
+ ---> Using cache
+ ---> 5e1db80d4757
+Step 7 : CMD python app.py
+ ---> Using cache
+ ---> 6048478c513f
+Successfully built 6048478c513f
+++ docker images
+++ grep example_flask
+++ awk '{print $3}'
++ new_image_id=6048478c513f
++ '[' '!' 6048478c513f == 6048478c513f ']'
+++ date
++ echo -n -e '\n\033[10;1;32m[JENKINS] Thu Jun 30 15:58:12 CST 2016, the image is not changed.\033[0m\n'
+
+[10;1;32m[JENKINS] Thu Jun 30 15:58:12 CST 2016, the image is not changed.[0m
+Finished: SUCCESS
+
+6、再次验证
+[jenkins@n36 docker-example-flask]$ docker images
+REPOSITORY                                   TAG                 IMAGE ID            CREATED             SIZE
+example_flask                                latest              6048478c513f        16 minutes ago      694.6 MB
+[jenkins@n36 docker-example-flask]$ docker ps -f ancestor=example_flask:latest
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                     NAMES
+ba80b0671533        example_flask       "/bin/sh -c 'python a"   17 minutes ago      Up 17 minutes       0.0.0.0:32788->5000/tcp   j_test_web
+
+未发生变更，符合预期。
+
+
+7、小结
+1)在 jenkins 中添加 salve 节点，然后在新的任务中，配置好代码仓库，在指定的节点上运行指定的脚本。
+2)后续思路：增加任务触发的条件，并改进脚本，验证镜像并 push 到 local registry 中，然后在其他环境 pull 这个新的镜像。
+
+
+
+ZYXW、参考：
+1、docker doc
+https://github.com/jenkinsci/docker
+https://hub.docker.com/_/jenkins/
+
+2、jenkins
+http://blog.nsfocus.net/jenkins-build-number-machines/
+http://www.tuicool.com/articles/fq6rYnz
+http://www.cnblogs.com/Leo_wl/p/4314792.html
+https://segmentfault.com/a/1190000003732967
