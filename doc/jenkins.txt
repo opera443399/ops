@@ -1,0 +1,132 @@
+jenkins的基础操作
+2016/6/30
+
+一、安装
+1、在 ubuntu 系统上（示例在apache-tomcat下运行）
+~]# apt-get update
+~]# apt-get install git openjdk-8-jdk
+~]# apt-get install wget
+~]# cd /opt
+~]# wget http://apache.communilink.net/tomcat/tomcat-8/v8.5.3/bin/apache-tomcat-8.5.3.tar.gz
+~]# tar zxvf apache-tomcat-8.5.3.tar.gz
+~]# ln -s /opt/apache-tomcat-8.5.3 /opt/apache-tomcat
+~]# cd /opt/apache-tomcat/webapps/
+~]# rm ROOT -fr
+~]# wget http://mirrors.jenkins-ci.org/war/latest/jenkins.war -O ROOT.war
+~]# /opt/apache-tomcat/bin/startup.sh
+
+
+2、在 centos 系统上（示例直接运行）
+~]# yum install java-1.8.0-openjdk
+~]# mkdir -p /opt/jenkins/logs
+~]# wget http://mirrors.jenkins-ci.org/war/latest/jenkins.war -O /opt/jenkins/jenkins.war
+~]# java -jar /opt/jenkins/jenkins.war >/opt/jenkins/logs/$(date +%F).log 2>&1 &
+
+
+3、在 docker 环境中
+~]$ docker pull jenkins
+~]$ mkdir -p /data/docker/jenkins-test
+~]$ docker run -d --restart=always -p 8080:8080 -p 50000:50000 -v /data/docker/jenkins-test:/var/jenkins_home --name jenkins_36 jenkins
+
+
+
+二、配置
+访问：http://IP:8080/
+
+访问后的首要步骤：
+选择菜单：“Jenkins-系统管理-Configure Global Security”
+先增加一个管理员帐号密码，设置一下安全选项。
+
+
+三、使用
+1、新增一个 salve 节点
+提示：先手动 ssh 测试一下连通性。
+
+选择菜单：“Jenkins-系统管理-管理节点-新建节点”
+调整部分配置：
+------------------------------------------------------------------------------
+	Name:                    slave_36
+    远程工作目录:              /home/jenkins
+    用法:                      只允许运行绑定到这台机器的Job
+    启动方法:                launch slave agents on unix machines via ssh
+    Host:                    172.17.0.1
+    Credentials:             （可选 ssh password 或 key 认证）
+保存
+------------------------------------------------------------------------------  
+
+
+2、创建一个任务
+选择菜单：“Jenkins-新建”
+------------------------------------------------------------------------------
+    Item名称:                job1
+    （勾选）构建一个自由风格的软件项目
+    
+确定
+
+    项目名称:                job1
+    （勾选）Restrict where this project can be run
+                            Label Expression: slave_36 
+                            
+    构建:                    （选择）Execute shell
+                            Command:    echo "[`date`] execute shell from jenkins." >>test.log
+
+保存 
+------------------------------------------------------------------------------
+
+3、执行任务
+选择菜单：“立即构建”
+页面变成：
+------------------------------------------------------------------------------ 
+Project job1
+
+添加说明
+禁用项目
+	工作区
+	最新修改记录
+相关连接
+
+Last build(#1),16 秒之前
+Last stable build(#1),16 秒之前
+Last successful build(#1),16 秒之前
+Last completed build(#1),16 秒之前
+------------------------------------------------------------------------------
+
+4、验证任务
+查看工作区：
+------------------------------------------------------------------------------
+Workspace of job1 on slave_36
+
+	test.log	59 B	查看
+ (打包下载全部文件)
+------------------------------------------------------------------------------
+ 
+继续查看 test.log
+------------------------------------------------------------------------------
+[Thu Jun 30 11:18:43 CST 2016] execute shell from jenkins.
+------------------------------------------------------------------------------
+
+重复构建2次后，再次查看内容：
+------------------------------------------------------------------------------
+[Thu Jun 30 11:18:43 CST 2016] execute shell from jenkins.
+[Thu Jun 30 11:20:05 CST 2016] execute shell from jenkins.
+[Thu Jun 30 11:20:11 CST 2016] execute shell from jenkins.
+------------------------------------------------------------------------------
+
+在左下方可以看到构建历史，内容类似这样：
+------------------------------------------------------------------------------
+Build History  构建历史
+
+Success > 控制台输出 #3 2016-6-30 上午3:20
+Success > 控制台输出 #2 2016-6-30 上午3:20
+Success > 控制台输出 #1 2016-6-30 上午3:18
+------------------------------------------------------------------------------
+
+5、小结
+本次示例，尚未使用 svn，git，仅简单示范在指定的节点上执行 shell 任务，体现出 jenkins 大致上是如何工作的。
+
+
+
+
+
+
+  
