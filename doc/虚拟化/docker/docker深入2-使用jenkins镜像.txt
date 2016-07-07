@@ -148,32 +148,33 @@ Fetching upstream changes from https://github.com/opera443399/docker-example-fla
  > git -c core.askpass=true fetch --tags --progress https://github.com/opera443399/docker-example-flask.git +refs/heads/*:refs/remotes/origin/*
  > git rev-parse refs/remotes/origin/master^{commit} # timeout=10
  > git rev-parse refs/remotes/origin/origin/master^{commit} # timeout=10
-Checking out Revision 788c804b7b60c7b5baaf288c51e586520a6509e2 (refs/remotes/origin/master)
+Checking out Revision ee7589867d808e37f25caa5ba57f7b37f0764830 (refs/remotes/origin/master)
  > git config core.sparsecheckout # timeout=10
- > git checkout -f 788c804b7b60c7b5baaf288c51e586520a6509e2
- > git rev-list d559e16977562f1ef694981ae36d5a0b6ffef394 # timeout=10
-[docker-example-flask] $ /bin/sh -xe /tmp/hudson7169564271462058918.sh
+ > git checkout -f ee7589867d808e37f25caa5ba57f7b37f0764830
+ > git rev-list 3cf4b71d1fbafdad58409a923400029560fab1b7 # timeout=10
+[docker-example-flask] $ /bin/sh -xe /tmp/hudson6257354915828167074.sh
++ '[' '!' -f Dockerfile ']'
 ++ docker images
 ++ grep example_flask
 ++ awk '{print $3}'
-+ old_image_id=7695dc790c4a
++ old_image_id=705df122c6f4
 + docker build -t example_flask .
-Sending build context to Docker daemon 73.73 kB
+Sending build context to Docker daemon 151.6 kB
 
 Step 1 : FROM python:2.7
  ---> a047e3d0ae2b
 Step 2 : MAINTAINER PC
  ---> Using cache
- ---> 7309291ae3ee
+ ---> 226defd54560
 Step 3 : ADD . /code
- ---> 41c5fceb2b42
-Removing intermediate container 9e75b73bfa1c
+ ---> e29eabdfcf6c
+Removing intermediate container 9c54acc4b169
 Step 4 : WORKDIR /code
- ---> Running in 79da8e972cdc
- ---> 8006fea20324
-Removing intermediate container 79da8e972cdc
+ ---> Running in e29cc3197baf
+ ---> e477c42451fa
+Removing intermediate container e29cc3197baf
 Step 5 : RUN pip install -r requirements.txt
- ---> Running in 8d5fe6d5dccc
+ ---> Running in 7484819fb9f9
 Collecting flask (from -r requirements.txt (line 1))
   Downloading Flask-0.11.1-py2.py3-none-any.whl (80kB)
 Collecting Jinja2>=2.4 (from flask->-r requirements.txt (line 1))
@@ -199,62 +200,57 @@ Building wheels for collected packages: click, itsdangerous, MarkupSafe
 Successfully built click itsdangerous MarkupSafe
 Installing collected packages: MarkupSafe, Jinja2, Werkzeug, click, itsdangerous, flask
 Successfully installed Jinja2-2.8 MarkupSafe-0.23 Werkzeug-0.11.10 click-6.6 flask-0.11.1 itsdangerous-0.24
- ---> 297ed80fec8b
-Removing intermediate container 8d5fe6d5dccc
+ ---> 2f1766774e10
+Removing intermediate container 7484819fb9f9
 Step 6 : EXPOSE 5000
- ---> Running in ad33430d8b2e
- ---> 5e1db80d4757
-Removing intermediate container ad33430d8b2e
+ ---> Running in 0afc7dfd706c
+ ---> d4be934c4b82
+Removing intermediate container 0afc7dfd706c
 Step 7 : CMD python app.py
- ---> Running in df4bda895fe7
- ---> 6048478c513f
-Removing intermediate container df4bda895fe7
-Successfully built 6048478c513f
+ ---> Running in 80143492c06f
+ ---> 8a7e04e40099
+Removing intermediate container 80143492c06f
+Successfully built 8a7e04e40099
 ++ docker images
 ++ grep example_flask
 ++ awk '{print $3}'
-+ new_image_id=6048478c513f
-+ '[' '!' 7695dc790c4a == 6048478c513f ']'
-+ docker ps -f ancestor=7695dc790c4a
++ new_image_id=8a7e04e40099
++ '[' X705df122c6f4 == X8a7e04e40099 ']'
++ '[' '!' -z 705df122c6f4 ']'
++ docker ps -f ancestor=705df122c6f4
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                     NAMES
-cd126b19c4c1        7695dc790c4a        "/bin/sh -c 'python a"   20 minutes ago      Up 20 minutes       0.0.0.0:32787->5000/tcp   j_test_web
-++ docker ps -f ancestor=7695dc790c4a -q
-+ docker rm -f cd126b19c4c1
-cd126b19c4c1
-+ docker rmi -f 7695dc790c4a
-Deleted: sha256:7695dc790c4a33c9fb0c07006348cb5b5246048cb51042bc7b2bf2f290bdd134
-Deleted: sha256:5f1c3cfa393f09aadb423976093baad347c863721617cb33d9fbdd30fee809c9
-Deleted: sha256:b1ff2861e554388f7d308994d078c4284f0fa703b1da658bddf2ce9b04d46874
-Deleted: sha256:28f2ed44d78025d93c812843c3f67f5a5ce128ed926fc7ef629b4bbd636845c2
-Deleted: sha256:19f3284fb1028912fd747d0275f5f6217db079ecbf09484bcb7c932d7ea8dbbd
-Deleted: sha256:cc65cc66e7090e1c1f946e50156f439261696d4196bca43f8a2a5e0ea8dfcd64
-Deleted: sha256:258168542dc755c574104316f33cb12afad463af092496e98da7ce497b374494
+d6cdb6752542        705df122c6f4        "/bin/sh -c 'python a"   12 minutes ago      Up 12 minutes       0.0.0.0:32792->5000/tcp   j_test_web
+++ docker ps -f ancestor=705df122c6f4 -q
++ docker rm -f d6cdb6752542
+d6cdb6752542
++ docker rmi -f 705df122c6f4
+Deleted: sha256:705df122c6f45fd7d14872216df5ac748e7ccd8aeb574c692d6f3ef8e68d3612
+Deleted: sha256:0479bb5f6b9bce43653428f5ed230846178e52d929e6a0817ccbb25bbb318e50
+Deleted: sha256:efe1492bdf6ab159c1357c04b519e98bd33c17bfd57f1b24384ea7c786b34dd8
+Deleted: sha256:5aae0d93bb57f7b4bf4c7151c203f5e0e194a8688c20a756db77d6bda1be216c
+Deleted: sha256:933f0804c45e0cd9722280731315f4dcea31a7fc6a48ebf579e161cf28f79347
+Deleted: sha256:0c9e6c88927096de37cdbcef1a9de5c9dc45ab1e80a9389d7106b0961874cf15
+Deleted: sha256:b6c6b2b55c9e2eaf123777072efa77f35953706a29a93dadaf1ba18ac59a7d34
 + docker run -d -P --name j_test_web example_flask
-ba80b0671533fb77a4cbd9dfb8d90f118f98d9a1df925d5f6032b077e54afc5c
+da59337bc9a72416f1304bf96109ef69cb5a62097a93a12fd267330bc1871136
 + docker ps -f ancestor=example_flask:latest
-CONTAINER ID        IMAGE               COMMAND                  CREATED                  STATUS                  PORTS                     NAMES
-ba80b0671533        example_flask       "/bin/sh -c 'python a"   Less than a second ago   Up Less than a second   0.0.0.0:32788->5000/tcp   j_test_web
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                  PORTS                     NAMES
+da59337bc9a7        example_flask       "/bin/sh -c 'python a"   1 seconds ago       Up Less than a second   0.0.0.0:32793->5000/tcp   j_test_web
 Finished: SUCCESS
 
 
 4、验证
-image在构建过程中：
-[jenkins@n36 docker-example-flask]$ docker images
-REPOSITORY                                   TAG                 IMAGE ID            CREATED             SIZE
-<none>                                       <none>              297ed80fec8b        2 seconds ago       694.6 MB
-example_flask                                latest              7695dc790c4a        21 minutes ago      694.6 MB
-
-构建完毕后：
+image构建完毕后：
 [jenkins@n36 docker-example-flask]$ docker images
 REPOSITORY                                   TAG                 IMAGE ID            CREATED              SIZE
-example_flask                                latest              6048478c513f        About a minute ago   694.6 MB
+example_flask                                latest              8a7e04e40099        About a minute ago   694.6 MB
 
 测试的container的状态：
 [jenkins@n36 docker-example-flask]$ docker ps -f ancestor=example_flask:latest
 CONTAINER ID        IMAGE               COMMAND                  CREATED              STATUS              PORTS                     NAMES
-ba80b0671533        example_flask       "/bin/sh -c 'python a"   About a minute ago   Up About a minute   0.0.0.0:32788->5000/tcp   j_test_web
+da59337bc9a7        example_flask       "/bin/sh -c 'python a"   1 seconds ago       Up Less than a second   0.0.0.0:32793->5000/tcp   j_test_web
 
-[jenkins@n36 docker-example-flask]$ curl 172.17.0.1:32788                     
+[jenkins@n36 docker-example-flask]$ curl 172.17.0.1:32793
 Hello World! [docker-example-flask]
 
 变更过程，符合预期。
@@ -273,57 +269,60 @@ Fetching upstream changes from https://github.com/opera443399/docker-example-fla
  > git -c core.askpass=true fetch --tags --progress https://github.com/opera443399/docker-example-flask.git +refs/heads/*:refs/remotes/origin/*
  > git rev-parse refs/remotes/origin/master^{commit} # timeout=10
  > git rev-parse refs/remotes/origin/origin/master^{commit} # timeout=10
-Checking out Revision 788c804b7b60c7b5baaf288c51e586520a6509e2 (refs/remotes/origin/master)
+Checking out Revision ee7589867d808e37f25caa5ba57f7b37f0764830 (refs/remotes/origin/master)
  > git config core.sparsecheckout # timeout=10
- > git checkout -f 788c804b7b60c7b5baaf288c51e586520a6509e2
- > git rev-list 788c804b7b60c7b5baaf288c51e586520a6509e2 # timeout=10
-[docker-example-flask] $ /bin/sh -xe /tmp/hudson161989549268955481.sh
+ > git checkout -f ee7589867d808e37f25caa5ba57f7b37f0764830
+ > git rev-list ee7589867d808e37f25caa5ba57f7b37f0764830 # timeout=10
+[docker-example-flask] $ /bin/sh -xe /tmp/hudson288315631585112422.sh
++ '[' '!' -f Dockerfile ']'
 ++ docker images
 ++ grep example_flask
 ++ awk '{print $3}'
-+ old_image_id=6048478c513f
++ old_image_id=8a7e04e40099
 + docker build -t example_flask .
-Sending build context to Docker daemon 73.73 kB
+Sending build context to Docker daemon 151.6 kB
 
 Step 1 : FROM python:2.7
  ---> a047e3d0ae2b
 Step 2 : MAINTAINER PC
  ---> Using cache
- ---> 7309291ae3ee
+ ---> 226defd54560
 Step 3 : ADD . /code
  ---> Using cache
- ---> 41c5fceb2b42
+ ---> e29eabdfcf6c
 Step 4 : WORKDIR /code
  ---> Using cache
- ---> 8006fea20324
+ ---> e477c42451fa
 Step 5 : RUN pip install -r requirements.txt
  ---> Using cache
- ---> 297ed80fec8b
+ ---> 2f1766774e10
 Step 6 : EXPOSE 5000
  ---> Using cache
- ---> 5e1db80d4757
+ ---> d4be934c4b82
 Step 7 : CMD python app.py
  ---> Using cache
- ---> 6048478c513f
-Successfully built 6048478c513f
+ ---> 8a7e04e40099
+Successfully built 8a7e04e40099
 ++ docker images
 ++ grep example_flask
 ++ awk '{print $3}'
-+ new_image_id=6048478c513f
-+ '[' '!' 6048478c513f == 6048478c513f ']'
++ new_image_id=8a7e04e40099
++ '[' X8a7e04e40099 == X8a7e04e40099 ']'
 ++ date
-+ echo -n -e '\n\033[10;1;32m[JENKINS] Thu Jun 30 15:58:12 CST 2016, the image is not changed.\033[0m\n'
++ echo -e '\n\033[10;1;32m[WARN] Thu Jul  7 17:30:12 CST 2016, the image is not changed.\033[0m\n'
 
-[10;1;32m[JENKINS] Thu Jun 30 15:58:12 CST 2016, the image is not changed.[0m
+[10;1;32m[WARN] Thu Jul  7 17:30:12 CST 2016, the image is not changed.[0m
+
 Finished: SUCCESS
+
 
 6、再次验证
 [jenkins@n36 docker-example-flask]$ docker images
 REPOSITORY                                   TAG                 IMAGE ID            CREATED             SIZE
-example_flask                                latest              6048478c513f        16 minutes ago      694.6 MB
+example_flask                                latest              8a7e04e40099        16 minutes ago      694.6 MB
 [jenkins@n36 docker-example-flask]$ docker ps -f ancestor=example_flask:latest
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                     NAMES
-ba80b0671533        example_flask       "/bin/sh -c 'python a"   17 minutes ago      Up 17 minutes       0.0.0.0:32788->5000/tcp   j_test_web
+da59337bc9a7        example_flask       "/bin/sh -c 'python a"   1 seconds ago       Up 12 minutes   0.0.0.0:32793->5000/tcp   j_test_web
 
 未发生变更，符合预期。
 
