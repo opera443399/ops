@@ -1,5 +1,5 @@
 docker深入2-使用jenkins镜像
-2016/6/30
+2016/7/7
 
 一、示例
 测试环境基于文档：docker深入2-熟悉v1.11和找不同.txt
@@ -108,11 +108,18 @@ https://github.com/opera443399/docker-example-flask.git
         Execute shell
             Command:
 ------------------------------------------------------------------------------
+if [ ! -f 'Dockerfile' ]; then
+    echo -e "\n\033[10;1;32m[WARN] `date`, Dockerfile not found!\033[0m\n"
+    exit 1
+fi
 old_image_id=$(docker images |grep example_flask |awk '{print $3}')
 docker build -t example_flask .
 new_image_id=$(docker images |grep example_flask |awk '{print $3}')
-if [ ! ${old_image_id} == ${new_image_id} ]; then
-    # remove the old one
+if [ "X${old_image_id}" == "X${new_image_id}" ]; then
+    ## new == old
+    echo -e "\n\033[10;1;32m[WARN] `date`, the image is not changed.\033[0m\n"
+elif [ ! -z ${old_image_id} ]; then
+    ## remove the old one
     docker ps -f ancestor="${old_image_id}"
     docker rm -f `docker ps -f ancestor="${old_image_id}" -q`
     docker rmi -f ${old_image_id}
@@ -120,7 +127,9 @@ if [ ! ${old_image_id} == ${new_image_id} ]; then
     docker run -d -P --name j_test_web example_flask
     docker ps -f ancestor="example_flask:latest"
 else
-    echo -n -e "\n\033[10;1;32m[JENKINS] `date`, the image is not changed.\033[0m\n"
+    # new
+    docker run -d -P --name j_test_web example_flask
+    docker ps -f ancestor="example_flask:latest"
 fi
 ------------------------------------------------------------------------------
 保存
