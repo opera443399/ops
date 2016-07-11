@@ -1,5 +1,5 @@
 linux bash shell 三言两语
-2016/6/24
+2016/7/11
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -166,8 +166,11 @@ b c d e
 read后可以跟多个变量，依次接收传递过来的值。
 
 6. 参数
+[root@test t]# cat t.sh 
+#!/bin/bash
 #
 #  $0 是这个bash文件的名称；
+#  $1 是第1个参数；
 #  $? 是上一指令的返回值；
 #  $* 是该脚本调用的所有参数；
 #  $@ 基本与上面的$*相同。区别是：
@@ -176,12 +179,28 @@ read后可以跟多个变量，依次接收传递过来的值。
 #  $$ 是返回上一个指令对应的pid
 #
 ab=($(ls))
-echo "1: "${ab[@]}
-echo "2: "${#ab[@]}
+echo '${ab[@] -> '${ab[@]}
+echo '${#ab[@]} -> '${#ab[@]}
 
-echo "3: "$@
-echo "4: "$#
-echo "5: "$?
+echo '$0 -> '$0
+echo '$1 -> '$1
+echo '$2 -> '$2
+echo '$? -> '$?
+echo '$* -> '$*
+echo '$@ -> '$@
+echo '$# -> '$#
+echo '$$ -> '$$
+[root@test t]# sh t.sh zzz yyy xxx www -h
+${ab[@] -> set_color.sh t.sh
+${#ab[@]} -> 2
+$0 -> t.sh
+$1 -> zzz
+$2 -> yyy
+$? -> 0
+$* -> zzz yyy xxx www -h
+$@ -> zzz yyy xxx www -h
+$# -> 5
+$$ -> 30383
 
 
 7. 正则

@@ -1,4 +1,6 @@
 sed博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
+2016/7/11
+
 另，附上几个blog的文章，后续可能会更新这个列表：
 sed命令详解：http://www.cnblogs.com/edwardlost/archive/2010/09/17/1829145.html
 sed单行脚本快速参考 ：http://blog.csdn.net/showman/article/details/4408937
@@ -113,5 +115,55 @@ P：Print up to the first embedded newline of the current pattern space.
 D：If pattern space contains no newline, start a normal new cycle as if the d command was issued. Otherwise, delete text in the pattern space up to the first newline, and restart cycle with the resultant pattern space, without reading a new line of input.
 
 N：Add a newline to the pattern space, then append the next line of input to the pattern space. If there is no more input then sed exits without processing any more commands.
+增加一个换行符，并读入下一行，一起保存到 pattern space 中。
 
 
+在输出时，增加一行内容的示例：
+1）在每1行前插入一段字符
+~]# ls |sed 'N;2iFILENAME'           
+FILENAME
+set_color.sh
+t.sh
+www
+xxx
+yyy
+zzz
+
+2）在每2行前插入一段字符
+~]# ls |sed 'N;iFILENAME' 
+FILENAME
+set_color.sh
+t.sh
+FILENAME
+www
+xxx
+FILENAME
+yyy
+zzz
+
+注：上述例子中，结合 'N;' 带来的用法比较特别，不妨仔细琢磨下。
+
+3）在每一行前插入一段字符
+~]# ls |sed 'iFILENAME'  
+FILENAME
+set_color.sh
+FILENAME
+t.sh
+FILENAME
+www
+FILENAME
+xxx
+FILENAME
+yyy
+FILENAME
+zzz
+
+4）在第3行前插入一段字符
+[root@sz-local-vm42 t]# ls |sed '3iFILENAME'
+set_color.sh
+t.sh
+FILENAME
+www
+xxx
+yyy
+zzz
