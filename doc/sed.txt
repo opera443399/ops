@@ -159,7 +159,7 @@ FILENAME
 zzz
 
 4）在第3行前插入一段字符
-[root@sz-local-vm42 t]# ls |sed '3iFILENAME'
+~]# ls |sed '3iFILENAME'
 set_color.sh
 t.sh
 FILENAME
