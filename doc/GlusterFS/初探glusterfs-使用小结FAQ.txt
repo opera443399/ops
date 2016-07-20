@@ -1,5 +1,5 @@
 初探glusterfs-使用小结FAQ
-2016/6/22
+2016/7/20
 
 一、配置相关
 1、快速建立一个卷来提供服务的流程示例
@@ -102,11 +102,11 @@ gluster volume set gv1 nfs.disable off
 
 
 二、调整相关
-1、扩容
-volume add-brick gv_test1 replica 2 10.60.200.21:/data/gv1/brick1 10.60.200.22:/data/gv1/brick1
+1、扩容 distributed-replicate 类型的节点组
+[root@n11 ~]# volume add-brick gv_test1 replica 2 10.60.200.21:/data/gv1/brick1 10.60.200.22:/data/gv1/brick1
 
 
-# gluster volume info
+[root@n11 ~]# gluster volume info
  
 Volume Name: gv1
 Type: Distributed-Replicate
@@ -119,6 +119,53 @@ Brick1: 10.60.200.11:/data/gv1/brick1
 Brick2: 10.60.200.12:/data/gv1/brick1
 Brick3: 10.60.200.21:/data/gv1/brick1
 Brick4: 10.60.200.22:/data/gv1/brick1
+
+
+2、扩容 replica 类型的节点
+1）初始状态
+[root@n11 ~]# gluster volume info
+ 
+Volume Name: ovirt-data
+Type: Replicate
+Volume ID: 6a2f6489-bb8f-43d9-b46b-6258d95c7571
+Status: Started
+Number of Bricks: 1 x 2 = 2
+Transport-type: tcp
+Bricks:
+Brick1: 10.60.200.31:/data/ovirt/restore
+Brick2: 10.60.200.12:/data/ovirt/data
+
+
+2）增加一个副本，从2个副本增加到3个
+[root@n11 ~]# gluster volume add-brick [卷的名称] replica [新的副本数量] [新的节点路径]
+[root@n11 ~]# gluster volume add-brick ovirt-data replica 3 10.60.200.11:/data/ovirt/restore
+volume add-brick: failed: One or more nodes do not support the required op-version. Cluster op-version must atleast be 30600.
+
+上述操作遇到异常，下面是解决办法：
+[root@n11 ~]# gluster volume set ovirt-data op-version 30600
+volume set: failed: Option "cluster.op-version" is not valid for a single volume
+说明这个参数是一个全局的参数，不能只针对单个卷有效。
+[root@n11 ~]# gluster volume set all op-version 30600          
+volume set: success
+
+再次操作：
+[root@n11 ~]# gluster volume add-brick ovirt-data replica 3 10.60.200.11:/data/ovirt/restore
+volume add-brick: success
+
+[root@n11 ~]# gluster volume info ovirt-data 
+ 
+Volume Name: ovirt-data
+Type: Replicate
+Volume ID: 6a2f6489-bb8f-43d9-b46b-6258d95c7571
+Status: Started
+Number of Bricks: 1 x 3 = 3
+Transport-type: tcp
+Bricks:
+Brick1: 10.60.200.31:/data/ovirt/restore
+Brick2: 10.60.200.12:/data/ovirt/data
+Brick3: 10.60.200.11:/data/ovirt/restore
+
+
 
 
 三、故障相关
@@ -232,4 +279,8 @@ ZYXW、参考
 1、[Gluster-users] Replacing a failed brick
 https://www.gluster.org/pipermail/gluster-users/2013-August/014000.html
 
+2、expand brick
+http://avid.force.com/pkb/articles/en_US/how_to/Adding-a-node-to-a-cluster-using-gluster
+https://bugzilla.redhat.com/show_bug.cgi?id=1168897
+http://comments.gmane.org/gmane.comp.file-systems.gluster.user/20225
 
