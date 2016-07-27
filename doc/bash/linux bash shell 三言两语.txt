@@ -1,5 +1,5 @@
 linux bash shell 三言两语
-2016/7/26
+2016/7/27
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -472,4 +472,32 @@ mkdir -p old new
 do_rewrite $1
 
 
+25、set的用途
+1）设置参数
+在脚本中：
+# cat t.sh 
+set z1 y1 x1 w1
+echo '$1 -> '$1
+echo '$2 -> '$2
+echo '$@ -> '$@
+echo '$# -> '$#
 
+# sh t.sh z y x w
+$1 -> z1
+$2 -> y1
+$@ -> z1 y1 x1 w1
+$# -> 4
+
+在命令行：
+[root@ttt ~]# set z y x w
+[root@ttt ~]# echo $#    
+4
+[root@ttt ~]# echo $@
+z y x w
+
+
+2）设置选项
+set -e ：命令执行结果不为0，则退出
+set -x ：调试输出
+
+其他请参考man手册

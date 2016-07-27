@@ -1,5 +1,5 @@
 ﻿测试使用cobbler服务
-2015/12/28
+2016/7/27
 
 操作内容：
 一、基础环境
@@ -354,6 +354,13 @@ A：检查以下内容：
 Q2：在生产环境中的一个案例，客户端多次尝试从PXE启动，失败
 A：检查发现，总是em1的mac在请求dhcp，而cobbler服务是在em2所在局域网。
 在dell服务器的bios设置中，调整网卡配置，启用em2的pxe并禁用em1的pxe后再次测试，通过。
+
+还有一种情况：dhcp服务异常导致服务获取到IP地址，需清理以下文件：
+/var/lib/dhcpd/dhcpd.leases
+
+Q3：怎样调整cobbler中profile的顺序？
+A：编辑/var/lib/tftpboot/pxelinux.cfg/default
+
 -------------------------------------------------------------
 
 
@@ -363,3 +370,5 @@ ZYXW、参考
 1、CENTOS6.5安装和配置COBBLER 2.4
 http://blog.hackroad.com/operations-engineer/linux_server/11353.html
 
+2、Linux装机利器Cobbler安装配置 
+http://blog.chinaunix.net/uid-25266990-id-339787.html
