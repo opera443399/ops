@@ -1,0 +1,411 @@
+docker深入2-熟悉v1.12
+2016/7/30
+
+前言：2016/7/28，v1.12这个版本release，最重要的特色是swarm mode，快去琢磨一下吧。
+
+一、基础环境
+1、系统版本
+[root@n36 ~]# cat /etc/redhat-release 
+CentOS Linux release 7.1.1503 (Core) 
+[root@n36 ~]# uname -a                
+Linux n36 3.10.0-229.el7.x86_64 #1 SMP Fri Mar 6 11:36:42 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux
+
+2、安装服务
+[root@n36 ~]# rpm -ivh epel-release-7-2.noarch.rpm 
+[root@n36 ~]# cat /etc/yum.repos.d/docker.repo 
+[dockerrepo]
+name=Docker Repository
+baseurl=https://yum.dockerproject.org/repo/main/centos/$releasever/
+enabled=1
+gpgcheck=1
+gpgkey=https://yum.dockerproject.org/gpg
+
+[root@n36 ~]# yum install docker-engine -y
+[root@n36 ~]# systemctl start docker
+[root@n36 ~]# systemctl enable docker
+
+[root@n36 ~]# docker version
+Client:
+ Version:      1.12.0
+ API version:  1.24
+ Go version:   go1.6.3
+ Git commit:   8eab29e
+ Built:        
+ OS/Arch:      linux/amd64
+
+Server:
+ Version:      1.12.0
+ API version:  1.24
+ Go version:   go1.6.3
+ Git commit:   8eab29e
+ Built:        
+ OS/Arch:      linux/amd64
+ 
+[root@n36 ~]# useradd Jack
+[root@n36 ~]# usermod -a -G docker Jack
+[root@n36 ~]# su Jack
+
+
+3、示例
+-----------------------------------------------------
+                swarm manager node(n36)
+                        ↓
+                swarm worker node(n35)
+-----------------------------------------------------
+
+
+
+
+二、swarm mode 的概念
+1、防火墙
+在 hosts 之间放行如下端口：
+TCP port 2377 for cluster management communications
+TCP and UDP port 7946 for communication among nodes
+TCP and UDP port 4789 for overlay network traffic
+
+
+firewall-cmd --zone=public --add-port=2377/tcp
+firewall-cmd --zone=public --add-port=4789/tcp
+firewall-cmd --zone=public --add-port=4789/udp
+firewall-cmd --zone=public --add-port=7946/tcp
+firewall-cmd --zone=public --add-port=7946/udp
+firewall-cmd --zone=public --add-port=2377/tcp --permanent
+firewall-cmd --zone=public --add-port=4789/tcp --permanent
+firewall-cmd --zone=public --add-port=4789/udp --permanent
+firewall-cmd --zone=public --add-port=7946/tcp --permanent
+firewall-cmd --zone=public --add-port=7946/udp --permanent
+
+
+2、初始化 swarm manager  node
+[Jack@n36 ~]$ docker swarm init --advertise-addr 192.168.25.36
+Swarm initialized: current node (2lnjw3w7199y18jpgkrah73sf) is now a manager.
+
+To add a worker to this swarm, run the following command:
+    docker swarm join \
+    --token SWMTKN-1-5sn10kgxu1994ka845mrkc60xfsplz8duil5wnt60t0t2rrz8w-19rosexmyi7evg0coiek8ifpj \
+    192.168.25.36:2377
+    【注意：上述是一个 worker 角色】
+    
+To add a manager to this swarm, run the following command:
+    docker swarm join \
+    --token SWMTKN-1-5sn10kgxu1994ka845mrkc60xfsplz8duil5wnt60t0t2rrz8w-4jclslk83alcolr2stsmavylg \
+    192.168.25.36:2377
+    【注意：上述是一个 manager 角色】
+    
+3、查看 swarm 集群的信息
+[Jack@n36 ~]$ docker info
+（略）
+Swarm: active
+ NodeID: 2lnjw3w7199y18jpgkrah73sf
+ Is Manager: true
+ ClusterID: cvt2m9sqvg23lo3twcrs0h5zw
+ Managers: 1
+ Nodes: 1
+ Orchestration:
+  Task History Retention Limit: 5
+ Raft:
+  Snapshot interval: 10000
+  Heartbeat tick: 1
+  Election tick: 3
+ Dispatcher:
+  Heartbeat period: 5 seconds
+ CA configuration:
+  Expiry duration: 3 months
+ Node Address: 192.168.25.36
+（略）
+
+查看节点信息： 
+[Jack@n36 ~]$ docker node ls
+ID                           HOSTNAME     STATUS  AVAILABILITY  MANAGER STATUS
+2lnjw3w7199y18jpgkrah73sf *  n36  Ready   Active        Leader
+
+
+4、增加一个 swarm worker node
+[Jack@n35 ~]$ docker swarm join \
+      --token SWMTKN-1-5sn10kgxu1994ka845mrkc60xfsplz8duil5wnt60t0t2rrz8w-19rosexmyi7evg0coiek8ifpj \
+      192.168.25.36:2377
+This node joined a swarm as a worker.
+    
+话说，是不是心里会担心以后忘了这个token咋办？放心，有招：
+[Jack@n36 ~]$ docker swarm join-token worker
+To add a worker to this swarm, run the following command:
+    docker swarm join \
+    --token SWMTKN-1-5sn10kgxu1994ka845mrkc60xfsplz8duil5wnt60t0t2rrz8w-19rosexmyi7evg0coiek8ifpj \
+    192.168.25.36:2377
+
+    
+5、再次查看 swarm 集群的信息
+[Jack@n36 ~]$ docker info
+（略）
+Swarm: active
+ NodeID: 2lnjw3w7199y18jpgkrah73sf
+ Is Manager: true
+ ClusterID: cvt2m9sqvg23lo3twcrs0h5zw
+ Managers: 1
+ Nodes: 2
+ Orchestration:
+  Task History Retention Limit: 5
+ Raft:
+  Snapshot interval: 10000
+  Heartbeat tick: 1
+  Election tick: 3
+ Dispatcher:
+  Heartbeat period: 5 seconds
+ CA configuration:
+  Expiry duration: 3 months
+ Node Address: 192.168.25.36  
+（略）
+
+
+[Jack@n35 ~]$ docker info
+（略）
+Swarm: active
+ NodeID: 4f7auxypdzw9p4btekourhlh4
+ Is Manager: false
+ Node Address: 192.168.25.35
+（略）
+
+
+再次查看节点信息：
+[Jack@n36 ~]$ docker node ls
+ID                           HOSTNAME     STATUS  AVAILABILITY  MANAGER STATUS
+2lnjw3w7199y18jpgkrah73sf *  n36  Ready   Active        Leader
+4f7auxypdzw9p4btekourhlh4    n35  Ready   Active 
+
+
+
+三、service 的用法
+1、创建 create
+[Jack@n36 ~]$ docker service create --replicas 1 --name zz training/webapp python app.py              
+9p54kt2tn4ue7ydgm4ih0e60c
+
+2、查看 ls, ps
+[Jack@n36 ~]$ docker service ls
+ID            NAME  REPLICAS  IMAGE            COMMAND
+9p54kt2tn4ue  zz    1/1       training/webapp  python app.py
+[Jack@n36 ~]$ docker service inspect --pretty zz
+ID:             9p54kt2tn4ue7ydgm4ih0e60c
+Name:           zz
+Mode:           Replicated
+ Replicas:      1
+Placement:
+UpdateConfig:
+ Parallelism:   1
+ On failure:    pause
+ContainerSpec:
+ Image:         training/webapp
+ Args:          python app.py
+Resources:
+
+
+[Jack@n36 ~]$ docker service ps zz
+ID                         NAME  IMAGE            NODE         DESIRED STATE  CURRENT STATE          ERROR
+7vmhbm1ys9xbbrrlvyaj7uody  zz.1  training/webapp  n36  Running        Running 3 minutes ago
+
+
+3、扩容 scale
+[Jack@n36 ~]$ docker service scale zz=3
+zz scaled to 3
+[Jack@n36 ~]$ docker service ps zz
+ID                         NAME  IMAGE            NODE         DESIRED STATE  CURRENT STATE           ERROR
+7vmhbm1ys9xbbrrlvyaj7uody  zz.1  training/webapp  n36  Running        Running 5 minutes ago   
+dlx9r2mdmkzim6h4qek4fddo0  zz.2  training/webapp  n35  Running        Running 13 seconds ago  
+93f9c9d4eyvom5e1h0p4dxlpk  zz.3  training/webapp  n35  Running        Running 14 seconds ago 
+
+我们查看一下任务在2个节点的分别状态：
+[Jack@n36 ~]$ docker ps -a
+CONTAINER ID        IMAGE                    COMMAND             CREATED             STATUS              PORTS               NAMES
+1299bd70d5bd        training/webapp:latest   "python app.py"     5 minutes ago       Up 5 minutes        5000/tcp            zz.1.7vmhbm1ys9xbbrrlvyaj7uody
+
+[Jack@n35 ~]$ docker ps -a
+CONTAINER ID        IMAGE                    COMMAND             CREATED             STATUS              PORTS               NAMES
+03162a55b79f        training/webapp:latest   "python app.py"     32 seconds ago      Up 31 seconds       5000/tcp            zz.2.dlx9r2mdmkzim6h4qek4fddo0
+946c5bb39493        training/webapp:latest   "python app.py"     32 seconds ago      Up 31 seconds       5000/tcp            zz.3.93f9c9d4eyvom5e1h0p4dxlpk
+
+
+4、停止
+[Jack@n36 ~]$ docker service rm zz
+zz
+[Jack@n36 ~]$ docker service ps zz
+Error: No such service: zz
+
+
+5、滚动更新
+1）前提：集群中的节点都包括了相同的images
+
+2）使用 redis:v1 这个image
+[Jack@n36 ~]$ docker service create \
+    --replicas 3 \
+    --name redis \
+    --update-delay 10s \
+    redis:v1
+31rs07r46qg6m6jkrxwi0h23g
+[Jack@n36 ~]$ docker service inspect --pretty redis
+ID:             31rs07r46qg6m6jkrxwi0h23g
+Name:           redis
+Mode:           Replicated
+ Replicas:      3
+Placement:
+UpdateConfig:
+ Parallelism:   1
+ Delay:         10s
+ On failure:    pause
+ContainerSpec:
+ Image:         redis:v1
+Resources:
+[Jack@n36 ~]$ docker service ps redis
+ID                         NAME     IMAGE     NODE         DESIRED STATE  CURRENT STATE          ERROR
+7znqi7gc6annv25t97qy1qqkh  redis.1  redis:v1  n35  Running        Running 8 seconds ago  
+8gce6p0zgliydy6i9l1hsuhra  redis.2  redis:v1  n36  Running        Running 6 seconds ago  
+ckjdshhlhgim95vdw18bc67rq  redis.3  redis:v1  n36  Running        Running 8 seconds ago  
+
+
+3）升级为 redis:v2 这个image
+[Jack@n36 ~]$ docker service update --image redis:v2 redis
+redis
+[Jack@n36 ~]$ docker service inspect --pretty redis
+ID:             31rs07r46qg6m6jkrxwi0h23g
+Name:           redis
+Mode:           Replicated
+ Replicas:      3
+Update status:
+ State:         completed
+ Started:       about a minute ago
+ Completed:     13 seconds ago
+ Message:       update completed
+Placement:
+UpdateConfig:
+ Parallelism:   1
+ Delay:         10s
+ On failure:    pause
+ContainerSpec:
+ Image:         redis:v2
+Resources:
+[Jack@n36 ~]$ docker service ps redis              
+ID                         NAME         IMAGE     NODE         DESIRED STATE  CURRENT STATE                ERROR
+7ox1cxokwr67qnsl3qjk7k8nn  redis.1      redis:v2  n35  Running        Running about a minute ago   
+7znqi7gc6annv25t97qy1qqkh   \_ redis.1  redis:v1  n35  Shutdown       Shutdown about a minute ago  
+275qzgoqbxmch674346ulxark  redis.2      redis:v2  n35  Running        Running 53 seconds ago       
+8gce6p0zgliydy6i9l1hsuhra   \_ redis.2  redis:v1  n36  Shutdown       Shutdown about a minute ago  
+2d623wyb4jpp37cgrbb6jaxlb  redis.3      redis:v2  n36  Running        Running 29 seconds ago       
+ckjdshhlhgim95vdw18bc67rq   \_ redis.3  redis:v1  n36  Shutdown       Shutdown 42 seconds ago  
+
+[Jack@n36 ~]$ docker service rm redis                             
+redis
+
+6、管理 worker 节点
+1）不可用
+[Jack@n36 ~]$ docker node update --availability drain n35
+n35
+[Jack@n36 ~]$ docker node ls
+ID                           HOSTNAME     STATUS  AVAILABILITY  MANAGER STATUS
+2lnjw3w7199y18jpgkrah73sf *  n36  Ready   Active        Leader
+4f7auxypdzw9p4btekourhlh4    n35  Ready   Drain 
+
+
+将 node 设置为 drain 后，表明：该 node 将不会运行任务；可以观察到，该 node 中运行的服务正在自动迁移到线上的其他 node 上。
+
+用途示例：将 manager node 设置为 drain，从而避免任务在该 node 上运行，保持 manager 的单一和资源。
+
+2）激活
+[Jack@n36 ~]$ docker node update --availability active n35
+n35
+
+
+3）提升为 manager 和降级
+[Jack@n36 ~]$ docker node ls
+ID                           HOSTNAME     STATUS  AVAILABILITY  MANAGER STATUS
+2lnjw3w7199y18jpgkrah73sf *  n36  Ready   Active        Leader
+4f7auxypdzw9p4btekourhlh4    n35  Ready   Active
+[Jack@n36 ~]$ docker node promote n35
+Node n35 promoted to a manager in the swarm.
+[Jack@n36 ~]$ docker node ls
+ID                           HOSTNAME     STATUS  AVAILABILITY  MANAGER STATUS
+2lnjw3w7199y18jpgkrah73sf *  n36  Ready   Active        Leader
+4f7auxypdzw9p4btekourhlh4    n35  Ready   Active        Reachable
+[Jack@n36 ~]$ docker node demote n35
+Manager n35 demoted in the swarm.
+
+
+
+四、探索
+1、网络
+1）overlay
+[Jack@n36 ~]$ docker network ls -f Driver=overlay
+NETWORK ID          NAME                DRIVER              SCOPE
+9zqe46fvz9la        ingress             overlay             swarm 
+
+[Jack@n36 ~]$ docker network inspect ingress         
+[
+    {
+        "Name": "ingress",
+        "Id": "9zqe46fvz9lal04zqjlqshgfo",
+        "Scope": "swarm",
+        "Driver": "overlay",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": null,
+            "Config": [
+                {
+                    "Subnet": "10.255.0.0/16",
+                    "Gateway": "10.255.0.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Containers": {
+            "ingress-sbox": {
+                "Name": "ingress-endpoint",
+                "EndpointID": "abb9131054d2627e7f48e62d08cd076acf49bd96d101cfe5e32fdf082160b50b",
+                "MacAddress": "02:42:0a:ff:00:03",
+                "IPv4Address": "10.255.0.3/16",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {
+            "com.docker.network.driver.overlay.vxlanid_list": "256"
+        },
+        "Labels": {}
+    }
+]
+
+2）创建指定网络的 service
+[Jack@n36 ~]$ docker service create --replicas 1 --name zz --network=ingress training/webapp python app.py 
+8vf5fqghkotyi5he017d5qmtz
+[Jack@n36 ~]$ docker service ps zz
+ID                         NAME  IMAGE            NODE         DESIRED STATE  CURRENT STATE               ERROR
+9miqoe2fqz643td57rwvrg8ss  zz.1  training/webapp  n35  Running        Running about a minute ago 
+
+[Jack@n36 ~]$ docker service scale zz=5
+zz scaled to 5
+[Jack@n36 ~]$ docker service ps zz
+ID                         NAME  IMAGE            NODE         DESIRED STATE  CURRENT STATE           ERROR
+9miqoe2fqz643td57rwvrg8ss  zz.1  training/webapp  n35  Running        Running 2 minutes ago   
+1g95dpk9m2i483dzlsu27cvdt  zz.2  training/webapp  n36  Running        Running 14 seconds ago  
+0kcwiuaosvhrl6t7qwu66yq5a  zz.3  training/webapp  n36  Running        Running 21 seconds ago  
+4h5frbc7430m1czjq4wt75ioo  zz.4  training/webapp  n35  Running        Running 2 seconds ago   
+6h6mhxfmv864cath8qw2qdi9s  zz.5  training/webapp  n35  Running        Running 3 seconds ago   
+
+测试不同 container 之间的网络互通，符合预期。
+
+
+但要注意：
+[Jack@n36 ~]$ docker service create --replicas 1 --name zz --network=host training/webapp python app.py        
+Error response from daemon: network host is not eligible for docker services
+
+host 这个 network 不适用。
+
+
+
+五、小结
+1、关于网络
+如何利用docker的网络，还在琢磨中。
+
+
+
+ZYXW、参考
+1、swarm mode
+https://docs.docker.com/engine/swarm/
+https://docs.docker.com/engine/swarm/swarm-tutorial/
+https://docs.docker.com/engine/swarm/admin_guide/

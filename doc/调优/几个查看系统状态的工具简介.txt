@@ -1,5 +1,5 @@
 几个查看系统状态的工具简介
-
+2016/7/29
 linux性能分析博大精深，各工具的详情请查看man和参考网络文章。
 
 一、查看主机流量
@@ -47,6 +47,9 @@ clock-app  3348 root   15u  IPv4 733273      0t0  TCP 10.0.200.10:39670->a23-62-
 docker    23616 root    4u  IPv6 319706      0t0  TCP *:http (LISTEN)
 
 
+7）tcpdump
+抓包
+
 
 二、查看系统
 1）sar
@@ -90,3 +93,21 @@ Total DISK READ: 11.67 M/s | Total DISK WRITE: 7.81 M/s
 q：退出
 r：反向排序
 左右方向键：按某列排序
+
+
+5）ps
+ps aux | sort -nk3
+排序查看 CPU 占用率最高的进程（最底下一行）
+ 
+ps aux | sort -nk4
+排序查看 MEM 占用率最高的进程（最底下一行）
+
+
+6）ulimit
+ulimit -a
+查看系统限制
+
+
+7）strace
+strace -p pid
+查看系统调用
