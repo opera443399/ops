@@ -1,5 +1,5 @@
 docker深入2-熟悉v1.12
-2016/7/30
+2016/8/3
 
 前言：2016/7/28，v1.12这个版本release，最重要的特色是swarm mode，快去琢磨一下吧。
 
@@ -117,7 +117,7 @@ Swarm: active
 查看节点信息： 
 [Jack@n36 ~]$ docker node ls
 ID                           HOSTNAME     STATUS  AVAILABILITY  MANAGER STATUS
-2lnjw3w7199y18jpgkrah73sf *  n36  Ready   Active        Leader
+2lnjw3w7199y18jpgkrah73sf *  n36          Ready   Active        Leader
 
 
 4、增加一个 swarm worker node
@@ -169,8 +169,8 @@ Swarm: active
 再次查看节点信息：
 [Jack@n36 ~]$ docker node ls
 ID                           HOSTNAME     STATUS  AVAILABILITY  MANAGER STATUS
-2lnjw3w7199y18jpgkrah73sf *  n36  Ready   Active        Leader
-4f7auxypdzw9p4btekourhlh4    n35  Ready   Active 
+2lnjw3w7199y18jpgkrah73sf *  n36          Ready   Active        Leader
+4f7auxypdzw9p4btekourhlh4    n35          Ready   Active 
 
 
 
@@ -200,7 +200,7 @@ Resources:
 
 [Jack@n36 ~]$ docker service ps zz
 ID                         NAME  IMAGE            NODE         DESIRED STATE  CURRENT STATE          ERROR
-7vmhbm1ys9xbbrrlvyaj7uody  zz.1  training/webapp  n36  Running        Running 3 minutes ago
+7vmhbm1ys9xbbrrlvyaj7uody  zz.1  training/webapp  n36          Running        Running 3 minutes ago
 
 
 3、扩容 scale
@@ -208,11 +208,11 @@ ID                         NAME  IMAGE            NODE         DESIRED STATE  CU
 zz scaled to 3
 [Jack@n36 ~]$ docker service ps zz
 ID                         NAME  IMAGE            NODE         DESIRED STATE  CURRENT STATE           ERROR
-7vmhbm1ys9xbbrrlvyaj7uody  zz.1  training/webapp  n36  Running        Running 5 minutes ago   
-dlx9r2mdmkzim6h4qek4fddo0  zz.2  training/webapp  n35  Running        Running 13 seconds ago  
-93f9c9d4eyvom5e1h0p4dxlpk  zz.3  training/webapp  n35  Running        Running 14 seconds ago 
+7vmhbm1ys9xbbrrlvyaj7uody  zz.1  training/webapp  n36          Running        Running 5 minutes ago   
+dlx9r2mdmkzim6h4qek4fddo0  zz.2  training/webapp  n35          Running        Running 13 seconds ago  
+93f9c9d4eyvom5e1h0p4dxlpk  zz.3  training/webapp  n35          Running        Running 14 seconds ago 
 
-我们查看一下任务在2个节点的分别状态：
+我们查看一下任务在2个节点的分布状态：
 [Jack@n36 ~]$ docker ps -a
 CONTAINER ID        IMAGE                    COMMAND             CREATED             STATUS              PORTS               NAMES
 1299bd70d5bd        training/webapp:latest   "python app.py"     5 minutes ago       Up 5 minutes        5000/tcp            zz.1.7vmhbm1ys9xbbrrlvyaj7uody
@@ -255,9 +255,9 @@ ContainerSpec:
 Resources:
 [Jack@n36 ~]$ docker service ps redis
 ID                         NAME     IMAGE     NODE         DESIRED STATE  CURRENT STATE          ERROR
-7znqi7gc6annv25t97qy1qqkh  redis.1  redis:v1  n35  Running        Running 8 seconds ago  
-8gce6p0zgliydy6i9l1hsuhra  redis.2  redis:v1  n36  Running        Running 6 seconds ago  
-ckjdshhlhgim95vdw18bc67rq  redis.3  redis:v1  n36  Running        Running 8 seconds ago  
+7znqi7gc6annv25t97qy1qqkh  redis.1  redis:v1  n35          Running        Running 8 seconds ago  
+8gce6p0zgliydy6i9l1hsuhra  redis.2  redis:v1  n36          Running        Running 6 seconds ago  
+ckjdshhlhgim95vdw18bc67rq  redis.3  redis:v1  n36          Running        Running 8 seconds ago  
 
 
 3）升级为 redis:v2 这个image
@@ -283,12 +283,12 @@ ContainerSpec:
 Resources:
 [Jack@n36 ~]$ docker service ps redis              
 ID                         NAME         IMAGE     NODE         DESIRED STATE  CURRENT STATE                ERROR
-7ox1cxokwr67qnsl3qjk7k8nn  redis.1      redis:v2  n35  Running        Running about a minute ago   
-7znqi7gc6annv25t97qy1qqkh   \_ redis.1  redis:v1  n35  Shutdown       Shutdown about a minute ago  
-275qzgoqbxmch674346ulxark  redis.2      redis:v2  n35  Running        Running 53 seconds ago       
-8gce6p0zgliydy6i9l1hsuhra   \_ redis.2  redis:v1  n36  Shutdown       Shutdown about a minute ago  
-2d623wyb4jpp37cgrbb6jaxlb  redis.3      redis:v2  n36  Running        Running 29 seconds ago       
-ckjdshhlhgim95vdw18bc67rq   \_ redis.3  redis:v1  n36  Shutdown       Shutdown 42 seconds ago  
+7ox1cxokwr67qnsl3qjk7k8nn  redis.1      redis:v2  n35          Running        Running about a minute ago   
+7znqi7gc6annv25t97qy1qqkh   \_ redis.1  redis:v1  n35          Shutdown       Shutdown about a minute ago  
+275qzgoqbxmch674346ulxark  redis.2      redis:v2  n35          Running        Running 53 seconds ago       
+8gce6p0zgliydy6i9l1hsuhra   \_ redis.2  redis:v1  n36          Shutdown       Shutdown about a minute ago  
+2d623wyb4jpp37cgrbb6jaxlb  redis.3      redis:v2  n36          Running        Running 29 seconds ago       
+ckjdshhlhgim95vdw18bc67rq   \_ redis.3  redis:v1  n36          Shutdown       Shutdown 42 seconds ago  
 
 [Jack@n36 ~]$ docker service rm redis                             
 redis
@@ -299,8 +299,8 @@ redis
 n35
 [Jack@n36 ~]$ docker node ls
 ID                           HOSTNAME     STATUS  AVAILABILITY  MANAGER STATUS
-2lnjw3w7199y18jpgkrah73sf *  n36  Ready   Active        Leader
-4f7auxypdzw9p4btekourhlh4    n35  Ready   Drain 
+2lnjw3w7199y18jpgkrah73sf *  n36          Ready   Active        Leader
+4f7auxypdzw9p4btekourhlh4    n35          Ready   Drain 
 
 
 将 node 设置为 drain 后，表明：该 node 将不会运行任务；可以观察到，该 node 中运行的服务正在自动迁移到线上的其他 node 上。
@@ -375,17 +375,17 @@ NETWORK ID          NAME                DRIVER              SCOPE
 8vf5fqghkotyi5he017d5qmtz
 [Jack@n36 ~]$ docker service ps zz
 ID                         NAME  IMAGE            NODE         DESIRED STATE  CURRENT STATE               ERROR
-9miqoe2fqz643td57rwvrg8ss  zz.1  training/webapp  n35  Running        Running about a minute ago 
+9miqoe2fqz643td57rwvrg8ss  zz.1  training/webapp  n35          Running        Running about a minute ago 
 
 [Jack@n36 ~]$ docker service scale zz=5
 zz scaled to 5
 [Jack@n36 ~]$ docker service ps zz
 ID                         NAME  IMAGE            NODE         DESIRED STATE  CURRENT STATE           ERROR
-9miqoe2fqz643td57rwvrg8ss  zz.1  training/webapp  n35  Running        Running 2 minutes ago   
-1g95dpk9m2i483dzlsu27cvdt  zz.2  training/webapp  n36  Running        Running 14 seconds ago  
-0kcwiuaosvhrl6t7qwu66yq5a  zz.3  training/webapp  n36  Running        Running 21 seconds ago  
-4h5frbc7430m1czjq4wt75ioo  zz.4  training/webapp  n35  Running        Running 2 seconds ago   
-6h6mhxfmv864cath8qw2qdi9s  zz.5  training/webapp  n35  Running        Running 3 seconds ago   
+9miqoe2fqz643td57rwvrg8ss  zz.1  training/webapp  n35          Running        Running 2 minutes ago   
+1g95dpk9m2i483dzlsu27cvdt  zz.2  training/webapp  n36          Running        Running 14 seconds ago  
+0kcwiuaosvhrl6t7qwu66yq5a  zz.3  training/webapp  n36          Running        Running 21 seconds ago  
+4h5frbc7430m1czjq4wt75ioo  zz.4  training/webapp  n35          Running        Running 2 seconds ago   
+6h6mhxfmv864cath8qw2qdi9s  zz.5  training/webapp  n35          Running        Running 3 seconds ago   
 
 测试不同 container 之间的网络互通，符合预期。
 
@@ -396,6 +396,86 @@ Error response from daemon: network host is not eligible for docker services
 
 host 这个 network 不适用。
 
+3）关于 Load balancing 的概念
+参考：https://docs.docker.com/engine/swarm/key-concepts/ 
+swarm manager 使用 ingress load balancing 来发布对外服务的端口，可以自动分配也可以手动在 30000-32767 这段范围内指定端口。
+外部组件（云端负载均衡之类的）可以访问通过上述端口来访问服务。
+Swarm mode 自带了一个内部的 DNS 组件，可以给每个 service 标记一个 DNS 名称，然后 swarm manager 用上述提到的内部 load balancing 分发请求到集群中的 service 中。
+
+实际上，如果你仔细观察，会发现：
+a）不指定 --network 时，默认使用的是 bridge 网络；
+b）不指定 --network 时，指定了 -p 5000 来发布一个端口，则默认使用的是 ingress 网络，且自动指定一个外部端口（从 30000 开始）；
+c）使用 -p 30100:5000 来手动指定外部端口。
+
+举个例子：
+【自动指定端口】
+[Jack@n36 ~]$ docker service create --replicas 3 -p 5000 --name yy training/webapp python app.py 
+[Jack@n36 ~]$ ss -ant src :30000 
+State      Recv-Q Send-Q                Local Address:Port                     Peer Address:Port 
+LISTEN     0      128                   :::30000                               :::* 
+【手动指定端口】
+[Jack@n36 ~]$ docker service create --replicas 3 -p 30100:5000 --name zz training/webapp python app.py 
+[Jack@n36 ~]$ ss -ant src :30100  
+State      Recv-Q Send-Q                Local Address:Port                     Peer Address:Port 
+LISTEN     0      128                   :::30100                               :::* 
+
+
+可以通过 docker service inspect 来验证：
+[Jack@sz-local-36 ~]$ docker service inspect yy |grep PublishedPort
+                    "PublishedPort": 30000
+[Jack@sz-local-36 ~]$ docker service inspect zz |grep PublishedPort  
+                        "PublishedPort": 30100
+                        "PublishedPort": 30100
+                    "PublishedPort": 30100
+
+
+测试发现，PublishedPort 对应的服务，并不能从该 host 之外的网络访问呢。
+实例：
+[Jack@n36 ~]$ curl 192.168.25.36:30000
+Hello world!
+[Jack@n35 ~]$ curl 192.168.25.36:30000
+curl: (7) Failed connect to 192.168.25.36:30000; No route to host
+
+
+简而言之：
+
+------------------------------------------------------
+                swarm node (n35,n36)
+                ↑
+                published port 30000
+                ↓
+                service(zz) on host(n35,n36)
+------------------------------------------------------
+
+on n35: curl ip_of_n35:30000 -> pass
+on n36: curl ip_of_n36:30000 -> pass
+
+on n35: curl ip_of_n36:30000 -> no route to host
+and vice versa. 
+
+留意到一个issue：
+https://github.com/docker/docker/issues/25320
+
+该issue提到的结论是：docker 在处理 iptables 的时候遗漏了一个针对 docker_gwbridge 的规则。
+将在未来的版本中解决。
+
+个人小结是，防火墙需要增加这一个规则：
+-A DOCKER -d 172.18.0.2/32 ! -i docker_gwbridge -o docker_gwbridge -p tcp -m tcp --dport 30000:32767 -j ACCEPT
+
+上述IP 172.18.0.2 来自这里：
+
+gateway_ingress-sbox(n35,n36) -> 172.18.0.2(ingress-endpoint)
+ingress(n35) -> 10.255.0.4(ingress-endpoint)
+ingress(n36) -> 10.255.0.3(ingress-endpoint)
+
+
+此时：
+on n35: curl ip_of_n36:30000 -> pass
+
+在 服务端 查看 客户端IP 是：
+10.255.0.4 - - [03/Aug/2016 10:06:54] "GET / HTTP/1.1" 200 -
+
+符合预期。
 
 
 五、小结
@@ -407,5 +487,6 @@ host 这个 network 不适用。
 ZYXW、参考
 1、swarm mode
 https://docs.docker.com/engine/swarm/
+https://docs.docker.com/engine/swarm/key-concepts/
 https://docs.docker.com/engine/swarm/swarm-tutorial/
 https://docs.docker.com/engine/swarm/admin_guide/
