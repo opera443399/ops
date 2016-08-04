@@ -1,5 +1,5 @@
 sed博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
-2016/7/11
+2016/8/4
 
 另，附上几个blog的文章，后续可能会更新这个列表：
 sed命令详解：http://www.cnblogs.com/edwardlost/archive/2010/09/17/1829145.html
@@ -7,19 +7,19 @@ sed单行脚本快速参考 ：http://blog.csdn.net/showman/article/details/4408
 
 
 【SED】
-删除注释#和空行：
+```删除注释#和空行：
 sed '/ *#/d; /^ *$/d'
 
-统计行数：
+```统计行数：
 sed -n '$=' log/query.log 
 2546
 
-删掉空格：
+```删掉空格：
 sed 's/\ //g'
-删掉]：
+```删掉]：
 sed 's/]//g'
 
-匹配行前（i，后a）增加一行：
+```匹配行前（i，后a）增加一行：
 sed -i '/-A INPUT -j REJECT --reject-with icmp-host-prohibited/i\-A INPUT -p tcp -m state --state NEW -m tcp --dport 10050 -j ACCEPT' rc.firewall.txt
 sed -i '/-A INPUT -p icmp -j ACCEPT /a\-A INPUT -p vrrp -j ACCEPT' rc.firewall.txt
 
@@ -59,31 +59,33 @@ server 2.asia.pool.ntp.org iburst \
 # chkconfig ntpd on
 --------------------------
 
-删掉指定字符
+```删掉指定字符
 sed 's/insert ignore//g' 1.txt |sed 's/insert//g' |sed 's/\ //g' |sort |uniq -c |sort -nr |more
 
-正则匹配截取指定字符（例如，截取“down”）
+```正则匹配截取指定字符（例如，截取“down”）
 echo '<state>down</state>' |sed -nr 's/<state>(.*)<\/state>/\1/p' |sed 's/\ //g'
 
 
-截取内容，根据时间段：
+```截取内容，根据时间段：
 sed -n '/2013:14:00:00/,/2013:14:40:00/p' 0305.log > 1400.1440.log
 zcat 2014-06-17-0000-2330_msg.ecqun.com.cn.log.gz |sed -n '/2014:08:00:00/,/2014:10:00:00/p' |more
 
-替换：
+```替换：
 echo "http://192.168.0.154:10010/?from=PEK&to=SHA&date=2013-12-02&enddate=2013-12-02&type=text" | sed -r "s/([0-9]{4}-[0-9]{2}-[0-9]{2})/$(date +%F)/g"
 
 echo "20140625232336" |sed  -r 's/([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})/\1-\2-\3 \4:\5:\6/'                     
 2014-06-25 23:23:36
 
-打印指定行：
+```打印指定行：
 sed -n '2p' 1630.1650.log_7_1
 
-删掉指定行：
+```删掉指定行：
 sed 1,8d WAN.IP 
 
-两行并一行：
+```两行变一行：
 sed 'N;s/\n//'
+三行变一行：
+sed 'N;N;s/\n//'
 
 注意，下列用法和上面的区别：
 sed ':a;N;s/\n//;ta'
@@ -94,7 +96,7 @@ t label
 If  a s/// has done a successful substitution since the last input line was read and since the last t or T command, then branch to label; if label is omitted, branch to end of script.
 补充一下，得是前面的s///替换语句执行成功了，才跳转到标签
 
---替换内容并备份文件
+```替换内容并备份文件
 # cd /etc/yum/pluginconf.d/ 
 # sed -i.backup 's/^enabled=1/enabled=0/' fastestmirror.conf
 # ls                                                       
@@ -106,7 +108,7 @@ fastestmirror.conf  fastestmirror.conf.backup  security.conf
 > enabled=1
 
 
--------------------
+```说明
 “p” command prints the buffer (remember to use -n option with “p”) 
 “d” command is just opposite, its for deletion. ‘d’ will delete the pattern space buffer and immediately starts the next cycle. 
 
@@ -115,10 +117,10 @@ P：Print up to the first embedded newline of the current pattern space.
 D：If pattern space contains no newline, start a normal new cycle as if the d command was issued. Otherwise, delete text in the pattern space up to the first newline, and restart cycle with the resultant pattern space, without reading a new line of input.
 
 N：Add a newline to the pattern space, then append the next line of input to the pattern space. If there is no more input then sed exits without processing any more commands.
-增加一个换行符，并读入下一行，一起保存到 pattern space 中。
+增加一个换行符，并读入下一行，一起保存到 pattern space 中来处理。（回头再去理解下三行变一行，也就是读取第1行时，同时读取了2，3行，一起给后边的s来替换处理，处理过的这几行后续就跳过了。）
 
 
-在输出时，增加一行内容的示例：
+```在输出时，增加一行内容的示例：
 1）在每1行前插入一段字符
 ~]# ls |sed 'N;2iFILENAME'           
 FILENAME
