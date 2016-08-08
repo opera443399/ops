@@ -1,5 +1,5 @@
 docker深入2-熟悉v1.11和找不同
-2016/6/23
+2016/8/8
 
 一、基础环境
 1、系统版本
@@ -596,7 +596,7 @@ PING 10.50.200.4 (10.50.200.4) 56(84) bytes of data.
 1、拉取 image 并运行 container
 [Jack@n35 ~]$ /data/docker/registry
 [Jack@n35 ~]$ docker pull registry
-[Jack@n35 ~]$ docker run -d --restart=always -p 5000:5000 -v /data/docker/registry:/tmp/registry --name=reg4work registry
+[Jack@n35 ~]$ docker run -d --restart=always -p 5000:5000 -v /data/docker/registry:/tmp/registry --name=reg4work registry:2.3.1
 
 2、调整 docker 启动参数，增加 "--insecure-registry my_reg_ip_or_domain:5000"，否则将在 push 时出现 EOF 的报错，每一个 docker 节点都需要配置。
 [root@n35 ~]# vim /lib/systemd/system/docker.service
@@ -606,13 +606,13 @@ ExecStart=/usr/bin/docker daemon -H tcp://0.0.0.0:2375 -H unix:///var/run/docker
 [root@n35 ~]# systemctl restart docker
 
 3、标记并推送 image
-[Jack@n35 ~]$ docker tag consul:latest 10.111.222.35:5000/jack/consul:latest
+[Jack@n35 ~]$ docker tag consul:latest 10.111.222.35:5000/progrium/consul:latest
 [Jack@n35 ~]$ docker images |grep consul
-10.111.222.35:5000/jack/consul     latest              09ea64205e55        10 months ago       69.4 MB
-progrium/consul                    latest              09ea64205e55        10 months ago       69.4 MB
+10.111.222.35:5000/progrium/consul     latest              09ea64205e55        10 months ago       69.4 MB
+progrium/consul                        latest              09ea64205e55        10 months ago       69.4 MB
 
-[Jack@n35 ~]$ docker push 10.111.222.35:5000/jack/consul
-The push refers to a repository [10.111.222.35:5000/jack/consul]
+[Jack@n35 ~]$ docker push 10.111.222.35:5000/progrium/consul
+The push refers to a repository [10.111.222.35:5000/progrium/consul]
 5f70bf18a086: Image successfully pushed 
 d46ded49a20c: Image successfully pushed 
 af8c1839c171: Image successfully pushed 
@@ -627,43 +627,24 @@ e4b1687664d8: Image successfully pushed
 f3ab176661f3: Image successfully pushed 
 745737c319fa: Image successfully pushed 
 
+latest: digest: sha256:b4c4bd00ad80d23cddf25c50a8bcc763cb389f04c2545e850679e964909ed04d size: 4067
+
 4、查看 registry 中的 images
-[Jack@n35 ~]$ curl 10.111.222.35:5000/v1/search |python -m json.tool
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100   221  100   221    0     0  18698      0 --:--:-- --:--:-- --:--:-- 20090
+[Jack@n35 ~]$ curl -s 10.111.222.35:5000/v2/_catalog |python -mjson.tool
 {
-    "num_results": 4,
+    "num_results": 2,
     "query": "",
     "results": [
         {
             "description": "",
-            "name": "jack/swarm"
+            "name": "progrium/consul"
         },
         {
             "description": "",
-            "name": "jack/consul"
-        },
-        {
-            "description": "",
-            "name": "jack/webapp"
-        },
-        {
-            "description": "",
-            "name": "jack/registry"
+            "name": "training/webapp"
         }
     ]
 }
-
-[Jack@n35 ~]$ tree -L 2 /data/docker/registry/repositories/
-/data/docker/registry/repositories/
-└── jack
-    ├── consul
-    ├── registry
-    ├── swarm
-    └── webapp
-
-5 directories, 0 files
 
 
 
