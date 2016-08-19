@@ -1,9 +1,33 @@
 初探glusterfs-使用小结FAQ
-2016/7/20
+2016/8/19
+
+
+注：建议使用3副本（1x3），1x2副本危险，2x2也危险。
 
 一、配置相关
 1、快速建立一个卷来提供服务的流程示例
 【数据盘分区】
+1）ext4格式
+~]# fdisk /dev/sdb <<_EOF
+n
+p
+1
+
+
+p
+w
+_EOF
+~]# mkfs.ext4 /dev/sdb1
+
+~]# mkdir /data
+~]# cat <<_EOF >>/etc/fstab
+UUID=$(blkid /dev/sdb1 |cut -d'"' -f2) /data                    ext4    defaults        0 0
+_EOF
+
+~]# mount -a
+
+
+2）xfs格式
 如果分区所在设备已经挂载，要先卸载并删掉现有系统。
 yum install lvm2 xfsprogs -y   
 pvcreate /dev/sdb
@@ -27,14 +51,16 @@ chkconfig glusterd on
 
 【配置集群】
 gluster peer probe 10.60.200.12
+gluster peer probe 10.60.200.13
 每台集群节点上建立目录
 mkdir /data/gv1/brick1 -p
 
 【提供data域】
-创建卷gv0作为主数据域：
-# gluster volume create gv0 replica 2 transport tcp \
+创建卷gv1作为主数据域：
+# gluster volume create gv1 replica 3 transport tcp \
 10.60.200.11:/data/gv1/brick1 \
-10.60.200.12:/data/gv1/brick1 
+10.60.200.12:/data/gv1/brick1 \
+10.60.200.13:/data/gv1/brick1 
 
 【启动】
 # gluster volume start gv1
@@ -46,11 +72,12 @@ Volume Name: gv1
 Type: Replicate
 Volume ID: 32b1866c-1743-4dd9-9429-6ecfdfa168a2
 Status: Started
-Number of Bricks: 1 x 2 = 2
+Number of Bricks: 1 x 3 = 3
 Transport-type: tcp
 Bricks:
 Brick1: 10.60.200.11:/data/gv1/brick1
 Brick2: 10.60.200.12:/data/gv1/brick1
+Brick2: 10.60.200.13:/data/gv1/brick1
 
 
 2、挂载时，可以使用参数来提供备用节点：
@@ -103,9 +130,21 @@ gluster volume set gv1 nfs.disable off
 
 二、调整相关
 1、扩容 distributed-replicate 类型的节点组
+1）初始状态
+root@n11 ~]# gluster volume info
+ 
+Volume Name: gv1
+Type: Distributed-Replicate
+Volume ID: 32b1866c-1743-4dd9-9429-6ecfdfa168a2
+Status: Started
+Number of Bricks: 2 x 2 = 4
+Transport-type: tcp
+Bricks:
+Brick1: 10.60.200.11:/data/gv1/brick1
+Brick2: 10.60.200.12:/data/gv1/brick1
+
+2）增加1对节点，注意，因为 replica=2，需要成对的添加
 [root@n11 ~]# volume add-brick gv_test1 replica 2 10.60.200.21:/data/gv1/brick1 10.60.200.22:/data/gv1/brick1
-
-
 [root@n11 ~]# gluster volume info
  
 Volume Name: gv1
@@ -284,3 +323,8 @@ http://avid.force.com/pkb/articles/en_US/how_to/Adding-a-node-to-a-cluster-using
 https://bugzilla.redhat.com/show_bug.cgi?id=1168897
 http://comments.gmane.org/gmane.comp.file-systems.gluster.user/20225
 
+3、Resolving Peer Rejected
+http://gluster.readthedocs.io/en/latest/Administrator%20Guide/Resolving%20Peer%20Rejected/
+
+4、KVM虚拟化开源高可用方案(七)GLUSTERFS搭建及常见故障处理
+http://xiaoli110.blog.51cto.com/1724/1071106?utm_source=tuicool&utm_medium=referral

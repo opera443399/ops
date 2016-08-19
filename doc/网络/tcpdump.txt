@@ -1,16 +1,21 @@
-tcpdump -nn -i em2 
+tcpdump 使用方法小结
 
-一、参数
+一、举例
+1）抓vrrp协议：
+tcpdump -nn -i em2 vrrp
+其中，
+参数
 -nn 使用数字表达ip和port
 -i  指定网卡
 
-举例：
-
-1）抓vrrp协议：
-tcpdump -nn -i em2 vrrp
 
 2）抓3411端口和192.168.1.12这个IP相关的数据，并写入文件，然后可以在wireshark下查看。
 tcpdump -nn -i em2 tcp port 3411 and ip host 192.168.1.12 -w tcpdump.3411.pcap 
+
+
+3）抓指定端口和IP的TCP包
+tcpdump -i ovirtmgmt -nn ! \(tcp port 22 or 123 \) and host \(192.168.1.2 or 192.168.1.20\) and tcp
+
 
 
 二、状态
