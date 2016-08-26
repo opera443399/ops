@@ -1,0 +1,20 @@
+XenServer初探-FAQ
+
+【Q01】、将一个slave从pool中移除后，无法再添加进来
+A：总结为下（注意，如果你更换过xenserver机器的ip，最后一步执行完会把host机的ip配置为你初始安装xenserver时的ip）
+
+# /etc/init.d/xapi stop
+# echo master > /etc/xensource/pool.conf 
+# rm -f /var/xapi/state.db* 
+# rm -f /var/xapi/local.db 
+# /etc/init.d/firstboot activate
+
+参考：
+http://discussions.citrix.com/topic/303468-server-removed-from-pool-after-failure-now-that-it-is-back-it-can-not-rejoin-pool-and-emergency-master-reset-does-not-work/page-3
+http://blog.csdn.net/wenwenxiong/article/details/52244178
+
+
+
+【Q02】、XenServer支持迁移吗？
+A：支持。选择VM，右键菜单，有迁移选项和引导。
+
