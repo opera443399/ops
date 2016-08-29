@@ -1,0 +1,15 @@
+eNSP使用简介
+2016/8/29
+
+图形化网络仿真工具平台，通过仿真模拟网络设备，帮助您快速熟悉华为数通产品。
+
+下载
+http://support.huawei.com/enterprise/toolNewInfoAction?lang=zh
+http://support.huawei.com/enterprise/toolNewInfoAction!toToolDetail?contentId=TL1000000015&productLineId=7919710
+
+依赖
+wireshark
+virtualbox
+winpcap
+
+安装
