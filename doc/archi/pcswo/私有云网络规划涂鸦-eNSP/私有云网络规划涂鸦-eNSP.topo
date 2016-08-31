@@ -21,12 +21,12 @@
                 <interface sztype="Ethernet" interfacename="Ethernet" count="1" />
             </slot>
         </dev>
-        <dev id="BB7858E3-5692-4e84-810D-EA0BB774D374" name="SW-ACC-CORE-1" poe="0" model="S5700" settings="" system_mac="4C-1F-CC-46-79-94" com_port="2002" bootmode="0" cx="534.000000" cy="152.000000" edit_left="568" edit_top="132">
+        <dev id="A74DE3D0-E6C1-4dac-814D-6C002662A247" name="SW-ACC-BIZ-1" poe="0" model="S5700" settings="" system_mac="4C-1F-CC-28-4E-06" com_port="2000" bootmode="0" cx="368.000000" cy="363.000000" edit_left="313" edit_top="382">
             <slot number="slot17" isMainBoard="1">
                 <interface sztype="Ethernet" interfacename="GE" count="24" />
             </slot>
         </dev>
-        <dev id="A74DE3D0-E6C1-4dac-814D-6C002662A247" name="SW-ACC-BIZ-1" poe="0" model="S5700" settings="" system_mac="4C-1F-CC-28-4E-06" com_port="2000" bootmode="0" cx="368.000000" cy="363.000000" edit_left="313" edit_top="382">
+        <dev id="BB7858E3-5692-4e84-810D-EA0BB774D374" name="SW-ACC-CORE-1" poe="0" model="S5700" settings="" system_mac="4C-1F-CC-46-79-94" com_port="2002" bootmode="0" cx="534.000000" cy="152.000000" edit_left="568" edit_top="132">
             <slot number="slot17" isMainBoard="1">
                 <interface sztype="Ethernet" interfacename="GE" count="24" />
             </slot>
@@ -63,6 +63,6 @@
         <txttip left="292" top="15" right="870" bottom="63" content="[traffice-policy] on [SW-ACC-CORE-1] GE 0/0/2 inbound:&#x0D;&#x0A;rule deny ip source 10.50.200.0 0.0.0.255 destination 172.30.0.0 0.0.63.255&#x0D;&#x0A;rule deny ip source 10.50.200.0 0.0.0.255 destination 172.30.64.0 0.0.63.255" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
         <txttip left="626" top="245" right="872" bottom="293" content="port trunk allow-pass vlan 20 30&#x0D;&#x0A;vlanif20: 172.30.0.1/18&#x0D;&#x0A;vlanif30: 172.30.64.1/18" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
         <txttip left="270" top="253" right="493" bottom="285" content="port trunk allow-pass vlan 40&#x0D;&#x0A;vlanif40: 10.50.200.1/24" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
-        <txttip left="20" top="17" right="160" bottom="65" content="Ë½ÓÐÔÆÍøÂç¹æ»®Í¿Ñ»&#x0D;&#x0A;2016/8/30&#x0D;&#x0A;via PC" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
+        <txttip left="20" top="17" right="167" bottom="65" content="Ë½ÓÐÔÆÍøÂç¹æ»®Í¿Ñ»&#x0D;&#x0A;2016/8/31&#x0D;&#x0A;via PC" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
     </txttips>
 </topo>
