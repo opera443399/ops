@@ -1,0 +1,434 @@
+华为交换机命令行操作小结
+2016/8/30
+
+一、基础
+1、进入 system-view 模式
+<Huawei>system-view
+Enter system view, return user view with Ctrl+Z.
+[Huawei]
+
+2、更改交换机名称
+[Huawei]sysname SW-ACC-CORE-1
+[SW-ACC-CORE-1]
+
+3、返回 user-view 模式
+[SW-ACC-CORE-1]return 
+<SW-ACC-CORE-1>
+
+4、查看配置
+启动配置
+<SW-ACC-CORE-1>display saved-configuration
+
+当前配置
+<SW-ACC-CORE-1>display current-configuration
+
+5、保存配置
+<SW-ACC-CORE-1>save
+The current configuration will be written to the device.
+Are you sure to continue?[Y/N]y
+Info: Please input the file name ( *.cfg, *.zip ) [vrpcfg.zip]:
+Aug 31 2016 09:50:33-08:00 SW-ACC-CORE-1 %%01CFM/4/SAVE(l)[0]:The user chose Y when
+ deciding whether to save the configuration to the device.
+Now saving the current configuration to the slot 0.
+Save the configuration successfully.
+<SW-ACC-CORE-1>
+
+6、用户和管理
+1）配置密码
+<SW-ACC-CORE-1>sys
+[SW-ACC-CORE-1]aaa
+[SW-ACC-CORE-1-aaa]local-user admin password cipher mypass
+[SW-ACC-CORE-1-aaa]local-user admin privilege level 3
+[SW-ACC-CORE-1-aaa]local-user admin service-type telnet terminal http
+[SW-ACC-CORE-1-aaa]quit
+[SW-ACC-CORE-1]user-interface vty 0 4
+[SW-ACC-CORE-1-ui-vty0-4]authentication-mode aaa
+[SW-ACC-CORE-1-ui-vty0-4]quit
+
+
+测试：
+<SW-ACC-BIZ-1>telnet 192.168.200.254
+Trying 192.168.200.254 ...
+Press CTRL+K to abort
+Connected to 192.168.200.254 ...
+
+
+Login authentication
+
+
+Username:admin
+Password:（输入：mypass）
+Info: The max number of VTY users is 5, and the number
+      of current VTY users on line is 1.
+      The current login time is 2016-08-31 16:49:07.
+<SW-ACC-CORE-1>
+
+
+2）启用交换机的web服务
+<SW-ACC-CORE-1>dir
+找到web文件（以这个为例：s5700si-v200r003c00.001.web.7z），加载：
+<SW-ACC-CORE-1>system-view
+<SW-ACC-CORE-1>http server load s5700si-v200r003c00.001.web.7z
+<SW-ACC-CORE-1>http secure-server enable
+https://ip/
+
+注：更改配置后，记得保存。
+
+
+7、系统管理
+1）版本
+<SW-ACC-CORE-1>display version 
+Huawei Versatile Routing Platform Software
+VRP (R) software, Version 5.110 (S5700 V200R001C00)
+Copyright (c) 2000-2011 HUAWEI TECH CO., LTD
+
+Quidway S5700-28C-HI Routing Switch uptime is 0 week, 0 day, 0 hour, 15 minutes
+
+2）时间
+<SW-ACC-CORE-1>display clock 
+2016-08-31 16:56:31-08:00
+Wednesday
+Time Zone(China-Standard-Time) : UTC-08:00
+
+
+二、VLAN
+1、创建vlan
+1）批量创建指定id的vlan
+[SW-ACC-CORE-1]vlan batch 10 20 30 40
+
+2）批量创建指定id范围的vlan
+[SW-ACC-CORE-1]vlan batch 100 to 109
+
+
+2、设置业务口的模式并加入vlan
+[SW-ACC-CORE-1]interface GigabitEthernet 0/0/1
+[SW-ACC-CORE-1-GigabitEthernet0/0/1]port link-type access
+[SW-ACC-CORE-1-GigabitEthernet0/0/1]port default vlan 40
+[SW-ACC-CORE-1-GigabitEthernet0/0/1]quit
+
+如果想调整 link-type 为 trunk，怎么办？
+[SW-ACC-CORE-1-GigabitEthernet0/0/1]port link-type trunk
+Error: Please renew the default configurations.
+
+此时应该这样操作：
+因为端口已经加入了vlan，需要先undo：
+[SW-ACC-CORE-1-GigabitEthernet0/0/1]undo port default vlan
+[SW-ACC-CORE-1-GigabitEthernet0/0/1]port link-type trunk
+
+运行多个vlan通过这个trunk链接：
+[SW-ACC-CORE-1-GigabitEthernet0/0/1]port trunk allow-pass vlan 20 30
+
+
+
+3、显示vlan
+[SW-ACC-CORE-1-vlan20]display vlan
+The total number of vlans is : 15
+--------------------------------------------------------------------------------
+U: Up;         D: Down;         TG: Tagged;         UT: Untagged;
+MP: Vlan-mapping;               ST: Vlan-stacking;
+#: ProtocolTransparent-vlan;    *: Management-vlan;
+--------------------------------------------------------------------------------
+
+VID  Type    Ports                                                          
+--------------------------------------------------------------------------------
+1    common  UT:GE0/0/1(U)      GE0/0/2(U)      GE0/0/3(D)      GE0/0/4(D)      
+                GE0/0/5(D)      GE0/0/6(D)      GE0/0/7(D)      GE0/0/8(D)      
+                GE0/0/9(D)      GE0/0/10(D)     GE0/0/11(D)     GE0/0/12(D)     
+                GE0/0/13(D)     GE0/0/14(D)     GE0/0/15(D)     GE0/0/16(D)     
+                GE0/0/17(D)     GE0/0/18(D)     GE0/0/19(D)     GE0/0/20(D)     
+                GE0/0/21(D)     GE0/0/22(D)     GE0/0/23(D)     GE0/0/24(D)     
+
+10   common  
+20   common  TG:GE0/0/1(U)                                                      
+
+30   common  TG:GE0/0/1(U)                                                      
+
+40   common  
+100  common  
+101  common  
+102  common  
+103  common  
+104  common  
+105  common  
+106  common  
+107  common  
+108  common  
+109  common  
+
+VID  Status  Property      MAC-LRN Statistics Description      
+--------------------------------------------------------------------------------
+
+1    enable  default       enable  disable    VLAN 0001                         
+10   enable  default       enable  disable    VLAN 0010                         
+20   enable  default       enable  disable    VLAN 0020                         
+30   enable  default       enable  disable    VLAN 0030                         
+40   enable  default       enable  disable    VLAN 0040                         
+100  enable  default       enable  disable    VLAN 0100                         
+101  enable  default       enable  disable    VLAN 0101                         
+102  enable  default       enable  disable    VLAN 0102                         
+103  enable  default       enable  disable    VLAN 0103                         
+104  enable  default       enable  disable    VLAN 0104                         
+105  enable  default       enable  disable    VLAN 0105                         
+106  enable  default       enable  disable    VLAN 0106                         
+107  enable  default       enable  disable    VLAN 0107                         
+108  enable  default       enable  disable    VLAN 0108                         
+109  enable  default       enable  disable    VLAN 0109  
+
+
+4、给指定vlan配置虚接口
+[SW-ACC-CORE-1]interface Vlanif 20
+[SW-ACC-CORE-1-Vlanif20]ip address 172.30.0.1 255.255.192.0
+[SW-ACC-CORE-1-Vlanif20]quit
+[SW-ACC-CORE-1]interface Vlanif 30
+[SW-ACC-CORE-1-Vlanif30]ip address 172.30.64.1 255.255.192.0
+[SW-ACC-CORE-1-Vlanif30]quit
+
+同样的，可以给交换机配置管理IP（即vlan1）：
+[SW-ACC-CORE-1]interface Vlanif 1
+[SW-ACC-CORE-1-Vlanif1]ip address 10.0.0.1 255.0.0.0
+[SW-ACC-CORE-1-Vlanif1]quit
+
+
+5、显示vlan接口信息
+[SW-ACC-CORE-1]display ip interface Vlanif 20
+Vlanif20 current state : UP 
+Line protocol current state : UP
+The Maximum Transmit Unit : 1500 bytes
+input packets : 0, bytes : 0, multicasts : 0
+output packets : 0, bytes : 0, multicasts : 0
+Directed-broadcast packets:
+ received packets:            0, sent packets:            0 
+ forwarded packets:           0, dropped packets:           0 
+Internet Address is 172.30.0.1/18 
+Broadcast address : 172.30.63.255
+TTL being 1 packet number:         0
+TTL invalid packet number:         0
+ICMP packet input number:          0
+  Echo reply:                      0
+  Unreachable:                     0
+  Source quench:                   0
+  Routing redirect:                0
+  Echo request:                    0
+  Router advert:                   0
+  Router solicit:                  0
+  Time exceed:                     0
+  IP header bad:                   0
+  Timestamp request:               0
+  Timestamp reply:                 0
+  Information request:             0
+  Information reply:               0
+  Netmask request:                 0
+  Netmask reply:                   0
+  Unknown type:                    0
+  
+
+四、网络
+1、显示IP信息
+[SW-ACC-CORE-1]display ip interface brief
+*down: administratively down
+^down: standby
+(l): loopback
+(s): spoofing
+The number of interface that is UP in Physical is 4
+The number of interface that is DOWN in Physical is 1
+The number of interface that is UP in Protocol is 4
+The number of interface that is DOWN in Protocol is 1
+
+Interface                         IP Address/Mask      Physical   Protocol  
+MEth0/0/1                         unassigned           down       down      
+NULL0                             unassigned           up         up(s)     
+Vlanif1                           10.0.0.1/8           up         up     
+Vlanif20                          172.30.0.1/18        up         up        
+Vlanif30                          172.30.64.1/18       up         up 
+
+
+2、显示路由信息   
+[SW-ACC-CORE-1]display ip routing-table
+Route Flags: R - relay, D - download to fib
+------------------------------------------------------------------------------
+Routing Tables: Public
+         Destinations : 8        Routes : 8        
+
+Destination/Mask    Proto   Pre  Cost      Flags NextHop         Interface
+
+       10.0.0.0/16  Direct  0    0           D   10.0.0.1        Vlanif1
+       10.0.0.1/32  Direct  0    0           D   127.0.0.1       Vlanif1
+      127.0.0.0/8   Direct  0    0           D   127.0.0.1       InLoopBack0
+      127.0.0.1/32  Direct  0    0           D   127.0.0.1       InLoopBack0
+     172.30.0.0/18  Direct  0    0           D   172.30.0.1      Vlanif20
+     172.30.0.1/32  Direct  0    0           D   127.0.0.1       Vlanif20
+    172.30.64.0/18  Direct  0    0           D   172.30.64.1     Vlanif30
+    172.30.64.1/32  Direct  0    0           D   127.0.0.1       Vlanif30
+
+    
+3、ACL
+[SW-ACC-CORE-1]acl ?
+  INTEGER<2000-2999>  Basic access-list(add to current using rules)
+  INTEGER<3000-3999>  Advanced access-list(add to current using rules)
+  INTEGER<4000-4999>  Specify a L2 acl group
+  INTEGER<5000-5999>  User defined access-list
+  ipv6                ACL IPv6 
+  name                Specify a named ACL
+  number              Specify a numbered ACL
+  
+1）创建
+【流规则】
+[SW-ACC-CORE-1]acl 3001
+[SW-ACC-CORE-1-acl-adv-3001]rule deny ip source 10.50.200.0 0.0.0.255 destination 172.30.0.0 0.0.63.255
+[SW-ACC-CORE-1-acl-adv-3001]quit
+
+【流分类】
+[SW-ACC-CORE-1]traffic classifier tc1
+[SW-ACC-CORE-1-classifier-tc1]if-match acl 3001
+[SW-ACC-CORE-1-classifier-tc1]quit
+
+【流行为】默认是permit
+[SW-ACC-CORE-1]traffic behavior tb1
+[SW-ACC-CORE-1-behavior-tb1]deny
+[SW-ACC-CORE-1-behavior-tb1]quit
+
+【流策略】
+[SW-ACC-CORE-1]traffic policy tp1
+[SW-ACC-CORE-1-trafficpolicy-tp1]classifier tc1 behavior tb1
+[SW-ACC-CORE-1-trafficpolicy-tp1]quit
+
+
+【在指定接口应用策略】
+[SW-ACC-CORE-1]int GigabitEthernet 0/0/2
+[SW-ACC-CORE-1-GigabitEthernet0/0/2]traffic-policy tp1 inbound
+[SW-ACC-CORE-1-GigabitEthernet0/0/2]quit
+
+
+【测试符合预期】
+PC>ping 172.30.0.111
+
+Ping 172.30.0.111: 32 data bytes, Press Ctrl_C to break
+Request timeout!
+Request timeout!
+Request timeout!
+
+PC>ping 172.30.64.222
+
+Ping 172.30.64.222: 32 data bytes, Press Ctrl_C to break
+Request timeout!
+From 172.30.64.222: bytes=32 seq=2 ttl=127 time=78 ms
+From 172.30.64.222: bytes=32 seq=2 ttl=127 time=74 ms
+
+
+2）查看ACL现状
+【acl】
+[SW-ACC-CORE-1]display acl 3001
+Advanced ACL 3001, 1 rule
+Acl's step is 5
+ rule 5 deny ip source 10.50.200.0 0.0.0.255 destination 172.30.0.0 0.0.63.255
+
+【classifier】
+[SW-ACC-CORE-1]display traffic classifier user-defined 
+  User Defined Classifier Information:
+   Classifier: tc1
+    Operator: AND
+    Rule(s) : if-match acl 3001
+             
+Total classifier number is 1 
+
+【behaviour】
+[SW-ACC-CORE-1]display traffic behavior user-defined 
+  User Defined Behavior Information:
+    Behavior: tb1 
+      Deny
+
+Total behavior number is 1 
+
+【policy】
+[SW-ACC-CORE-1]display traffic policy user-defined
+  User Defined Traffic Policy Information:
+  Policy: tp1
+   Classifier: tc1
+    Operator: AND
+     Behavior: tb1
+      Deny
+
+Total policy number is 1 
+
+【applied-record】
+[SW-ACC-CORE-1]display traffic-policy applied-record 
+#
+-------------------------------------------------
+  Policy Name:   tp1 
+  Policy Index:  1
+     Classifier:tc1     Behavior:tb1 
+-------------------------------------------------
+ *interface GigabitEthernet0/0/2
+    traffic-policy tp1 inbound  
+      slot 0    :  success
+-------------------------------------------------
+  Policy total applied times: 1.
+#
+
+
+3）管理acl
+【增加1条规则】
+[SW-ACC-CORE-1]acl 3001
+[SW-ACC-CORE-1-acl-adv-3001]rule deny ip source 10.50.200.0 0.0.0.255 destination 172.30.64.0 0.0.63.255
+[SW-ACC-CORE-1-acl-adv-3001]display acl 3001
+Advanced ACL 3001, 2 rules
+Acl's step is 5
+ rule 5 deny ip source 10.50.200.0 0.0.0.255 destination 172.30.0.0 0.0.63.255
+ 
+ rule 10 deny ip source 10.50.200.0 0.0.0.255 destination 172.30.64.0 0.0.63.255
+
+【测试符合预期】
+PC>ping 172.30.0.111
+Ping 172.30.0.111: 32 data bytes, Press Ctrl_C to break
+Request timeout!
+Request timeout!
+Request timeout!
+
+PC>ping 172.30.64.222
+Ping 172.30.64.222: 32 data bytes, Press Ctrl_C to break
+Request timeout!
+Request timeout!
+Request timeout!
+
+
+
+【删除1条规则】
+[SW-ACC-CORE-1-acl-adv-3001]undo rule 5
+[SW-ACC-CORE-1-acl-adv-3001]display acl 3001
+Advanced ACL 3001, 1 rule
+Acl's step is 5
+ rule 10 deny ip source 10.50.200.0 0.0.0.255 destination 172.30.64.0 0.0.63.255
+
+【测试符合预期】
+PC>ping 172.30.0.111
+Ping 172.30.0.111: 32 data bytes, Press Ctrl_C to break
+Request timeout!
+From 172.30.0.111: bytes=32 seq=2 ttl=127 time=62 ms
+From 172.30.0.111: bytes=32 seq=2 ttl=127 time=64 ms
+
+PC>ping 172.30.64.222
+Ping 172.30.64.222: 32 data bytes, Press Ctrl_C to break
+Request timeout!
+Request timeout!
+Request timeout!
+
+
+
+【再增加1条规则】
+[SW-ACC-CORE-1-acl-adv-3001]rule deny ip source 10.50.200.0 0.0.0.255 destination 172.30.0.0 0.0.63.255
+[SW-ACC-CORE-1-acl-adv-3001]display acl 3001
+Advanced ACL 3001, 2 rules
+Acl's step is 5 
+ rule 10 deny ip source 10.50.200.0 0.0.0.255 destination 172.30.64.0 0.0.63.255
+
+ rule 15 deny ip source 10.50.200.0 0.0.0.255 destination 172.30.0.0 0.0.63.255
+
+注：rule id 递增的step为5，由于之前删除了id=5的rule，再新增则变成了15，如果先清空了这里规则，则还是从id=5开始递增。
+
+
+
+
+
+
+
+
