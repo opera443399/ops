@@ -66,6 +66,13 @@ net.ipv4.tcp_keepalive_probes = 3
 # 作用：间隔多久发送1次keepalive探测包
 net.ipv4.tcp_keepalive_time = 1200
 
+######################## cat /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established
+# 默认值：432000
+# 作用：设置 conntrack tcp 状态的超时时间，如果系统出现下述异常时要考虑调整：
+# ping: sendmsg: Operation not permitted
+# kernel: nf_conntrack: table full, dropping packet.
+# 参考：http://www.linuxidc.com/Linux/2012-11/75151.htm, http://blog.csdn.net/dog250/article/details/9318843
+net.netfilter.nf_conntrack_tcp_timeout_established = 600
 
 ##########################################################################################
 ######################## cat /proc/sys/net/core/netdev_max_backlog
