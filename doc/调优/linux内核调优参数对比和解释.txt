@@ -1,4 +1,5 @@
 linux内核调优参数对比和解释
+2016/9/5
 
 具体情况要具体分析，此处只是收集通常会利用到的一些参数的调整，做一些简单的对比和解释。
 
@@ -27,12 +28,12 @@ net.ipv4.tcp_timestamps = 1
 # 默认值：0
 # 作用：针对TIME-WAIT，不要开启。不少文章提到同时开启tcp_tw_recycle和tcp_tw_reuse，会带来C/S在NAT方面的异常
 # 个人接受的做法是，开启tcp_tw_reuse，增加ip_local_port_range的范围，减小tcp_max_tw_buckets和tcp_fin_timeout的值
-# 参考：http://ju.outofmemory.cn/entry/91121
+# 参考：http://ju.outofmemory.cn/entry/91121, http://www.cnblogs.com/lulu/p/4149312.html
 net.ipv4.tcp_tw_recycle = 0
 
 ######################## cat /proc/sys/net/ipv4/tcp_tw_reuse
 # 默认值：0
-# 作用：针对TIME-WAIT，不要开启
+# 作用：针对TIME-WAIT，做为客户端可以启用（例如，作为nginx-proxy前端代理，要访问后端的服务）
 net.ipv4.tcp_tw_reuse = 1
 
 ######################## cat /proc/sys/net/ipv4/tcp_max_tw_buckets 
