@@ -1,7 +1,6 @@
-日期：2015/11/4 - 2015/12/28 time 15:58
-主机：e01, n33, n34
-目的：再探oVirt-配置一个2节点的ovirt环境
-操作内容：
+再探oVirt-配置一个2节点的ovirt环境
+2016/9/7
+
 一、基础操作
 1、资源
 ovirt engine: engine
@@ -294,6 +293,7 @@ mount -a
 
 
 3、配置 glusterfs 服务
+注：本文仅作为示范参考，不具备生产条件，最主要原因是，2个节点的存储非常不可靠，有脑裂风险，建议使用3副本并启用Quorum。
 1）数据域
 建立2副本的卷：ovirt-data
 （所有节点操作）
@@ -340,7 +340,7 @@ gluster volume set ovirt-data cluster.quorum-type auto
 2）iso域
 先删除 ovirt 页面的 ISO_DOMAIN，然后调整 engine 配置 engine 时部署的 nfs 服务使外边主机能访问。
 然后在 ovirt 页面重新添加一个 ISO 域。
-最后上次一个 iso 文件到这个 ISO 域 如下位置：
+最后上传一个 iso 文件到这个 ISO 域 如下位置：
 [root@engine 11111111-1111-1111-1111-111111111111]# pwd
 /data/ovirt/iso/a0f12884-7840-42a9-b58b-280e3f4f6aba/images/11111111-1111-1111-1111-111111111111
 
@@ -375,7 +375,7 @@ gluster volume set ovirt-export cluster.quorum-type auto
 
 在 engine 页面选择菜单：“数据中心-Default-存储-新建域”
 名称：export
-域功能/存储类型：Data/GlusterFS
+域功能/存储类型：Export/GlusterFS
 使用主机：n33.test
 路径：n33.test:/ovirt-export
 挂载选项：backupvolfile-server=n34.test
