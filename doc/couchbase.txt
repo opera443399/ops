@@ -1,5 +1,5 @@
 couchbase
-2015/12/30
+2016/9/7
 
 一、概念
 理解成memcached集群
@@ -8,3 +8,90 @@ couchbase
 下载rpm包安装，安装后服务将自启动
 
 访问http://ip:8091/ 来创建或加入集群，注意防火墙的端口要放行。
+
+
+三、客户端使用
+1、客户端代理使用moxi-server
+~]# yum install moxi-server libcouchbase* python-memcached openssl098e
+You have successfully installed Moxi Server.
+
+Please next edit the configuration files: /opt/moxi/etc
+
+Afterwards, to start the moxi server: /etc/init.d/moxi-server start
+
+
+~]# cd /opt/moxi/etc/
+[root@sz-local-vm42 etc]# ls
+moxi.cfg  moxi-cluster.cfg  moxi-init.d
+
+
+其中，在这里调整 bucket 的名称（在服务端的web界面中增加对应的bucket即可）：
+etc]# cat moxi.cfg 
+
+# usr=MEMBASE_REST_USER,
+# pwd=MEMBASE_REST_PSWD,
+
+port_listen=11211,
+# 举例：
+default_bucket_name=YourPorjectName,
+
+downstream_max=1024,
+downstream_conn_max=4,
+downstream_conn_queue_timeout=200,
+downstream_timeout=5000,
+wait_queue_timeout=200,
+connect_max_errors=5,
+connect_retry_interval=30000,
+connect_timeout=400,
+auth_timeout=100,
+
+cycle=200
+
+
+在这里调整服务端集群的地址：
+etc]# cat moxi-cluster.cfg 
+# Please point moxi at your membase cluster by specifying
+# a membase REST URL.
+#
+# The moxi server won't start correctly until after you
+# edit and uncomment the url line below...
+#
+# url=http://HOSTNAME:8091/pools/default/bucketsStreaming/default
+# 举例：
+url=http://ip1:8091/pools/default/bucketsStreaming/YourPorjectName|http://ip2:8091/pools/default/bucketsStreaming/YourPorjectName
+
+
+最后，启动服务：
+service moxi-server start
+
+
+2、测试
+使用telnet的memcached协议测试	
+举例：	
+    telnet localhost 11211
+    #存储一个key，在一个节点上进行即可，之后在其他节点看是否能够读出
+    set  test1 0 0 5
+    12345
+    #读取一个key
+    get test1
+    12345
+
+
+3、小结
+客户端和使用memcached一样的，访问本地的11211端口去处理cache即可。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
