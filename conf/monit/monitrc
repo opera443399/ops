@@ -238,7 +238,7 @@ set eventqueue
     basedir /var/monit
     slots 100
 set mail-format {
-        from: sys_monitor@runmit.com
+        from: company@company.com
         subject: [Service Alter][public] $HOST $SERVICE $EVENT
         message: $EVENT Service $SERVICE  
                 Date:        $DATE   
