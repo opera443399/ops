@@ -1,5 +1,4 @@
 linux内核调优参数对比和解释
-2016/9/5
 
 具体情况要具体分析，此处只是收集通常会利用到的一些参数的调整，做一些简单的对比和解释。
 
@@ -38,8 +37,11 @@ net.ipv4.tcp_tw_reuse = 1
 
 ######################## cat /proc/sys/net/ipv4/tcp_max_tw_buckets 
 # 默认值：65536
-# 作用：针对TIME-WAIT，配置其上限
-net.ipv4.tcp_max_tw_buckets = 5000
+# 作用：针对TIME-WAIT，配置其上限。如果降低这个值，可以显著的发现time-wait的数量减少，但系统日志中可能出现如下记录：
+# kernel: TCP: time wait bucket table overflow
+# 对应的，如果升高这个值，可以显著的发现time-wait的数量增加。
+# 综合考虑，保持默认值。
+net.ipv4.tcp_max_tw_buckets = 65536
 
 ######################## cat /proc/sys/net/ipv4/tcp_max_orphans 
 # 默认值：16384
@@ -73,6 +75,15 @@ net.ipv4.tcp_keepalive_time = 1200
 # kernel: nf_conntrack: table full, dropping packet.
 # 参考：http://www.linuxidc.com/Linux/2012-11/75151.htm, http://blog.csdn.net/dog250/article/details/9318843
 net.netfilter.nf_conntrack_tcp_timeout_established = 600
+
+######################## cat /proc/sys/net/netfilter/nf_conntrack_max
+# 默认值：31700
+# 作用：设置 conntrack 的上限，如果系统出现下述异常时要考虑调整：
+# ping: sendmsg: Operation not permitted
+# kernel: nf_conntrack: table full, dropping packet.
+# 参考：https://blog.yorkgu.me/2012/02/09/kernel-nf_conntrack-table-full-dropping-packet/, http://www.cnblogs.com/mydomain/archive/2013/05/19/3087153.html
+net.netfilter.nf_conntrack_max = 655350
+
 
 ##########################################################################################
 ######################## cat /proc/sys/net/core/netdev_max_backlog
