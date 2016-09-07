@@ -37,12 +37,12 @@ net.ipv4.tcp_tw_recycle = 0
 net.ipv4.tcp_tw_reuse = 1
 
 ######################## cat /proc/sys/net/ipv4/tcp_max_tw_buckets 
-# 默认值：65536
+# 默认值：262144
 # 作用：针对TIME-WAIT，配置其上限。如果降低这个值，可以显著的发现time-wait的数量减少，但系统日志中可能出现如下记录：
 # kernel: TCP: time wait bucket table overflow
 # 对应的，如果升高这个值，可以显著的发现time-wait的数量增加。
 # 综合考虑，保持默认值。
-net.ipv4.tcp_max_tw_buckets = 65536
+net.ipv4.tcp_max_tw_buckets = 262144
 
 ######################## cat /proc/sys/net/ipv4/tcp_max_orphans 
 # 默认值：16384
@@ -78,7 +78,7 @@ net.ipv4.tcp_keepalive_time = 1200
 net.netfilter.nf_conntrack_tcp_timeout_established = 600
 
 ######################## cat /proc/sys/net/netfilter/nf_conntrack_max
-# 默认值：31700
+# 默认值：65535
 # 作用：设置 conntrack 的上限，如果系统出现下述异常时要考虑调整：
 # ping: sendmsg: Operation not permitted
 # kernel: nf_conntrack: table full, dropping packet.
