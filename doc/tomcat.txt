@@ -1,0 +1,34 @@
+tomcat使用小结
+2016/9/7
+
+1、jdk 和 环境变量
+
+~]# yum install java-1.8.0-openjdk
+
+然后在 /etc/profile 增加：
+export JAVA_HOME=/usr/java/default
+export CLASSPATH=.:$JAVA_HOME/lib:$JAVA_HOME/jre/lib
+export PATH=$PATH:$JAVA_HOME/bin:$JAVA_HOME/jre/bin
+
+2、tomcat
+直接下载包
+~] cd /opt
+~] wget http://apache.communilink.net/tomcat/tomcat-8/v8.5.5/bin/apache-tomcat-8.5.5.tar.gz
+~] tar zxvf apache-tomcat-8.5.5.tar.gz
+
+3、pid
+~]# cat /opt/apache-tomcat-8.5.5/bin/setenv.sh 
+#!/bin/sh
+CATALINA_PID=/var/run/tomcat.pid
+
+
+因为 apache-tomcat-8.5.5/bin/catalina.sh 这个脚本中默认有这一段：
+# Ensure that any user defined CLASSPATH variables are not used on startup,
+# but allow them to be specified in setenv.sh, in rare case when it is needed.
+CLASSPATH=
+
+if [ -r "$CATALINA_BASE/bin/setenv.sh" ]; then
+  . "$CATALINA_BASE/bin/setenv.sh"
+elif [ -r "$CATALINA_HOME/bin/setenv.sh" ]; then
+  . "$CATALINA_HOME/bin/setenv.sh"
+fi
