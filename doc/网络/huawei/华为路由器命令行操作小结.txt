@@ -1,0 +1,43 @@
+华为路由器命令行操作小结
+2016/9/9
+
+一、基础
+1、一个基础的初始化操作
+<Huawei>system-view
+[Huawei]sysname AR-GW-1
+[AR-GW-1-GigabitEthernet0/0/0]quit
+[AR-GW-1]aaa
+[AR-GW-1-aaa]local-user admin pass	
+[AR-GW-1-aaa]local-user admin password cipher mypass
+[AR-GW-1-aaa]local-user admin privilege level 3
+[AR-GW-1-aaa]local-user admin service-type telnet terminal http
+[AR-GW-1-aaa]quit
+[AR-GW-1]user-interface vty 0 4
+[AR-GW-1-ui-vty0-4]authentication-mode aaa
+[AR-GW-1-ui-vty0-4]quit
+
+
+2、配置NAT
+[AR-GW-1]acl number 2000  
+[AR-GW-1-acl-2000]rule permit source 192.168.200.0 0.0.0.255 
+[AR-GW-1-acl-2000]rule permit source 10.50.200.0 0.0.0.255 
+[AR-GW-1-acl-2000]rule permit source 172.30.0.0 0.0.255.255 
+[AR-GW-1-acl-2000]quit
+
+
+[AR-GW-1]interface GigabitEthernet0/0/1
+[AR-GW-1-GigabitEthernet0/0/1]ip address 1.1.1.211 255.255.255.0 
+[AR-GW-1-GigabitEthernet0/0/1]nat outbound 2000
+[AR-GW-1-GigabitEthernet0/0/1]quit
+
+
+3、配置端口
+[AR-GW-1]interface GigabitEthernet 0/0/0
+[AR-GW-1-GigabitEthernet0/0/0]ip address 192.168.200.1 255.255.255.0
+[AR-GW-1-GigabitEthernet0/0/0]quit
+
+
+4、配置静态路由
+[AR-GW-1]ip route-static 0.0.0.0 0.0.0.0 1.1.1.222
+[AR-GW-1]ip route-static 10.50.200.0 255.255.255.0 192.168.200.254
+[AR-GW-1]ip route-static 172.30.0.0 255.255.0.0 192.168.200.254
