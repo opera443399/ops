@@ -69,3 +69,16 @@ Starting Redis server...
 Installation successful!
 
 
+3、问题小结
+1）涉及到redis服务异常，触发了oom，redis服务被系统kill掉。
+Jan 29 05:59:37 s81 kernel: ecnet.exe invoked oom-killer: gfp_mask=0x201da, order=0, oom_score_adj=0
+Jan 29 05:59:37 s81 kernel: Out of memory: Kill process 751 (redis-server) score 260 or sacrifice child
+
+2）调整系统参数，增加vm.overcommit_memory=1，试图应对无法分配内存的异常。
+a）一定要设置最大内存
+b）多留一倍内存
+
+4、参考
+http://blog.csdn.net/whycold/article/details/21388455
+http://itindex.net/detail/34718-redis-%E6%95%B0%E6%8D%AE
+http://www.searchdatabase.com.cn/showcontent_70423.htm

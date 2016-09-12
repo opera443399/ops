@@ -1,0 +1,394 @@
+初探ELK-logstash使用小结
+2016/9/12
+
+【写在前言】
+说起处理日志的手段，大家或多或少都听说过ELK（elasticsearch+logstash+kibana），怎么入门呢？咱们从一个小小的目标开始。
+目标：收集nginx日志，集中展示。
+不少人对 ELK 的第一印象，容易觉得它这个工具组合似乎挺难上手的，错！只需动手试试就知道啦！
+目标分解：
+1）熟悉 logstash 的安装和基本操作
+2）熟悉 elasticsearch 的安装和基本操作，然后结合 logstash 使用
+3）熟悉 kibana 的安装和基本操作，然后结合 elasticsearch 使用
+
+本文主要是带你进入 logstash 的世界，其余内容请参考相关文章（elasticsearch使用小结，kibana使用小结）。
+
+
+
+一、安装
+1、jdk 和 环境变量
+支持jdk-1.7以上，推荐jdk-1.8
+在环境变量配置：JAVA_HOME
+
+
+
+2、安装
+有2种方式下载，推荐缓存rpm包到本地yum源
+1）直接使用rpm
+wget https://download.elastic.co/logstash/logstash/packages/centos/logstash-2.4.0.noarch.rpm
+
+2）使用yum源
+[root@vm49 ~]# rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+[root@vm49 ~]# vim /etc/yum.repos.d/logstash.repo
+[logstash-2.4]
+name=Logstash repository for 2.4.x packages
+baseurl=https://packages.elastic.co/logstash/2.4/centos
+gpgcheck=1
+gpgkey=https://packages.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+
+[root@vm49 ~]# yum install logstash
+[root@vm49 ~]# whereis logstash
+logstash: /etc/logstash /opt/logstash/bin/logstash /opt/logstash/bin/logstash.bat
+
+
+二、使用
+1、命令行测试
+[root@vm49 ~]# /opt/logstash/bin/logstash -e 'input { stdin { } } output { stdout {} }'
+hi, let us go（输入）
+Settings: Default pipeline workers: 4
+Pipeline main started
+2016-09-12T02:42:59.110Z 0.0.0.0 hi, let us go（输出）
+why not TRY IT OUT（输入）
+2016-09-12T02:43:11.904Z 0.0.0.0 why not TRY IT OUT（输出）
+
+（CTRL-D 退出）
+Pipeline main has been shutdown
+stopping pipeline {:id=>"main"}
+
+2、使用配置文件
+目的：从日志文件中读取数据，输出到另一个文件中来查看。
+前提：已经配置了一个nginx服务，生成了以下日志文件：
+]# ls /var/log/nginx/
+access.log  access_www.test.com_80.log  error.log  error_www.test.com_80.log
+
+首先，我们尝试这样配置 logstash 来收集日志：
+[root@vm49 ~]# cat /etc/logstash/conf.d/nginx.conf 
+input {
+    file {
+        path => "/var/log/nginx/access_*.log"
+        start_position => beginning 
+        ignore_older => 0 
+    }
+}
+
+filter {
+    grok {
+        match => { "message" => "%{COMBINEDAPACHELOG}"}
+    }
+}
+
+output {
+    file {
+        path => "/tmp/test.log"
+    }
+}
+
+上面使用到以下插件：
+file：日志数据的输入和输出
+grok：来匹配标准的apache日志格式
+
+【细节延伸】
+显然，在3个环节）中，都有改进和调整的地方。
+input：使用 filebeat
+filter：使用其他插件和规则
+output：使用ES，redis等
+具体请参考：
+https://www.elastic.co/guide/en/logstash/current/pipeline.html
+
+3、测试配置文件：
+[root@vm49 ~]# service logstash configtest
+Configuration OK
+
+4、启动服务：
+[root@vm49 ~]# service logstash start
+
+5、测试请求nginx服务，然后观察输出的内容：
+[root@vm49 ~]# cat /tmp/test.log
+
+符合预期。
+
+6、比较
+去掉 filter 这一节，我们来对比一下 /tmp/test.log 收集到的内容的差异
+
+【使用了 filter 的结果a】
+{"message":"10.50.200.219 - - [12/Sep/2016:13:00:03 +0800] \"GET / HTTP/1.1\" 200 13 \"-\" \"curl/7.19.7 (x86_64-redhat-linux-gnu) libcurl/7.19.7 NSS/3.14.0.0 zlib/1.2.3 libidn/1.18 libssh2/1.4.2\" \"-\" 0.000 \"-\" \"-\"","@version":"1","@timestamp":"2016-09-12T05:00:04.140Z","path":"/var/log/nginx/access_www.test.com_80.log","host":"0.0.0.0","clientip":"10.50.200.219","ident":"-","auth":"-","timestamp":"12/Sep/2016:13:00:03 +0800","verb":"GET","request":"/","httpversion":"1.1","response":"200","bytes":"13","referrer":"\"-\"","agent":"\"curl/7.19.7 (x86_64-redhat-linux-gnu) libcurl/7.19.7 NSS/3.14.0.0 zlib/1.2.3 libidn/1.18 libssh2/1.4.2\""}
+
+【未使用 filter 的结果b】
+{"message":"10.50.200.219 - - [12/Sep/2016:13:07:49 +0800] \"GET / HTTP/1.1\" 200 13 \"-\" \"curl/7.19.7 (x86_64-redhat-linux-gnu) libcurl/7.19.7 NSS/3.14.0.0 zlib/1.2.3 libidn/1.18 libssh2/1.4.2\" \"-\" 0.000 \"-\" \"-\"","@version":"1","@timestamp":"2016-09-12T05:07:49.917Z","path":"/var/log/nginx/access_www.test.com_80.log","host":"0.0.0.0"}
+
+
+a的内容中，多出来的地方，正是使用了 grok 分析和结构化数据
+---------------------------------------------------
+Information	              Field Name
+-----------               ----------
+IP Address                clientip
+User ID                   ident
+User Authentication	      auth
+timestamp	      	      timestamp
+HTTP Verb	      	      verb
+Request body	      	  request
+HTTP Version	          httpversion
+HTTP Status Code	      response
+Bytes served	          bytes
+Referrer URL	          referrer
+User agent	              agent
+---------------------------------------------------
+
+7、改进
+Logstash 默认自带了 apache 标准日志的 grok 正则:
+如何使用自定义的日志格式呢？
+例如，默认的 nginx 日志是：
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+改成自定义的日志格式：
+                      
+    log_format  online '$remote_addr [$time_local] "$request" '
+                   '"$http_content_type" "$request_body" "$http_referer" '
+                   '$status $request_time $body_bytes_sent';
+                   
+对应的数据：
+【GET】# curl -H "Content-Type: text/html; charset=UTF-8" --referer 'www.abc.com/this_is_a_referer' http://www.test.com/a/b/c.html?key1=value1
+【结果】10.50.200.219 [12/Sep/2016:15:11:04 +0800] "GET /a/b/c.html?key1=value1 HTTP/1.1" "text/html; charset=UTF-8" "-" "www.abc.com/this_is_a_referer" 404 0.000 168
+
+【POST】# curl -H "Content-Type: application/xml" -d "{"name": "Mark Lee" }" "http://www.test.com/start"
+【结果】10.50.200.218 [12/Sep/2016:15:02:07 +0800] "POST /start HTTP/1.1" "application/xml" "-" "-" 404 0.000 168
+
+尝试一下：
+[root@vm49 ~]# mkdir -p /etc/logstash/patterns.d
+[root@vm49 ~]# vim /etc/logstash/patterns.d/extra_patterns
+NGINXACCESS %{IPORHOST:clientip} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{URIPATHPARAM:request} HTTP/%{NUMBER:httpversion}" (?:%{QS:content_type}|-) (?:%{QS:request_body}|-) (?:"(?:%{URI:referrer}|-)"|%{QS:referrer}) %{NUMBER:response} %{BASE16FLOAT:request_time} (?:%{NUMBER:bytes}|-)
+
+
+调整配置为：
+[root@vm49 ~]# cat /etc/logstash/conf.d/nginx.conf 
+input {
+    file {
+        path => "/var/log/nginx/access_*.log"
+        start_position => beginning
+        ignore_older => 0
+    }
+}
+
+filter {
+    grok {
+        patterns_dir => ["/etc/logstash/patterns.d"]
+        match => {
+            "message" => "%{NGINXACCESS}"
+        }
+    }
+}
+
+output {
+    file {
+        path => "/tmp/test.log"
+    }
+}
+
+
+[root@vm49 ~]# service logstash restart
+结果：
+{"message":"10.50.200.218 [12/Sep/2016:15:28:23 +0800] \"POST /start HTTP/1.1\" \"application/xml\" \"-\" \"-\" 404 0.000 168","@version":"1","@timestamp":"2016-09-12T07:28:24.007Z","path":"/var/log/nginx/access_www.test.com_80.log","host":"0.0.0.0","clientip":"10.50.200.218","timestamp":"12/Sep/2016:15:28:23 +0800","verb":"POST","request":"/start","httpversion":"1.1","content_type":"\"application/xml\"","request_body":"\"-\"","response":"404","request_time":"0.000","bytes":"168"}
+
+{"message":"10.50.200.219 [12/Sep/2016:15:28:24 +0800] \"GET /a/b/c.html?key1=value1 HTTP/1.1\" \"text/html; charset=UTF-8\" \"-\" \"www.abc.com/this_is_a_referer\" 404 0.000 168","@version":"1","@timestamp":"2016-09-12T07:28:25.019Z","path":"/var/log/nginx/access_www.test.com_80.log","host":"0.0.0.0","clientip":"10.50.200.219","timestamp":"12/Sep/2016:15:28:24 +0800","verb":"GET","request":"/a/b/c.html?key1=value1","httpversion":"1.1","content_type":"\"text/html; charset=UTF-8\"","request_body":"\"-\"","referrer":"\"www.abc.com/this_is_a_referer\"","response":"404","request_time":"0.000","bytes":"168"}
+
+符合预期。
+
+
+三、输出到 redis+elasticsearch+kibana
+1、测试环境（已经部署了服务）
+【客户端】10.50.200.49: logstash, nginx(www.test.com, www.work.com)
+【服务端】10.50.200.220: logstash, redis, elasticsearch, kibana
+【测试端】10.50.200.218, 10.50.200.219: curl 请求 nginx
+[root@vm218 ~]# for i in `seq 1 5000`;do curl -H "Content-Type: application/xml" -d "{"name": "York vm218" }" "http://www.test.com/this_is_vm218";sleep 1s;done
+[root@vm219 ~]# for i in `seq 1 5000`;do curl -H "Content-Type: text/html; charset=UTF-8" --referer 'www.vm219.com/referer_here' http://www.test.com/a/b/c.html?key1=value1;sleep 1s;done
+
+
+hosts文件：
+10.50.200.49 www.test.com
+10.50.200.49 www.work.com
+
+
+2、单域名场景
+目的：将 www.test.com 的 access 日志收集起来集中展示
+【客户端】
+输入：file
+输出：redis
+
+[root@vm49 ~]# cat /etc/logstash/conf.d/nginx.conf 
+input {
+    file {
+        type => "nginx_access"
+        path => "/var/log/nginx/access_*.log"
+        start_position => beginning
+        ignore_older => 0
+    }
+}
+
+filter {
+    if[type] == "nginx_access" {
+        grok {
+            patterns_dir => ["/etc/logstash/patterns.d"]
+            match => {
+                "message" => "%{NGINXACCESS}"
+            }
+        }
+    }
+}
+
+output {
+    if[type] == "nginx_access" {
+        redis {
+            host => "10.50.200.220"
+            data_type => "list"
+            key => "logstash:redis:nginxaccess"
+        }
+    }
+}
+[root@vm49 ~]# service logstash restart
+
+
+【服务端】
+输入：redis
+输出：elasticsearch
+
+[root@vm220 ~]# vim /etc/logstash/conf.d/redis.conf
+input {
+    redis {
+        host => '127.0.0.1'
+        data_type => 'list'
+        port => "6379"
+        key => 'logstash:redis:nginxaccess'
+        type => 'redis-input'
+    }
+}
+
+output {
+    if[type] == "nginx_access" {
+        elasticsearch {
+            hosts => "127.0.0.1:9200"
+            index => "nginxaccess-%{+YYYY.MM.dd}"
+        }
+    }
+}
+[root@vm220 ~]# service logstash restart
+
+
+可以通过命令行去观察 redis 的状态：
+[root@vm220 ~]# redis-cli monitor
+
+
+结果：符合预期。
+
+
+3、多域名场景
+目的：将 www.test.com 和 www.work.com 的 access 日志收集起来集中展示
+【客户端】
+输入：file
+输出：redis
+
+[root@vm49 ~]# cat /etc/logstash/conf.d/nginx.conf 
+input {
+    file {
+        type => "nginx_access_www.test.com"
+        path => "/var/log/nginx/access_www.test.com*.log"
+        start_position => beginning
+        ignore_older => 0
+    }
+    file {
+        type => "nginx_access_www.work.com"
+        path => "/var/log/nginx/access_www.work.com*.log"
+        start_position => beginning
+        ignore_older => 0
+    }
+}
+
+filter {
+    if[type] =~ "nginx_access" {
+        grok {
+            patterns_dir => ["/etc/logstash/patterns.d"]
+            match => {
+                "message" => "%{NGINXACCESS}"
+            }
+        }
+    }
+}
+
+output {
+    if[type] =~ "nginx_access" {
+        redis {
+            host => "10.50.200.220"
+            data_type => "list"
+            key => "logstash:redis:nginxaccess"
+        }
+    }
+}
+[root@vm49 ~]# service logstash restart
+
+
+【服务端】
+输入：redis
+输出：elasticsearch
+
+[root@vm220 ~]# vim /etc/logstash/conf.d/redis.conf
+input {
+    redis {
+        host => '127.0.0.1'
+        data_type => 'list'
+        port => "6379"
+        key => 'logstash:redis:nginxaccess'
+        type => 'redis-input'
+    }
+}
+
+output {
+    if[type] == "nginx_access_www.test.com" {
+        elasticsearch {
+            hosts => "127.0.0.1:9200"
+            index => "nginxaccess-www.test.com-%{+YYYY.MM.dd}"
+        }
+    } else if[type] == "nginx_access_www.work.com" {
+        elasticsearch {
+            hosts => "127.0.0.1:9200"
+            index => "nginxaccess-www.work.com-%{+YYYY.MM.dd}"
+        }
+    }
+
+}
+[root@vm220 ~]# service logstash restart
+
+当然了，要调整kibana的索引名称。
+
+结果：符合预期。
+
+
+四、小结
+1、数据流向
+------------------------------------------------------------------
+log_files  ->  logstash  ->  redis  ->  elasticsearch  ->  kibana
+------------------------------------------------------------------
+
+2、TODO
+1）filebeat 的使用
+2）redis 是否被替换？ 
+3）Elasticsearch索引数据的清理
+4）kibana的权限
+5）ELK的性能和监控
+
+
+ZYXW、参考
+1、官网
+https://www.elastic.co/guide/en/logstash/current/introduction.html
+https://www.elastic.co/guide/en/logstash/current/getting-started-with-logstash.html
+https://www.elastic.co/guide/en/logstash/current/installing-logstash.html
+https://www.elastic.co/guide/en/logstash/current/first-event.html
+https://www.elastic.co/guide/en/logstash/current/advanced-pipeline.html
+https://www.elastic.co/guide/en/logstash/current/pipeline.html
+https://www.elastic.co/guide/en/logstash/current/plugins-filters-grok.html
+2、ELK中文
+http://kibana.logstash.es/content/
+http://kibana.logstash.es/content/logstash/plugins/filter/grok.html
+http://kibana.logstash.es/content/beats/file.html
+3、用ELK搭建简单的日志收集分析系统
+http://blog.csdn.net/lzw_2006/article/details/51280058

@@ -1,14 +1,9 @@
 tomcat使用小结
-2016/9/7
+2016/9/12
 
 1、jdk 和 环境变量
-
-~]# yum install java-1.8.0-openjdk
-
-然后在 /etc/profile 增加：
-export JAVA_HOME=/usr/java/default
-export CLASSPATH=.:$JAVA_HOME/lib:$JAVA_HOME/jre/lib
-export PATH=$PATH:$JAVA_HOME/bin:$JAVA_HOME/jre/bin
+推荐jdk-1.8
+在环境变量配置：JAVA_HOME
 
 2、tomcat
 直接下载包

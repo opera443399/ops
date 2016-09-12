@@ -1,0 +1,45 @@
+初探ELK-kibana使用小结
+2016/9/12
+
+
+1、安装
+有2种方式下载，推荐缓存rpm包到本地yum源
+1）直接使用rpm
+wget https://download.elastic.co/kibana/kibana/kibana-4.6.1-x86_64.rpm
+
+2）使用yum源
+[root@vm220 ~]# rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+[root@vm220 ~]# vim /etc/yum.repos.d/kibana.repo
+[kibana-4.6]
+name=Kibana repository for 4.6.x packages
+baseurl=https://packages.elastic.co/kibana/4.6/centos
+gpgcheck=1
+gpgkey=https://packages.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+[root@vm220 ~]# yum install kibana
+
+
+3）启动服务
+kibana默认会找到本地的es服务，因此直接启动服务即可：
+[root@vm220 ~]# service kibana start
+[root@vm220 ~]# chkconfig kibana on
+
+2、使用
+访问：
+http://10.50.200.220:5601/app/kibana
+
+
+要使用kibana，要根据已经创建的索引来配置一个对应的索引名称的正则，例如：
+nginxaccess-*
+
+接下来，去 discover 界面看看咱们获得了什么内容，搜索一下关键字试试筛选。
+
+
+
+
+ZYXW、参考
+1、官网doc
+https://www.elastic.co/guide/en/kibana/current/setup-repositories.html
+https://www.elastic.co/guide/en/kibana/current/status.html
+https://www.elastic.co/guide/en/kibana/current/discover.html
+https://www.elastic.co/guide/en/shield/current/kibana.html#kibana4-server-role
