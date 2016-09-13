@@ -1,5 +1,5 @@
 初探ELK-logstash使用小结
-2016/9/12
+2016/9/13
 
 【写在前言】
 说起处理日志的手段，大家或多或少都听说过ELK（elasticsearch+logstash+kibana），怎么入门呢？咱们从一个小小的目标开始。
@@ -363,7 +363,100 @@ output {
 结果：符合预期。
 
 
-四、小结
+四、改进
+1、将 filter 调整到服务端，让客户端仅仅是收集日志即可。
+[root@vm220 ~]# mkdir -p /etc/logstash/patterns.d
+[root@vm220 ~]# vim /etc/logstash/patterns.d/extra_patterns
+NGINXACCESS %{IPORHOST:clientip} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{URIPATHPARAM:request} HTTP/%{NUMBER:httpversion}" (?:%{QS:content_type}|-) (?:%{QS:request_body}|-) (?:"(?:%{URI:referrer}|-)"|%{QS:referrer}) %{NUMBER:response} %{BASE16FLOAT:request_time} (?:%{NUMBER:bytes}|-)
+
+【客户端】
+输入：file
+输出：redis
+
+[root@vm49 ~]# cat /etc/logstash/conf.d/nginx.conf 
+input {
+    file {
+        type => "nginx_access_www.test.com"
+        path => "/var/log/nginx/access_www.test.com*.log"
+        start_position => beginning
+        ignore_older => 0
+    }
+    file {
+        type => "nginx_access_www.work.com"
+        path => "/var/log/nginx/access_www.work.com*.log"
+        start_position => beginning
+        ignore_older => 0
+    }
+}
+
+output {
+    if[type] =~ "nginx_access" {
+        redis {
+            host => "10.50.200.220"
+            data_type => "list"
+            key => "logstash:redis:nginxaccess"
+        }
+    }
+}
+[root@vm49 ~]# service logstash restart
+
+
+【服务端】
+输入：redis
+输出：elasticsearch
+
+[root@vm220 ~]# vim /etc/logstash/conf.d/redis.conf
+input {
+    redis {
+        host => '127.0.0.1'
+        data_type => 'list'
+        port => "6379"
+        key => 'logstash:redis:nginxaccess'
+        type => 'redis-input'
+    }
+}
+
+filter {
+    if[type] =~ "nginx_access" {
+        grok {
+            patterns_dir => ["/etc/logstash/patterns.d"]
+            match => {
+                "message" => "%{NGINXACCESS}"
+            }
+        }
+    }
+}
+
+output {
+    if[type] == "nginx_access_www.test.com" {
+        elasticsearch {
+            hosts => "127.0.0.1:9200"
+            index => "nginxaccess-www.test.com-%{+YYYY.MM.dd}"
+        }
+    } else if[type] == "nginx_access_www.work.com" {
+        elasticsearch {
+            hosts => "127.0.0.1:9200"
+            index => "nginxaccess-www.work.com-%{+YYYY.MM.dd}"
+        }
+    }
+
+}
+[root@vm220 ~]# service logstash restart
+
+
+【效果】
+通过 redis-cli monitor 可以发现客户端收集的数据减少了。
+调整前的数据：
+1473730660.352038 [0 10.50.200.49:46961] "rpush" "logstash:redis:nginxaccess" "{\"message\":\"10.50.200.218 [13/Sep/2016:09:38:02 +0800] \\\"POST /this_is_vm218 HTTP/1.1\\\" \\\"application/xml\\\" \\\"-\\\" \\\"-\\\" 404 0.000 168\",\"@version\":\"1\",\"@timestamp\":\"2016-09-13T01:38:03.017Z\",\"path\":\"/var/log/nginx/access_www.work.com_80.log\",\"host\":\"0.0.0.0\",\"type\":\"nginx_access_www.work.com\",\"clientip\":\"10.50.200.218\",\"timestamp\":\"13/Sep/2016:09:38:02 +0800\",\"verb\":\"POST\",\"request\":\"/this_is_vm218\",\"httpversion\":\"1.1\",\"content_type\":\"\\\"application/xml\\\"\",\"request_body\":\"\\\"-\\\"\",\"response\":\"404\",\"request_time\":\"0.000\",\"bytes\":\"168\"}"
+调整后的数据：
+1473730997.183120 [0 10.50.200.49:46962] "rpush" "logstash:redis:nginxaccess" "{\"message\":\"10.50.200.219 [13/Sep/2016:09:43:39 +0800] \\\"GET /a/b/c.html?key1=value1 HTTP/1.1\\\" \\\"text/html; charset=UTF-8\\\" \\\"-\\\" \\\"www.vm219.com/referer_here\\\" 404 0.000 168\",\"@version\":\"1\",\"@timestamp\":\"2016-09-13T01:43:39.951Z\",\"path\":\"/var/log/nginx/access_www.test.com_80.log\",\"host\":\"0.0.0.0\",\"type\":\"nginx_access_www.test.com\"}"
+
+符合目标：将客户端的计算丢给服务端。
+
+
+
+
+五、小结
 1、数据流向
 ------------------------------------------------------------------
 log_files  ->  logstash  ->  redis  ->  elasticsearch  ->  kibana
