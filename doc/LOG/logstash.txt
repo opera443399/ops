@@ -1,5 +1,5 @@
 初探ELK-logstash使用小结
-2016/9/13
+2016/9/14
 
 【写在前言】
 说起处理日志的手段，大家或多或少都听说过ELK（elasticsearch+logstash+kibana），怎么入门呢？咱们从一个小小的目标开始。
@@ -55,13 +55,24 @@ why not TRY IT OUT（输入）
 Pipeline main has been shutdown
 stopping pipeline {:id=>"main"}
 
+
 2、使用配置文件
 目的：从日志文件中读取数据，输出到另一个文件中来查看。
-前提：已经配置了一个nginx服务，生成了以下日志文件：
-]# ls /var/log/nginx/
-access.log  access_www.test.com_80.log  error.log  error_www.test.com_80.log
+前提：已经配置了一个nginx服务，生成了对应的日志文件。
 
-首先，我们尝试这样配置 logstash 来收集日志：
+首先，因为这里要读取nginx日志，请将 logstash 加入 nginx 的用户组。
+示例：
+[root@vm49 ~]# ls -l /var/log/nginx/access_*.log
+-rw-r----- 1 nginx adm 608083 Sep 13 18:18 /var/log/nginx/access_www.test.com_80.log
+-rw-r----- 1 nginx adm 597070 Sep 13 18:18 /var/log/nginx/access_www.work.com_80.log
+
+nginx属于 adm 组，使用 logstash 读取日志，可能产生权限异常：
+failed to open /var/log/nginx/access.ecshop.test.d3dstore.com.log: Permission denied
+因此，要加入对应的组：
+[root@vm49 ~]# usermod -G adm logstash
+
+
+接着，我们尝试这样配置 logstash 来收集日志：
 [root@vm49 ~]# cat /etc/logstash/conf.d/nginx.conf 
 input {
     file {
@@ -88,7 +99,7 @@ file：日志数据的输入和输出
 grok：来匹配标准的apache日志格式
 
 【细节延伸】
-显然，在3个环节）中，都有改进和调整的地方。
+显然，在3个环节中，都有改进和调整的地方。
 input：使用 filebeat
 filter：使用其他插件和规则
 output：使用ES，redis等
