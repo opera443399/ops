@@ -1,4 +1,5 @@
 【yum和rpm】个人用到的方法记录
+2016/9/18
 yum和rpm博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
 
 1、搜索和查询
@@ -60,10 +61,44 @@ yum remove lrzsz
 rpm -e --nodeps xxx 
 
 
+5、使用 yum-plugin-downloadonly 这个插件，通过仅下载 rpm 包的方式来缓存为本地 yum 源
+本例以安装 fio 为例：
+[root@vm49 ~]# yum install yum-plugin-downloadonly -y
+[root@vm49 ~]# yum install --downloadonly --downloaddir=/var/www/html/repo/ fio
+Loaded plugins: downloadonly, fastestmirror, security
+Loading mirror speeds from cached hostfile
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package fio.x86_64 0:2.0.13-1.el6 will be installed
+--> Finished Dependency Resolution
 
-5、其他
-repoquery的用法：
+Dependencies Resolved
+
+===================================================================
+ Package        Arch        Version        Repository        Size
+===================================================================
+Installing:
+ fio        x86_64        2.0.13-1.el6        epel        222 k
+
+Transaction Summary
+===================================================================
+Install       1 Package(s)
+
+Total download size: 222 k
+Installed size: 1.1 M
+Is this ok [y/N]: y
+Downloading Packages:
+fio-2.0.13-1.el6.x86_64.rpm                    | 222 kB     00:00     
+
+
+exiting because --downloadonly specified 
+[root@vm49 ~]# ls /var/www/html/repo/
+fio-2.0.13-1.el6.x86_64.rpm
+
+
+
+6、repoquery的用法
 [root@tvm-zabbix ~]# repoquery --plugins --queryformat '%{NAME}_|-%{VERSION}_|-%{RELEASE}_|-%{ARCH}_|-%{REPOID}' --disablerepo='*' --enablerepo='office,base,repo'  --all --quiet --whatprovides php
 php_|-5.3.3_|-40.el6_6_|-x86_64_|-base
 php_|-5.3.3_|-40.el6_6_|-x86_64_|-base
-
