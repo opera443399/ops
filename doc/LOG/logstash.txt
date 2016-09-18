@@ -96,6 +96,24 @@ stopping pipeline {:id=>"main"}
 
 符合预期。
 
+注1：还有一种场景（hostname使用本地名称，而不是采取域名的命名方式）需要注意
+/etc/hosts 中包括下述内容
+------------------------
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+127.0.0.1 local-vm50
+10.50.200.50 local-vm50
+------------------------
+期望的结果是：
+"host" => "local-vm50"
+实际得到的结果是：
+"host" => "localhost"
+
+此时，需要删除：
+127.0.0.1 local-vm50
+然后才能得到期望的结果。
+
+注2：如果是在 logstash 服务启动后才去调整了 hostname 相关设置，则需要重启 logstash 服务，否则依然是旧的结果。
 
 
 2、使用配置文件
