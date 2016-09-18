@@ -10,7 +10,7 @@
 2）熟悉 elasticsearch 的安装和基本操作，然后结合 logstash 使用
 3）熟悉 kibana 的安装和基本操作，然后结合 elasticsearch 使用
 
-本文主要是带你进入 logstash 的世界，其余内容请参考相关文章（elasticsearch使用小结，kibana使用小结，初探ELK-filebeat使用小结）。
+本文主要是带你进入 logstash 的世界，其余内容请参考相关文章（elasticsearch使用小结，kibana使用小结，filebeat使用小结）。
 
 
 
