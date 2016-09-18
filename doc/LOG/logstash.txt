@@ -10,7 +10,7 @@
 2）熟悉 elasticsearch 的安装和基本操作，然后结合 logstash 使用
 3）熟悉 kibana 的安装和基本操作，然后结合 elasticsearch 使用
 
-本文主要是带你进入 logstash 的世界，其余内容请参考相关文章（elasticsearch使用小结，kibana使用小结）。
+本文主要是带你进入 logstash 的世界，其余内容请参考相关文章（elasticsearch使用小结，kibana使用小结，初探ELK-filebeat使用小结）。
 
 
 
@@ -172,6 +172,7 @@ Configuration OK
 
 4、启动服务：
 [root@vm49 ~]# service logstash start
+[root@vm49 ~]# chkconfig logstash on
 
 5、测试请求nginx服务，然后观察输出的内容：
 [root@vm49 ~]# cat /tmp/test.log
@@ -284,7 +285,7 @@ hosts文件：
 
 
 2、场景1：只有1个域名/模糊匹配N个域名
-目的：将 www.test.com 的 access 日志收集起来集中展示
+目的：将匹配的 access 日志收集起来集中展示。
 【客户端】
 输入：file
 输出：redis
@@ -306,6 +307,9 @@ filter {
             match => {
                 "message" => "%{NGINXACCESS}"
             }
+        }
+        date {
+            match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
         }
     }
 }
@@ -341,7 +345,7 @@ output {
     if[type] == "NginxAccess" {
         elasticsearch {
             hosts => "127.0.0.1:9200"
-            index => "nginxaccess-%{+YYYY.MM.dd}"
+            index => "logstash-nginxaccess-%{+YYYY.MM.dd}"
         }
     }
 }
@@ -353,13 +357,14 @@ output {
 
 
 指定kibana的索引名称，例如：
-nginxaccess-*
+logstash-nginxaccess-*
 
 结果：符合预期。
 
 
+
 3、场景2：N个域名分开收集
-目的：将 www.test.com 和 www.work.com 的 access 日志收集起来集中展示
+目的：将 www.test.com 和 www.work.com 的 access 日志收集起来使用独立的索引名来分开展示
 【客户端】
 输入：file
 输出：redis
@@ -387,6 +392,9 @@ filter {
             match => {
                 "message" => "%{NGINXACCESS}"
             }
+        }
+        date {
+            match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
         }
     }
 }
@@ -422,37 +430,62 @@ output {
     if[type] == "NginxAccess-www.test.com" {
         elasticsearch {
             hosts => "127.0.0.1:9200"
-            index => "nginxaccess-www.test.com-%{+YYYY.MM.dd}"
+            index => "logstash-nginxaccess-www.test.com-%{+YYYY.MM.dd}"
         }
     } else if[type] == "NginxAccess-www.work.com" {
         elasticsearch {
             hosts => "127.0.0.1:9200"
-            index => "nginxaccess-www.work.com-%{+YYYY.MM.dd}"
+            index => "logstash-nginxaccess-www.work.com-%{+YYYY.MM.dd}"
         }
     }
-
 }
 [root@vm220 ~]# service logstash restart
 
 当然了，要调整kibana的索引名称，指定更具体的名称，例如：
-nginxaccess-www.test.com-*
-nginxaccess-www.work.com-*
+logstash-nginxaccess-www.test.com-*
+logstash-nginxaccess-www.work.com-*
 
 结果：符合预期。
 
 
-四、小结
+四、小结FAQ
 1、数据流向
 ------------------------------------------------------------------
 log_files  ->  logstash  ->  redis  ->  elasticsearch  ->  kibana
 ------------------------------------------------------------------
 
-2、TODO
-1）filebeat 如何使用？是替换 logstash 还是在前端再加一层？
-2）redis 是否被替换？ 
-3）Elasticsearch 索引数据的清理规则是怎样的？
-4）kibana 的权限怎么限制，可视化如何使用？
-5）ELK 在网络异常时的表现，如何监控？
+2、@timestamp 和 message 中记录的时间字段（timestamp）不一致
+message 中记录的是原始时间，而 @timestamp 中记录的是事件采集到的时候记录的时间，两者可能差距有1s及以上。
+可以通过 date 插件来调整记录到的时间，以日志中记录的原始时间为准，可以用于读取过去某段时间的日志文件，这样一来，收集日志时记录的时间不会错乱。
+例如：
+filter {
+    date {
+        match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
+    }
+}
+
+将匹配 field "timestamp" 格式为 "dd/MMM/YYYY:HH:mm:ss Z"
+实际匹配到：
+18/Sep/2016:16:43:15 +0800
+
+默认更新 @timestamp 为：
+September 18th 2016, 16:43:15.000
+
+
+
+3、TODO
+1）filebeat 结合 logstash 怎么做才合理？
+2）Elasticsearch 索引数据的清理规则是怎样的？
+3）kibana 的权限怎么限制，可视化如何使用？
+4）ELK 在网络异常时的表现，如何监控？
+
+
+
+
+
+
+
+
 
 
 ZYXW、参考
@@ -464,6 +497,7 @@ https://www.elastic.co/guide/en/logstash/current/first-event.html
 https://www.elastic.co/guide/en/logstash/current/advanced-pipeline.html
 https://www.elastic.co/guide/en/logstash/current/pipeline.html
 https://www.elastic.co/guide/en/logstash/current/plugins-filters-grok.html
+https://www.elastic.co/guide/en/logstash/current/plugins-filters-date.html
 2、ELK中文
 http://kibana.logstash.es/content/
 http://kibana.logstash.es/content/logstash/plugins/filter/grok.html

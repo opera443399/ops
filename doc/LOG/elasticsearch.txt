@@ -1,5 +1,5 @@
 初探ELK-elasticsearch使用小结
-2016/9/12
+2016/9/18
 
 一、安装
 1、jdk 和 环境变量
@@ -201,6 +201,121 @@ curl -XPOST 'localhost:9200/bank/_search?pretty' -d '
 
 
 备注：具体内容请参考官网doc
+
+
+
+
+三、集群
+1、添加2个 es 节点，
+vm218: 10.50.200.218
+vm219: 10.50.200.219
+
+加上现有的：
+vm220: 10.50.200.220
+
+组成一个3节点的es集群。
+
+[root@vm218 ~]# yum install elasticsearch
+[root@vm218 ~]# chkconfig elasticsearch on
+
+2、调整集群配置
+[root@vm218 ~]# cp /etc/elasticsearch/elasticsearch.yml{,.bak} 
+[root@vm218 ~]# vim /etc/elasticsearch/elasticsearch.yml    
+cluster.name: es-cluster-test 
+node.name: node-vm218
+path.data: /data/elasticsearch
+path.logs: /var/log/elasticsearch
+network.host: 0.0.0.0
+discovery.zen.ping.unicast.hosts: ["10.50.200.218", "10.50.200.219", "10.50.200.220"]
+discovery.zen.minimum_master_nodes: 3
+
+[root@vm218 ~]# mkdir -p /data/elasticsearch
+[root@vm218 ~]# chown elasticsearch:elasticsearch /data/elasticsearch
+
+3、启动服务
+[root@vm218 ~]# service elasticsearch restart
+
+
+4、检查一下集群状态
+[root@vm218 ~]# curl '10.50.200.218:9200/_cat/health?v' 
+epoch      timestamp cluster         status node.total node.data shards pri relo init unassign pending_tasks max_task_wait_time active_shards_percent 
+1474192163 17:49:23  es-cluster-test green           3         3     12   6    0    0        0             0                  -                100.0% 
+
+[root@vm218 ~]# curl '10.50.200.218:9200/_cat/nodes?v'  
+host           ip             heap.percent ram.percent load node.role master name       
+10.50.200.218 10.50.200.218            3          61 0.26 d         *      node-vm218 
+10.50.200.220 10.50.200.220            4          85 0.10 d         m      node-vm220 
+10.50.200.219 10.50.200.219            3          62 0.06 d         m      node-vm219 
+
+[root@vm218 ~]# curl '10.50.200.218:9200/_cat/indices?v'
+health status index               pri rep docs.count docs.deleted store.size pri.store.size 
+green  open   .kibana               1   1          2            0       15kb          6.2kb 
+green  open   filebeat-2016.09.18   5   1       6255            0      4.9mb          1.8mb 
+
+
+5、对应的 logstash 的配置可以调整 output 输出到多个 es 节点
+示例如下：
+[root@vm220 ~]# cat /etc/logstash/conf.d/filebeat.conf 
+input {
+    beats {
+        port => "5044"
+    }
+}
+
+filter {
+    grok {
+        patterns_dir => ["/etc/logstash/patterns.d"]
+        match => {
+            "message" => "%{NGINXACCESS}"
+        }
+    }
+    date {
+        match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
+    }
+}
+
+output {
+    if[type] =~ "NginxAccess" {
+        elasticsearch {
+            hosts => ["10.50.200.218:9200", "10.50.200.219:9200", "10.50.200.220:9200"]
+            manage_template => false
+            index => "%{[@metadata][beat]}-%{+YYYY.MM.dd}"
+            document_type => "%{[@metadata][type]}"
+        }
+    }
+}
+[root@vm220 ~]# service logstash restart 
+
+
+
+
+
+四、小结FAQ
+1）数据流向
+-----------------------------------------------------------------------------
+|---------client-------|----------server---------------------------------|
+                                      / elasticsearch(vm218)  
+log_files ->  filebeat ->  logstash -> - elasticsearch(vm219)   ->  kibana
+                                      \ elasticsearch(vm220)  
+-----------------------------------------------------------------------------
+
+
+2、关于集群名称
+如果更改了集群名，则将根据集群名重新建立数据目录，例如
+[root@vm220 ~]# ls /data/elasticsearch/
+es-cluster-test  es-test
+
+上述示例中，es-test 这个目录是旧的，新的集群名称是 es-cluster-test，这将导致数据丢失。
+
+
+
+
+
+
+
+
+
+
 
 
 

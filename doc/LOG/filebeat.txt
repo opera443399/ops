@@ -1,0 +1,243 @@
+初探ELK-filebeat使用小结
+2016/9/18
+
+一、安装
+1、下载
+有2种方式下载，推荐缓存rpm包到本地yum源
+1）直接使用rpm
+[root@vm49 ~]# curl -L -O https://download.elastic.co/beats/filebeat/filebeat-1.3.1-x86_64.rpm
+
+2）使用yum源
+[root@vm49 ~]# rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+[root@vm49 ~]# vim /etc/yum.repos.d/beats.repo
+[beats]
+name=Elastic Beats Repository
+baseurl=https://packages.elastic.co/beats/yum/el/$basearch
+enabled=1
+gpgkey=https://packages.elastic.co/GPG-KEY-elasticsearch
+gpgcheck=1
+
+[root@vm49 ~]# yum install logstash
+[root@vm49 ~]# chkconfig filebeat on
+
+
+2、配置
+【默认的配置】
+[root@vm49 ~]# cat /etc/filebeat/filebeat.yml |grep -Ev '^(#|  #|    #|      #|        #|$)'
+filebeat:
+  prospectors:
+    -
+      paths:
+        - /var/log/*.log
+      input_type: log
+  registry_file: /var/lib/filebeat/registry
+output:
+  elasticsearch:
+    hosts: ["localhost:9200"]
+shipper:
+logging:
+  files:
+    rotateeverybytes: 10485760 # = 10MB
+
+
+
+二、使用
+1、测试环境（已经部署了服务）
+客户端：10.50.200.49 nginx(www.test.com, www.work.com)
+服务端：10.50.200.220 logstash, elasticsearch, kibana
+
+2、场景1：只有1个域名/模糊匹配N个域名
+目的：将匹配的 access 日志收集起来集中展示。
+【客户端】
+输入：filebeat
+输出：logstash
+
+[root@vm49 ~]# cat /etc/filebeat/filebeat.yml |grep -Ev '^(#|  #|    #|      #|        #|$)'
+filebeat:
+  prospectors:
+    -
+      paths:
+        - /var/log/nginx/access_*.log
+      input_type: log
+      document_type: NginxAccess
+  registry_file: /var/lib/filebeat/registry
+output:
+  logstash:
+    hosts: ["10.50.200.220:5044"]
+shipper:
+logging:
+  files:
+    rotateeverybytes: 10485760 # = 10MB
+
+[root@vm49 ~]# service filebeat restart
+
+
+【服务端】
+输入：logstash
+输出：elasticsearch
+
+配置自定义的 pattern
+[root@vm220 ~]# mkdir -p /etc/logstash/patterns.d
+[root@vm220 ~]# vim /etc/logstash/patterns.d/extra_patterns
+NGINXACCESS %{IPORHOST:clientip} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{URIPATHPARAM:request} HTTP/%{NUMBER:httpversion}" (?:%{QS:content_type}|-) (?:%{QS:request_body}|-) (?:"(?:%{URI:referrer}|-)"|%{QS:referrer}) %{NUMBER:response} %{BASE16FLOAT:request_time} (?:%{NUMBER:bytes}|-)
+
+调整 logstash 的配置，启用 filebeat 插件。
+[root@vm220 ~]# cat /etc/logstash/conf.d/filebeat.conf
+input {
+    beats {
+        port => "5044"
+    }
+}
+
+filter {
+    if[type] =~ "NginxAccess-" {
+        grok {
+            patterns_dir => ["/etc/logstash/patterns.d"]
+            match => {
+                "message" => "%{NGINXACCESS}"
+            }
+        }
+        date {
+            match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
+        }
+    }
+}
+
+output {
+    if[type] =~ "NginxAccess" {
+        elasticsearch {
+            hosts => "127.0.0.1:9200"
+            manage_template => false
+            index => "%{[@metadata][beat]}-%{+YYYY.MM.dd}"
+            document_type => "%{[@metadata][type]}"
+        }
+    }
+}
+
+[root@vm220 ~]# service logstash restart
+
+回到 kibana 界面，使用 index 名称为：
+filebeat-*
+来获取数据。
+
+结果：符合预期。
+
+
+
+3、场景2：N个域名分开收集
+目的：将 www.test.com 和 www.work.com 的 access 日志收集起来分开展示
+【客户端】
+输入：filebeat
+输出：logstash
+
+[root@vm49 ~]# cat /etc/filebeat/filebeat.yml |grep -Ev '^(#|  #|    #|      #|        #|$)'
+filebeat:
+  prospectors:
+    -
+      paths:
+        - /var/log/nginx/access_www.test.com*.log
+      input_type: log
+      document_type: NginxAccess-www.test.com
+    -
+      paths:
+        - /var/log/nginx/access_www.work.com*.log
+      input_type: log
+      document_type: NginxAccess-www.work.com
+  registry_file: /var/lib/filebeat/registry
+output:
+  logstash:
+    hosts: ["10.50.200.220:5044"]
+shipper:
+logging:
+  files:
+    rotateeverybytes: 10485760 # = 10MB
+
+[root@vm49 ~]# service filebeat restart
+
+
+【服务端】
+输入：logstash
+输出：elasticsearch
+
+配置自定义的 pattern
+[root@vm220 ~]# mkdir -p /etc/logstash/patterns.d
+[root@vm220 ~]# vim /etc/logstash/patterns.d/extra_patterns
+NGINXACCESS %{IPORHOST:clientip} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{URIPATHPARAM:request} HTTP/%{NUMBER:httpversion}" (?:%{QS:content_type}|-) (?:%{QS:request_body}|-) (?:"(?:%{URI:referrer}|-)"|%{QS:referrer}) %{NUMBER:response} %{BASE16FLOAT:request_time} (?:%{NUMBER:bytes}|-)
+
+调整 logstash 的配置，启用 filebeat 插件。
+[root@vm220 ~]# cat /etc/logstash/conf.d/filebeat.conf
+input {
+    beats {
+        port => "5044"
+    }
+}
+
+filter {
+    if[type] =~ "NginxAccess-" {
+        grok {
+            patterns_dir => ["/etc/logstash/patterns.d"]
+            match => {
+                "message" => "%{NGINXACCESS}"
+            }
+        }
+        date {
+            match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
+        }
+    }
+}
+
+output {
+    if[type] == "NginxAccess-www.test.com" {
+        elasticsearch {
+            hosts => "127.0.0.1:9200"
+            manage_template => false
+            index => "%{[@metadata][beat]}-nginxaccess-www.test.com-%{+YYYY.MM.dd}"
+            document_type => "%{[@metadata][type]}"
+        }
+    } else if[type] == "NginxAccess-www.work.com" {
+        elasticsearch {
+            hosts => "127.0.0.1:9200"
+            manage_template => false
+            index => "%{[@metadata][beat]}-nginxaccess-www.work.com-%{+YYYY.MM.dd}"
+            document_type => "%{[@metadata][type]}"
+        }
+    }
+}
+
+[root@vm220 ~]# service logstash restart
+
+回到 kibana 界面，使用 index 名称为：
+nginxaccess-www.test.com-*
+nginxaccess-www.work.com-*
+来获取数据。
+
+结果：符合预期。
+
+
+
+三、小结FAQ
+1、数据流向
+-----------------------------------------------------------------------------
+|---------client-------|----------server------------------------|
+log_files ->  filebeat ->  logstash ->  elasticsearch ->  kibana
+-----------------------------------------------------------------------------
+
+
+2、关于模版
+1）关闭logstash自动管理模板功能
+manage_template => false
+
+2）手动导入模版
+[root@vm220 ~]# curl -XPUT 'http://localhost:9200/_template/filebeat' -d@/etc/filebeat/filebeat.template.json
+
+3）删除模版
+[root@vm220 ~]# curl -XDELETE 'http://localhost:9200/filebeat-*'
+
+
+
+ZYXW、参考
+1、官网
+https://www.elastic.co/guide/en/beats/filebeat/current/config-filebeat-logstash.html
+https://www.elastic.co/guide/en/beats/libbeat/1.3/logstash-installation.html#logstash-setup
+https://www.elastic.co/guide/en/beats/libbeat/1.3/setup-repositories.html
+https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-template.html#load-template-shell
