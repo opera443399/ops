@@ -1,5 +1,5 @@
 初探ELK-filebeat使用小结
-2016/9/18
+2016/9/19
 
 一、安装
 1、下载
@@ -17,7 +17,7 @@ enabled=1
 gpgkey=https://packages.elastic.co/GPG-KEY-elasticsearch
 gpgcheck=1
 
-[root@vm49 ~]# yum install logstash
+[root@vm49 ~]# yum install filebeat
 [root@vm49 ~]# chkconfig filebeat on
 
 
@@ -45,6 +45,22 @@ logging:
 1、测试环境（已经部署了服务）
 客户端：10.50.200.49 nginx(www.test.com, www.work.com)
 服务端：10.50.200.220 logstash, elasticsearch, kibana
+----------------------------------------------------
+注：由于在前文的测试中，已经部署了 logstash, redis 等应用，因此，需要清理一下，如果是新环境，请略过。
+
+【客户端】
+# mkdir /etc/logstash/bak
+# mv /etc/logstash/conf.d/* /etc/logstash/bak/
+# service logstash stop
+# chkconfig logstash off
+【服务端】
+# service redis stop
+# chkconfig redis off
+# mkdir /etc/logstash/bak
+# mv /etc/logstash/conf.d/* /etc/logstash/bak/
+# service logstash stop
+----------------------------------------------------
+
 
 2、场景1：只有1个域名/模糊匹配N个域名
 目的：将匹配的 access 日志收集起来集中展示。
@@ -67,6 +83,8 @@ output:
 shipper:
 logging:
   files:
+    path: /var/log/filebeat
+    name: filebeat
     rotateeverybytes: 10485760 # = 10MB
 
 [root@vm49 ~]# service filebeat restart
@@ -90,7 +108,7 @@ input {
 }
 
 filter {
-    if[type] =~ "NginxAccess-" {
+    if[type] =~ "NginxAccess" {
         grok {
             patterns_dir => ["/etc/logstash/patterns.d"]
             match => {
@@ -106,7 +124,7 @@ filter {
 output {
     if[type] =~ "NginxAccess" {
         elasticsearch {
-            hosts => "127.0.0.1:9200"
+            hosts => ["10.50.200.218:9200", "10.50.200.219:9200", "10.50.200.220:9200"]
             manage_template => false
             index => "%{[@metadata][beat]}-%{+YYYY.MM.dd}"
             document_type => "%{[@metadata][type]}"
@@ -150,6 +168,8 @@ output:
 shipper:
 logging:
   files:
+    path: /var/log/filebeat
+    name: filebeat
     rotateeverybytes: 10485760 # = 10MB
 
 [root@vm49 ~]# service filebeat restart
@@ -189,14 +209,14 @@ filter {
 output {
     if[type] == "NginxAccess-www.test.com" {
         elasticsearch {
-            hosts => "127.0.0.1:9200"
+            hosts => ["10.50.200.218:9200", "10.50.200.219:9200", "10.50.200.220:9200"]
             manage_template => false
             index => "%{[@metadata][beat]}-nginxaccess-www.test.com-%{+YYYY.MM.dd}"
             document_type => "%{[@metadata][type]}"
         }
     } else if[type] == "NginxAccess-www.work.com" {
         elasticsearch {
-            hosts => "127.0.0.1:9200"
+            hosts => ["10.50.200.218:9200", "10.50.200.219:9200", "10.50.200.220:9200"]
             manage_template => false
             index => "%{[@metadata][beat]}-nginxaccess-www.work.com-%{+YYYY.MM.dd}"
             document_type => "%{[@metadata][type]}"
@@ -207,8 +227,8 @@ output {
 [root@vm220 ~]# service logstash restart
 
 回到 kibana 界面，使用 index 名称为：
-nginxaccess-www.test.com-*
-nginxaccess-www.work.com-*
+filebeat-nginxaccess-www.test.com-*
+filebeat-nginxaccess-www.work.com-*
 来获取数据。
 
 结果：符合预期。
@@ -217,21 +237,35 @@ nginxaccess-www.work.com-*
 
 三、小结FAQ
 1、数据流向
------------------------------------------------------------------------------
-|---------client-------|----------server------------------------|
-log_files ->  filebeat ->  logstash ->  elasticsearch ->  kibana
------------------------------------------------------------------------------
+-------------------------------------------------------------------------
+|---------client--------|----------server-------------------------------|
+                                        / elasticsearch(vm218)  
+log_files -> filebeat  -->  logstash -> - elasticsearch(vm219) -> kibana
+                                        \ elasticsearch(vm220)  
+-------------------------------------------------------------------------
+
+预期未来的扩容可能有2种方式：
+1）调整 filebeat 的 output 这一节，增加服务端多个 logstash 节点。
+---------------------------------------------------------------------------
+|---------client--------|----------server---------------------------------|
+                            / logstash    / elasticsearch(vm218)  
+log_files -> filebeat  -->  - logstash -> - elasticsearch(vm219) -> kibana
+                            \ logstash    \ elasticsearch(vm220)  
+---------------------------------------------------------------------------
+
+2）调整 filebeat 的 output 这一节，增加本地 logstash 节点，把数据丢到消息队列（MQ，redis之类的应用）中，服务端的 logstash 节点从 redis 中取数据来执行 filter 操作再保存到 ES 集群中。
+
+-------------------------------------------------------------------------------------------------
+|---------client---------------------|----------server------------------------------------------|
+                                                  / logstash    / elasticsearch(vm218)  
+log_files ->  filebeat -> logstash  -->  redis -> - logstash -> - elasticsearch(vm219) -> kibana
+                                                  \ logstash    \ elasticsearch(vm218)  
+-------------------------------------------------------------------------------------------------
 
 
 2、关于模版
-1）关闭logstash自动管理模板功能
-manage_template => false
-
-2）手动导入模版
-[root@vm220 ~]# curl -XPUT 'http://localhost:9200/_template/filebeat' -d@/etc/filebeat/filebeat.template.json
-
-3）删除模版
-[root@vm220 ~]# curl -XDELETE 'http://localhost:9200/filebeat-*'
+1）manage_template => false
+模版的用途是啥？上述指令的作用似乎是：“关闭 logstash 自动管理模板功能”，意义在哪里？
 
 
 
