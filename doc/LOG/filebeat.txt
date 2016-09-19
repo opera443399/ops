@@ -263,9 +263,44 @@ log_files ->  filebeat -> logstash  -->  redis -> - logstash -> - elasticsearch(
 -------------------------------------------------------------------------------------------------
 
 
-2、关于模版
-1）manage_template => false
-模版的用途是啥？上述指令的作用似乎是：“关闭 logstash 自动管理模板功能”，意义在哪里？
+2、filebeat 是如何记录 offset 的？
+[root@vm49 ~]# cat /var/lib/filebeat/registry |python -mjson.tool
+{
+    "/var/log/nginx/access_www.test.com_80.log": {
+        "FileStateOS": {
+            "device": 64515, 
+            "inode": 918691
+        }, 
+        "offset": 6236304, 
+        "source": "/var/log/nginx/access_www.test.com_80.log"
+    }, 
+    "/var/log/nginx/access_www.work.com_80.log": {
+        "FileStateOS": {
+            "device": 64515, 
+            "inode": 918737
+        }, 
+        "offset": 6793272, 
+        "source": "/var/log/nginx/access_www.work.com_80.log"
+    }
+}
+
+用途示例：测试时，想重新收集今天的日志，那么，直接删掉这个文件，让 filebeat 重头开始读日志即可。
+【客户端】
+[root@vm49 ~]# service filebeat stop
+[root@vm49 ~]# rm /var/lib/filebeat/registry 
+【服务端】
+[root@vm220 ~]# curl -XDELETE 'http://localhost:9200/filebeat-*?pretty'
+{
+  "acknowledged" : true
+}
+【客户端】
+[root@vm49 ~]# service filebeat start
+
+结果：符合预期。
+
+3、在 logstash 中定义 manage_template => false 的意义
+是为了使用自定义的模版吗？待验证。
+
 
 
 

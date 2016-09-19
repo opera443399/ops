@@ -293,7 +293,7 @@ output {
 
 
 四、小结FAQ
-1）数据流向
+1、数据流向
 -------------------------------------------------------------------------
 |---------client--------|----------server-------------------------------|
                                         / elasticsearch(vm218)  
@@ -311,8 +311,172 @@ es-cluster-test  es-test
 上述示例中，es-test 这个目录是旧的，新的集群名称是 es-cluster-test，进入目录将发现，之前建立的索引都在 es-test 这个目录中。
 
 
+3、自定义模版中的几个细节
+1）为何会分词（请对照观察在 kibana 上查看 index pattern 的 analyzed 字段是否勾选）
+针对 string 类型的 field，存储时默认会被标准分析器分析并进行分词。
+在 properties 中，默认可能是这样定义一个 field 的：
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+      }
+如果 host="test-me-vm49"，则将自动分词为"test", "me", "vm49"，但是很多时候，从日志获取的内容已经不需要这样分词，怎么解决呢？
+不妨调整为：
+      "properties": {
+        "host": {
+          "type": "string",
+          "index": "not_analyzed"
+        },
+      }
+此时，针对这个 field 将不会分词，直接使用原始的字符串即可。
+
+实际上，在日志分析的场景，很多时候并不需要分词，此时可以使用 dynamic_templates 来匹配处理：
+      "dynamic_templates": [
+        {
+          "template1": {
+            "mapping": {
+              "index": "not_analyzed",
+              "type": "string"
+            },
+            "match_mapping_type": "string", 
+            "match": "*"
+          }
+        }
+      ],  
+
+2）针对指定 field 不做 index（请对照观察在 kibana 上查看 index pattern 的 indexed 字段是否勾选）
+例如：
+      "properties": {
+        "host": {
+          "type": "string",
+          "index": "no"
+        },
+      }
 
 
+4、关于 ES 如何使用自定义的模版
+1）自定义一个模版文件
+本例为：/tmp/es_tpl.filebeat-nginxaccess.json
+结合 /etc/filebeat/filebeat.template.json 提供的默认模版以及 kibana 页面获取的日志内容的 json 格式输出，自定义了如下模版。
+目的：演示如何显式的指定个别 field 的配置中 index 为 "no" 或 "not_analyzed"，其他 "{dynamic_type}" 通过 dynamic_templates 来定义。
+
+[root@vm220 ~]# cat /tmp/es.tpl.filebeat-nginxaccess.json 
+{
+  "template": "filebeat-nginxaccess-*",
+  "settings": {
+    "index.refresh_interval": "5s"
+  },
+  "mappings": {
+    "_default_": {
+      "_all": {
+        "enabled": true,
+        "norms": {
+          "enabled": false
+        }
+      },
+      "dynamic_templates": [
+        {
+          "template1": {
+            "mapping": {
+              "doc_values": true,
+              "ignore_above": 1024,
+              "index": "not_analyzed",
+              "type": "{dynamic_type}"
+            },
+            "match": "*"
+          }
+        }
+      ],
+      "properties": {
+        "message": {
+          "type": "string",
+          "index": "no"
+        },
+        "@version": {
+          "type": "string",
+          "index": "no"
+        },
+        "@timestamp": {
+          "type": "date"
+        },
+        "type" : {
+          "type" : "string",
+          "index": "not_analyzed"
+        },
+        "input_type" : {
+          "type" : "string",
+          "index": "no"
+        },
+        "beat" : {
+          "properties" : {
+            "hostname" : {
+              "type" : "string",
+              "index": "not_analyzed",
+              "doc_values": "true"
+            },
+            "name" : {
+              "type" : "string",
+              "index": "not_analyzed",
+              "doc_values": "true"
+            }
+          }
+        },
+        "source" : {
+          "type" : "string",
+          "index": "no"
+        },
+        "offset": {
+          "type": "long",
+          "index": "no"
+        },
+        "count" : {
+          "type" : "long",
+          "index": "no"
+        },
+        "host" : {
+          "type" : "string",
+          "index": "not_analyzed"
+        },
+        "tags" : {
+          "type" : "string",
+          "index": "not_analyzed"
+        }
+      }
+    }
+  }
+}
+
+2）导入模版到 ES 中
+[root@vm220 ~]# curl -XPUT 'http://localhost:9200/_template/filebeat?pretty' -d@/tmp/es.tpl.filebeat-nginxaccess.json
+{
+  "acknowledged" : true
+}
+
+导入完成后可以验证一下：
+[root@vm220 ~]# curl 'http://localhost:9200/_template/filebeat?pretty'
+
+3）查询并清理旧索引
+查询：
+[root@vm220 ~]# curl 'localhost:9200/_cat/indices?v'
+health status index                                        pri rep docs.count docs.deleted store.size pri.store.size 
+green  open   .kibana                                        1   1          6            0     86.6kb         44.6kb 
+green  open   filebeat-nginxaccess-www.work.com-2016.09.19   5   1        838            0        1mb        531.2kb 
+green  open   filebeat-nginxaccess-www.test.com-2016.09.19   5   1        838            0   1019.4kb        504.3kb 
+
+删除：
+[root@vm220 ~]# curl -XDELETE 'http://localhost:9200/filebeat-*?pretty'
+{
+  "acknowledged" : true
+}
+再次验证：
+[root@vm220 ~]# curl 'localhost:9200/_cat/indices?v'
+health status index                                        pri rep docs.count docs.deleted store.size pri.store.size 
+green  open   .kibana                                        1   1          6            0     86.6kb         44.6kb 
+green  open   filebeat-nginxaccess-www.work.com-2016.09.19   5   1         36            0    188.4kb         94.2kb 
+green  open   filebeat-nginxaccess-www.test.com-2016.09.19   5   1         36            0    204.7kb        102.3kb 
+
+4）进入kibana配置
+删除 index patterns 然后选择"refresh field list"刷新一下。
 
 
 
@@ -322,3 +486,19 @@ https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-repositori
 https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-configuration.html
 https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-dir-layout.html
 https://www.elastic.co/guide/en/elasticsearch/reference/current/_exploring_your_cluster.html
+https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-template.html#load-template-shell
+https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html
+https://www.elastic.co/guide/en/elasticsearch/reference/current/default-mapping.html
+https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-templates.html
+
+2、elasticsearch 映射规则
+http://www.cnblogs.com/bmaker/p/5463888.html
+
+3、ELK中文
+http://kibana.logstash.es/content/logstash/plugins/output/elasticsearch.html
+
+4、一种Elasticsearch数据类型冗余方案
+http://blog.csdn.net/cnweike/article/details/38397707
+
+5、Logstash中配置默认索引映射（_default_属性）
+http://blog.csdn.net/xifeijian/article/details/50823494
