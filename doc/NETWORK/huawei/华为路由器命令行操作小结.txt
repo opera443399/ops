@@ -1,13 +1,11 @@
 华为路由器命令行操作小结
-2016/9/9
+2016/9/20
 
 一、基础
 1、一个基础的初始化操作
 <Huawei>system-view
 [Huawei]sysname AR-GW-1
-[AR-GW-1-GigabitEthernet0/0/0]quit
 [AR-GW-1]aaa
-[AR-GW-1-aaa]local-user admin pass	
 [AR-GW-1-aaa]local-user admin password cipher mypass
 [AR-GW-1-aaa]local-user admin privilege level 3
 [AR-GW-1-aaa]local-user admin service-type telnet terminal http
@@ -41,3 +39,4 @@
 [AR-GW-1]ip route-static 0.0.0.0 0.0.0.0 1.1.1.222
 [AR-GW-1]ip route-static 10.50.200.0 255.255.255.0 192.168.200.254
 [AR-GW-1]ip route-static 172.30.0.0 255.255.0.0 192.168.200.254
+
