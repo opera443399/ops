@@ -275,11 +275,38 @@ output {
 【客户端】10.50.200.49: logstash, nginx(www.test.com, www.work.com)
 【服务端】10.50.200.220: logstash, redis, elasticsearch, kibana
 【测试端】10.50.200.218, 10.50.200.219: curl 请求 nginx
-[root@vm218 ~]# for i in `seq 1 5000`;do curl -H "Content-Type: application/xml" -d "{"name": "York vm218" }" "http://www.test.com/this_is_vm218";sleep 1s;done
-[root@vm219 ~]# for i in `seq 1 5000`;do curl -H "Content-Type: text/html; charset=UTF-8" --referer 'www.vm219.com/referer_here' http://www.test.com/a/b/c.html?key1=value1;sleep 1s;done
+1）测试脚本
+--------------------------------------------------------
+[root@vm218 bin]# cat test_www_by_curl.sh
+#!/bin/bash
+#
+#2016/9/20
+# crontab:
+# */2 * * * * /usr/local/bin/test_www_by_curl.sh >>/tmp/test_www_by_curl.log 2>&1 &
+echo "[S] at: `date`"
+tag="$(echo `hostname` |awk -F'-' '{print $NF}')"
+do_curl(){
+    www=$1
+    rnd=$2
+    #PUT
+    curl -H "Content-Type: application/xml" -d "{"name": "Jack A"}" "http://${www}/from_${tag}"
+    curl -H "Content-Type: application/json" -d "{"name": "Jack B"}" "http://${www}/from_${tag}"
+    curl -H "Content-Type: application/png" -d "{"img_path": "images/$(date +%F)/${rnd}.png"}" "http://${www}/from_${tag}"
+    #GET
+    curl -H "Content-Type: text/html; charset=UTF-8" --referer "www.${tag}.com/this_is_referer" "http://${www}/"
+    curl -H "Content-Type: text/html; charset=UTF-8" --referer "www.${tag}.com/this_is_referer" "http://${www}/a/b/c.html?key=${tag}"
+    curl -H "Content-Type: text/html; charset=GBK" --referer "www.${tag}.com/this_is_referer" "http://${www}/action.do?event=login&user=${tag}&sid=${rnd}"
+    #
+}
+for i in `seq 1 2000`; do
+    do_curl www.work.com "`od /dev/urandom -w12 -tx4 -An |sed -e 's/ //g' |head -n 1`"
+    do_curl www.test.com "`od /dev/urandom -w12 -tx4 -An |sed -e 's/ //g' |head -n 1`"
+done >/dev/null 2>&1
+echo "[D] at: `date`"
+--------------------------------------------------------
 
 
-hosts文件：
+2）hosts 写入域名
 10.50.200.49 www.test.com
 10.50.200.49 www.work.com
 
