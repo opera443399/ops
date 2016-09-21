@@ -1,0 +1,84 @@
+{
+  "template": "filebeat-*",
+  "settings": {
+    "index.refresh_interval": "5s"
+  },
+  "mappings": {
+    "_default_": {
+      "_all": {
+        "enabled": true,
+        "norms": {
+          "enabled": false
+        }
+      },
+      "dynamic_templates": [
+        {
+          "template1": {
+            "mapping": {
+              "doc_values": true,
+              "ignore_above": 1024,
+              "index": "not_analyzed",
+              "type": "{dynamic_type}"
+            },
+            "match": "*"
+          }
+        }
+      ],
+      "properties": {
+        "message": {
+          "type": "string",
+          "index": "no"
+        },
+        "@version": {
+          "type": "string",
+          "index": "no"
+        },
+        "@timestamp": {
+          "type": "date"
+        },
+        "type" : {
+          "type" : "string",
+          "index": "not_analyzed"
+        },
+        "input_type" : {
+          "type" : "string",
+          "index": "no"
+        },
+        "beat" : {
+          "properties" : {
+            "hostname" : {
+              "type" : "string",
+              "index": "not_analyzed",
+              "doc_values": "true"
+            },
+            "name" : {
+              "type" : "string",
+              "index": "not_analyzed",
+              "doc_values": "true"
+            }
+          }
+        },
+        "source" : {
+          "type" : "string",
+          "index": "no"
+        },
+        "offset": {
+          "type": "long",
+          "index": "no"
+        },
+        "count" : {
+          "type" : "long",
+          "index": "no"
+        },
+        "host" : {
+          "type" : "string",
+          "index": "not_analyzed"
+        },
+        "tags" : {
+          "type" : "string",
+          "index": "not_analyzed"
+        }
+      }
+    }
+  }
+}

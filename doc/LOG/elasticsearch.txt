@@ -1,5 +1,5 @@
 初探ELK-elasticsearch使用小结
-2016/9/19
+2016/9/21
 
 一、安装
 1、jdk 和 环境变量
@@ -356,13 +356,13 @@ es-cluster-test  es-test
 
 4、关于 ES 如何使用自定义的模版
 1）自定义一个模版文件
-本例为：/tmp/es_tpl.filebeat-nginxaccess.json
+本例为：/tmp/elasticsearch.template.filebeat.json
 结合 /etc/filebeat/filebeat.template.json 提供的默认模版以及 kibana 页面获取的日志内容的 json 格式输出，自定义了如下模版。
 目的：演示如何显式的指定个别 field 的配置中 index 为 "no" 或 "not_analyzed"，其他 "{dynamic_type}" 通过 dynamic_templates 来定义。
 
-[root@vm220 ~]# cat /tmp/es.tpl.filebeat-nginxaccess.json 
+[root@vm220 ~]# cat /tmp/elasticsearch.template.filebeat.json
 {
-  "template": "filebeat-nginxaccess-*",
+  "template": "filebeat-*",
   "settings": {
     "index.refresh_interval": "5s"
   },
@@ -447,7 +447,7 @@ es-cluster-test  es-test
 }
 
 2）导入模版到 ES 中
-[root@vm220 ~]# curl -XPUT 'http://localhost:9200/_template/filebeat?pretty' -d@/tmp/es.tpl.filebeat-nginxaccess.json
+[root@vm220 ~]# curl -XPUT 'http://localhost:9200/_template/filebeat?pretty' -d@/tmp/elasticsearch.template.filebeat.json
 {
   "acknowledged" : true
 }

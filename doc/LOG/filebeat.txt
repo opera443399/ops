@@ -1,5 +1,5 @@
 初探ELK-filebeat使用小结
-2016/9/19
+2016/9/21
 
 一、安装
 1、下载
@@ -214,7 +214,8 @@ output {
             index => "%{[@metadata][beat]}-nginxaccess-www.test.com-%{+YYYY.MM.dd}"
             document_type => "%{[@metadata][type]}"
         }
-    } else if[type] == "NginxAccess-www.work.com" {
+    }
+    if[type] == "NginxAccess-www.work.com" {
         elasticsearch {
             hosts => ["10.50.200.218:9200", "10.50.200.219:9200", "10.50.200.220:9200"]
             manage_template => false

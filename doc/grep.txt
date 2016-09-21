@@ -1,6 +1,7 @@
-grep博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
-另，附上几个blog的文章，后续可能会更新这个列表：
-linux grep命令详解  http://www.cnblogs.com/ggjucheng/archive/2013/01/13/2856896.html
+grep使用小结
+2016/9/21
+
+grep博大精深，本文仅持续更新在工作中频繁使用的方法。
 
 获取不是空行和注释的内容：
 grep ^[^#]  file1
@@ -26,6 +27,16 @@ awk '{count[$2]+=$1};END{for (c in count) print c, count[c]}' *.stat |sort |uniq
 grep -o  仅显示匹配的字符
 获取IP
 grep -o -E "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}"
+
+grep -Po  使用 perl 的正则表达式，典型应用是零宽断言，以下是示例：
+获取字符串：access.xxxx.log 中间的 xxxx，即：在 "access." 和 ".log" 中间的字符串
+# echo '/var/log/nginx/access.www.test.com-443.log' |grep -Po '(?<=access.).*(?=.log)'
+www.test.com-443
+进一步只匹配 ".com" 结尾的字符串：
+# echo '/var/log/nginx/access.www.test.com-8080.log' |grep -Po '(?<=access.).*.com(?=-\d+.log|.log)'     
+www.test.com
+# echo '/var/log/nginx/access.www.test.com.log' |grep -Po '(?<=access.).*.com(?=-\d+.log|.log)'     
+www.test.com
 
 打印文件名：
 grep --color -H "^wget" /home/web/task/crontab_*.sh 

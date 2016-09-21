@@ -1,5 +1,5 @@
 初探ELK-logstash使用小结
-2016/9/18
+2016/9/21
 
 【写在前言】
 说起处理日志的手段，大家或多或少都听说过ELK（elasticsearch+logstash+kibana），怎么入门呢？咱们从一个小小的目标开始。
@@ -459,7 +459,8 @@ output {
             hosts => "127.0.0.1:9200"
             index => "logstash-nginxaccess-www.test.com-%{+YYYY.MM.dd}"
         }
-    } else if[type] == "NginxAccess-www.work.com" {
+    }
+    if[type] == "NginxAccess-www.work.com" {
         elasticsearch {
             hosts => "127.0.0.1:9200"
             index => "logstash-nginxaccess-www.work.com-%{+YYYY.MM.dd}"
@@ -500,19 +501,123 @@ September 18th 2016, 16:43:15.000
 
 
 
-3、TODO
-1）filebeat 结合 logstash 怎么做才合理？
-2）Elasticsearch 索引数据的清理规则是怎样的？
-3）kibana 的权限怎么限制，可视化如何使用？
-4）ELK 在网络异常时的表现，如何监控？
+3、grok 匹配 nginx error log
+1）示例日志
+2016/09/21 10:34:41 [error] 11990#0: *6718852 no live upstreams while connecting to upstream, client: 10.50.200.219, server: c.test.com, request: "GET http://www.work.com/cgi-bin/common/attr?id=260714&r=0.1011513018987016 HTTP/1.1", upstream: "http://upstream_backend/cgi-bin/common/attr?id=260714&r=0.1011513018987016", host: "www.work.com"
+2016/09/21 11:26:41 [error] 1614#0: *25584123 open() "/data/www/www.test.com/404.html" failed (2: No such file or directory), client: 10.50.200.218, server: www.test.com, request: "GET /action.do?event=login&user=vm218&sid=15120ae826ca2290514bcd5b HTTP/1.1", host: "www.test.com", referrer: "www.vm218.com/this_is_referer"
+
+
+2）示例匹配规则
+NGINXERROR_DATESTAMP %{YEAR}/%{MONTHNUM}/%{MONTHDAY} %{TIME}
+NGINXERROR_PID (?:[0-9]+#[0-9]+\:)
+NGINXERROR_TID (?:\*[0-9]+)
+NGINXERROR %{NGINXERROR_DATESTAMP:timestamp} \[%{LOGLEVEL:loglevel}\] %{NGINXERROR_PID:pid} %{NGINXERROR_TID:tid} %{GREEDYDATA:errormsg}, client: %{IPORHOST:clientip}, server: %{HOSTNAME:server}, request: %{QS:request}(?:, upstream: %{QS:upstream})?, host: \"%{HOSTNAME:hostname}\"(?:, referrer: (?:"(?:%{URI:referrer}|-)"|%{QS:referrer}))?
 
 
 
+3）使用工具测试
+http://grokconstructor.appspot.com/do/match
+
+4）结果
+------------------------------------------------------------------
+2016/09/21 10:34:41 [error] 11990#0: *6718852 no live upstreams while connecting to upstream, client: 10.50.200.219, server: c.test.com, request: "GET http://www.work.com/cgi-bin/common/attr?id=260714&r=0.1011513018987016 HTTP/1.1", upstream: "http://upstream_backend/cgi-bin/common/attr?id=260714&r=0.1011513018987016", host: "www.work.com"
+【MATCHED】
+request 	"GET·http://www.work.com/cgi-bin/common/attr?id=260714&r=0.1011513018987016·HTTP/1.1"
+server 	c.test.com
+hostname 	www.work.com
+timestamp 	2016/09/21·10:34:41
+clientip 	10.50.200.219
+port 	
+pid 	11990#0:
+upstream 	"http://upstream_backend/cgi-bin/common/attr?id=260714&r=0.1011513018987016"
+referrer 	
+tid 	*6718852
+errormsg 	no·live·upstreams·while·connecting·to·upstream
+loglevel 	error
+==================================================================
+2016/09/21 11:26:41 [error] 1614#0: *25584123 open() "/data/www/www.test.com/404.html" failed (2: No such file or directory), client: 10.50.200.218, server: www.test.com, request: "GET /action.do?event=login&user=vm218&sid=15120ae826ca2290514bcd5b HTTP/1.1", host: "www.test.com", referrer: "www.vm218.com/this_is_referer"
+【MATCHED】
+request 	"GET·/action.do?event=login&user=vm218&sid=15120ae826ca2290514bcd5b·HTTP/1.1"
+server 	www.test.com
+hostname 	www.test.com
+timestamp 	2016/09/21·11:26:41
+clientip 	10.50.200.218
+port 	
+pid 	1614#0:
+upstream 	
+referrer 	"www.vm218.com/this_is_referer"
+tid 	*25584123
+errormsg 	open()·"/data/www/www.test.com/404.html"·failed·(2:·No·such·file·or·directory)
+loglevel 	error 
+------------------------------------------------------------------
 
 
 
+5）应用
+【服务端】
+a、增加上述匹配规则到配置文件
+[root@vm220 ~]# cat /etc/logstash/patterns.d/extra_patterns
+NGINXERROR_DATESTAMP %{YEAR}/%{MONTHNUM}/%{MONTHDAY} %{TIME}
+NGINXERROR_PID (?:[0-9]+#[0-9]+\:)
+NGINXERROR_TID (?:\*[0-9]+)
+NGINXERROR %{NGINXERROR_DATESTAMP:timestamp} \[%{LOGLEVEL:loglevel}\] %{NGINXERROR_PID:pid} %{NGINXERROR_TID:tid} %{GREEDYDATA:errormsg}, client: %{IPORHOST:clientip}, server: %{HOSTNAME:server}, request: %{QS:request}(?:, upstream: %{QS:upstream})?, host: \"%{HOSTNAME:hostname}\"(?:, referrer: (?:"(?:%{URI:referrer}|-)"|%{QS:referrer}))?
+
+b、调整对应的 logstash 配置
+[root@vm220 ~]# vim /etc/logstash/conf.d/filebeat.conf 
+在 filter 这一段增加：
+    if[type] =~ "NginxError-" {
+        grok {
+            patterns_dir => ["/etc/logstash/patterns.d"]
+            match => {
+                "message" => "%{NGINXERROR}"
+            }
+        }
+        date {
+            match => [ "timestamp", "YYYY/MM/dd HH:mm:ss" ]
+        }
+    }
+
+在 output 这一段增加：
+    if[type] == "NginxError-www.test.com" {
+        elasticsearch {
+            hosts => ["10.50.200.218:9200", "10.50.200.219:9200", "10.50.200.220:9200"]
+            manage_template => false
+            index => "%{[@metadata][beat]}-nginxerror-www.test.com-%{+YYYY.MM.dd}"
+            document_type => "%{[@metadata][type]}"
+        }
+    }
+    if[type] == "NginxError-www.work.com" {
+        elasticsearch {
+            hosts => ["10.50.200.218:9200", "10.50.200.219:9200", "10.50.200.220:9200"]
+            manage_template => false
+            index => "%{[@metadata][beat]}-nginxerror-www.work.com-%{+YYYY.MM.dd}"
+            document_type => "%{[@metadata][type]}"
+        }
+    }
 
 
+c、重启 logstash 服务
+[root@vm220 ~]# service logstash restart
+
+【客户端】
+d、调整对应的 filebeat 配置
+[root@vm49 ~]# vim /etc/filebeat/filebeat.yml
+（增加对应的 prospectors 来收集日志，打上 type 标记，其他配置略）
+  prospectors:
+    -
+      paths:
+        - /var/log/nginx/error_www.test.com*.log
+      input_type: log
+      document_type: NginxError-www.test.com
+    -
+      paths:
+        - /var/log/nginx/error_www.work.com*.log
+      input_type: log
+      document_type: NginxError-www.work.com
+
+
+e、重启 filebeat 服务
+[root@vm49 ~]# service filebeat restart
 
 
 ZYXW、参考
@@ -533,3 +638,6 @@ http://kibana.logstash.es/content/beats/file.html
 http://blog.csdn.net/lzw_2006/article/details/51280058
 4、logstash host field is 0.0.0.0
 http://www.v1en.com/2016/03/31/logstash-host-field-is-0-0-0-0/
+5、grok
+https://github.com/logstash-plugins/logstash-patterns-core/blob/master/patterns/grok-patterns
+http://grokconstructor.appspot.com/do/match
