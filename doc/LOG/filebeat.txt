@@ -287,17 +287,20 @@ log_files ->  filebeat -> logstash  -->  redis -> - logstash -> - elasticsearch(
     }
 }
 
-用途示例：测试时，想重新收集今天的日志，那么，直接删掉这个文件，让 filebeat 重头开始读日志即可。
+用途示例：测试时，想重新收集日志，那么，直接删掉这个文件，让 filebeat 重头开始读日志即可。
 【客户端】
 [root@vm49 ~]# service filebeat stop
 [root@vm49 ~]# rm /var/lib/filebeat/registry 
 【服务端】
+[root@vm220 ~]# service logstash stop
 [root@vm220 ~]# curl -XDELETE 'http://localhost:9200/filebeat-*?pretty'
 {
   "acknowledged" : true
 }
 【客户端】
 [root@vm49 ~]# service filebeat start
+【服务端】
+[root@vm220 ~]# service logstash start
 
 结果：符合预期。
 
