@@ -1,0 +1,231 @@
+初探ELK-以收集 nginx 日志为例示范搭建一个 ELK 环境的基本步骤
+2016/9/22
+
+一、环境
+1、RPM
+1）收集 rpm 包
+wget https://download.elastic.co/logstash/logstash/packages/centos/logstash-2.4.0.noarch.rpm
+wget https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/rpm/elasticsearch/2.4.0/elasticsearch-2.4.0.rpm
+wget https://download.elastic.co/kibana/kibana/kibana-4.6.1-x86_64.rpm
+wget https://download.elastic.co/beats/filebeat/filebeat-1.3.1-x86_64.rpm
+
+2）缓存rpm包到本地yum源
+
+2、安装
+【服务端】
+1）ELK + filebeat（仅使用 filebeat 自带的模版，不启动该服务）
+[root@vm220 ~]# yum install logstash elasticsearch kibana filebeat -y
+2）jdk
+（略）
+
+【客户端】
+1）filebeat
+[root@vm49 ~]# yum install filebeat -y
+
+
+3、前提
+假设要收集下面2个域名的 access 和 error 日志：
+www.test.com
+www.work.com
+
+其中 access 日志的格式如下：
+                      
+    log_format  online '$remote_addr [$time_local] "$request" '
+                   '"$http_content_type" "$request_body" "$http_referer" '
+                   '$status $request_time $body_bytes_sent';
+                   
+而 error 日志采取默认的级别（error）。
+且要求：为每个域名使用独立的 index
+  
+  
+
+二、ELK 服务端配置
+1、配置 elasticsearch 服务【存储数据（来自 logstash ）】
+[root@vm220 ~]# mkdir -p /data/elasticsearch
+[root@vm220 ~]# chown elasticsearch:elasticsearch /data/elasticsearch
+[root@vm220 ~]# cp -a /etc/elasticsearch/elasticsearch.yml{,.bak}
+调整配置文件：
+【如果 ES 是单节点】
+[root@vm220 ~]# grep ^[^#] /etc/elasticsearch/elasticsearch.yml 
+cluster.name: es-cluster-test
+node.name: node-vm220
+path.data: /data/elasticsearch
+path.logs: /var/log/elasticsearch
+network.host: 0.0.0.0
+
+【如果 elasticsearch 是集群】
+[root@vm220 ~]# grep ^[^#] /etc/elasticsearch/elasticsearch.yml    
+cluster.name: es-cluster-test 
+node.name: node-vm220
+path.data: /data/elasticsearch
+path.logs: /var/log/elasticsearch
+network.host: 0.0.0.0
+discovery.zen.ping.unicast.hosts: ["10.50.200.218", "10.50.200.219", "10.50.200.220"]
+discovery.zen.minimum_master_nodes: 3
+其他节点类似
+
+[root@vm220 ~]# service elasticsearch restart
+[root@vm220 ~]# chkconfig elasticsearch on
+
+
+
+2、配置 kibana 服务【展示数据（来自 elasticsearch ）】
+[root@vm220 ~]# service kibana start
+[root@vm220 ~]# chkconfig kibana on 
+访问：
+http://10.50.200.220:5601/app/kibana
+
+
+
+3、配置 logstash 服务【过滤数据（来自 filebeat 发往 elasticsearch）】
+1）配置自定义的 pattern
+[root@vm220 ~]# mkdir -p /etc/logstash/patterns.d
+[root@vm220 ~]# cat /etc/logstash/patterns.d/extra_patterns
+NGINXACCESS %{IPORHOST:clientip} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{URIPATHPARAM:request} HTTP/%{NUMBER:httpversion}" (?:%{QS:content_type}|-) (?:%{QS:request_body}|-) (?:"(?:%{URI:referrer}|-)"|%{QS:referrer}) %{NUMBER:response} %{BASE16FLOAT:request_time} (?:%{NUMBER:bytes}|-)
+NGINXERROR_DATESTAMP %{YEAR}/%{MONTHNUM}/%{MONTHDAY} %{TIME}
+NGINXERROR_PID (?:[0-9]+#[0-9]+\:)
+NGINXERROR_TID (?:\*[0-9]+)
+NGINXERROR %{NGINXERROR_DATESTAMP:timestamp} \[%{LOGLEVEL:loglevel}\] %{NGINXERROR_PID:pid} %{NGINXERROR_TID:tid} %{GREEDYDATA:errormsg}, client: %{IPORHOST:clientip}, server: %{HOSTNAME:server}, request: %{QS:request}(?:, upstream: %{QS:upstream})?, host: \"%{HOSTNAME:hostname}\"(?:, referrer: (?:"(?:%{URI:referrer}|-)"|%{QS:referrer}))?
+
+2）调整配置文件
+[root@vm220 ~]# cat /etc/logstash/conf.d/filebeat.conf
+input {
+    beats {
+        port => "5044"
+    }
+}
+
+filter {
+    if[type] =~ "NginxAccess-" {
+        grok {
+            patterns_dir => ["/etc/logstash/patterns.d"]
+            match => {
+                "message" => "%{NGINXACCESS}"
+            }
+        }
+        date {
+            match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
+            remove_field => [ "timestamp" ]
+        }
+    }
+    if[type] =~ "NginxError-" {
+        grok {
+            patterns_dir => ["/etc/logstash/patterns.d"]
+            match => {
+                "message" => "%{NGINXERROR}"
+            }
+        }
+        date {
+            match => [ "timestamp", "YYYY/MM/dd HH:mm:ss" ]
+            remove_field => [ "timestamp" ]
+        }
+    }
+}
+
+output {
+    if[type] == "NginxAccess-www.test.com" {
+        elasticsearch {
+            hosts =>"10.50.200.220:9200"
+            manage_template => false
+            index => "%{[@metadata][beat]}-nginxaccess-www.test.com-%{+YYYY.MM.dd}"
+            document_type => "%{[@metadata][type]}"
+        }
+    }
+    if[type] == "NginxAccess-www.work.com" {
+        elasticsearch {
+            hosts =>"10.50.200.220:9200"
+            manage_template => false
+            index => "%{[@metadata][beat]}-nginxaccess-www.work.com-%{+YYYY.MM.dd}"
+            document_type => "%{[@metadata][type]}"
+        }
+    }
+    if[type] == "NginxError-www.test.com" {
+        elasticsearch {
+            hosts =>"10.50.200.220:9200"
+            manage_template => false
+            index => "%{[@metadata][beat]}-nginxerror-www.test.com-%{+YYYY.MM.dd}"
+            document_type => "%{[@metadata][type]}"
+        }
+    }
+    if[type] == "NginxError-www.work.com" {
+        elasticsearch {
+            hosts =>"10.50.200.220:9200"
+            manage_template => false
+            index => "%{[@metadata][beat]}-nginxerror-www.work.com-%{+YYYY.MM.dd}"
+            document_type => "%{[@metadata][type]}"
+        }
+    }
+}
+
+【如果 elasticsearch 是集群】
+将：
+            hosts =>"10.50.200.220:9200"
+调整为：
+            hosts => ["10.50.200.218:9200", "10.50.200.219:9200", "10.50.200.220:9200"]
+            
+[root@vm220 ~]# service logstash restart
+[root@vm220 ~]# chkconfig logstash on
+
+    
+
+
+3）导入安装 filebeat 时，自带的模版
+模版路径：/etc/filebeat/filebeat.template.json
+
+a、导入模版
+[root@vm220 ~]# curl -XPUT 'http://localhost:9200/_template/filebeat?pretty' -d@/etc/filebeat/filebeat.template.json
+
+b、查看模版
+[root@vm220 ~]# curl 'http://localhost:9200/_template/filebeat?pretty'
+
+c、清理旧的 index（如果是新配置的服务，没有生成任何 index 因此也不需要清理，可略过这一步）
+先查看现有的 index
+[root@vm220 ~]# curl 'localhost:9200/_cat/indices?v'
+删除 filebeat-* 匹配的所有 index
+[root@vm220 ~]# curl -XDELETE 'http://localhost:9200/filebeat-*?pretty'
+再次查看，确认一下结果是否符合预期：
+[root@vm220 ~]# curl 'localhost:9200/_cat/indices?v'
+
+
+
+三、使用 filebeat 在客户端收集日志。
+1）配置 filebeat 服务
+[root@vm49 ~]# cp /etc/filebeat/filebeat.yml{,.bak}
+[root@vm49 ~]# cat /etc/filebeat/filebeat.yml |grep -Ev '^(#|  #|    #|      #|        #|$)'
+filebeat:
+  prospectors:
+    -
+      paths:
+        - /var/log/nginx/access_www.test.com*.log
+      input_type: log
+      document_type: NginxAccess-www.test.com
+    -
+      paths:
+        - /var/log/nginx/access_www.work.com*.log
+      input_type: log
+      document_type: NginxAccess-www.work.com
+    -
+      paths:
+        - /var/log/nginx/error_www.test.com*.log
+      input_type: log
+      document_type: NginxError-www.test.com
+    -
+      paths:
+        - /var/log/nginx/error_www.work.com*.log
+      input_type: log
+      document_type: NginxError-www.work.com
+  registry_file: /var/lib/filebeat/registry
+output:
+  logstash:
+    hosts: ["10.50.200.220:5044"]
+shipper:
+logging:
+  to_files: true
+  files:
+    path: /var/log/filebeat
+    name: filebeat
+    rotateeverybytes: 10485760 # = 10MB
+
+[root@vm49 ~]# service filebeat restart
+[root@vm49 ~]# chkconfig filebeat on
+
