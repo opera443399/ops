@@ -82,6 +82,7 @@ output:
     hosts: ["10.50.200.220:5044"]
 shipper:
 logging:
+  to_files: true
   files:
     path: /var/log/filebeat
     name: filebeat
@@ -168,6 +169,7 @@ output:
     hosts: ["10.50.200.220:5044"]
 shipper:
 logging:
+  to_files: true
   files:
     path: /var/log/filebeat
     name: filebeat
