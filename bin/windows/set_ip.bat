@@ -1,29 +1,29 @@
 @echo off
 color 2f
-title ï¿½ï¿½ï¿½ï¿½ IP ï¿½ï¿½Ö·
+title ÉèÖÃ IP µØÖ·
 
 :start
 echo.
-echo ï¿½ï¿½0. ï¿½Ë³ï¿½ï¿½ï¿½
+echo ¡¾0. ÍË³ö¡¿
 echo.
 set input=
-set /p input=ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½IPï¿½ï¿½
+set /p input=ÇëÊäÈëIP£º
 if /i "%input%"=="" goto warn
 if /i %input%==0 goto end
 goto set_ip
 
 :warn
-echo ï¿½ï¿½Ğ§ & goto start
+echo ÎŞĞ§ & goto start
 
 :set_ip
-echo ï¿½ï¿½ï¿½Ôºï¿½...ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"ï¿½ï¿½IPï¿½ï¿½Ö·
-netsh interface ip set address name="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" static %input% 255.255.255.0 192.168.100.1 1
+echo ÇëÉÔºò...ÕıÔÚÉèÖÃ"±¾µØÁ¬½Ó"µÄIPµØÖ·
+netsh interface ip set address name="±¾µØÁ¬½Ó" static %input% 255.255.255.0 192.168.100.1 1
 if %ERRORLEVEL%==1 goto start
 goto set_dns
 
 :set_dns
-echo ï¿½ï¿½ï¿½Ôºï¿½...ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"ï¿½ï¿½DNSï¿½ï¿½Ö·
-netsh interface ip set dns "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" static 223.5.5.5 primary
+echo ÇëÉÔºò...ÕıÔÚÉèÖÃ"±¾µØÁ¬½Ó"µÄDNSµØÖ·
+netsh interface ip set dns "±¾µØÁ¬½Ó" static 223.5.5.5 primary
 goto start
 
 :end
