@@ -1,6 +1,8 @@
 初探ELK-logstash使用小结
 2016/9/22
 
+注：由于在实践过程中，会不断学习到新的东西，文章会不定时保持更新，如果遇到问题，请重新刷新一下文章查看是否有更新。
+
 【写在前言】
 说起处理日志的手段，大家或多或少都听说过ELK（elasticsearch+logstash+kibana），怎么入门呢？咱们从一个小小的目标开始。
 目标：收集nginx日志，集中展示。
@@ -511,11 +513,11 @@ a、grok插件的定义
                 "message" => "%{NGINXACCESS}"
             }
         }
-a、grok插件指明的 patterns 的定义
+b、grok插件指明的 patterns 的定义
 [root@vm49 ~]# cat /etc/logstash/patterns.d/extra_patterns
 NGINXACCESS %{IPORHOST:clientip} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{URIPATHPARAM:request} HTTP/%{NUMBER:httpversion}" (?:%{QS:content_type}|-) (?:%{QS:request_body}|-) (?:"(?:%{URI:referrer}|-)"|%{QS:referrer}) %{NUMBER:response} %{BASE16FLOAT:request_time} (?:%{NUMBER:bytes}|-)
 
-2）为何要使用 remove_field
+2）为何要使用 remove_field 功能？
 a、重复数据
 我们已经有了一个时间字段 "@timestamp" 因此可以丢掉这个重复的 "timestamp" 字段。
 注：由此联想一下，生产应用中，我们是不是应该好好利用下 "remove_field" 功能去筛选一下字段呢？主动的去丢弃一些字段，只保留特别重要的指标发送给 output 即可。
@@ -535,7 +537,7 @@ MapperParsingException[failed to parse [timestamp]]; nested: IllegalArgumentExce
 
 
 
-3、grok 匹配 nginx error log
+3、如何使用 grok 插件来匹配 nginx error log
 1）示例日志
 2016/09/21 10:34:41 [error] 11990#0: *6718852 no live upstreams while connecting to upstream, client: 10.50.200.219, server: c.test.com, request: "GET http://www.work.com/cgi-bin/common/attr?id=260714&r=0.1011513018987016 HTTP/1.1", upstream: "http://upstream_backend/cgi-bin/common/attr?id=260714&r=0.1011513018987016", host: "www.work.com"
 2016/09/21 11:26:41 [error] 1614#0: *25584123 open() "/data/www/www.test.com/404.html" failed (2: No such file or directory), client: 10.50.200.218, server: www.test.com, request: "GET /action.do?event=login&user=vm218&sid=15120ae826ca2290514bcd5b HTTP/1.1", host: "www.test.com", referrer: "www.vm218.com/this_is_referer"
@@ -657,18 +659,12 @@ e、重启 filebeat 服务
 
 
 4、怎么调试问题
-直接改变输出到 stdout 即可查看输出是否符合需求。
+直接改变 output 到 stdout 即可查看输出是否符合需求。
 output {
-    if[type] == "NginxAccess-www.test.com" {
+    if[type] =~ "NginxAccess-" {
         stdout { codec => rubydebug }
     }
-    if[type] == "NginxAccess-www.work.com" {
-        stdout { codec => rubydebug }
-    }
-    if[type] == "NginxError-www.test.com" {
-        stdout { codec => rubydebug }
-    }
-    if[type] == "NginxError-www.work.com" {
+    if[type] =~ "NginxError-" {
         stdout { codec => rubydebug }
     }
 }
