@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#/2016/9/21
+#/2016/9/22
 
 f_yml='/tmp/filebeat.yml'
 f_conf='/tmp/filebeat.conf'
@@ -47,7 +47,7 @@ _EOF
   registry_file: /var/lib/filebeat/registry
 output:
   logstash:
-    hosts: ["10.10.10.228:5044"]
+    hosts: ["10.50.200.220:5044"]
 shipper:
 logging:
   to_files: true
@@ -81,6 +81,7 @@ filter {
         }
         date {
             match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
+            remove_field => [ "timestamp" ]
         }
     }
     if[type] =~ "NginxError-" {
@@ -92,6 +93,7 @@ filter {
         }
         date {
             match => [ "timestamp", "YYYY/MM/dd HH:mm:ss" ]
+            remove_field => [ "timestamp" ]
         }
     }
 }
