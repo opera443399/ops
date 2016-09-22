@@ -1,5 +1,5 @@
 初探ELK-logstash使用小结
-2016/9/21
+2016/9/22
 
 【写在前言】
 说起处理日志的手段，大家或多或少都听说过ELK（elasticsearch+logstash+kibana），怎么入门呢？咱们从一个小小的目标开始。
@@ -337,6 +337,7 @@ filter {
         }
         date {
             match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
+            remove_field => [ "timestamp" ]
         }
     }
 }
@@ -422,6 +423,7 @@ filter {
         }
         date {
             match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
+            remove_field => [ "timestamp" ]
         }
     }
 }
@@ -489,6 +491,7 @@ message 中记录的是原始时间，而 @timestamp 中记录的是事件采集
 filter {
     date {
         match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
+        remove_field => [ "timestamp" ]
     }
 }
 
@@ -498,6 +501,37 @@ filter {
 
 默认更新 @timestamp 为：
 September 18th 2016, 16:43:15.000
+
+特别说明：
+1）timestamp 是我们在原始日志中收集的时间字段，不一定是这个名称（这意味是任意的自定义的字段名称），因为只是我们在前述操作中使用 grok 插件中在 patterns 中定义了 "%{NGINXACCESS}" 这个变量来解析原始字段，里边定义了这个 "timestamp" 字段。
+a、grok插件的定义
+        grok {
+            patterns_dir => ["/etc/logstash/patterns.d"]
+            match => {
+                "message" => "%{NGINXACCESS}"
+            }
+        }
+a、grok插件指明的 patterns 的定义
+[root@vm49 ~]# cat /etc/logstash/patterns.d/extra_patterns
+NGINXACCESS %{IPORHOST:clientip} \[%{HTTPDATE:timestamp}\] "%{WORD:verb} %{URIPATHPARAM:request} HTTP/%{NUMBER:httpversion}" (?:%{QS:content_type}|-) (?:%{QS:request_body}|-) (?:"(?:%{URI:referrer}|-)"|%{QS:referrer}) %{NUMBER:response} %{BASE16FLOAT:request_time} (?:%{NUMBER:bytes}|-)
+
+2）为何要使用 remove_field
+a、重复数据
+我们已经有了一个时间字段 "@timestamp" 因此可以丢掉这个重复的 "timestamp" 字段。
+注：由此联想一下，生产应用中，我们是不是应该好好利用下 "remove_field" 功能去筛选一下字段呢？主动的去丢弃一些字段，只保留特别重要的指标发送给 output 即可。
+
+
+b、导入到 elasticsearch 时，模版 mapping type 时异常
+以收集 nginx error log 为例：
+error log 的时间字段格式是这样的：2016/09/21 10:34:41
+对应的 date 插件是这样写的：
+    date {
+        match => [ "timestamp", "YYYY/MM/dd HH:mm:ss" ]
+        remove_field => [ "timestamp" ]
+    }
+如果不删除字段 "timestamp"，当传递到 elasticsearch 时，模版将试图解析这字段的格式，这个时候会遇到解析异常，从而影响到 index 的建立。
+在 elasticsearch 的日志中将产生如下错误：
+MapperParsingException[failed to parse [timestamp]]; nested: IllegalArgumentException[Invalid format: "2016/09/21 10:34:41" is malformed at "/09/21 10:34:41"];
 
 
 
@@ -513,7 +547,7 @@ NGINXERROR_PID (?:[0-9]+#[0-9]+\:)
 NGINXERROR_TID (?:\*[0-9]+)
 NGINXERROR %{NGINXERROR_DATESTAMP:timestamp} \[%{LOGLEVEL:loglevel}\] %{NGINXERROR_PID:pid} %{NGINXERROR_TID:tid} %{GREEDYDATA:errormsg}, client: %{IPORHOST:clientip}, server: %{HOSTNAME:server}, request: %{QS:request}(?:, upstream: %{QS:upstream})?, host: \"%{HOSTNAME:hostname}\"(?:, referrer: (?:"(?:%{URI:referrer}|-)"|%{QS:referrer}))?
 
-
+注：特别说明，“%{NGINXERROR_PID:pid} %{NGINXERROR_TID:tid}” 这一段只是为了匹配“11990#0: *6718852”并打算丢弃掉，并非实际需要这2个字段。
 
 3）使用工具测试
 http://grokconstructor.appspot.com/do/match
@@ -574,6 +608,7 @@ b、调整对应的 logstash 配置
         }
         date {
             match => [ "timestamp", "YYYY/MM/dd HH:mm:ss" ]
+            remove_field => [ "timestamp" ]
         }
     }
 
@@ -618,6 +653,28 @@ d、调整对应的 filebeat 配置
 
 e、重启 filebeat 服务
 [root@vm49 ~]# service filebeat restart
+
+
+
+4、怎么调试问题
+直接改变输出到 stdout 即可查看输出是否符合需求。
+output {
+    if[type] == "NginxAccess-www.test.com" {
+        stdout { codec => rubydebug }
+    }
+    if[type] == "NginxAccess-www.work.com" {
+        stdout { codec => rubydebug }
+    }
+    if[type] == "NginxError-www.test.com" {
+        stdout { codec => rubydebug }
+    }
+    if[type] == "NginxError-www.work.com" {
+        stdout { codec => rubydebug }
+    }
+}
+
+
+
 
 
 ZYXW、参考

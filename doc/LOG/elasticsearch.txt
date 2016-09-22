@@ -1,5 +1,5 @@
 初探ELK-elasticsearch使用小结
-2016/9/21
+2016/9/22
 
 一、安装
 1、jdk 和 环境变量
@@ -272,6 +272,7 @@ filter {
         }
         date {
             match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
+            remove_field => [ "timestamp" ]
         }
     }
 }

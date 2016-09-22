@@ -1,5 +1,5 @@
 初探ELK-filebeat使用小结
-2016/9/21
+2016/9/22
 
 一、安装
 1、下载
@@ -117,6 +117,7 @@ filter {
         }
         date {
             match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
+            remove_field => [ "timestamp" ]
         }
     }
 }
@@ -198,6 +199,7 @@ filter {
             patterns_dir => ["/etc/logstash/patterns.d"]
             match => {
                 "message" => "%{NGINXACCESS}"
+                remove_field => [ "timestamp" ]
             }
         }
         date {
