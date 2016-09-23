@@ -1,17 +1,32 @@
 #!/bin/bash
 #
-#/2016/9/22
+#/2016/9/23
 
 f_yml='/tmp/filebeat.yml'
 f_conf='/tmp/filebeat.conf'
-#1 www
-www_access=$(ls -l /var/log/nginx/access.*.com*.log |grep -F "`date +'%b %d'`" |grep -Po '(?<=access.).*.com(?=-\d+.log|.log)' |sort |uniq)
-www_error=$(ls -l /var/log/nginx/error.*.com*.log |grep -F "`date +'%b %d'`" |grep -Po '(?<=error.).*.com(?=-\d+.log|.log)' |sort |uniq)
+####1 define the log file path
+## 默认的日志路径为：/var/log/nginx/
+www_access_path_prefix='/var/log/nginx/access_'
+www_error_path_prefix='/var/log/nginx/error_'
+## 请配置要收集的日志文件对应的域名，可以直接一行一行的列出，也可以使用命令收集。
+## 请取消 www_access 到 www_error 之间的注释
+
+####A）示范直接列出所有的文件路径
+#www_access='
+#www.test.com
+#www.work.com
+#'
+#www_error=$www_access
+
+####B）示范匹配今天生成的日志文件，提取出域名
+www_access=$(ls -l /var/log/nginx/access_*.com*.log |grep -F "`date +'%b %d'`" |grep -Po '(?<=access_).*.com(?=[_-]\d+.log|.log)' |sort |uniq)
+www_error=$(ls -l /var/log/nginx/error_*.com*.log |grep -F "`date +'%b %d'`" |grep -Po '(?<=error_).*.com(?=[_-]\d+.log|.log)' |sort |uniq)
 
 
-#2 filebeat
+####2 filebeat
+## 请调整配置以符合自己的需求
 function do_yml(){
-    echo -e "\n-----------------------\n[-] create : ${f_yml}"
+    echo -e "\n-----------------------\n\033[32m[-] Create : ${f_yml}\033[0m"
     #step1
     cat <<'_EOF' >${f_yml}
 filebeat:
@@ -24,7 +39,7 @@ _EOF
         cat <<_EOF >>${f_yml}
     -
       paths:
-        - /var/log/nginx/access.${i}*.log
+        - ${www_access_path_prefix}${i}*.log
       input_type: log
       document_type: NginxAccess-${i}
 _EOF
@@ -36,7 +51,7 @@ _EOF
         cat <<_EOF >>${f_yml}
     -
       paths:
-        - /var/log/nginx/error.${i}*.log
+        - ${www_error_path_prefix}${i}*.log
       input_type: log
       document_type: NginxError-${i}
 _EOF
@@ -56,13 +71,15 @@ logging:
     name: filebeat
     rotateeverybytes: 10485760 # = 10MB
 _EOF
+    echo -e "\n\033[32m[-] Done.\033[0m\n"
 }
 
 
 
-#3 logstash
+####3 logstash
+## 请调整配置以符合自己的需求
 function do_conf(){
-    echo -e "\n-----------------------\n[-] create : ${f_conf}"
+    echo -e "\n-----------------------\n\033[32m[-] Create : ${f_conf}\033[0m"
     #step1
     cat <<'_EOF' >${f_conf}
 input {
@@ -135,17 +152,11 @@ _EOF
     cat <<'_EOF' >>${f_conf}
 }
 _EOF
+    echo -e "\n\033[32m[-] Done.\033[0m\n"
 }
 
 
 function do_all(){
-    cat <<_EOF
-
-[+] find domains from nginx log filenames, then generate config file for filebeat and logstash
-[-] yml(filebeat):  ${f_yml}
-[-] conf(logstash): ${f_conf}
-
-_EOF
     do_yml
     do_conf
 }
@@ -155,10 +166,13 @@ function usage(){
 
     cat <<_EOF
 
-[+] find domains from nginx log filenames, then generate config file for filebeat and logstash
+[+] 根据指定的域名来生成对应的 filebeat 和 logstash 的配置文件。
 
 Usage:
     $0 [yml|conf|all]
+    $0 yml    filebeat 的配置文件
+    $0 conf   logstash 的配置文件
+    $0 all
 
 _EOF
 }
