@@ -16,9 +16,6 @@ iscsi网络：10.50.200.141（假设目前只配置了单路径来测试）
 操作系统：centos6.5
 [root@vm200 ~]# yum install iscsi-initiator-utils
 
-[root@vm200 ~]# cat /etc/iscsi/initiatorname.iscsi 
-InitiatorName=iqn.1994-05.com.redhat:444ef5b8f276
-
 [root@vm200 ~]# iscsiadm --mode discoverydb --type sendtargets --portal 10.50.200.141 --discover
 Starting iscsid:                                           [  OK  ]
 10.50.200.141:3260,1 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
@@ -31,11 +28,25 @@ Starting iscsid:                                           [  OK  ]
 删除指定的 portal
 [root@vm200 ~]# iscsiadm --mode node --op delete --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 192.168.131.101
 [root@vm200 ~]# iscsiadm --mode node --op delete --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 192.168.131.102
+[root@vm200 ~]# iscsiadm --mode node --op delete --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 192.168.131.101
 [root@vm200 ~]# ls /var/lib/iscsi/nodes/iqn.1984-05.com.dell\:powervault.md3800i.600a098000a64d8b0000000057a152ea/
-192.168.130.102,3260,2  10.50.200.141,3260,1
+10.50.200.141,3260,1
+
+
+调整主机端口映射符
+[root@vm200 ~]# vim /etc/iscsi/initiatorname.iscsi 
+InitiatorName=iqn.1994-05.com.redhat:444ef5b8f276
+
+例如
+InitiatorName=iqn.2016-09.com.test:vm200
+
+重启服务：
+[root@GZ01A179 ~]# service iscsid restart
+[root@GZ01A179 ~]# service iscsi restart
+
 
 【服务器】
-在【主机映射】中定义主机组，主机（主机端口映射符对应上面的 iqn.1994-05.com.redhat:444ef5b8f276），并添加LUN映射
+在【主机映射】中定义主机组（g_test），主机（名称：vm200，主机端口映射符：iqn.2016-09.com.test:vm200，别名：test-vm200），并添加LUN映射。
 
 【客户端】
 登录
@@ -78,6 +89,8 @@ Logout of [sid: 6, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64
 测试：
 [root@vm200 ~]# ls /dev/sd*
 ls: cannot access /dev/sd*: No such file or directory
+[root@vm200 ~]# iscsiadm -m session  
+iscsiadm: No active sessions.
 [root@vm200 ~]# iscsiadm --mode node --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 10.50.200.141 --login
 Logging in to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.141,3260] (multiple)
 Login to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.141,3260] successful.
