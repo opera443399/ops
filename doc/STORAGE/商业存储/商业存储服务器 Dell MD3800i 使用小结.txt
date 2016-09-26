@@ -1,0 +1,93 @@
+商业存储服务器 Dell MD3800i 使用小结
+2016/9/26
+
+一、初体验
+1、目的
+体验客户端是如何使用存储服务器的磁盘的？
+
+2、操作
+【服务器】
+配置好管理网络：（略）
+iscsi网络：10.50.200.141（假设目前只配置了单路径来测试）
+在【存储和备份服务】划分出虚拟磁盘：1(100G)
+
+
+【客户端】
+操作系统：centos6.5
+[root@vm200 ~]# yum install iscsi-initiator-utils
+
+[root@vm200 ~]# cat /etc/iscsi/initiatorname.iscsi 
+InitiatorName=iqn.1994-05.com.redhat:444ef5b8f276
+
+[root@vm200 ~]# iscsiadm --mode discoverydb --type sendtargets --portal 10.50.200.141 --discover
+Starting iscsid:                                           [  OK  ]
+10.50.200.141:3260,1 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
+192.168.131.101:3260,1 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
+192.168.130.102:3260,2 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
+192.168.131.102:3260,2 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
+[root@vm200 ~]# ls /var/lib/iscsi/nodes/iqn.1984-05.com.dell\:powervault.md3800i.600a098000a64d8b0000000057a152ea/
+192.168.130.102,3260,2  192.168.131.101,3260,1  192.168.131.102,3260,2  10.50.200.141,3260,1
+
+删除指定的 portal
+[root@vm200 ~]# iscsiadm --mode node --op delete --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 192.168.131.101
+[root@vm200 ~]# iscsiadm --mode node --op delete --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 192.168.131.102
+[root@vm200 ~]# ls /var/lib/iscsi/nodes/iqn.1984-05.com.dell\:powervault.md3800i.600a098000a64d8b0000000057a152ea/
+192.168.130.102,3260,2  10.50.200.141,3260,1
+
+【服务器】
+在【主机映射】中定义主机组，主机（主机端口映射符对应上面的 iqn.1994-05.com.redhat:444ef5b8f276），并添加LUN映射
+
+【客户端】
+登录
+[root@vm200 ~]# iscsiadm --mode node --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 10.50.200.141 --login
+Logging in to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.141,3260] (multiple)
+Login to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.141,3260] successful.
+
+查看从服务器获得的虚拟磁盘：
+[root@vm200 ~]# cat /proc/partitions 
+major minor  #blocks  name
+
+ 253        0  314572800 vda
+ 253        1     204800 vda1
+ 253        2  310172672 vda2
+ 253        3    4194304 vda3
+   8        0  104857600 sda
+
+多出来一个 sda，接下来可以去分区，格式化并挂载使用：
+[root@vm200 ~]# fdisk /dev/sda
+[root@vm200 ~]# mkfs.ext4 /dev/sda1
+[root@vm200 ~]# mkdir /data/mdtest
+[root@vm200 ~]# mount /dev/sda1 /data/mdtest/
+[root@vm200 ~]# df -h /data/mdtest
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1        99G  188M   94G   1% /data/mdtest
+
+[root@vm200 ~]# dd if=/dev/zero of=/data/mdtest/111 bs=10M count=1000                  
+1000+0 records in
+1000+0 records out
+10485760000 bytes (10 GB) copied, 87.0276 s, 120 MB/s
+[root@vm200 ~]# df -h /data/mdtest/
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1        99G   10G   84G  11% /data/mdtest
+
+断开到存储服务器的连接
+[root@vm200 ~]# iscsiadm --mode node --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 10.50.200.141 --logout
+Logging out of session [sid: 6, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.141,3260]
+Logout of [sid: 6, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.141,3260] successful.
+
+测试：
+[root@vm200 ~]# ls /dev/sd*
+ls: cannot access /dev/sd*: No such file or directory
+[root@vm200 ~]# iscsiadm --mode node --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 10.50.200.141 --login
+Logging in to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.141,3260] (multiple)
+Login to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.141,3260] successful.
+[root@vm200 ~]# ls /dev/sd*
+/dev/sda  /dev/sda1
+
+
+3、问题
+单路径不靠谱，要合理的规划存储网络。
+
+双 RAID 控制器中，假设 iscsi 主机只连接到 RAID 控制器（A），而此时请求的虚拟磁盘在另一个 RAID 控制器（B），将引起异常：
+Virtual disk not on preferred path due to failover（虚拟磁盘）
+
