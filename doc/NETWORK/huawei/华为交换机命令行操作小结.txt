@@ -1,5 +1,5 @@
 华为交换机命令行操作小结
-2016/8/31
+2016/9/28
 
 一、基础
 1、进入 system-view 模式
@@ -189,7 +189,17 @@ VID  Status  Property      MAC-LRN Statistics Description
 [SW-ACC-CORE-1-Vlanif1]quit
 
 
-5、显示vlan接口信息
+5、批量配置
+使用端口组来批量配置
+[SW-ACC-CORE-1]port-group 1
+[SW-ACC-CORE-1-port-group-1]group-member GigabitEthernet0/0/2 to GigabitEthernet0/0/24
+[SW-ACC-CORE-1-port-group-1]port link-type access
+[SW-ACC-CORE-1-port-group-1]port default vlan 20
+[SW-ACC-CORE-1-port-group-1]quit
+
+
+
+6、显示vlan接口信息
 [SW-ACC-CORE-1]display ip interface Vlanif 20
 Vlanif20 current state : UP 
 Line protocol current state : UP

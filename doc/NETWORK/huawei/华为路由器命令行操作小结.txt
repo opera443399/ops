@@ -1,5 +1,5 @@
 华为路由器命令行操作小结
-2016/9/20
+2016/9/28
 
 一、基础
 1、一个基础的初始化操作
@@ -23,16 +23,16 @@
 [AR-GW-1-acl-2000]quit
 
 
-[AR-GW-1]interface GigabitEthernet0/0/1
-[AR-GW-1-GigabitEthernet0/0/1]ip address 1.1.1.211 255.255.255.0 
-[AR-GW-1-GigabitEthernet0/0/1]nat outbound 2000
-[AR-GW-1-GigabitEthernet0/0/1]quit
-
-
 3、配置端口
-[AR-GW-1]interface GigabitEthernet 0/0/0
-[AR-GW-1-GigabitEthernet0/0/0]ip address 192.168.200.1 255.255.255.0
+在 0/0/0 上应用 acl 20000
+[AR-GW-1]interface GigabitEthernet0/0/0
+[AR-GW-1-GigabitEthernet0/0/0]ip address 1.1.1.211 255.255.255.0 
+[AR-GW-1-GigabitEthernet0/0/0]nat outbound 2000
 [AR-GW-1-GigabitEthernet0/0/0]quit
+
+[AR-GW-1]interface GigabitEthernet 0/0/1
+[AR-GW-1-GigabitEthernet0/0/1]ip address 192.168.200.1 255.255.255.0
+[AR-GW-1-GigabitEthernet0/0/1]quit
 
 
 4、配置静态路由
