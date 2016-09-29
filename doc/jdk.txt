@@ -1,36 +1,40 @@
 jdk使用小结
-2016/9/12
+2016/9/29
 
-1、jdk 和 环境变量
+1、安装 jdk
+推荐使用 oracle jdk 而不是 centos 的yum源自带的 openjdk
 
-~]# yum install java-1.7.0-openjdk
+去oracle java网站下载 rpm 包，缓存到本地
+
+两者的名称差异是这样的：
+oracle jdk:  jdk-8u102-linux-x64
+openjdk:     java-1.8.0-openjdk
+
+
+2、环境变量
+安装后：
 ~]# alternatives --config java
 
-There are 2 programs which provide 'java'.
+There is 1 program that provides 'java'.
 
   Selection    Command
 -----------------------------------------------
-*+ 1           /usr/lib/jvm/jre-1.7.0-openjdk.x86_64/bin/java
-   2           /usr/lib/jvm/jre-1.6.0-openjdk.x86_64/bin/java
+*+ 1           /usr/java/jdk1.8.0_102/jre/bin/java
+
+Enter to keep the current selection[+], or type selection number: ^C
+~]# 
 
 通过 alternatives 得知java目录
+~]# ls -l /usr/java
+total 4
+lrwxrwxrwx 1 root root   16 Sep 29 10:56 default -> /usr/java/latest
+drwxr-xr-x 9 root root 4096 Sep 29 10:56 jdk1.8.0_102
+lrwxrwxrwx 1 root root   22 Sep 29 10:56 latest -> /usr/java/jdk1.8.0_102
 
 
 然后在 /etc/profile 增加：
-export JAVA_HOME=/usr/lib/jvm/jre-1.7.0-openjdk.x86_64
-export CLASSPATH=.:$JAVA_HOME/lib:$JAVA_HOME/jre/lib
-export PATH=$PATH:$JAVA_HOME/bin:$JAVA_HOME/jre/bin
-
-
-2、备注
-有的rpm包默认是这样的：
 export JAVA_HOME=/usr/java/default
 export CLASSPATH=.:$JAVA_HOME/lib:$JAVA_HOME/jre/lib
 export PATH=$PATH:$JAVA_HOME/bin:$JAVA_HOME/jre/bin
 
-对应的目录结构：
-~]# ls /usr/java* -l
-total 4
-lrwxrwxrwx. 1 root root   16 Sep 12 15:54 default -> /usr/java/latest
-drwxr-xr-x. 9 root root 4096 Sep 12 15:54 jdk1.8.0_60
-lrwxrwxrwx. 1 root root   21 Sep 12 15:54 latest -> /usr/java/jdk1.8.0_60
+
