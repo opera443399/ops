@@ -1,5 +1,5 @@
 华为交换机命令行操作小结
-2016/9/28
+2016/9/29
 
 一、基础
 1、进入 system-view 模式
@@ -186,6 +186,10 @@ VID  Status  Property      MAC-LRN Statistics Description
 同样的，可以给交换机配置管理IP（即vlan1）：
 [SW-ACC-CORE-1]interface Vlanif 1
 [SW-ACC-CORE-1-Vlanif1]ip address 10.0.0.1 255.0.0.0
+还可以查看那当前的配置信息：
+[SW-ACC-CORE-1-Vlanif1]display this
+Interface Vlanif 1
+ ip address 10.0.0.1 255.0.0.0
 [SW-ACC-CORE-1-Vlanif1]quit
 
 
@@ -231,6 +235,27 @@ ICMP packet input number:          0
   Netmask reply:                   0
   Unknown type:                    0
   
+
+
+7、删除某个vlan
+清理接口上使用的vlan：
+[SW-ACC-CORE-1]int GigabitEthernet 0/0/2
+[SW-ACC-CORE-1-GigabitEthernet0/0/2]undo port trunk allow-pass vlan 20
+[SW-ACC-CORE-1-GigabitEthernet0/0/2]undo port link-type
+[SW-ACC-CORE-1-Vlanif20]quit
+清理vlanif的信息：
+[SW-ACC-CORE-1]int Vlanif 20
+[SW-ACC-CORE-1-Vlanif20]undo ip address
+[SW-ACC-CORE-1-Vlanif20]quit
+[SW-ACC-CORE-1]undo interface Vlanif 20
+清理vlan信息：
+[SW-ACC-CORE-1]undo vlan batch 20
+
+
+8、关于 Access,Hybrid,Trunk 三种模式的理解
+请参考：
+http://support.huawei.com/ecommunity/bbs/10250727.html
+
 
 四、网络
 1、显示IP信息
