@@ -1,0 +1,52 @@
+How to Move a XenServer Pool to a Different IP Subnet
+http://support.en.ctx.org.cn/ctx123477.citrix
+
+
+This article describes how to change the IP subnet assigned to the management network on a XenServer pool. This is a longer procedure than just changing...
+Objective
+This article describes how to change the IP subnet assigned to the management network on a XenServer pool. This procedure is long compared to changing the IP address while staying in the same subnet.
+
+Requirements
+Working knowledge of XenServer and XenCenter and basic knowledge of the Command Line Interface (CLI) and XenServer console
+
+Access to the physical console of the servers to safely perform the required operations
+
+Proper network and firewall configuration on the LAN to allow the required network traffic to pass (this includes connections to ISO libraries)
+
+Instructions
+To change the IP subnet assigned to the management network on a XenServer pool, complete the following procedure:
+
+1. Perform a metadata backup and back up the virtual machines before performing the rest of this procedure.
+
+2. Disable High Availability from XenCenter, if enabled.
+Note: Perform the IP changes on the slaves first.
+
+3. Log on to a pool member from the physical console and change the management interface IP address:
+From the xsconsole, select Network and Management Interface > Configure Management Interface.
+
+Note: xsconsole freezes when you apply the change. You can use the key sequence CTRL+Z to open the command prompt to complete step 4. Then, use the fg %1 command to return to xsconsole and exit cleanly.
+From the CLI: Run the following command:
+xe pif-reconfigure-ip uuid=<UUID of host management PIF> IP=<New IP> gateway=<GatewayIP> netmask=<Subnet Mask> DNS=<DNS Lookup IPs> mode=<dhcp,none,static>
+
+To locate the correct PIF uuid for pif-reconfigure command, run the following command:
+xe pif-list params=uuid,host-name-label,device,management
+
+4. From the CLI, run the following command:
+xe-toolstack-restart
+The server enters the emergency mode. Ensure that the server is using the new IP address. You can ping it from another host. Try a Secure Shell connection to it, or use the ifconfig command. Run the xe host-is-in-emergency-mode command from the CLI to ensure that the server is in emergency mode. You should get True as the output.
+Note: Reboot is recommended if the server does not enter the emergency mode.
+
+5. Repeat Steps 3 and 4 on each of the pool members.
+
+6. Change the management interface IP address on the pool master using Step 3.
+
+7. Run the following command on the pool master:
+xe-toolstack-restart
+
+8. DO NOT RUN THIS COMMAND ON THE POOL MASTER
+From the CLI, on each of the pool members, run the following command:
+xe pool-emergency-reset-master master-address=IP_OF_THE_MASTER.
+
+9. Verify the correct status of the pool. Connect with XenCenter to the new master IP address and check everything from there.
+
+10. Re-enable High Availability, if required.
