@@ -41,8 +41,8 @@ InitiatorName=iqn.1994-05.com.redhat:444ef5b8f276
 InitiatorName=iqn.2016-09.com.test:vm200
 
 重启服务：
-[root@GZ01A179 ~]# service iscsid restart
-[root@GZ01A179 ~]# service iscsi restart
+[root@vm200 ~]# service iscsid restart
+[root@vm200 ~]# service iscsi restart
 
 
 【服务器】

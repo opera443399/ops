@@ -1,0 +1,10 @@
+磁盘-挂载ntfs格式的磁盘
+
+wget http://download1.rpmfusion.org/free/el/updates/6/x86_64/fuse-exfat-1.0.1-2.el6.x86_64.rpm
+wget http://download1.rpmfusion.org/free/el/updates/6/x86_64/exfat-utils-1.0.1-2.el6.x86_64.rpm
+
+yum localinstall fuse-exfat-1.0.1-2.el6.x86_64.rpm exfat-utils-1.0.1-2.el6.x86_64.rpm -y
+yum install ntfs-3g-devel ntfsprogs -y
+
+mount.exfat  /dev/sdc1 /media/
+mount.ntfs
