@@ -1,4 +1,6 @@
-演示针对LVM分区的管理。
+演示针对LVM分区的管理
+2016/10/19
+
 
 假设已经增加一块磁盘：/dev/sdb
 
@@ -91,14 +93,14 @@ Syncing disks.
 
 二、物理卷（Physical Volume）
 1）创建PV
-[root@svr200-11 ~]# pvcreate  /dev/sdb1
+[root@svr200-11 ~]# pvcreate  /dev/sdb
 2）查看PV
 [root@svr200-11 ~]# pvdisplay 
 
   
 三、卷组（Volume Group）  
 1）创建一个VG，定义组名，组员（PV）
-[root@svr200-11 ~]# vgcreate vg_test01 /dev/sdb1  
+[root@svr200-11 ~]# vgcreate vg_test01 /dev/sdb
 2）查看VG
 [root@svr200-11 ~]# vgdisplay 
 
