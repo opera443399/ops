@@ -1,5 +1,5 @@
 初探GlusterFS-测试卷的类型
-2015/11/4 time 17:58
+2016/10/19
 
 一、、准备工作
 1、物理机3台
@@ -278,7 +278,7 @@ A1-> A1.m + A1.n
 10.0.200.86 node86
 
 # yum install glusterfs-fuse -y 
-# mount.glusterfs 10.0.200.72:/gv0 /mnt
+# mount -t glusterfs 10.0.200.72:/gv0 /mnt
 # df -h |grep mnt
 10.0.200.72:/gv0   64T  131M   64T   1% /mnt
 

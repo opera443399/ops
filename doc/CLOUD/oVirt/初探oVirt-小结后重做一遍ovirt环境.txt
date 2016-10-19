@@ -1,7 +1,6 @@
-日期：2015/10/12 - 2015/12/16 time 09:25
-主机：n72, n73, n86, n93
-目的：初探oVirt-小结后重做一遍ovirt环境
-操作内容：
+初探oVirt-小结后重做一遍ovirt环境
+2016/10/19
+
 一、基础环境
 1、本次测试环境使用4台物理机来测试：n72, n73, n86, n93
 CPU：    Intel(R) Xeon(R) CPU E5-2603 v2 @ 1.80GHz
@@ -470,7 +469,7 @@ node35.glusterfs:/data/e01.test/bak_kvm
 [root@n86 ~]# gluster volume start e01_bak_kvm
 【挂载】
 [root@n86 ~]# mkdir /backup
-mount.glusterfs node35.glusterfs:/e01_bak_kvm -o backupvolfile-server=node33.glusterfs,backupvolfile-server=node34.glusterfs /backup
+[root@n86 ~]# mount -t glusterfs -o backupvolfile-server=node33.glusterfs,backupvolfile-server=node34.glusterfs node35.glusterfs:/e01_bak_kvm /backup
 [root@n86 ~]# df -h /backup
 Filesystem                     Size  Used Avail Use% Mounted on
 node35.glusterfs:/e01_bak_kvm   11T   17G   11T   1% /backup

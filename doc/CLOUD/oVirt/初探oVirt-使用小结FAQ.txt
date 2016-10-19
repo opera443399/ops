@@ -1,5 +1,5 @@
 初探oVirt-使用小结FAQ
-2016/9/8
+2016/10/19
 
 
 【Q01】如何快速的部署 ovirt 环境
@@ -299,7 +299,7 @@ gluster volume set gv1 nfs.disable off
 ---配置卷
 
 在1台节点上挂载卷gv1测试
-[root@n93 ~]# mount.glusterfs 10.60.200.86:/gv1 /mnt
+[root@n93 ~]# mount -t glusterfs 10.60.200.86:/gv1 /mnt
 [root@n93 ~]# df -h /mnt
 Filesystem          Size  Used Avail Use% Mounted on
 10.60.200.86:/gv1   16T   39M   16T   1% /mnt

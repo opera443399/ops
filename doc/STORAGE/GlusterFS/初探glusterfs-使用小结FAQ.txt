@@ -1,5 +1,5 @@
 初探glusterfs-使用小结FAQ
-2016/8/19
+2016/10/19
 
 
 注：建议使用3副本（1x3），1x2副本危险，2x2也危险。
@@ -79,9 +79,25 @@ Brick1: 10.60.200.11:/data/gv1/brick1
 Brick2: 10.60.200.12:/data/gv1/brick1
 Brick2: 10.60.200.13:/data/gv1/brick1
 
+挂载测试：
+mount -t glusterfs 10.60.200.11:/gv1 /mnt/test
+~]# df -h /mnt/test/
+Filesystem                      Size  Used Avail Use% Mounted on
+10.60.200.11:/gv1               5.4T  1.8T  3.4T  34% /mnt/test
 
-2、挂载时，可以使用参数来提供备用节点：
-mount.gluster -o backupvolfile-server=10.60.200.12 10.60.200.11:/gv1 /mnt/test
+
+2、挂载时，可以使用参数来提供备用节点
+3.6版本兼容旧版本的方法：
+mount -t glusterfs -o backupvolfile-server=10.60.200.12 10.60.200.11:/gv1 /mnt/test
+
+3.6版本以后推荐的方法：
+mount -t glusterfs -o backup-volfile-servers=10.60.200.12 10.60.200.11:/gv1 /mnt/test
+
+多个backup的方法：
+mount -t glusterfs -o backup-volfile-servers=10.60.200.12:10.60.200.13 10.60.200.11:/gv1 /mnt/test
+
+请特别注意：
+mount -t glusterfs 和 mount.glusterfs 的用法是不一样的。
 
 
 3、参数配置

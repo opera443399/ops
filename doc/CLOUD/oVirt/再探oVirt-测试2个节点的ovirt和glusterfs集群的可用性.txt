@@ -1,7 +1,6 @@
-日期：2015/11/10 - 2015/11/12 time 11:36
-主机：e01, n33, n34
-目的：再探oVirt-测试2个节点的ovirt和glusterfs集群的可用性
-操作内容：
+再探oVirt-测试2个节点的ovirt和glusterfs集群的可用性
+2016/10/19
+
 一、基础操作
 1、资源
 ovirt engine: e01
@@ -88,7 +87,7 @@ gluster volume set ovirt-data nfs.disable off
 
 四、测试
 1、客户机挂载
-[root@n86 ~]# mount.glusterfs -o backupvolfile-server=n34.test n33.test:/ovirt-data /data/test
+[root@n86 ~]# mount -t glusterfs -o backupvolfile-server=n34.test n33.test:/ovirt-data /data/test
 
 2、测试用例
 【测试用例01】断开其中一个节点的网络
