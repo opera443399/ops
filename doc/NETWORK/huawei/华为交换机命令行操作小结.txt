@@ -1,5 +1,5 @@
 华为交换机命令行操作小结
-2016/9/29
+2016/10/20
 
 一、基础
 1、进入 system-view 模式
@@ -35,16 +35,28 @@ Save the configuration successfully.
 
 6、用户和管理
 1）配置密码
+采用password的方式来验证：
+authentication-mode password
+（简单，略过不提，看命令行的帮助即可）
+
+采用aaa的方式来验证：
 <SW-ACC-CORE-1>sys
 [SW-ACC-CORE-1]aaa
 [SW-ACC-CORE-1-aaa]local-user admin password cipher mypass
 [SW-ACC-CORE-1-aaa]local-user admin privilege level 3
-[SW-ACC-CORE-1-aaa]local-user admin service-type telnet terminal http
+[SW-ACC-CORE-1-aaa]local-user admin service-type telnet terminal http ssh
 [SW-ACC-CORE-1-aaa]quit
+
+2）配置 console 的密码
+[SW-ACC-CORE-1]user-interface console 0
+[SW-ACC-CORE-1-ui-con0]authentication-mode aaa
+[SW-ACC-CORE-1-ui-con0]quit
+
+
+3）配置 vty 的密码来允许telnet服务
 [SW-ACC-CORE-1]user-interface vty 0 4
 [SW-ACC-CORE-1-ui-vty0-4]authentication-mode aaa
 [SW-ACC-CORE-1-ui-vty0-4]quit
-
 
 测试：
 <SW-ACC-BIZ-1>telnet 192.168.200.254
@@ -64,7 +76,35 @@ Info: The max number of VTY users is 5, and the number
 <SW-ACC-CORE-1>
 
 
-2）启用交换机的web服务
+参考：http://support.huawei.com/enterprise/KnowledgebaseReadAction.action?contentId=KB1000125747&idAbsPath=7919710|21782164|21782167|6691579
+【特别注意】
+盒式(S2700&S3700&S5700&S6700)
+（一）、V200R003及之前的版本
+缺省情况下
+1.telnet server已启用
+2.user-interface vty下协议默认支持telnet
+所以该版本仅需配置上面的通用配置
+
+
+（二）、V200R005及之后的版本
+缺省情况下
+1.telnet server未启用
+2.user-interface vty下协议默认支持ssh
+所以该版本需按以下方法配置
+1.打开telnet服务
+telnet server enable
+2.用户接口下启用telnet协议
+user-interface vty 0 4
+protocol inbound telnet
+3.添加通用配置
+
+
+4）启用ssh
+参考：http://support.huawei.com/enterprise/KnowledgebaseReadAction.action?contentId=KB1000067691&idAbsPath=7919710%7C9856733%7C7923144%7C6691579
+
+
+
+5）启用交换机的web服务
 <SW-ACC-CORE-1>dir
 找到web文件（以这个为例：s5700si-v200r003c00.001.web.7z），加载：
 <SW-ACC-CORE-1>system-view
@@ -73,6 +113,9 @@ Info: The max number of VTY users is 5, and the number
 https://ip/
 
 注：更改配置后，记得保存。
+
+
+
 
 
 7、系统管理
