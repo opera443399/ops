@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-#2016/9/27
-#ver:0.1.0
+#2016/10/20
+#ver:0.1.1
 
 dt_default=$(date -d"7 days ago" +"%Y.%m.%d")
 
@@ -76,7 +76,8 @@ case $1 in
         show_$1
         ;;
     idel)
-        index_del $2
+        [ -z $2 ] && idx='filebeat' || idx=$2
+        index_del ${idx}
         ;;
     icls)
         [ -z $3 ] || dt_default=$3
