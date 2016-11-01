@@ -1,0 +1,98 @@
+初探glusterfs-使用nfs-ganesha来提供NFS服务
+2016/11/1
+
+一、基础
+1、glusterfs官方建议使用 nfs-ganesha 来提供 nfs 服务
+
+2、配置一个 glustefs 集群来测试
+[root@sz-local-vm57 ~]# yum install glusterfs* -y
+[root@sz-local-vm57 ~]# service glusterd start
+[root@sz-local-vm57 ~]# chkconfig glusterd on
+[root@sz-local-vm57 ~]# yum install nfs-ganesha* -y
+
+[root@sz-local-vm57 ~]# gluster peer probe 192.168.20.58
+[root@sz-local-vm57 ~]# gluster peer probe 192.168.20.59
+
+[root@sz-local-vm57 ~]# mkdir -p /data/abc/test
+[root@sz-local-vm57 ~]# gluster volume create gvtest replica 3 transport tcp \
+192.168.20.57:/data/abc/test \
+192.168.20.58:/data/abc/test \
+192.168.20.59:/data/abc/test 
+[root@sz-local-vm57 ~]# gluster volume start gvtest
+
+注：要启用ipv6模块。
+
+
+二、体验 ganesha 提供的 nfs 服务如何配置
+1、单节点提供NFS服务
+[root@sz-local-vm57 ~]# cat /etc/ganesha/ganesha.conf
+EXPORT
+{
+        Export_Id = 1 ;   # Export ID unique to each export
+        Path = "/gvtest";  # Path of the volume to be exported. Eg: "/test_volume"
+
+        FSAL {
+        name = GLUSTER;
+        hostname = "192.168.20.57";  # IP of one of the nodes in the trusted pool
+        volume = "gvtest";  # Volume name. Eg: "test_volume"
+        }
+
+        Access_type = RW;    # Access permissions
+        Squash = No_root_squash; # To enable/disable root squashing
+        Disable_ACL = TRUE;  # To enable/disable ACL
+        Pseudo = "/gvtest";  # NFSv4 pseudo path for this export. Eg: "/test_volume_pseudo"
+        Protocols = "3","4" ;    # NFS protocols supported
+        Transports = "UDP","TCP" ; # Transport protocols supported
+        SecType = "sys";     # Security flavors supported
+
+}
+
+
+[root@sz-local-vm57 ~]# service nfs-ganesha start
+
+[root@sz-local-vm57 ~]# showmount -e localhost
+Export list for sz-local-vm57:
+/gvtest (everyone)
+
+[root@sz-local-vm57 ~]# mount 127.0.0.1:/gvtest /mnt
+[root@sz-local-vm57 ~]# df -h
+Filesystem         Size  Used Avail Use% Mounted on
+/dev/vda3           18G  2.5G   15G  15% /
+tmpfs              1.9G     0  1.9G   0% /dev/shm
+/dev/vda1          194M   34M  151M  19% /boot
+127.0.0.1:/gvtest   18G  2.5G   15G  15% /mnt
+
+
+符合预期。
+
+
+2、多节点提供HA的NFS服务
+（暂未测试）
+
+
+三、问题
+1、读写过程中，数据不一致，存在延迟的问题。
+场景1：
+客户端 A 通过 mount -t nfs 挂载节点 n1 的 nfs-ganesha 服务来读写文件；
+客户端 B 通过 mount -t nfs 挂载节点 n1 和 n2 的 nfs-ganesha 服务来列出文件；
+
+在 B 上面观察的结果是：
+n1 和 n2 上面的数据不一致，大约需要 60s 左右数据才会同步一致。
+
+
+对比下述2个场景，表现为一致，可以得出结论：后端的 glusterfs 节点上的数据是一致的，重要是通过 nfs-ganesha 服务得到的数据不一致，要做进一步分析。
+场景2：
+客户端 A 通过 mount -t glusterfs 挂载节点 n1 的 glusterfs 服务来读写文件；
+客户端 B 通过 mount -t glusterfs 挂载节点 n1 和 n2 的 glusterfs 服务来列出文件；
+
+场景3：
+客户端 A 通过 mount -t nfs 挂载节点 n1 的 nfs-ganesha 服务来读写文件；
+客户端 B 通过 mount -t glusterfs 挂载节点 n1 和 n2 的 glusterfs 服务来列出文件；
+
+
+
+ZYXW、参考
+1、pcs and pcsd
+https://www.centos.org/forums/viewtopic.php?t=44201
+
+
