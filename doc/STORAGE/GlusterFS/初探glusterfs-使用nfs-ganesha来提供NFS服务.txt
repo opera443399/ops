@@ -1,31 +1,31 @@
 初探glusterfs-使用nfs-ganesha来提供NFS服务
-2016/11/1
+2016/11/4
 
 一、基础
 1、glusterfs官方建议使用 nfs-ganesha 来提供 nfs 服务
 
 2、配置一个 glustefs 集群来测试
-[root@sz-local-vm57 ~]# yum install glusterfs* -y
-[root@sz-local-vm57 ~]# service glusterd start
-[root@sz-local-vm57 ~]# chkconfig glusterd on
-[root@sz-local-vm57 ~]# yum install nfs-ganesha* -y
+[root@n57 ~]# yum install glusterfs* -y
+[root@n57 ~]# service glusterd start
+[root@n57 ~]# chkconfig glusterd on
+[root@n57 ~]# yum install nfs-ganesha* -y
 
-[root@sz-local-vm57 ~]# gluster peer probe 192.168.20.58
-[root@sz-local-vm57 ~]# gluster peer probe 192.168.20.59
+[root@n57 ~]# gluster peer probe 10.50.200.58
+[root@n57 ~]# gluster peer probe 10.50.200.59
 
-[root@sz-local-vm57 ~]# mkdir -p /data/abc/test
-[root@sz-local-vm57 ~]# gluster volume create gvtest replica 3 transport tcp \
-192.168.20.57:/data/abc/test \
-192.168.20.58:/data/abc/test \
-192.168.20.59:/data/abc/test 
-[root@sz-local-vm57 ~]# gluster volume start gvtest
+[root@n57 ~]# mkdir -p /data/abc/test
+[root@n57 ~]# gluster volume create gvtest replica 3 transport tcp \
+10.50.200.57:/data/abc/test \
+10.50.200.58:/data/abc/test \
+10.50.200.59:/data/abc/test 
+[root@n57 ~]# gluster volume start gvtest
 
 注：要启用ipv6模块。
 
 
-二、体验 ganesha 提供的 nfs 服务如何配置
-1、单节点提供NFS服务
-[root@sz-local-vm57 ~]# cat /etc/ganesha/ganesha.conf
+二、体验 ganesha 提供的 nfs 服务如何配置（单节点提供NFS服务）
+1、ganesha 服务的配置
+[root@n57 ~]# cat /etc/ganesha/ganesha.conf
 EXPORT
 {
         Export_Id = 1 ;   # Export ID unique to each export
@@ -33,7 +33,7 @@ EXPORT
 
         FSAL {
         name = GLUSTER;
-        hostname = "192.168.20.57";  # IP of one of the nodes in the trusted pool
+        hostname = "10.50.200.57";  # IP of one of the nodes in the trusted pool
         volume = "gvtest";  # Volume name. Eg: "test_volume"
         }
 
@@ -47,15 +47,16 @@ EXPORT
 
 }
 
+2、启用服务
+[root@n57 ~]# service nfs-ganesha start
 
-[root@sz-local-vm57 ~]# service nfs-ganesha start
-
-[root@sz-local-vm57 ~]# showmount -e localhost
-Export list for sz-local-vm57:
+3、挂载测试
+[root@n57 ~]# showmount -e localhost
+Export list for n57:
 /gvtest (everyone)
 
-[root@sz-local-vm57 ~]# mount 127.0.0.1:/gvtest /mnt
-[root@sz-local-vm57 ~]# df -h
+[root@n57 ~]# mount 127.0.0.1:/gvtest /mnt
+[root@n57 ~]# df -h
 Filesystem         Size  Used Avail Use% Mounted on
 /dev/vda3           18G  2.5G   15G  15% /
 tmpfs              1.9G     0  1.9G   0% /dev/shm
@@ -66,8 +67,115 @@ tmpfs              1.9G     0  1.9G   0% /dev/shm
 符合预期。
 
 
-2、多节点提供HA的NFS服务
-（暂未测试）
+三、多节点提供HA的NFS服务
+1、准备工作
+1）hosts解析
+~]# cat /etc/hosts |grep n5
+10.50.200.57 n57
+10.50.200.58 n58
+10.50.200.59 n59
+
+2）要保证 corosync+pacemaker 组建的 cluster 是生效的，否则将产生影响：
+在centos 6 和 centos 7 上管理 pacemaker 的方法不一样，后者使用 pcs 和 pcsd 即可，而前者没有 pcsd 服务，此时将导致后续步骤调用 ganesha-ha.sh 脚本进入死循环
+涉及脚本：/usr/libexec/ganesha/ganesha-ha.sh（安装 glusterfs-ganesha-3.8.5-1.el6.x86_64 这个包后生成的脚本）
+172行：    pcs cluster auth ${servers}
+173行：    # pcs cluster setup --name ${name} ${servers}
+174行：    pcs cluster setup ${RHEL6_PCS_CNAME_OPTION} ${name} ${servers}
+
+其中：172行仅适用于 centos 7，因此会带来报错，而 centos 6 上尝试过手动配置 pcs cluster，依然会带来报错，因此建议的方式是在 centos 7 这个版本执行后续操作
+
+
+3）生成 key 并分发到另外2个节点，用于 ganesha-ha.sh 在执行过程中控制其他节点。
+[root@n57 ~]# ssh-keygen -f /var/lib/glusterd/nfs/secret.pem
+[root@n57 ~]# ssh-copy-id -i /var/lib/glusterd/nfs/secret.pem.pub root@10.50.200.58
+[root@n57 ~]# ssh-copy-id -i /var/lib/glusterd/nfs/secret.pem.pub root@10.50.200.59
+[root@n57 ~]# ll /var/lib/glusterd/nfs/secret.pem.pub
+[root@n57 ~]# scp /var/lib/glusterd/nfs/secret.* 10.50.200.58:/var/lib/glusterd/nfs/
+[root@n57 ~]# scp /var/lib/glusterd/nfs/secret.* 10.50.200.59:/var/lib/glusterd/nfs/
+
+
+4）配置 ganesha-ha
+[root@n57 ~]# cat /etc/ganesha/ganesha-ha.conf
+HA_NAME="ganesha-ha-360"
+HA_VOL_SERVER="n57"
+HA_CLUSTER_NODES="n57,n58,n59"
+VIP_n57="10.50.200.97"
+VIP_n58="10.50.200.98"
+VIP_n59="10.50.200.99"
+
+
+
+5）gluster 启用集群共享卷 enable-shared-storage
+[root@n57 ~]# gluster volume set all cluster.enable-shared-storage enable
+volume set: success
+
+
+2、gluster 激活 nfs-ganesha 功能
+[root@n57 ~]# gluster nfs-ganesha enable
+Enabling NFS-Ganesha requires Gluster-NFS to be disabled across the trusted pool. Do you still want to continue?
+ (y/n) y
+This will take a few minutes to complete. Please wait ..
+nfs-ganesha : success 
+
+（注：上述操作其实是在执行 /usr/libexec/ganesha/ganesha-ha.sh setup /etc/ganesha，如果执行时间很长，极有可能是进入了死循环，此时可手动调试执行）
+
+
+
+
+3、gluster 激活指定卷的 ganesha 功能，生成对应的 export 配置
+[root@n57 ~]# gluster volume set gvtest ganesha.enable on
+volume set: success
+
+
+【对比自动生成的配置】
+启用参数前：
+[root@n57 ~]# ls /etc/ganesha/
+ganesha.conf  ganesha-ha.conf  ganesha-ha.conf.sample  vfs.conf
+
+启用后：
+[root@n57 ~]# ls /etc/ganesha/
+exports  ganesha.conf  ganesha-ha.conf  ganesha-ha.conf.sample  vfs.conf
+
+
+接着看一下自动生成的配置文件的内容：
+[root@n57 ~]# cat /etc/ganesha/ganesha.conf 
+%include "/etc/ganesha/exports/export.gvtest.conf"
+
+[root@n57 ~]# cat /etc/ganesha/exports/export.gvtest.conf 
+# WARNING : Using Gluster CLI will overwrite manual
+# changes made to this file. To avoid it, edit the
+# file and run ganesha-ha.sh --refresh-config.
+EXPORT{
+      Export_Id= 2 ;
+      Path = "/gvtest";
+      FSAL {
+           name = GLUSTER;
+           hostname="localhost";
+          volume="gvtest";
+           }
+      Access_type = RW;
+      Disable_ACL = true;
+      Squash="No_root_squash";
+      Pseudo="/gvtest";
+      Protocols = "3", "4" ;
+      Transports = "UDP","TCP";
+      SecType = "sys";
+     }
+
+此时发现，再另外2个节点上也同步生成了对应的配置文件。
+
+验证 ganesha 是否启用成功：
+[root@n57 glusterfs]# ps -ef |grep ganesha
+root      6051     1  8 17:32 ?        00:00:20 /usr/bin/ganesha.nfsd -L /var/log/ganesha.log -f /etc/ganesha/ganesha.conf -N NIV_EVENT -p /var/run/ganesha.nfsd.pid
+root      6643  2397  0 17:36 pts/0    00:00:00 grep ganesha
+[root@n57 glusterfs]# showmount -e localhost
+Export list for localhost:
+/gvtest (everyone)
+
+
+4、上述信息是在 centos 6 下绕过了 pcs cluster 的创建过程得到的信息，显然，并未达到 HA 的目标，仅供配置过程中的参考，如果在 centos 7 下配置，预计将符合预期，时间仓促，未尽事宜，请期待后续更新。
+
+
 
 
 三、问题
@@ -91,8 +199,26 @@ n1 和 n2 上面的数据不一致，大约需要 60s 左右数据才会同步�
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 ZYXW、参考
-1、pcs and pcsd
+1、Configuring NFS-Ganesha over GlusterFS
+http://gluster.readthedocs.io/en/latest/Administrator%20Guide/NFS-Ganesha%20GlusterFS%20Integration/
+2、pcs and pcsd
 https://www.centos.org/forums/viewtopic.php?t=44201
+3、PCS - Pacemaker/Corosync configuration system
+https://github.com/ClusterLabs/pcs
+4、pcs-crmsh-quick-ref
+https://github.com/ClusterLabs/pacemaker/blob/master/doc/pcs-crmsh-quick-ref.md
 
 

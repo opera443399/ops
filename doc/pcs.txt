@@ -1,0 +1,15 @@
+pcs
+2016/11/3
+
+
+# pcs cluster setup --local --name cluster_name node1 node2 node3
+# pcs cluster start
+# pcs status
+
+ZYXW、参考
+1、、pcs and pcsd
+https://www.centos.org/forums/viewtopic.php?t=44201
+2、PCS - Pacemaker/Corosync configuration system
+https://github.com/ClusterLabs/pcs
+3、pcs-crmsh-quick-ref
+https://github.com/ClusterLabs/pacemaker/blob/master/doc/pcs-crmsh-quick-ref.md
