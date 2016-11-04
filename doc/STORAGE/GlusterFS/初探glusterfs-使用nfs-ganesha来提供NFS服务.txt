@@ -178,7 +178,126 @@ Export list for localhost:
 
 
 
-三、问题
+四、使用 ctdb 来做 HA
+1、配置 glusterfs 服务，提供一个卷给 ctdb 做共享卷
+[root@n57 ~]# gluster volume create ctdb_config replica 3 transport tcp 10.50.200.57:/data/abc/ctdb.d 10.50.200.58:/data/abc/ctdb.d 10.50.200.59:/data/abc/ctdb.d
+[root@n57 ~]# gluster volume start ctdb_config
+
+【3个节点挂载共享存储】
+~]# mkdir -p /opt/ctdb_config && mount -t glusterfs 127.0.0.1:/ctdb_config /opt/ctdb_config
+
+2、配置 ctdb
+[root@n57 ~]# grep ^[^#] /etc/sysconfig/ctdb 
+CTDB_RECOVERY_LOCK="/opt/ctdb_config/ctdb_recovery_lock"    # 这里指向共享存储
+CTDB_PUBLIC_INTERFACE=eth1                                  # 这里指定网卡
+CTDB_PUBLIC_ADDRESSES=/opt/ctdb_config/public_addresses     # 这里列出 vip
+CTDB_NODES=/opt/ctdb_config/nodes                           # 这里列出 ctdb nodes
+CTDB_DEBUGLEVEL=ERR
+
+其他2个节点的配置一致。
+
+3、启动 ctdb
+[root@n57 ~]# service ctdb start
+稍等几秒：
+[root@n57 ~]# ctdb ip
+Public IPs on node 0
+10.50.200.97 node[0] active[eth1] available[eth1] configured[eth1]
+
+[root@n57 ~]# ctdb status
+Number of nodes:3
+pnn:0 10.50.200.57    OK (THIS NODE)
+pnn:1 10.50.200.58    OK
+pnn:2 10.50.200.59    OK
+Generation:285890184
+Size:3
+hash:0 lmaster:0
+hash:1 lmaster:1
+hash:2 lmaster:2
+Recovery mode:NORMAL (0)
+Recovery master:0
+
+[root@sz-local-vm59 ganesha]# ctdb getcapabilities
+RECMASTER: YES
+LMASTER: YES
+LVS: NO
+NATGW: NO
+
+
+[root@n57 ~]# ip a show dev eth1 |grep inet
+    inet 10.50.200.57/24 brd 10.50.200.255 scope global eth1
+    inet 10.50.200.97/24 brd 10.50.200.255 scope global secondary eth1
+    
+    
+[root@n57 ~]# showmount -e 10.50.200.97
+Export list for 10.50.200.97:
+/gvtest (everyone)
+
+
+4、测试
+测试机：
+[root@sz-local-vm42 ~]# mount 10.50.200.97:/gvtest /mnt
+[root@sz-local-vm42 ~]# while true; do echo `date +%T` >>/mnt/record.log;sleep 1s;done
+
+
+n57意外下线：
+[root@n57 ~]# ifdown eth1 && sleep 120s && ifup eth1
+
+
+测试机 n42 的数据：
+16:51:38
+16:52:42
+
+结论1：中断了63s，有优化的空间。
+
+
+[root@sz-local-vm59 ganesha]# ctdb ip
+Public IPs on node 2
+10.50.200.97 node[1] active[] available[eth1] configured[eth1]
+[root@sz-local-vm59 ganesha]# ctdb status
+Number of nodes:3
+pnn:0 10.50.200.57    BANNED|UNHEALTHY|INACTIVE
+pnn:1 10.50.200.58    OK
+pnn:2 10.50.200.59    OK (THIS NODE)
+Generation:521265229
+Size:2
+hash:0 lmaster:1
+hash:1 lmaster:2
+Recovery mode:NORMAL (0)
+Recovery master:1
+
+n57上线后：
+[root@sz-local-vm59 ganesha]# ctdb status
+Number of nodes:3
+pnn:0 10.50.200.57    OK
+pnn:1 10.50.200.58    OK
+pnn:2 10.50.200.59    OK (THIS NODE)
+Generation:688757215
+Size:3
+hash:0 lmaster:0
+hash:1 lmaster:1
+hash:2 lmaster:2
+Recovery mode:NORMAL (0)
+Recovery master:1
+[root@sz-local-vm59 ganesha]# ctdb ip    
+Public IPs on node 2
+10.50.200.97 node[0] active[] available[eth1] configured[eth1]
+
+结论2：n57重新拿回vip
+
+
+【针对结论1】
+[root@n57 ~]# gluster volume set ctdb_config network.ping-timeout 5
+[root@n57 ~]# gluster volume set gvtest network.ping-timeout 5
+
+控制到 60s 内，有待多次测试的结果。
+
+【针对结论2】
+抢夺 vip 的切换过程中，在 10s 以内无响应，可以接受。
+
+
+
+
+五、问题
 1、读写过程中，数据不一致，存在延迟的问题。
 场景1：
 客户端 A 通过 mount -t nfs 挂载节点 n1 的 nfs-ganesha 服务来读写文件；
