@@ -1,60 +1,87 @@
 商业存储服务器 Dell MD3800i 使用小结
-2016/9/26
+2016/11/09
 
-一、初体验
+一、准备工作
 1、目的
 体验客户端是如何使用存储服务器的磁盘的？
 
-2、操作
-【服务器】
-配置好管理网络：（略）
-iscsi网络：10.50.200.141（假设目前只配置了单路径来测试）
-在【存储和备份服务】划分出虚拟磁盘：1(100G)
+2、操作【服务器】
+1）通过随机器附带的 dell MDSM 存储管理软件来配置好管理网络：
+（略）
+2）在【MDSM】中配置好2个 iscsi 网络（本型号的设备是双raid卡，每个raid卡上有2个 iscsi 网络和1个管理网络，本例仅使用了其中2个 iscsi 网络）
+10.50.200.41
+10.50.200.51
+在【MDSM】-【存储和备份服务】划分出虚拟磁盘：1(100G)
 
 
-【客户端】
+二、客户端通过 iscsi 连接到后端存储
+1、操作【客户端】
 操作系统：centos6.5
-[root@vm200 ~]# yum install iscsi-initiator-utils
 
-[root@vm200 ~]# iscsiadm --mode discoverydb --type sendtargets --portal 10.50.200.141 --discover
+2、配置 iscsi-initiator 服务来发现后端存储
+[root@vm200 ~]# yum install iscsi-initiator-utils
+其常用的参数有：
+ iscsiadm 
+ -m, 同 --mode, 其选项有 discovery, node, fw（启动值）, host, iface（iSCSI 接口）和 session。
+ -I，同 --interface, 表示接口。
+ -o, 同 --op, 可实现对数据库的操作，其选项有 new, delete, update 和 show。
+ -n, 同 --name, 指定其数据记录里的名字。
+ -t, 同 --type, 其选项有 sendtargets（st), fw 和 isns, 仅在 -m 模式为 discovery 时有效。
+ -p, 同 --portal, 指定其目标主机的 IP 地址和端口，默认端口为 3260。
+ -L, 同 --loginall，其选项有 all，manual 和 automatic，指定其登录会话时的类型。
+ -T, 同 --targetname，表示其目标名字。
+ -v, 同 --value，通常在 --op=update 时指定其值。
+
+1）发现
+[root@vm200 ~]# iscsiadm -m discovery -t st -p 10.50.200.41
 Starting iscsid:                                           [  OK  ]
-10.50.200.141:3260,1 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
+10.50.200.41:3260,1 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
 192.168.131.101:3260,1 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
-192.168.130.102:3260,2 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
+10.50.200.51:3260,2 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
 192.168.131.102:3260,2 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
 [root@vm200 ~]# ls /var/lib/iscsi/nodes/iqn.1984-05.com.dell\:powervault.md3800i.600a098000a64d8b0000000057a152ea/
-192.168.130.102,3260,2  192.168.131.101,3260,1  192.168.131.102,3260,2  10.50.200.141,3260,1
-
-删除指定的 portal
-[root@vm200 ~]# iscsiadm --mode node --op delete --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 192.168.131.101
-[root@vm200 ~]# iscsiadm --mode node --op delete --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 192.168.131.102
-[root@vm200 ~]# iscsiadm --mode node --op delete --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 192.168.131.101
-[root@vm200 ~]# ls /var/lib/iscsi/nodes/iqn.1984-05.com.dell\:powervault.md3800i.600a098000a64d8b0000000057a152ea/
-10.50.200.141,3260,1
+192.168.131.101,3260,1  192.168.131.102,3260,2  10.50.200.41,3260,1  10.50.200.51,3260,2
 
 
-调整主机端口映射符
+2）删除指定的 portal （尚未使用的2个接口）
+[root@vm200 ~]# iscsiadm -m node -o delete -T iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea -p 192.168.131.101
+[root@vm200 ~]# iscsiadm -m node -o delete -T iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea -p 192.168.131.102
+[root@vm200 ~]# iscsiadm -m node
+10.50.200.41:3260,1 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
+10.50.200.51:3260,2 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
+
+
+3）调整主机端口映射符
 [root@vm200 ~]# vim /etc/iscsi/initiatorname.iscsi 
 InitiatorName=iqn.1994-05.com.redhat:444ef5b8f276
 
 例如
 InitiatorName=iqn.2016-09.com.test:vm200
 
-重启服务：
+4）重启服务：
 [root@vm200 ~]# service iscsid restart
 [root@vm200 ~]# service iscsi restart
 
 
-【服务器】
-在【主机映射】中定义主机组（g_test），主机（名称：vm200，主机端口映射符：iqn.2016-09.com.test:vm200，别名：test-vm200），并添加LUN映射。
+2、配置【服务器】
+在【MDSM】-【主机映射】中定义主机组（g_test），主机（名称：vm200，主机端口映射符：iqn.2016-09.com.test:vm200，别名：test-vm200），并添加LUN映射。
 
-【客户端】
-登录
-[root@vm200 ~]# iscsiadm --mode node --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 10.50.200.141 --login
-Logging in to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.141,3260] (multiple)
-Login to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.141,3260] successful.
 
-查看从服务器获得的虚拟磁盘：
+3、配置【客户端】使用存储
+1）登录
+[root@vm200 ~]# iscsiadm -m node -T iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --login 
+Logging in to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.41,3260] (multiple)
+Logging in to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.51,3260] (multiple)
+Login to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.41,3260] successful.
+Login to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.51,3260] successful.
+
+当然，也可以通过指定 portal 的方式只登录其中一个：
+[root@vm200 ~]# iscsiadm --m node -T iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea -p 10.50.200.41 --login
+Logging in to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.41,3260] (multiple)
+Login to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.41,3260] successful.
+
+
+2）查看从服务器获得的虚拟磁盘：
 [root@vm200 ~]# cat /proc/partitions 
 major minor  #blocks  name
 
@@ -63,44 +90,173 @@ major minor  #blocks  name
  253        2  310172672 vda2
  253        3    4194304 vda3
    8        0  104857600 sda
-
-多出来一个 sda，接下来可以去分区，格式化并挂载使用：
-[root@vm200 ~]# fdisk /dev/sda
-[root@vm200 ~]# mkfs.ext4 /dev/sda1
-[root@vm200 ~]# mkdir /data/mdtest
-[root@vm200 ~]# mount /dev/sda1 /data/mdtest/
-[root@vm200 ~]# df -h /data/mdtest
-Filesystem      Size  Used Avail Use% Mounted on
-/dev/sda1        99G  188M   94G   1% /data/mdtest
-
-[root@vm200 ~]# dd if=/dev/zero of=/data/mdtest/111 bs=10M count=1000                  
-1000+0 records in
-1000+0 records out
-10485760000 bytes (10 GB) copied, 87.0276 s, 120 MB/s
-[root@vm200 ~]# df -h /data/mdtest/
-Filesystem      Size  Used Avail Use% Mounted on
-/dev/sda1        99G   10G   84G  11% /data/mdtest
-
-断开到存储服务器的连接
-[root@vm200 ~]# iscsiadm --mode node --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 10.50.200.141 --logout
-Logging out of session [sid: 6, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.141,3260]
-Logout of [sid: 6, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.141,3260] successful.
-
-测试：
-[root@vm200 ~]# ls /dev/sd*
-ls: cannot access /dev/sd*: No such file or directory
-[root@vm200 ~]# iscsiadm -m session  
-iscsiadm: No active sessions.
-[root@vm200 ~]# iscsiadm --mode node --targetname iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --portal 10.50.200.141 --login
-Logging in to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.141,3260] (multiple)
-Login to [iface: default, target: iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea, portal: 10.50.200.141,3260] successful.
-[root@vm200 ~]# ls /dev/sd*
-/dev/sda  /dev/sda1
+   8       16  104857600 sdb
+[root@vm200 ~]# lsblk
+NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
+vda    253:0    0   300G  0 disk 
+├─vda1 253:1    0   200M  0 part /boot
+├─vda2 253:2    0 295.8G  0 part /
+└─vda3 253:3    0     4G  0 part [SWAP]
+sr0     11:0    1  1024M  0 rom  
+sda      8:0    0   100G  0 disk 
+sdb      8:16   0   100G  0 disk
 
 
-3、问题
-单路径不靠谱，要合理的规划存储网络。
+多出来2个 sda，其实指向的是 MD3800i 中划分的虚拟磁盘中的同一个LUN。
+接下来要考虑如何配置多路径（multipath）
 
-双 RAID 控制器中，假设 iscsi 主机只连接到 RAID 控制器（A），而此时请求的虚拟磁盘在另一个 RAID 控制器（B），将引起异常：
-Virtual disk not on preferred path due to failover（虚拟磁盘）
+3）配置多路径
+[root@vm200 ~]# yum install device-mapper-multipath -y
+[root@vm200 ~]# modprobe dm-multipath
+[root@vm200 ~]# mpathconf
+multipath is enabled
+find_multipaths is disabled
+user_friendly_names is enabled
+dm_multipath module is loaded
+multipathd is chkconfiged off
 
+上述指令将生成文件：
+/etc/multipath/.multipath.conf.tmp
+里面的配置可以参考一下，例如：
+# 默认配置示例：
+# /usr/share/doc/device-mapper-multipath-0.4.9/multipath.conf.defaults
+# 配置注释：
+# /usr/share/doc/device-mapper-multipath-0.4.9/multipath.conf.annotated
+
+
+获取设备对应的wwid：
+[root@vm200 ~]# scsi_id --whitelisted --device=/dev/sda
+3600a098000a64d8b000002a4582305f8
+
+一个简单的配置：
+[root@vm200 ~]# cat /etc/multipath.conf  
+multipaths {
+    multipath {
+        wwid                    3600a098000a64d8b000002a4582305f8
+        alias                   test_block_a
+    }
+}
+
+
+[root@vm200 ~]# service multipathd restart
+
+查看 multipath 列出的设备：
+[root@vm200 ~]# multipath -ll            
+test_block_a (3600a098000a64d8b000002a4582305f8) dm-0 DELL,MD38xxi
+size=100G features='0' hwhandler='0' wp=rw
+|-+- policy='round-robin 0' prio=1 status=active
+| `- 9:0:0:0  sdb 8:16  active ready running
+`-+- policy='round-robin 0' prio=1 status=enabled
+  `- 10:0:0:0 sda 8:0   active ready running
+  
+
+调整 multipath 的配置：
+[root@vm200 ~]# cat /etc/multipath.conf     
+defaults {
+    path_grouping_policy    multibus
+    path_checker            readsector0
+    rr_min_io_rq            10
+    max_fds                 8192
+    rr_weight               priorities
+    failback                immediate
+    no_path_retry           fail
+    user_friendly_names     yes
+}
+
+multipaths {
+    multipath {
+        wwid                    3600a098000a64d8b000002a4582305f8
+        alias                   test_block_a
+    }
+}
+
+[root@vm200 ~]# service multipathd reload
+
+[root@vm200 ~]# multipath -ll            
+test_block_a (3600a098000a64d8b000002a4582305f8) dm-0 DELL,MD38xxi
+size=100G features='0' hwhandler='0' wp=rw
+`-+- policy='round-robin 0' prio=1 status=active
+  |- 9:0:0:0  sdb 8:16 active ready running
+  `- 10:0:0:0 sda 8:0  active ready running
+
+
+
+4）分区，格式化并挂载使用
+[root@vm200 ~]# pvcreate /dev/mapper/test_block_a 
+  Physical volume "/dev/mapper/test_block_a" successfully created
+[root@vm200 ~]# vgcreate vg1 /dev/mapper/test_block_a 
+  Volume group "vg1" successfully created
+[root@vm200 ~]# lvcreate -L 8G -n lv01 vg1       
+  Logical volume "lv01" created
+[root@vm200 ~]# lvs
+  LV   VG   Attr       LSize Pool Origin Data%  Move Log Cpy%Sync Convert
+  lv01 vg1  -wi-a----- 8.00g 
+[root@vm200 ~]# mkfs.ext4 /dev/mapper/vg1-lv01 
+
+
+[root@vm200 ~]# mkdir /mnt/mdtest
+[root@vm200 ~]# mount /dev/mapper/vg1-lv01 /mnt/mdtest/
+[root@vm200 ~]# df -h /mnt/mdtest/
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/mapper/vg1-lv01  7.9G  146M  7.4G   2% /mnt/mdtest
+
+[root@vm200 ~]# dd if=/dev/zero of=/mnt/mdtest/a1 bs=10M count=200
+200+0 records in
+200+0 records out
+2097152000 bytes (2.1 GB) copied, 15.3048 s, 137 MB/s
+
+
+
+
+
+4、管理和测试
+1）查看session
+[root@vm200 ~]# iscsiadm -m session
+tcp: [8] 10.50.200.41:3260,1 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
+tcp: [9] 10.50.200.51:3260,2 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea 
+
+2）断开到存储服务器的1条路径
+[root@vm200 ~]# iscsiadm -m node -T iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea -p 10.50.200.41 --logout
+[root@vm200 ~]# multipath -ll
+test_block_a (3600a098000a64d8b000002a4582305f8) dm-0 DELL,MD38xxi
+size=100G features='0' hwhandler='0' wp=rw
+`-+- policy='round-robin 0' prio=1 status=active
+  `- 10:0:0:0 sda 8:0 active ready running
+[root@vm200 ~]# iscsiadm -m session
+tcp: [9] 10.50.200.51:3260,2 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
+
+测试：可以继续访问磁盘
+
+3）恢复中断的路径
+[root@vm200 ~]# iscsiadm -m node -T iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea -p 10.50.200.41 --login
+[root@vm200 ~]# multipath -ll
+test_block_a (3600a098000a64d8b000002a4582305f8) dm-0 DELL,MD38xxi
+size=100G features='0' hwhandler='0' wp=rw
+`-+- policy='round-robin 0' prio=1 status=active
+  |- 10:0:0:0 sda 8:0  active ready running
+  `- 11:0:0:0 sdb 8:16 active ready running
+  
+[root@vm200 ~]# iscsiadm -m session
+tcp: [10] 10.50.200.41:3260,1 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
+tcp: [9] 10.50.200.51:3260,2 iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea
+
+
+4）开机启动
+[root@vm200 ~]# chkconfig multipathd on 
+
+
+
+三、问题
+1、单路径不靠谱，要合理的规划存储网络。
+2、双 RAID 控制器中，假设 iscsi 主机只连接到 RAID 控制器（A），而此时请求的虚拟磁盘在另一个 RAID 控制器（B），将引起异常：
+Virtual disk not on preferred path due to failover（虚拟磁盘不在首选路径上）
+
+解决办法：在【MDSM】-【存储和备份服务】：选中虚拟磁盘，右键菜单选择：“更改”-“所有权/首选路径”，调整首选路径为默认值。
+
+
+
+ZYXW、参考
+1、iSCSI 多路径实现 KVM 高可用
+http://www.ibm.com/developerworks/cn/linux/1303_zhuzq_iscsikvmha/
+2、md3600i存储服务器连接 iscsi+multipath配置
+http://blog.csdn.net/miyatang/article/details/8657959
