@@ -263,12 +263,12 @@ Virtual disk not on preferred path due to failover（虚拟磁盘不在首选路
 
 3、如果使用 multipath 出现错误 map in use，怎么清理旧的 device 的数据呢？
 首先，确认 device 都没有使用，尝试
-[root@GZ01A039 ~]# multipath -F
+[root@vm200 ~]# multipath -F
 Nov 10 16:54:05 | 3600a098000a64d8b000002a4582305f8: map in use
 Nov 10 16:54:05 | 3600a098000a64b9c0000030558249c83: map in use
 
 解决办法：
-[root@GZ01A035 ~]# dmsetup ls
+[root@vm200 ~]# dmsetup ls
 d951c4e7--c01a--48cc--9347--c01924a2047f-leases (253:3)
 d951c4e7--c01a--48cc--9347--c01924a2047f-ids    (253:4)
 90138356--1626--49e3--b237--452c6dc54cd0-leases (253:10)
@@ -285,10 +285,10 @@ d951c4e7--c01a--48cc--9347--c01924a2047f-outbox (253:2)
 d951c4e7--c01a--48cc--9347--c01924a2047f-inbox  (253:5)
 
 确认一下上述列表中的 device 都是可以清理的。
-[root@GZ01A039 ~]# dmsetup remove_all
-[root@GZ01A035 ~]# dmsetup ls
+[root@vm200 ~]# dmsetup remove_all
+[root@vm200 ~]# dmsetup ls
 No devices found
-[root@GZ01A039 ~]# multipath -ll  
+[root@vm200 ~]# multipath -ll  
 干净了。
 
 
