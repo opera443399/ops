@@ -1,5 +1,5 @@
 商业存储服务器 Dell MD3800i 使用小结
-2016/11/09
+2016/11/10
 
 一、准备工作
 1、目的
@@ -55,8 +55,15 @@ Starting iscsid:                                           [  OK  ]
 [root@vm200 ~]# vim /etc/iscsi/initiatorname.iscsi 
 InitiatorName=iqn.1994-05.com.redhat:444ef5b8f276
 
-例如
+例如：
 InitiatorName=iqn.2016-09.com.test:vm200
+也可以重新生成一个随机的名称：
+[root@vm200 ~]# iscsi-iname 
+iqn.1994-05.com.redhat:c886f5c823b
+
+实际上，咱不一定要用这个自定义的名称，理由是：
+使用客户端访问过一次存储服务器后，存储服务器将记录这个主机端口映射符，后续在存储服务器的管理软件上配置一下到主机的映射即可。
+
 
 4）重启服务：
 [root@vm200 ~]# service iscsid restart
@@ -253,6 +260,36 @@ Virtual disk not on preferred path due to failover（虚拟磁盘不在首选路
 
 解决办法：在【MDSM】-【存储和备份服务】：选中虚拟磁盘，右键菜单选择：“更改”-“所有权/首选路径”，调整首选路径为默认值。
 
+
+3、如果使用 multipath 出现错误 map in use，怎么清理旧的 device 的数据呢？
+首先，确认 device 都没有使用，尝试
+[root@GZ01A039 ~]# multipath -F
+Nov 10 16:54:05 | 3600a098000a64d8b000002a4582305f8: map in use
+Nov 10 16:54:05 | 3600a098000a64b9c0000030558249c83: map in use
+
+解决办法：
+[root@GZ01A035 ~]# dmsetup ls
+d951c4e7--c01a--48cc--9347--c01924a2047f-leases (253:3)
+d951c4e7--c01a--48cc--9347--c01924a2047f-ids    (253:4)
+90138356--1626--49e3--b237--452c6dc54cd0-leases (253:10)
+90138356--1626--49e3--b237--452c6dc54cd0-inbox  (253:12)
+d951c4e7--c01a--48cc--9347--c01924a2047f-metadata       (253:1)
+d951c4e7--c01a--48cc--9347--c01924a2047f-master (253:6)
+90138356--1626--49e3--b237--452c6dc54cd0-metadata       (253:8)
+d951c4e7--c01a--48cc--9347--c01924a2047f-outbox (253:2)
+3600a098000a64d8b000002a4582305f8       (253:0)
+90138356--1626--49e3--b237--452c6dc54cd0-master (253:13)
+90138356--1626--49e3--b237--452c6dc54cd0-outbox (253:11)
+3600a098000a64b9c0000030558249c83       (253:7)
+90138356--1626--49e3--b237--452c6dc54cd0-ids    (253:9)
+d951c4e7--c01a--48cc--9347--c01924a2047f-inbox  (253:5)
+
+确认一下上述列表中的 device 都是可以清理的。
+[root@GZ01A039 ~]# dmsetup remove_all
+[root@GZ01A035 ~]# dmsetup ls
+No devices found
+[root@GZ01A039 ~]# multipath -ll  
+干净了。
 
 
 ZYXW、参考
