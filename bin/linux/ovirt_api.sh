@@ -1,10 +1,8 @@
 #!/bin/bash
 # 
-# 2016/4/26
-# __version__='0.2.10'
 # for ovirt-engine-3.6.0.3
+# 2016/11/14
 
-#
 DEBUG=0
 ## ovirt engine 信息
 oe_url='https://e01.test/api'
@@ -217,7 +215,7 @@ function vm_runonce() {
                     <name>post-init</name>
                     <content>
 runcmd:
-- curl http://192.168.20.102/ovirt/test.sh |bash -
+- curl http://10.50.200.101/ovirt/test.sh |bash -
                     </content>
                     <type>plaintext</type>
                 </file>
