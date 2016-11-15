@@ -1,5 +1,5 @@
 【yum和rpm】个人用到的方法记录
-2016/9/18
+2016/11/15
 yum和rpm博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
 
 1、搜索和查询
@@ -102,3 +102,60 @@ fio-2.0.13-1.el6.x86_64.rpm
 [root@tvm-zabbix ~]# repoquery --plugins --queryformat '%{NAME}_|-%{VERSION}_|-%{RELEASE}_|-%{ARCH}_|-%{REPOID}' --disablerepo='*' --enablerepo='office,base,repo'  --all --quiet --whatprovides php
 php_|-5.3.3_|-40.el6_6_|-x86_64_|-base
 php_|-5.3.3_|-40.el6_6_|-x86_64_|-base
+
+
+7、关于 releasever 的问题
+有一次从 centos6 升级内核到 oracle uek 的 el6 的过程中，发现这样一个错误：
+[root@test yum.repos.d]# yum whatprovides redhat-release
+Loaded plugins: fastestmirror
+Loading mirror speeds from cached hostfile
+http://mirros.test.com/centos/%24releasever/os/x86_64/repodata/repomd.xml: [Errno 14] PYCURL ERROR 22 - "The requested URL returned error: 404 Not Found"
+Trying other mirror.
+Error: Cannot retrieve repository metadata (repomd.xml) for repository: base. Please verify its path and try again
+
+这是几个意思？
+%24releasever
+
+通过下述命令可以获得参数 releasever 的值：
+[root@test yum.repos.d]# rpm -qif /etc/redhat-release
+
+[root@test yum.repos.d]# /usr/bin/python -c 'import yum, pprint; yb = yum.YumBase(); pprint.pprint(yb.conf.yumvar, width=1)'
+Loaded plugins: fastestmirror
+{'arch': 'ia32e',
+ 'basearch': 'x86_64',
+ 'releasever': '6Server',
+ 'uuid': '94e7c860-deb5-4650-a5a6-7064c948f05c'}
+
+正常应该是$releasever
+在 centos6 下，这个值是 6
+在 el6 下，这个值是 6Server
+
+显然，这里有以下几个地方要调整：
+1）/etc/yum.conf
+distroverpkg=centos-release
+变更为：
+distroverpkg=redhat-release
+
+
+2）/etc/yum.repos.d/xxx.repo
+这里对应写入 $releasever 这个变量的 URL 都要检查一下 yum 源是否能正常访问。
+对应上面的实例就是：
+http://mirros.test.com/centos/%24releasever/os/x86_64/repodata/repomd.xml
+
+应该检查：
+http://mirros.test.com/centos/6Server/os/x86_64/repodata/repomd.xml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
