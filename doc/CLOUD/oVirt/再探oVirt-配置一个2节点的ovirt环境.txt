@@ -1,5 +1,5 @@
 再探oVirt-配置一个2节点的ovirt环境
-2016/9/7
+2016/11/15
 
 一、基础操作
 1、资源
@@ -463,37 +463,7 @@ echo 'datasource_list: ["NoCloud", "ConfigDrive"]' >>/etc/cloud/cloud.cfg
 
 6、封装为模版
 手动清理在创建虚拟机时可能导致冲突的配置
---- 清理cloud-init ---
-rm /var/lib/cloud -fr
-
---- 清理hostname ---
-cat <<'_EOF' >/etc/sysconfig/network
-NETWORKING=yes
-HOSTNAME=localhost.localdomain
-_EOF
-
---- 清理网卡相关 ---
-sed -i -e '/UUID/d' -e '/HWADDR/d' -e '/ONBOOT/d' -e '/BOOTPROTO/d' \
--e '/IPADDR/d' -e '/NETMASK/d' -e '/GATEWAY/d' \
--e '/TYPE=Ethernet/a\ONBOOT=no\nBOOTPROTO=dhcp' /etc/sysconfig/network-scripts/ifcfg-eth*
-
---- 清理ssh相关 ---
-rm -f /etc/ssh/ssh_host_*
-rm /root/.ssh -fr 
-
---- 清理log ---
-find /var/log -type f -delete
-find /root -type f ! -name ".*" -delete
-
-
---- 最后一步 ---
-手动配置（不想重置root密码和其他服务，如果通过sys-unconfig将会这样操作）
---- 清理 udev 和history ---
-rm /etc/udev/rules.d/*-persistent-*.rules -f
-history -c
-
---- 关机 ---
-# poweroff
+请参考：“初探oVirt-使用小结FAQ”
 
 
 

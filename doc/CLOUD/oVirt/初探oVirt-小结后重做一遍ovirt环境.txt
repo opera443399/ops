@@ -1,5 +1,5 @@
 初探oVirt-小结后重做一遍ovirt环境
-2016/10/19
+2016/11/15
 
 一、基础环境
 1、本次测试环境使用4台物理机来测试：n72, n73, n86, n93
@@ -254,41 +254,11 @@ server 2.asia.pool.ntp.org iburst \
 重启一次，测试一下ovirt页面对vm的控制是否生效。
 
 --- 安装 cloud-init ---
-请参考“初探oVirt-使用cloud-init”
+请参考：“初探oVirt-使用cloud-init”
 
 
 4、手动清理在创建虚拟机时可能导致冲突的配置
---- 清理cloud-init ---
-rm /var/lib/cloud -fr
-
---- 清理hostname ---
-cat <<'_EOF' >/etc/sysconfig/network
-NETWORKING=yes
-HOSTNAME=localhost.localdomain
-_EOF
-
---- 清理网卡相关 ---
-sed -i -e '/UUID/d' -e '/HWADDR/d' -e '/ONBOOT/d' -e '/BOOTPROTO/d' \
--e '/IPADDR/d' -e '/NETMASK/d' -e '/GATEWAY/d' \
--e '/TYPE=Ethernet/a\ONBOOT=no\nBOOTPROTO=dhcp' /etc/sysconfig/network-scripts/ifcfg-eth*
-
---- 清理ssh相关 ---
-rm -f /etc/ssh/ssh_host_*
-rm /root/.ssh -fr 
-
---- 清理log ---
-find /var/log -type f -delete
-find /root -type f ! -name ".*" -delete
-
-
---- 最后一步 ---
-手动配置（不想重置root密码和其他服务，如果通过sys-unconfig将会这样操作）
---- 清理 udev 和history ---
-rm /etc/udev/rules.d/*-persistent-*.rules -f
-history -c
-
---- 关机 ---
-# poweroff
+请参考：“初探oVirt-使用小结FAQ”
 
 
 

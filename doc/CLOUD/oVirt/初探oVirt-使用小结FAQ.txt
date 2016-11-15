@@ -1,5 +1,5 @@
 初探oVirt-使用小结FAQ
-2016/10/19
+2016/11/15
 
 
 【Q01】如何快速的部署 ovirt 环境
@@ -808,9 +808,10 @@ find /root -type f ! -name ".*" -delete
 
 
 --- 最后一步 ---
-手动配置（不想重置root密码和其他服务，如果通过sys-unconfig将会这样操作）
+（注：此处可以直接执行 sys-unconfig，这个工具除了清理udev，还将在下次启动时，启动几个服务，例如密码，网络，时间等配置，具体可以参考man的解释。由于本人不想重置root密码和其他服务，将采取下述操作来收尾）
 --- 清理 udev 和history ---
 rm /etc/udev/rules.d/*-persistent-*.rules -f
+echo >~/.bash_history
 history -c
 
 --- 关机 ---
@@ -854,8 +855,10 @@ find /var/log -type f -delete
 
 
 --- 最后一步 ---
-手动配置（不想重置root密码和其他服务，如果通过sys-unconfig将会这样操作）
---- 清理history ---
+（注：此处可以直接执行 sys-unconfig，这个工具除了清理udev，还将在下次启动时，启动几个服务，例如密码，网络，时间等配置，具体可以参考man的解释。由于本人不想重置root密码和其他服务，将采取下述操作来收尾）
+--- 清理 udev 和history ---
+rm /etc/udev/rules.d/*-persistent-*.rules -f
+echo >~/.bash_history
 history -c
 
 --- 关机 ---
