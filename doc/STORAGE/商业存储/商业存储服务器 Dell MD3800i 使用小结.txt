@@ -19,7 +19,7 @@
 操作系统：centos6.5
 
 2、配置 iscsi-initiator 服务来发现后端存储
-[root@vm200 ~]# yum install iscsi-initiator-utils
+[root@vm200 ~]# yum install iscsi-initiator-utils -y
 其常用的参数有：
  iscsiadm 
  -m, 同 --mode, 其选项有 discovery, node, fw（启动值）, host, iface（iSCSI 接口）和 session。
