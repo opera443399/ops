@@ -1,0 +1,345 @@
+初探OCFS2-配置服务
+2016/11/16
+
+一、认识
+据zstack的童鞋们介绍：OCFS2是主流对接 SAN 云存储的方式
+
+存储的选择，通常有以下方式：
+1、NAS
+1）NFS
+简单
+
+2）GlusterFS
+易懂
+
+2、IP SAN（iscsi）
+1）使用iscsiadm 发现一下 target 即可
+2）研究 ovirt 是如何使用 iscsi 存储的
+看到一个讨论ovirt通过lvm来使用iscsi的方式
+http://users.ovirt.narkive.com/XzD01akX/ovirt-users-shared-storage-with-iscsi
+
+按照字面意思，我的理解（未实验）是：
+a、每个 host 挂载 iscsi 存储
+b、通过 lvm 划分出 vm disk
+c、在运行了 vm 的 host 上 通过 lvchange 来激活指定的 vm disk 
+lvchange -ay vol_group/logical_vol
+
+3）通过 OCFS2 来访问存储
+这就是本文的初衷，接下来展开记录。
+
+
+二、配置
+1、准备安装 oracle uek 内核（因为新版本的 ocfs2 内核模块被 uek 整合了）
+[root@n149 ~]# wget http://public-yum.oracle.com/public-yum-ol6.repo -O /etc/yum.repos.d/public-yum-ol6.repo
+[root@n149 ~]# rpm --import http://public-yum.oracle.com/RPM-GPG-KEY-oracle-ol6
+[root@n149 ~]# yum install yum-plugin-downloadonly -y
+[root@n149 ~]# mkdir /tmp/ocfs2 && cd /tmp/ocfs2/
+[root@n149 ocfs2]# yum install --downloadonly --downloaddir=/tmp/ocfs2/ kernel-uek ocfs2-tools -y
+
+
+2、安装 uek
+[root@n149 ocfs2]# yum localinstall kernel-uek*
+使用新的内核，编辑 grub 调整启动顺序：
+[root@n149 ocfs2]# vim /etc/grub.conf
+重启系统后查看：
+[root@n149 ocfs2]# uname -r
+2.6.39-400.290.1.el6uek.x86_64
+
+查看 ocfs2 模块是否加载：
+[root@n149 ocfs2]# modprobe ocfs2
+[root@n149 ocfs2]# lsmod |grep oc
+ocfs2                1094439  0 
+ocfs2_nodemanager     223253  1 ocfs2
+configfs               29308  2 ocfs2_nodemanager
+ocfs2_stackglue        11896  1 ocfs2
+jbd2                   93114  2 ocfs2,ext4
+
+
+3、安装 ocfs2-tools
+[root@n149 ocfs2]# yum localinstall ocfs2-tools* -y
+
+
+4、配置 ocfs2 服务
+[root@n149 ~]# vim /etc/hosts
+10.50.200.149 n149.ocfs2.test
+10.50.200.150 n150.ocfs2.test
+
+
+[root@n149 ~]# service o2cb load
+checking debugfs...
+Mounting configfs filesystem at /sys/kernel/config: OK
+Loading stack plugin "o2cb": OK
+Loading filesystem "ocfs2_dlmfs": OK
+Creating directory '/dlm': OK
+Mounting ocfs2_dlmfs filesystem at /dlm: OK
+
+[root@n149 ~]# service o2cb online
+checking debugfs...
+Setting cluster stack "o2cb": OK
+Checking O2CB cluster configuration : Failed
+
+
+符合预期，继续配置集群：
+
+[root@n149 ~]# o2cb_ctl -C -n prdcluster -t cluster -a name=prdcluster
+[root@n149 ~]# o2cb_ctl -C -n n149.ocfs2.test -t node -a number=0 -a ip_address=10.50.200.149 -a ip_port=11111 -a cluster=prdcluster
+[root@n149 ~]# o2cb_ctl -C -n n150.ocfs2.test -t node -a number=1 -a ip_address=10.50.200.150 -a ip_port=11111 -a cluster=prdcluster
+[root@n149 ~]# cat /etc/ocfs2/cluster.conf 
+node:
+        name = n149.ocfs2.test
+        cluster = prdcluster
+        number = 0
+        ip_address = 10.50.200.149
+        ip_port = 11111
+
+node:
+        name = n150.ocfs2.test
+        cluster = prdcluster
+        number = 1
+        ip_address = 10.50.200.150
+        ip_port = 11111
+
+cluster:
+        name = prdcluster
+        heartbeat_mode = local
+        node_count = 2
+
+        
+[root@n149 ~]# service o2cb configure
+[root@n149 ~]# service o2cb online
+
+上述操作，在每个节点上执行。
+其他可选操作：
+[root@n149 ~]# service o2cb status       
+Driver for "configfs": Loaded
+Filesystem "configfs": Mounted
+Stack glue driver: Loaded
+Stack plugin "o2cb": Loaded
+Driver for "ocfs2_dlmfs": Loaded
+Filesystem "ocfs2_dlmfs": Mounted
+Checking O2CB cluster "prdcluster": Online
+  Heartbeat dead threshold: 31
+  Network idle timeout: 30000
+  Network keepalive delay: 2000
+  Network reconnect delay: 2000
+  Heartbeat mode: Local
+Checking O2CB heartbeat: Not active
+Debug file system at /sys/kernel/debug: mounted
+
+
+另外：确认防火墙放行了对应的端口，本例是 tcp port 11111
+
+
+5、配置 iscsi 存储
+[root@n149 ocfs2]# iscsiadm -m discovery -t st -p 10.50.200.41
+[root@n149 ocfs2]# iscsiadm -m node -o delete -T iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea -p 192.168.131.101
+[root@n149 ocfs2]# iscsiadm -m node -o delete -T iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea -p 192.168.131.102
+[root@n149 ocfs2]# iscsiadm -m node -T iqn.1984-05.com.dell:powervault.md3800i.600a098000a64d8b0000000057a152ea --login
+[root@n149 ocfs2]# yum install device-mapper-multipath -y
+[root@n149 ocfs2]# modprobe dm-multipath
+[root@n149 ocfs2]# mpathconf
+[root@n149 ocfs2]# cat /etc/multipath.conf
+defaults {
+    path_grouping_policy    multibus
+    path_checker            readsector0
+    rr_min_io_rq            10
+    max_fds                 8192
+    rr_weight               priorities
+    failback                immediate
+    no_path_retry           fail
+    user_friendly_names     yes
+}
+
+multipaths {
+    multipath {
+        wwid                    3600a098000a64d8b000002a4582305f8
+        alias                   test_block_a
+    }
+}
+[root@n149 ocfs2]# service multipathd start
+[root@n149 ocfs2]# chkconfig multipathd on
+[root@n149 ocfs2]# multipath -ll
+test_block_a (3600a098000a64d8b000002a4582305f8) dm-0 DELL,MD38xxi
+size=100G features='0' hwhandler='0' wp=rw
+`-+- policy='round-robin 0' prio=1 status=active
+  |- 4:0:0:0 sda 8:0   active ready  running
+  `- 5:0:0:0 sdb 8:16  active ready  running
+  
+
+6、使用 iscsi 存储
+挂载参数请参考：man mkfs.ocfs2
+
+[root@n149 ~]# mkfs.ocfs2 -b 4K -C 64K -L testblocka -T datafiles -F /dev/mapper/test_block_a
+mkfs.ocfs2 1.8.6
+Cluster stack: classic o2cb
+Overwriting existing ocfs2 partition.
+WARNING: Cluster check disabled.
+Proceed (y/N): y
+Filesystem Type of datafiles
+Label: testblocka
+Features: sparse extended-slotmap backup-super unwritten inline-data strict-journal-super xattr indexed-dirs refcount discontig-bg
+Block size: 4096 (12 bits)
+Cluster size: 65536 (16 bits)
+Volume size: 107374182400 (1638400 clusters) (26214400 blocks)
+Cluster groups: 51 (tail covers 25600 clusters, rest cover 32256 clusters)
+Extent allocator size: 41943040 (10 groups)
+Journal size: 33554432
+Node slots: 8
+Creating bitmaps: done
+Initializing superblock: done
+Writing system files: done
+Writing superblock: done
+Writing backup superblock: 4 block(s)
+Formatting Journals: done
+Growing extent allocator: done
+Formatting slot map: done
+Formatting quota files: done
+Writing lost+found: done
+mkfs.ocfs2 successful
+
+[root@n149 ~]# cat <<_EOF >>/etc/fstab
+/dev/mapper/test_block_a        /mnt/tba        ocfs2   defaults        0 0
+_EOF
+[root@n149 ~]# mkdir /mnt/tba
+[root@n149 ~]# mount -a
+[root@n149 ~]# df -h /mnt/tba
+Filesystem                Size  Used Avail Use% Mounted on
+/dev/mapper/test_block_a  100G  586M  100G   1% /mnt/tba
+
+
+在另一个节点上执行：
+[root@n150 ~]# cat <<_EOF >>/etc/fstab
+/dev/mapper/test_block_a        /mnt/tba        ocfs2   defaults        0 0
+_EOF
+[root@n150 ~]# mkdir /mnt/tba
+[root@n150 ~]# mount -a
+[root@n150 ~]# df -h /mnt/tba
+Filesystem                Size  Used Avail Use% Mounted on
+/dev/mapper/test_block_a  100G  586M  100G   1% /mnt/tba
+
+
+查看对应的日志：
+Nov 16 13:46:01 n149 kernel: o2hb: Heartbeat mode set to local
+Nov 16 13:46:01 n149 o2hbmonitor: Starting
+Nov 16 13:47:42 n149 kernel: OCFS2 1.8.0
+Nov 16 13:47:43 n149 kernel: o2dlm: Joining domain 55663D9EA9B0466D80626459E2B6AE9B ( 1 ) 1 nodes
+Nov 16 13:47:43 n149 kernel: ocfs2: Mounting device (251,0) on (node 1, slot 0) with ordered data mode.
+Nov 16 13:48:16 n149 kernel: o2net: Connection to node n150.ocfs2.test (num 0) at 10.50.200.150:11111 shutdown, state 7
+Nov 16 13:48:18 n149 kernel: o2net: Connected to node n150.ocfs2.test (num 0) at 10.50.200.150:11111
+Nov 16 13:48:22 n149 kernel: o2dlm: Node 0 joins domain 55663D9EA9B0466D80626459E2B6AE9B ( 0 1 ) 2 nodes
+
+
+Nov 16 13:45:43 n150 kernel: o2hb: Heartbeat mode set to local
+Nov 16 13:45:43 n150 o2hbmonitor: Starting
+Nov 16 13:48:18 n150 kernel: o2net: Accepted connection from node n149.ocfs2.test (num 1) at 10.50.200.149:11111
+Nov 16 13:48:22 n150 kernel: OCFS2 1.8.0
+Nov 16 13:48:22 n150 kernel: o2dlm: Joining domain 55663D9EA9B0466D80626459E2B6AE9B ( 0 1 ) 2 nodes
+Nov 16 13:48:22 n150 kernel: ocfs2: Mounting device (251,0) on (node 0, slot 1) with ordered data mode.
+
+
+2个节点的 heartbeat 的状态也都变成了 Active
+[root@n149 ~]# service o2cb status 
+Driver for "configfs": Loaded
+Filesystem "configfs": Mounted
+Stack glue driver: Loaded
+Stack plugin "o2cb": Loaded
+Driver for "ocfs2_dlmfs": Loaded
+Filesystem "ocfs2_dlmfs": Mounted
+Checking O2CB cluster "prdcluster": Online
+  Heartbeat dead threshold: 31
+  Network idle timeout: 30000
+  Network keepalive delay: 2000
+  Network reconnect delay: 2000
+  Heartbeat mode: Local
+Checking O2CB heartbeat: Active
+Debug file system at /sys/kernel/debug: mounted
+
+
+7、测试文件读写
+【2个节点同时写一个文件】
+[root@n149 ~]# for i in `seq 1 9`;do echo "`hostname` -> [`date`]" >>/mnt/tba/1.log;sleep 1s;done
+[root@n150 ~]# for i in `seq 1 9`;do echo "`hostname` -> [`date`]" >>/mnt/tba/1.log;sleep 1s;done
+[root@n149 ~]# cat /mnt/tba/1.log   
+
+n149.ocfs2.test -> [Wed Nov 16 13:55:20 CST 2016]
+n150.ocfs2.test -> [Wed Nov 16 13:55:21 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:55:21 CST 2016]
+n150.ocfs2.test -> [Wed Nov 16 13:55:22 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:55:22 CST 2016]
+n150.ocfs2.test -> [Wed Nov 16 13:55:23 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:55:23 CST 2016]
+n150.ocfs2.test -> [Wed Nov 16 13:55:24 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:55:24 CST 2016]
+n150.ocfs2.test -> [Wed Nov 16 13:55:25 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:55:25 CST 2016]
+n150.ocfs2.test -> [Wed Nov 16 13:55:26 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:55:26 CST 2016]
+n150.ocfs2.test -> [Wed Nov 16 13:55:27 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:55:27 CST 2016]
+n150.ocfs2.test -> [Wed Nov 16 13:55:28 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:55:28 CST 2016]
+n150.ocfs2.test -> [Wed Nov 16 13:55:29 CST 2016]
+结论：符合预期。
+
+
+【一个节点写，另一个节点读】
+[root@n149 ~]# for i in `seq 1 9`;do echo "`hostname` -> [`date`]" >>/mnt/tba/1.log;sleep 1s;done
+[root@n150 ~]# tail -f /mnt/tba/1.log 
+
+n149.ocfs2.test -> [Wed Nov 16 13:57:42 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:57:43 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:57:44 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:57:45 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:57:46 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:57:47 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:57:48 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:57:49 CST 2016]
+n149.ocfs2.test -> [Wed Nov 16 13:57:50 CST 2016]
+^C
+结论：符合预期。
+
+
+
+
+
+
+
+
+
+三、问题解释
+1、cluster 处于 Offline 的状态
+[root@n150 ~]# mount -a
+mount.ocfs2: Internal logic failure while trying to join the group
+[root@n150 ~]# service o2cb status       
+Checking O2CB cluster "prdcluster": Offline
+
+则请检查各节点的域名是否能正常解析，ocfs2 要用到 hostname 来提供服务。有一种情况是：
+上述节点的 hostname 为：
+n149.test.com
+n150.test.com
+而配置 ocfs2 是在 hosts 中写死了：
+10.50.200.149 n149.ocfs2.test
+10.50.200.150 n150.ocfs2.test
+
+而实际上，ocfs2 使用的却是 hostname，因而节点之间的连接异常。
+
+
+2、heartbeat 处于 Not active 状态
+挂载卷后 heartbeat 才会启动，因此，先操作后再观察。
+
+
+
+
+ZYXW、参考
+1、[ovirt-users] shared storage with iscsi
+http://users.ovirt.narkive.com/XzD01akX/ovirt-users-shared-storage-with-iscsi
+2、Linux : Oracle unbreakable kernel and OCFS2 on CentOS/RHEL6
+http://www.itechlounge.net/2014/08/linux-oracle-unbreakable-kernel-and-ocfs2-on-centosrhel6/
+3、Oracle Linux 6: Create an OCFS2 Cluster and Filesystem
+https://www.itfromallangles.com/2013/03/oracle-linux-6-create-an-ocfs2-cluster-and-filesystem/
+4、Installing And Configuring An OCFS2 Clustered File System
+http://www.shapeblue.com/installing-and-configuring-an-ocfs2-clustered-file-system/
+5、解决o2cb status时状态始终为offline(o2cb_ctl: Internal logic failure failed while adding RAC1)
+http://www.blogjava.net/KingKong/archive/2011/06/06/351826.html
+6、O2CB heartbeat: Not active
+https://oss.oracle.com/pipermail/ocfs2-users/2009-April/003477.html
