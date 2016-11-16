@@ -1,12 +1,14 @@
-��������centos6.6���ں˵�oracle uek�ں�
+更换 centos6 的内核为 oracle uek 内核
+2016/11/16
 
-�ο���http://www.tuicool.com/articles/IRbU3e
+一、使用 oracle 提供的脚本完整替换
+参考：http://www.tuicool.com/articles/IRbU3e
 
 [root@svr205-7 ~]# curl -O https://linux.oracle.com/switch/centos2ol.sh
 [root@svr205-7 ~]# sh centos2ol.sh
 [root@svr205-7 ~]# yum upgrade
 
-oh yeah��������ϣ�ע��upgrade��ʱ�򣬴��̿ռ�Ҫ�㹻��
+oh yeah，升级完毕，注意upgrade的时候，磁盘空间要足够。
 
 [root@svr205-7 ~]# rpm -qif /etc/redhat-release 
 Name        : oraclelinux-release          Relocations: (not relocatable)
@@ -51,4 +53,27 @@ title CentOS (2.6.32-431.el6.x86_64)
         root (hd0,0)
         kernel /vmlinuz-2.6.32-431.el6.x86_64 ro root=/dev/mapper/vg_svr2057-lv_root rd_NO_LUKS LANG=en_US.UTF-8 rd_NO_MD rd_LVM_LV=vg_svr2057/lv_swap SYSFONT=latarcyrheb-sun16 crashkernel=auto rd_LVM_LV=vg_svr2057/lv_root  KEYBOARDTYPE=pc KEYTABLE=us rd_NO_DM rhgb quiet
         initrd /initramfs-2.6.32-431.el6.x86_64.img
+
+
+问题：如果脚本执行失败（如遇到yum源相关的异常），可能比较麻烦，因为脚本中卸载掉了旧的内核版本的一些依赖包，请引起重视。
+
+
+
+二、仅更换一个内核
+1）准备安装 oracle uek 内核
+[root@test ~]# wget http://public-yum.oracle.com/public-yum-ol6.repo -O /etc/yum.repos.d/public-yum-ol6.repo
+[root@test ~]# rpm --import http://public-yum.oracle.com/RPM-GPG-KEY-oracle-ol6
+[root@test ~]# yum install yum-plugin-downloadonly -y
+[root@test ~]# yum install --downloadonly --downloaddir=/tmp/ kernel-uek -y
+
+
+2）安装 uek
+[root@test ~]# cd /tmp
+[root@test tmp]# yum localinstall kernel-uek*
+使用新的内核，编辑 grub 调整启动顺序：
+[root@test tmp]# vim /etc/grub.conf
+重启系统后查看：
+[root@test tmp]# uname -r
+2.6.39-400.290.1.el6uek.x86_64
+
 
