@@ -70,6 +70,13 @@ Geo-points 不适用 dynamic mapping 因此这类项目需要显式的指定：
 默认使用的 WMS 服务(Elastic Tile Services)可能不合心意，此时，可以在 Visualize 界面选择：“Options -> WMS compliant map server”，使用其他的 WMS 服务。
 问题的关键变成，哪里有 WMS 服务？自己架设一个还是有现成的？
 
+默认的配置是：
+[root@vm220 ~]# /opt/kibana/bin/kibana -V 
+4.6.1
+[root@vm220 ~]# cat /opt/kibana/src/ui/public/config/defaults.js |grep -i wms
+      'visualization:tileMap:WMSdefaults': {
+          url: 'https://basemap.nationalmap.gov/arcgis/services/USGSTopo/MapServer/WMSServer',
+        description: 'Default properties for the WMS map server support in the tile map'
 
 
 
