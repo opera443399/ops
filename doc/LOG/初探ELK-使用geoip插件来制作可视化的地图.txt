@@ -1,0 +1,94 @@
+初探ELK-使用geoip插件来制作可视化的地图
+2016/11/17
+
+一、前提
+1、本次操作是在前述文章的基础上添砖加瓦。
+2、思路
+1）通过 logstash 将 clientip 识别成 geoip.location 等数据
+2）然后更新 ES 的模版，标记 geoip.location 这个 properties 的 type 为 geo_point
+3）最后在 kibana 上选择 "Visualize -> Tile Map"，指定一个 search，选择 buckerts 为 geo_point 类型的 properties 即可展示。
+
+二、配置
+1、logstash 配置的调整
+[root@vm220 ~]# cd /etc/logstash/
+[root@vm220 logstash]# curl -O "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
+[root@vm220 logstash]# gunzip GeoLiteCity.dat.gz
+[root@vm220 logstash]# vim conf.d/filebeat.conf
+
+调整 filter 这一段，增加 geoip 插件：
+filter {
+（略）
+    if[type] =~ "NginxAccess-" {
+        grok {
+            patterns_dir => ["/etc/logstash/patterns.d"]
+            match => {
+                "message" => "%{NGINXACCESS}"
+            }
+        }
+        date {
+            match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
+            remove_field => [ "timestamp" ]
+        }
+        geoip {
+            source => "clientip"
+            target => "geoip"
+            database => "/etc/logstash/GeoLiteCity.dat"
+        }
+    }
+（略）
+}
+
+
+[root@vm220 logstash]# service logstash restart
+
+
+2、 ES 模版的调整
+Geo-points 不适用 dynamic mapping 因此这类项目需要显式的指定：
+本例需要将 geoip.location 指定为 geo_point 类型，则在模版的 properties 中增加一个项目，如下所示：
+[root@vm220 ~]# vim /tmp/elasticsearch.template.filebeat.json 
+        "geoip" : {
+          "properties" : {
+            "location" : {
+              "type" : "geo_point",
+              "index": "not_analyzed"
+            }
+          }
+        }
+[root@vm220 ~]# curl -XPUT 'http://localhost:9200/_template/filebeat?pretty' -d@/tmp/elasticsearch.template.filebeat.json
+清理一下之前生成的 index 重新生成内容 filebeat-* 匹配的所有 index
+[root@vm220 ~]# curl -XDELETE 'http://localhost:9200/filebeat-*?pretty'
+
+
+
+3、 kibana 页面的调整
+在 kibana 上选择 "Settings -> Indices"，找到指定的 Index Patterns 后，选择：“reflesh field list” 操作。
+查看 Discover 页面，可以发现一组 geoip 相关的 field，据此可以保存一个 search 用于创建 Tile Map 来展示。
+
+
+三、问题
+1、如何改变 WMS 服务
+默认使用的 WMS 服务(Elastic Tile Services)可能不合心意，此时，可以在 Visualize 界面选择：“Options -> WMS compliant map server”，使用其他的 WMS 服务。
+问题的关键变成，哪里有 WMS 服务？自己架设一个还是有现成的？
+
+
+
+
+
+
+
+
+ZYXW、参考
+1、elastic docs
+https://www.elastic.co/guide/en/elasticsearch/guide/current/geopoints.html
+https://www.elastic.co/guide/en/kibana/current/tilemap.html
+2、Mapping Cityname to GeoPoint from Logstash to Elasticsearch
+http://stackoverflow.com/questions/32779269/mapping-cityname-to-geopoint-from-logstash-to-elasticsearch
+3、How To Map User Location with GeoIP and ELK (Elasticsearch, Logstash, and Kibana)
+https://www.digitalocean.com/community/tutorials/how-to-map-user-location-with-geoip-and-elk-elasticsearch-logstash-and-kibana
+
+
+
+
+
+
+
