@@ -1,6 +1,7 @@
-NFS服务
+NFS服务使用小结
+2016/11/18
 本处以配置ovirt用到的NFS服务为例，示例如何配置NFS服务，或有不对，后续将更新。
-2016/6/7
+
 
 一、配置NFS服务
 1）安装服务
@@ -83,7 +84,7 @@ fuser -mv /home/web/upload/phonerecord
 或者：
 umount -l，在空闲时会自动umount掉。
 
-如果挂载时，在客户端和服务端都出现所有者为nobody或者4294967294 的情况，则需要启动nfs相关服务，重点是rpcidmapd这个服务。
+
 
 3、对比调整前后端口的变化。
 【调整前】
@@ -152,12 +153,16 @@ umount -l，在空闲时会自动umount掉。
     100021    3   tcp  32803  nlockmgr
     100021    4   tcp  32803  nlockmgr
 
-4、挂载时，用户权限为 nobody 的问题。
-最简单的方式是使用 nfs v3 版本：
+4、挂载时，在客户端和服务端都出现所有者为 nobody 或者 4294967294 的情况，则需要启动nfs相关服务，重点是 rpcidmapd 这个服务。
+1）最简单的方式是使用 nfs v3 版本：
 mount -t nfs -o vers=3 ip:/test /data
 
-还有一种方式是调整 nfs v4 的 idmapped 服务的配置。
-参考：
+2）还有一种方式是针对 nfs v4 的使用，要启用 idmapped 服务
+service rpcidmapd start
+chkconfig rpcidmapd on
+
+
+ZYXW、参考
 http://my.oschina.net/panzhc/blog/191663
 http://lyp.cn/161_nfs-nobody
 http://longgeek.com/2012/07/18/rhel-centos-fedora-third-party-software-library-pbone-epel-rpmforge-rpmfusion-using-the-configuration/
