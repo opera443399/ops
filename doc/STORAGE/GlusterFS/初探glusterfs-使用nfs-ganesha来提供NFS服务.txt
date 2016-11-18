@@ -49,6 +49,7 @@ EXPORT
 
 2、启用服务
 [root@n57 ~]# service nfs-ganesha start
+[root@n57 ~]# chkconfig nfs-ganesha on
 
 3、挂载测试
 [root@n57 ~]# showmount -e localhost
@@ -67,7 +68,7 @@ tmpfs              1.9G     0  1.9G   0% /dev/shm
 符合预期。
 
 
-三、多节点提供HA的NFS服务
+三、尝试使用 corosync+pacemaker 组成的集群来做 NFS 的 HA
 1、准备工作
 1）hosts解析
 ~]# cat /etc/hosts |grep n5
@@ -178,13 +179,60 @@ Export list for localhost:
 
 
 
-四、使用 ctdb 来做 HA
-1、【启用共享存储，供3个节点存储共享数据】
+四、尝试使用 ctdb 来做 NFS 的 HA
+1、启用共享存储，供3个节点存储共享数据
 [root@n57 ~]# gluster volume set all cluster.enable-shared-storage enable
 [root@n57 ~]# df -h |grep glust
 10.50.200.57:/gluster_shared_storage   18G  2.9G   14G  18% /var/run/gluster/shared_storage
 
-2、配置 ctdb
+2、配置 nfs-ganesha 服务
+1）安装
+[root@n57 ~]# yum install nfs-ganesha* -y
+
+2）配置
+[root@n57 ~]# cat /etc/ganesha/ganesha.conf 
+%include "/etc/ganesha/conf.d/export.gvtest.conf"
+
+[root@n57 ~]# cat /etc/ganesha/conf.d/export.gvtest.conf 
+EXPORT
+{
+        Export_Id = 1 ;   # Export ID unique to each export
+        Path = "/gvtest";  # Path of the volume to be exported. Eg: "/test_volume"
+
+        FSAL {
+        name = GLUSTER;
+        hostname = "localhost";  # IP of one of the nodes in the trusted pool
+        volume = "gvtest";  # Volume name. Eg: "test_volume"
+        }
+
+        Access_type = RW;    # Access permissions
+        Squash = No_root_squash; # To enable/disable root squashing
+        Disable_ACL = TRUE;  # To enable/disable ACL
+        Pseudo = "/gvtest";  # NFSv4 pseudo path for this export. Eg: "/test_volume_pseudo"
+        Protocols = "3","4" ;    # NFS protocols supported
+        Transports = "UDP","TCP" ; # Transport protocols supported
+        SecType = "sys";     # Security flavors supported
+
+}
+
+
+3）启用服务
+[root@n57 ~]# service nfs-ganesha start
+[root@n57 ~]# chkconfig nfs-ganesha on
+
+4）挂载测试
+[root@n57 ~]# showmount -e localhost
+Export list for n57:
+/gvtest (everyone)
+
+[root@n57 ~]# mount 127.0.0.1:/gvtest /mnt
+[root@n57 ~]# df -h |grep gvtest
+127.0.0.1:/gvtest   18G  2.5G   15G  15% /mnt
+
+符合预期。
+
+
+3、配置 ctdb
 [root@n57 ~]# grep ^[^#] /etc/sysconfig/ctdb
 CTDB_RECOVERY_LOCK="/var/run/gluster/shared_storage/ctdb_recovery_lock"     # 这里指向共享存储
 CTDB_PUBLIC_INTERFACE=eth1                                                  # 这里指定网卡
@@ -202,7 +250,6 @@ CTDB_DEBUGLEVEL=ERR
 
 其他2个节点的配置一致。
 
-3、启动 ctdb
 [root@n57 ~]# service ctdb start
 稍等几秒：
 [root@n57 ~]# ctdb ip
@@ -222,7 +269,7 @@ hash:2 lmaster:2
 Recovery mode:NORMAL (0)
 Recovery master:0
 
-[root@sz-local-vm59 ganesha]# ctdb getcapabilities
+[root@n57 ganesha]# ctdb getcapabilities
 RECMASTER: YES
 LMASTER: YES
 LVS: NO
@@ -241,8 +288,8 @@ Export list for 10.50.200.97:
 
 4、测试
 测试机：
-[root@sz-local-vm42 ~]# mount 10.50.200.97:/gvtest /mnt
-[root@sz-local-vm42 ~]# while true; do echo `date +%T` >>/mnt/record.log;sleep 1s;done
+[root@n42 ~]# mount 10.50.200.97:/gvtest /mnt
+[root@n42 ~]# while true; do echo `date +%T` >>/mnt/record.log;sleep 1s;done
 
 
 n57意外下线：
@@ -256,10 +303,10 @@ n57意外下线：
 结论1：中断了63s，有优化的空间。
 
 
-[root@sz-local-vm59 ganesha]# ctdb ip
+[root@n57 ganesha]# ctdb ip
 Public IPs on node 2
 10.50.200.97 node[1] active[] available[eth1] configured[eth1]
-[root@sz-local-vm59 ganesha]# ctdb status
+[root@n57 ganesha]# ctdb status
 Number of nodes:3
 pnn:0 10.50.200.57    BANNED|UNHEALTHY|INACTIVE
 pnn:1 10.50.200.58    OK
@@ -272,7 +319,7 @@ Recovery mode:NORMAL (0)
 Recovery master:1
 
 n57上线后：
-[root@sz-local-vm59 ganesha]# ctdb status
+[root@n57 ganesha]# ctdb status
 Number of nodes:3
 pnn:0 10.50.200.57    OK
 pnn:1 10.50.200.58    OK
@@ -284,7 +331,7 @@ hash:1 lmaster:1
 hash:2 lmaster:2
 Recovery mode:NORMAL (0)
 Recovery master:1
-[root@sz-local-vm59 ganesha]# ctdb ip    
+[root@n57 ganesha]# ctdb ip    
 Public IPs on node 2
 10.50.200.97 node[0] active[] available[eth1] configured[eth1]
 
@@ -303,7 +350,7 @@ Public IPs on node 2
 
 
 
-五、问题
+5、问题
 1、读写过程中，数据不一致，存在延迟的问题。
 场景1：
 客户端 A 通过 mount -t nfs 挂载节点 n1 的 nfs-ganesha 服务来读写文件；

@@ -1,0 +1,69 @@
+初探nfs-ganesha
+2016/11/18
+
+1、使用方式
+通过 nfs-ganesha 来输出 nfs 服务。
+可以支持多种后端存储，详情请参考：
+https://github.com/nfs-ganesha/nfs-ganesha/wiki/Fsalsupport
+
+本例示范的是 VFS 类型，glusterfs 类型的请参考该分类下的文档。
+
+1）安装
+[root@n57 ~]# yum install nfs-ganesha* -y
+
+
+2）配置
+[root@n57 ~]# vim /etc/ganesha/ganesha.conf 
+%include "/etc/ganesha/conf.d/export.upload.conf"
+
+[root@n57 ~]# mkdir /etc/ganesha/conf.d
+[root@n57 ~]# vim /etc/ganesha/conf.d/export.upload.conf
+EXPORT
+{
+        # Export Id (mandatory, each EXPORT must have a unique Export_Id)
+        Export_Id = 77;
+
+        # Exported path (mandatory)
+        Path = /mnt/tba;
+
+        # Pseudo Path (required for NFS v4)
+        Pseudo = /upload;
+
+        # Required for access (default is None)
+        # Could use CLIENT blocks instead
+        Access_Type = RW;
+
+        # Exporting FSAL
+        FSAL {
+                Name = VFS;
+        }
+}
+
+
+3）启用服务
+[root@n57 ~]# service rpcbind start
+[root@n57 ~]# service nfs-ganesha start
+
+查看日志：
+[root@n57 ~]# tail /var/log/ganesha.log |grep NFS
+18/11/2016 10:29:35 : epoch 582e678f : n57.test.com : ganesha.nfsd-4530[reaper] nfs_in_grace :STATE :EVENT :NFS Server Now IN GRACE
+18/11/2016 10:29:35 : epoch 582e678f : n57.test.com : ganesha.nfsd-4530[main] nfs_start :NFS STARTUP :EVENT :-------------------------------------------------
+18/11/2016 10:29:35 : epoch 582e678f : n57.test.com : ganesha.nfsd-4530[main] nfs_start :NFS STARTUP :EVENT :             NFS SERVER INITIALIZED
+18/11/2016 10:29:35 : epoch 582e678f : n57.test.com : ganesha.nfsd-4530[main] nfs_start :NFS STARTUP :EVENT :-------------------------------------------------
+
+确认日志无异常。
+
+[root@n57 ~]# chkconfig nfs-ganesha on
+
+4）挂载测试
+[root@n57 ~]# showmount -e localhost
+Export list for localhost:
+/mnt/tba (everyone)
+
+[root@n57 ~]# mount 127.0.0.1:/upload /media
+[root@n57 ~]# df -h |grep media
+127.0.0.1:/upload   18G  2.5G   15G  15% /media
+[root@n57 ~]# cat /etc/mtab  |grep upload
+127.0.0.1:/upload /media nfs rw,vers=4,addr=127.0.0.1,clientaddr=127.0.0.1 0 0
+
+默认使用的是 nfs-v4 来挂载，符合预期。
