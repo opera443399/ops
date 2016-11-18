@@ -55,7 +55,7 @@ EXPORT
 
 [root@n57 ~]# chkconfig nfs-ganesha on
 
-4）挂载测试
+4）本机挂载测试
 [root@n57 ~]# showmount -e localhost
 Export list for localhost:
 /mnt/tba (everyone)
@@ -67,3 +67,39 @@ Export list for localhost:
 127.0.0.1:/upload /media nfs rw,vers=4,addr=127.0.0.1,clientaddr=127.0.0.1 0 0
 
 默认使用的是 nfs-v4 来挂载，符合预期。
+
+5）其他客户端挂载测试
+因为是 nfs-v4 则需要考虑启用 rpcidmap 服务（可参考：“NFS服务使用小结”）
+示例：
+[root@n34 ~]# yum install rpcbind nfs-utils
+[root@n34 ~]# mount 10.50.200.57:/upload /media/
+[root@n34 ~]# ll /media/
+-rw-r--r-- 1 4294967294 4294967294  451 Nov 16 13:57 1.log
+drwxr-xr-x 2 4294967294 4294967294 3896 Nov 16 10:55 lost+found
+[root@n34 ~]# umount /media/
+
+[root@n34 ~]# service rpcidmapd start
+[root@n34 ~]# mount 10.50.200.57:/upload /media/
+[root@n34 ~]# ll /media/
+total 5
+-rw-r--r-- 1 root root  451 Nov 16 13:57 1.log
+drwxr-xr-x 2 root root 3896 Nov 16 10:55 lost+found
+
+
+否则请使用 nfs-v3 这个版本来规避 id 映射导致的权限问题。同时还要注意一点，v4的版本挂载点可以使用 Pseudo Path，而 v3 的版本则不行：
+[root@n34 ~]# umount /media
+[root@n34 ~]# service rpcidmapd stop
+[root@n34 ~]# mount -o vers=3 10.50.200.57:/mnt/tba /media/
+[root@n34 ~]# ll /media/
+total 5
+-rw-r--r-- 1 root root  451 Nov 16 13:57 1.log
+drwxr-xr-x 2 root root 3896 Nov 16 10:55 lost+found
+[root@n34 ~]# umount /media
+
+
+
+
+
+
+
+
