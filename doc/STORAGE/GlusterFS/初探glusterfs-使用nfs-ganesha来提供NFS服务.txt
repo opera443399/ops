@@ -1,5 +1,5 @@
 初探glusterfs-使用nfs-ganesha来提供NFS服务
-2016/11/7
+2016/11/17
 
 一、基础
 1、glusterfs官方建议使用 nfs-ganesha 来提供 nfs 服务
@@ -179,20 +179,17 @@ Export list for localhost:
 
 
 四、使用 ctdb 来做 HA
-1、配置 glusterfs 服务，提供一个卷给 ctdb 做共享卷
-[root@n57 ~]# gluster volume create ctdb_config replica 3 transport tcp 10.50.200.57:/data/abc/ctdb.d 10.50.200.58:/data/abc/ctdb.d 10.50.200.59:/data/abc/ctdb.d
-[root@n57 ~]# gluster volume start ctdb_config
-
-【启用共享存储，供3个节点存储共享数据】
+1、【启用共享存储，供3个节点存储共享数据】
 [root@n57 ~]# gluster volume set all cluster.enable-shared-storage enable
-
+[root@n57 ~]# df -h |grep glust
+10.50.200.57:/gluster_shared_storage   18G  2.9G   14G  18% /var/run/gluster/shared_storage
 
 2、配置 ctdb
 [root@n57 ~]# grep ^[^#] /etc/sysconfig/ctdb
-CTDB_RECOVERY_LOCK="/opt/ctdb_config/ctdb_recovery_lock"    # 这里指向共享存储
-CTDB_PUBLIC_INTERFACE=eth1                                  # 这里指定网卡
-CTDB_PUBLIC_ADDRESSES=/etc/ctdb/public_addresses            # 这里列出 vip
-CTDB_NODES=/etc/ctdb/nodes                                  # 这里列出 ctdb nodes
+CTDB_RECOVERY_LOCK="/var/run/gluster/shared_storage/ctdb_recovery_lock"     # 这里指向共享存储
+CTDB_PUBLIC_INTERFACE=eth1                                                  # 这里指定网卡
+CTDB_PUBLIC_ADDRESSES=/etc/ctdb/public_addresses                            # 这里列出 vip
+CTDB_NODES=/etc/ctdb/nodes                                                  # 这里列出 ctdb nodes
 CTDB_DEBUGLEVEL=ERR
 
 
