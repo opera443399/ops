@@ -1,12 +1,12 @@
 初探ELK-使用geoip插件来制作可视化的地图
-2016/11/17
+2016/11/21
 
 一、前提
 1、本次操作是在前述文章的基础上添砖加瓦。
 2、思路
 1）通过 logstash 将 clientip 识别成 geoip.location 等数据
 2）然后更新 ES 的模版，标记 geoip.location 这个 properties 的 type 为 geo_point
-3）最后在 kibana 上选择 "Visualize -> Tile Map"，指定一个 search，选择 buckerts 为 geo_point 类型的 properties 即可展示。
+3）最后在 kibana 上选择 "Visualize -> Tile Map"，指定一个 search，选择 buckets 为 geo_point 类型的 properties 即可展示。
 
 二、配置
 1、logstash 配置的调整
