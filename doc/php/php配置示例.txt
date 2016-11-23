@@ -1,0 +1,46 @@
+php配置示例
+
+2016/11/23
+
+1、限制上传大小
+调整  php 的配置为：
+post_max_size = 512M
+upload_max_filesize = 512M
+
+调整  nginx 的配置为：
+client_max_body_size 512m;
+
+
+2、启用 pathinfo 模式
+由于 thinkphp 要使用 pathinfo 模式，则 nginx 需调整配置如下：
+
+    location / {
+        root   /data/www/v.test.com/public;
+        index  index.php index.html index.htm;
+        if (!-e $request_filename) {
+          rewrite  ^/(.*)$  /index.php/$1  last;
+          break;
+        }
+    }
+    
+    location ~ \.php {
+        root   /data/www/v.test.com/public;
+        fastcgi_pass   127.0.0.1:9000;
+        fastcgi_index  index.php;
+        fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+        include        fastcgi_params;
+        set $path_info "";
+        set $real_script_name $fastcgi_script_name;
+        if ($fastcgi_script_name ~ "^(.+?\.php)(/.+)$") {
+            set $real_script_name $1;
+            set $path_info $2;
+        }
+        fastcgi_param SCRIPT_FILENAME $document_root$real_script_name;
+        fastcgi_param SCRIPT_NAME $real_script_name;
+        fastcgi_param PATH_INFO $path_info; 
+    }
+    
+    
+ZYXW、参考
+1、nginx+thinkphp下解决不支持pathinfo模式
+http://www.jb51.net/article/68705.htm
