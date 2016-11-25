@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>2.0</version>
-    <date>2016-11-25T05:17:04Z</date>
+    <date>2016-11-25T06:20:20Z</date>
     <groups>
         <group>
             <name>Templates</name>
@@ -29,7 +29,7 @@
                     <multiplier>0</multiplier>
                     <snmp_oid/>
                     <key>couchbase.cluster.healthy</key>
-                    <delay>30</delay>
+                    <delay>60</delay>
                     <history>7</history>
                     <trends>30</trends>
                     <status>0</status>
@@ -71,7 +71,7 @@
                     <multiplier>0</multiplier>
                     <snmp_oid/>
                     <key>couchbase.node.active</key>
-                    <delay>30</delay>
+                    <delay>60</delay>
                     <history>7</history>
                     <trends>30</trends>
                     <status>0</status>
@@ -113,7 +113,7 @@
                     <multiplier>0</multiplier>
                     <snmp_oid/>
                     <key>couchbase.node.healthy</key>
-                    <delay>30</delay>
+                    <delay>60</delay>
                     <history>7</history>
                     <trends>30</trends>
                     <status>0</status>
