@@ -1,0 +1,68 @@
+pure-ftpd的配置
+2016/8/25
+
+在centos6.5 x64上安装：
+
+1.下载rpm包
+wget http://pkgs.repoforge.org/pure-ftpd/pure-ftpd-1.0.36-1.el6.rf.x86_64.rpm
+
+2.安装rpm包
+yum localinstall pure-ftpd-1.0.36-1.el6.rf.x86_64.rpm
+
+3.修改pureftp配置文件，如下
+# cat /etc/pure-ftpd/pure-ftpd.conf |grep -Ev '^$|#'
+ChrootEveryone              yes  #锁定所有用户到家目录中
+TrustedGID                  99   #信任组ID100，可以不锁定
+BrokenClientsCompatibility  no
+MaxClientsNumber            50
+Daemonize                   yes
+MaxClientsPerIP             50    #不允许匿名用户
+VerboseLog                  no
+DisplayDotFiles             yes   #不显示隐藏文件
+AnonymousOnly               no
+NoAnonymous                 yes
+SyslogFacility              ftp
+DontResolve                 yes   #禁止反向解析
+MaxIdleTime                 15
+PureDB                      /etc/pure-ftpd/pureftpd.pdb  #虚拟用户数据库
+LimitRecursion              2000 8   #别表最大显示2000个文件，最深8个目录
+AnonymousCanCreateDirs      no  
+MaxLoad                     4
+PassivePortRange            40000 50000   #主动连接的端口范围
+AntiWarez                   yes
+Bind                        0.0.0.0,21  #监听IP和端口
+Umask                       022:022
+MinUID                      48    #用户ID至少要大于48才能登陆，48是apache，所以这里改动了
+AllowUserFXP                yes
+AllowAnonymousFXP           no
+ProhibitDotFilesWrite       no
+ProhibitDotFilesRead        no
+AutoRename                  no
+AnonymousCantUpload         yes
+AltLog                     clf:/var/log/pureftpd.log
+MaxDiskUsage               80
+CustomerProof              yes
+
+4.启动FTP服务
+/etc/init.d/pure-ftpd restart
+
+5.添加虚拟用户
+pure-pw useradd u1 -u 48 -g 48 -d /data/www/www.test.com -f /etc/pure-ftpd/pureftpd.passwd -m
+然后输入密码
+注意这里的-f 是指passwd file ，不是PureDB，所以这里一定不能-f /etc/pure-ftpd/pureftpd.pdb 
+
+6.添加防火墙
+##ftp (allow all)
+-A INPUT -m tcp -p tcp --dport 21 -j ACCEPT
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 40000:50000 -j ACCEPT
+
+7.添加pure-ftp宕机拉起配置（需要有monit）
+# cat pure-ftpd.conf
+check process pure-ftpd with pidfile /var/run/pure-ftpd.pid
+start program = "/etc/init.d/pure-ftpd start"
+stop program  = "/etc/init.d/pure-ftpd stop"
+
+完成上面的步骤就OK了
+
+
+from: cyrus's advice.
