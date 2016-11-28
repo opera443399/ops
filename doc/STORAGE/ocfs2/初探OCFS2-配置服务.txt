@@ -1,5 +1,7 @@
 初探OCFS2-配置服务
-2016/11/16
+2016/11/28
+
+目的：研究如何使用 iscsi 存储。
 
 一、认识
 据zstack的童鞋们介绍：OCFS2是主流对接 SAN 云存储的方式
@@ -7,10 +9,11 @@
 存储的选择，通常有以下方式：
 1、NAS
 1）NFS
-简单
+简单；自建有可靠性问题，商业的 NFS 产品更靠谱；
 
-2）GlusterFS
-易懂
+2）分布式文件系统，以 GlusterFS 为例；
+易懂；建议使用 glusterfs 的接口来访问，但也支持通过 nfs 来访问；
+
 
 2、IP SAN（iscsi）
 1）使用iscsiadm 发现一下 target 即可
@@ -24,8 +27,8 @@ b、通过 lvm 划分出 vm disk
 c、在运行了 vm 的 host 上 通过 lvchange 来激活指定的 vm disk 
 lvchange -ay vol_group/logical_vol
 
-3）通过 OCFS2 来访问存储
-这就是本文的初衷，接下来展开记录。
+3）通过集群文件系统（cluster filesystem: OCFS2,GFS,etc. ）来控制读写 iscsi 存储
+这就是本文的初衷，接下来展开记录 OCFS2 是如何使用的。
 
 
 二、配置
