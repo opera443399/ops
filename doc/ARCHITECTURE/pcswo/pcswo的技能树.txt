@@ -1,0 +1,126 @@
+2016/11/29
+
+  . ____         . ____
+ /\  ___ '\     /\  ____'\
+ \ \  _  \ \    \ \ \   \/
+  \ \ \/\ \/     \ \ \
+   \ \  - /       \ \ \
+    \ \ \          \ \ \
+     \ \ \          \ \ \
+      \ \ \          \ \ \ __/\
+       \ \ \          \_\/____/
+        \_\/
+        
+
+pcswo的技能树
+        
+一、基础架构
+【硬件】
+·）服务器管理（采购，硬件配置，磁盘类型和容量，BIOS和RAID配置等）
+·）操作系统，容量规划
+·）IDC 机柜规划
+·）硬件管理系统（cobbler, idrac/OME，MDSM等）
+
+【网络】
+·）IDC 网络规划
+·）规划先行。网段划分，数据和管理网络分离
+·）网卡配置
+·）VPN管理，二次验证，白名单等
+·）防火墙
+·）DNS
+·）NTP
+·）SNAT
+·）OSPF + LVS
+
+
+【系统】
+·）软件包（本地yum源等）
+·）系统参数优化
+
+
+【用户】
+·）ssh配置
+·）ACL访问限制
+·）操作日志
+
+
+【存储和备份】
+·）存储（nfs，glusterfs，ceph，iscsi等）
+·）应用和服务的安装包，配置，数据存储到哪里？（例如，数据库的data文件，备份文件）
+·）大容量数据如何存储？（例如，500G/月的增长）
+·）目录和容量规划
+·）备份到哪里？（本地磁盘？远端分布式文件系统？）
+·）怎么备份？（rsync？scp？）
+
+
+【标准化】
+·）流程和文档（office文档？CMDB？自研？）
+·）配置管理和远程执行（shell，saltstack，ansible，fabric，puppet，自研？）
+
+
+【监控】
+·）基础监控（zabbix，smokeping等）
+·）告警分类和升级（采取什么策略？）
+·）服务监管（保障服务是存活的，supervisor，monit等）
+
+
+【数据库】
+·）怎么安装，选择什么版本，安装到哪里？启动和停止怎么控制？
+·）主从同步怎么做？配置文件需要怎么调整？从库遇到错误停止同步怎么解决？
+·）备份策略怎么做？
+·）cache的选择和管理（memcached，couchbase，redis，mongodb）
+
+
+【日志】
+·）ELK
+·）rsyslog
+·）scribe
+
+
+【负载均衡和高可用】
+·）负载均衡的管理（lvs, nginx, haproxy, F5）
+·）高可用的管理（keepalived）
+
+
+【消息队列】
+·）RabbitMQ
+·）NSQ
+
+
+【服务发现】
+·）etcd
+·）zookeeper
+·）consul
+
+
+二、平台架构
+【虚拟化】
+·）kvm（ovirt，zstack，cloudstack，openstack等）
+·）xen（xen，Citrix XenServer）
+·）vmware（exsi，vCenter/vSphere）
+
+
+【容器】
+·）docker
+
+
+【集群管理】
+·）Mesos
+·）Kubernetes(k8s)
+
+
+【公有云】
+·）阿里云
+·）腾讯云
+·）UCloud
+·）数人云
+
+
+
+【协作开发】
+·）项目管理（gitlab，redmine，bugzilla，jenkins）
+·）文档共享（samba，seafile）
+·）语言和框架（Java, Python, nodejs+pm2, Django, jQuery, Ajax, BootStrap等）
+·）持续集成，持续交付
+
+
