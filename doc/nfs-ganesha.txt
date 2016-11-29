@@ -1,5 +1,5 @@
 初探nfs-ganesha
-2016/11/18
+2016/11/29
 
 1、使用方式
 通过 nfs-ganesha 来输出 nfs 服务。
@@ -32,6 +32,9 @@ EXPORT
         # Required for access (default is None)
         # Could use CLIENT blocks instead
         Access_Type = RW;
+
+        # Allow root access
+        Squash = No_Root_Squash;
 
         # Exporting FSAL
         FSAL {
@@ -101,5 +104,7 @@ drwxr-xr-x 2 root root 3896 Nov 16 10:55 lost+found
 
 
 
-
+ZYXW、参考
+1、nfs-ganesha doc
+https://github.com/nfs-ganesha/nfs-ganesha/blob/master/src/config_samples/export.txt
 
