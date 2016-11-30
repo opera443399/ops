@@ -1,8 +1,9 @@
 #!/bin/bash
 #
 #2016/11/25
-#v1.2
+#v1.3
 #PC
+#echo "[`date`] $1 $2 $3" >>/tmp/test.log
 
 cb_opts='-c 127.0.0.1:8091 -u Administrator -p xxx'
 curl_opts='-s -u Administrator:xxx http://127.0.0.1:8091/pools/default/buckets'
@@ -28,7 +29,7 @@ cb_cluster_list(){
 }
 
 cb_cluster_healthy(){
-    cb_cluster_list |grep -o 'healthy' |wc -l
+    cb_cluster_list |grep -o '8091 healthy active' |wc -l
 }
 
 ###### cb current node status ######
@@ -56,7 +57,7 @@ cb_bucket_info(){
 
 cb_bucket_lld_pre(){
     local buckets=`cb_bucket_list`
-    echo $buckets |grep -o 'ERROR' >/dev/null && exit 2
+    echo $buckets |grep -o 'ERROR' >/dev/null && exit 2 
     for i in $buckets
     do
         printf '\t\t{\n'
