@@ -1,5 +1,5 @@
 华为交换机命令行操作小结
-2016/10/20
+2016/12/02
 
 一、基础
 1、进入 system-view 模式
@@ -132,6 +132,23 @@ Quidway S5700-28C-HI Routing Switch uptime is 0 week, 0 day, 0 hour, 15 minutes
 2016-08-31 16:56:31-08:00
 Wednesday
 Time Zone(China-Standard-Time) : UTC-08:00
+
+3）清空配置
+<SW-ACC-MGMT-1A>reset saved-configuration 
+Warning: The action will delete the saved configuration in the device.
+The configuration will be erased to reconfigure. Continue? [Y/N]:y
+Warning: Now clearing the configuration in the device.
+Dec  2 2016 16:24:44-08:00 SW-ACC-MGMT-1A %%01CFM/4/RST_CFG(l)[0]:The user chose
+ Y when deciding whether to reset the saved configuration.
+Info: Succeeded in clearing the configuration in the device.
+
+<SW-ACC-MGMT-1A>reboot
+Info: The system is now comparing the configuration, please wait.
+Warning: All the configuration will be saved to the configuration file for the n
+ext startup:, Continue?[Y/N]:n
+Info: If want to reboot with saving diagnostic information, input 'N' and then e
+xecute 'reboot save diagnostic-information'.
+System will reboot! Continue?[Y/N]:y
 
 
 二、VLAN
