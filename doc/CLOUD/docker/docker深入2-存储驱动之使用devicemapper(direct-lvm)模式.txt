@@ -1,0 +1,231 @@
+docker深入2-存储驱动之使用devicemapper(direct-lvm)模式
+2016/12/8
+
+一、现状
+1、默认使用的是 devicemapper(loop-lvm)
+[root@n33 lib]# docker info     
+（略）        
+Server Version: 1.12.3
+Storage Driver: devicemapper
+ Pool Name: docker-253:3-33517-pool
+ Pool Blocksize: 65.54 kB
+ Base Device Size: 10.74 GB
+ Backing Filesystem: xfs
+ Data file: /dev/loop0
+ Metadata file: /dev/loop1
+ Data Space Used: 11.8 MB
+ Data Space Total: 107.4 GB
+ Data Space Available: 7.433 GB
+ Metadata Space Used: 581.6 kB
+ Metadata Space Total: 2.147 GB
+ Metadata Space Available: 2.147 GB
+ Thin Pool Minimum Free Space: 10.74 GB
+ Udev Sync Supported: true
+ Deferred Removal Enabled: false
+ Deferred Deletion Enabled: false
+ Deferred Deleted Device Count: 0
+ Data loop file: /var/lib/docker/devicemapper/devicemapper/data
+ WARNING: Usage of loopback devices is strongly discouraged for production use. Use `--storage-opt dm.thinpooldev` to specify a custom block storage device.
+ Metadata loop file: /var/lib/docker/devicemapper/devicemapper/metadata
+（略）
+Docker Root Dir: /var/lib/docker
+（略）
+
+2、对应的设备
+[root@n33 lib]# lsblk -I 7
+NAME                      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+loop0                       7:0    0  100G  0 loop 
+└─docker-253:3-33517-pool 252:0    0  100G  0 dm   
+loop1                       7:1    0    2G  0 loop 
+└─docker-253:3-33517-pool 252:0    0  100G  0 dm 
+
+
+二、调整为 devicemapper(direct-lvm)
+1、准备工作
+安装 lvm2
+[root@n33 ~]# yum install lvm2
+增加一块磁盘
+[root@n33 ~]# ls /dev/vdb
+/dev/vdb
+停止 docker 服务
+[root@n33 ~]# systemctl stop docker
+
+2、配置设备
+1）pv
+[root@n33 ~]# pvcreate /dev/vdb
+2）创建一个名称为 docker 的 vg 
+[root@n33 ~]# vgcreate docker /dev/vdb
+3）创建2个 lv，分别对应 data 和 metadata 设备
+[root@n33 ~]# lvcreate --wipesignatures y -n thinpool docker -l 95%VG
+[root@n33 ~]# lvcreate --wipesignatures y -n thinpoolmeta docker -l 1%VG
+4）转换 pool 为 thinpool 格式
+[root@n33 ~]# lvconvert -y --zero n -c 512K --thinpool docker/thinpool --poolmetadata docker/thinpoolmeta
+5）调整 lvm 配置
+The value should be the percentage of space used before lvm attempts to autoextend the available space (100 = disabled).
+定义一个百分比的阈值，表明触发 lvm 自动扩容前，已用空间占比。
+thin_pool_autoextend_threshold = 80
+
+The value’s setting is the percentage of space to increase the thin pool (100 = disabled)
+每次扩容 thin pool 空间的比例
+thin_pool_autoextend_percent = 20
+
+[root@n33 ~]# cat /etc/lvm/profile/docker-thinpool.profile
+activation {
+    thin_pool_autoextend_threshold=80
+    thin_pool_autoextend_percent=20
+}
+6）lvchange 应用配置
+[root@n33 ~]# lvchange --metadataprofile docker-thinpool docker/thinpool
+7）lvs 查看卷的信息，验证 monitor 的状态
+[root@n33 ~]# lvs -o+seg_monitor
+  LV       VG     Attr       LSize   Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert Monitor  
+  thinpool docker twi-a-t--- 190.00g             0.00   0.01                             monitored
+
+3、调整 docker 存储
+1）备份
+[root@n33 ~]# mkdir /var/lib/docker.bk
+[root@n33 ~]# mv /var/lib/docker/* /var/lib/docker.bk
+如果这个 docker engine 上已经有部分 images 在使用，且需要保存，请先提前推送到自己的 registry 中保存。
+
+
+2）调整服务配置
+a、第一种方式
+[root@n33 ~]# vim /lib/systemd/system/docker.service 
+增加参数：
+--storage-driver=devicemapper --storage-opt=dm.thinpooldev=/dev/mapper/docker-thinpool --storage-opt=dm.use_deferred_removal=true --storage-opt=dm.use_deferred_deletion=true
+
+或者：
+[root@n33 ~]# sed -i '/^ExecStart=/c\ExecStart=/usr/bin/dockerd --storage-driver=devicemapper --storage-opt=dm.thinpooldev=/dev/mapper/docker-thinpool --storage-opt=dm.use_deferred_removal=true --storage-opt=dm.use_deferred_deletion=true' /lib/systemd/system/docker.service 
+
+
+b、第2种方式
+调整 daemon.json 的配置：
+[root@n33 ~]# cat /etc/docker/daemon.json
+{
+  "storage-driver": "devicemapper",
+    "storage-opts": [
+      "dm.thinpooldev=/dev/mapper/docker-thinpool",
+      "dm.use_deferred_removal=true",
+      "dm.use_deferred_deletion=true"
+    ]
+}
+
+c、注意事项
+Note: Always set both dm.use_deferred_removal=true and dm.use_deferred_deletion=true to prevent unintentionally leaking mount points.
+启用上述2个参数来阻止可能意外产生的挂载点泄漏问题
+
+3）重启服务
+[root@n33 ~]# systemctl daemon-reload
+[root@n33 ~]# systemctl start docker
+
+4）验证
+[root@n33 lib]# docker info     
+（略）  
+Storage Driver: devicemapper
+ Pool Name: docker-thinpool
+ Pool Blocksize: 524.3 kB
+ Base Device Size: 10.74 GB
+ Backing Filesystem: xfs
+ Data file: 
+ Metadata file: 
+ Data Space Used: 20.45 MB
+ Data Space Total: 204 GB
+ Data Space Available: 204 GB
+ Metadata Space Used: 266.2 kB
+ Metadata Space Total: 2.143 GB
+ Metadata Space Available: 2.143 GB
+ Thin Pool Minimum Free Space: 20.4 GB
+ Udev Sync Supported: true
+ Deferred Removal Enabled: true
+ Deferred Deletion Enabled: true
+ Deferred Deleted Device Count: 0
+ Library Version: 1.02.107-RHEL7 (2016-06-09)
+（略） 
+
+5）可以通过 lvs, lvdisplay, vgs 等指令来查看 lvm 卷的状态
+6）可以查看日志，了解 thin pool 在自动扩容触及阈值时的状态
+[root@n33 ~]# journalctl -fu dm-event.service
+7）对应的设备
+[root@n33 ~]# lsblk -I '253' |grep -v vda
+NAME                    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+vdb                     253:16   0  200G  0 disk 
+├─docker-thinpool_tmeta 252:0    0    2G  0 lvm  
+│ └─docker-thinpool     252:2    0  190G  0 lvm  
+└─docker-thinpool_tdata 252:1    0  190G  0 lvm  
+  └─docker-thinpool     252:2    0  190G  0 lvm 
+8）确认无误后，可以清理旧的数据
+[root@n33 ~]# rm /var/lib/docker.bk -fr
+
+
+
+4、脚本
+[root@n33 ~]# cat docker_direct_lvm_setup.sh    
+#!/bin/bash
+#
+#2016/12/8
+#v1.0.4 @PC
+
+dev_name='/dev/vdb'
+yum -y -q install lvm2
+echo '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
+pvcreate ${dev_name}
+vgcreate docker ${dev_name}
+lvcreate --wipesignatures y -n thinpool docker -l 95%VG
+lvcreate --wipesignatures y -n thinpoolmeta docker -l 1%VG
+lvconvert -y --zero n -c 512K --thinpool docker/thinpool --poolmetadata docker/thinpoolmeta
+cat <<'_EOF' >/etc/lvm/profile/docker-thinpool.profile
+activation {
+    thin_pool_autoextend_threshold=80
+    thin_pool_autoextend_percent=20
+}
+_EOF
+lvchange --metadataprofile docker-thinpool docker/thinpool
+echo '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
+lvs -o+seg_monitor
+echo '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
+
+cat <<'_EOF'
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+howto:
+
+[1] backup if needed
+# mkdir /var/lib/docker.bk
+# mv /var/lib/docker/* /var/lib/docker.bk
+
+[2] update docker config
+(added to docker.service)
+# sed -i '/^ExecStart=/c\ExecStart=/usr/bin/dockerd --storage-driver=devicemapper --storage-opt=dm.thinpooldev=/dev/mapper/docker-thinpool --storage-opt=dm.use_deferred_removal=true --storage-opt=dm.use_deferred_deletion=true' /lib/systemd/system/docker.service 
+
+(added to daemon.json)
+# cat /etc/docker/daemon.json
+{
+  "storage-driver": "devicemapper",
+    "storage-opts": [
+      "dm.thinpooldev=/dev/mapper/docker-thinpool",
+      "dm.use_deferred_removal=true",
+      "dm.use_deferred_deletion=true"
+    ]
+}
+
+
+[3] restart
+# systemctl daemon-reload
+# systemctl start docker
+
+[4] validate
+# docker info
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+_EOF
+
+
+ZYXW、参考
+1、docs
+https://docs.docker.com/engine/userguide/storagedriver/device-mapper-driver/#/configure-direct-lvm-mode-for-production
+2、Docker Device Mapper 使用 direct-lvm
+http://www.cnblogs.com/SZLLQ2000/p/5486834.html
+3、daemon.json
+https://docs.docker.com/engine/reference/commandline/dockerd/
