@@ -1,0 +1,127 @@
+docker深入2-linux下的配置文件daemon.json使用示例
+2016/12/9
+
+一、现状
+1、默认没有这个配置文件，手动创建一个即可。
+2、我们目前使用过的操作
+在“docker深入2-存储驱动之使用devicemapper(direct-lvm)模式”这一节中，我们是这样操作的：
+---------------------------------------
+调整 daemon.json 的配置：
+[root@n33 ~]# cat /etc/docker/daemon.json
+{
+    "storage-driver": "devicemapper",
+    "storage-opts": [
+        "dm.thinpooldev=/dev/mapper/docker-thinpool",
+        "dm.use_deferred_removal=true",
+        "dm.use_deferred_deletion=true"
+    ]
+}
+---------------------------------------
+
+定义了 storage-driver 的值。
+然后重启服务：
+[root@n33 ~]# systemctl restart docker && systemctl status docker -l
+
+这样做的好处：调整配置时，不用去修改 docker.service的参数，通过配置文件来管理，更为清晰合理。
+
+
+
+二、探索
+1、linux上一个完整的配置示例
+{
+    "api-cors-header": "",
+    "authorization-plugins": [],
+    "bip": "",
+    "bridge": "",
+    "cgroup-parent": "",
+    "cluster-store": "",
+    "cluster-store-opts": {},
+    "cluster-advertise": "",
+    "debug": true,
+    "default-gateway": "",
+    "default-gateway-v6": "",
+    "default-runtime": "runc",
+    "default-ulimits": {},
+    "disable-legacy-registry": false,
+    "dns": [],
+    "dns-opts": [],
+    "dns-search": [],
+    "exec-opts": [],
+    "exec-root": "",
+    "fixed-cidr": "",
+    "fixed-cidr-v6": "",
+    "graph": "",
+    "group": "",
+    "hosts": [],
+    "icc": false,
+    "insecure-registries": [],
+    "ip": "0.0.0.0",
+    "iptables": false,
+    "ipv6": false,
+    "ip-forward": false,
+    "ip-masq": false,
+    "labels": [],
+    "live-restore": true,
+    "log-driver": "",
+    "log-level": "",
+    "log-opts": {},
+    "max-concurrent-downloads": 3,
+    "max-concurrent-uploads": 5,
+    "mtu": 0,
+    "oom-score-adjust": -500,
+    "pidfile": "",
+    "raw-logs": false,
+    "registry-mirrors": [],
+    "runtimes": {
+        "runc": {
+            "path": "runc"
+        },
+        "custom": {
+            "path": "/usr/local/bin/my-runc-replacement",
+            "runtimeArgs": [
+                "--debug"
+            ]
+        }
+    },
+    "selinux-enabled": false,
+    "storage-driver": "",
+    "storage-opts": [],
+    "swarm-default-advertise-addr": "",
+    "tls": true,
+    "tlscacert": "",
+    "tlscert": "",
+    "tlskey": "",
+    "tlsverify": true,
+    "userland-proxy": false,
+    "userns-remap": ""
+}
+
+上述是官网docs提供的一个示例配置，我们可以参考，选择性的配置其中的部分内容。
+
+2、如何配置 registry 相关的参数
+涉及以下2个参数：
+    "insecure-registries": [],
+    "registry-mirrors": [],
+
+配置示例：
+[root@n33 ~]# cat /etc/docker/daemon.json
+{
+    "storage-driver": "devicemapper",
+    "storage-opts": [
+        "dm.thinpooldev=/dev/mapper/docker-thinpool",
+        "dm.use_deferred_removal=true",
+        "dm.use_deferred_deletion=true"
+    ],
+    "registry-mirrors": [
+        "http://m.hub.test.com"
+    ], 
+    "insecure-registries": [
+        "hub.test.com"
+    ]
+}
+    
+    
+
+ZYXW、参考
+1、docs
+https://docs.docker.com/engine/reference/commandline/dockerd/#/linux-configuration-file
