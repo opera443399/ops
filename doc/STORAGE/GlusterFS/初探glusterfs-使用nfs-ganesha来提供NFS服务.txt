@@ -1,5 +1,5 @@
 初探glusterfs-使用nfs-ganesha来提供NFS服务
-2016/11/17
+2016/12/13
 
 一、基础
 1、glusterfs官方建议使用 nfs-ganesha 来提供 nfs 服务
@@ -351,7 +351,7 @@ Public IPs on node 2
 
 
 5、问题
-1、读写过程中，数据不一致，存在延迟的问题。
+1）读写过程中，数据不一致，存在延迟的问题。
 场景1：
 客户端 A 通过 mount -t nfs 挂载节点 n1 的 nfs-ganesha 服务来读写文件；
 客户端 B 通过 mount -t nfs 挂载节点 n1 和 n2 的 nfs-ganesha 服务来列出文件；
@@ -369,11 +369,14 @@ n1 和 n2 上面的数据不一致，大约需要 60s 左右数据才会同步�
 客户端 A 通过 mount -t nfs 挂载节点 n1 的 nfs-ganesha 服务来读写文件；
 客户端 B 通过 mount -t glusterfs 挂载节点 n1 和 n2 的 glusterfs 服务来列出文件；
 
+2）安装 nfs-ganesha 的时候，将依赖安装 glusterfs 相关包，要特别注意包的版本是否和当前运行环境一致，否则将破坏当前的集群。
 
 
 
-
-
+五、结论
+1、客户端使用单个 nfs-ganesha 节点来提供 nfs 服务，正常；
+2、客户端使用集群 nfs-ganesha 节点来提供 nfs 服务，异常；
+3、客户端仅使用 glusterfs 无异常；
 
 
 
