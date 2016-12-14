@@ -1,5 +1,5 @@
 初探glusterfs-使用小结FAQ
-2016/10/19
+2016/12/14
 
 
 注：建议使用3副本（1x3），1x2副本危险，2x2也危险。
@@ -84,6 +84,11 @@ mount -t glusterfs 10.60.200.11:/gv1 /mnt/test
 ~]# df -h /mnt/test/
 Filesystem                      Size  Used Avail Use% Mounted on
 10.60.200.11:/gv1               5.4T  1.8T  3.4T  34% /mnt/test
+
+
+写入fstab：
+10.60.200.11:/gv1    /mnt/test    glusterfs    defaults,_netdev,backup-volfile-servers=10.60.200.12:10.60.200.13  0 0
+
 
 
 2、挂载时，可以使用参数来提供备用节点
@@ -333,14 +338,13 @@ Number of entries: 0
 ZYXW、参考
 1、[Gluster-users] Replacing a failed brick
 https://www.gluster.org/pipermail/gluster-users/2013-August/014000.html
-
 2、expand brick
 http://avid.force.com/pkb/articles/en_US/how_to/Adding-a-node-to-a-cluster-using-gluster
 https://bugzilla.redhat.com/show_bug.cgi?id=1168897
 http://comments.gmane.org/gmane.comp.file-systems.gluster.user/20225
-
 3、Resolving Peer Rejected
 http://gluster.readthedocs.io/en/latest/Administrator%20Guide/Resolving%20Peer%20Rejected/
-
 4、KVM虚拟化开源高可用方案(七)GLUSTERFS搭建及常见故障处理
 http://xiaoli110.blog.51cto.com/1724/1071106?utm_source=tuicool&utm_medium=referral
+5、Accessing Data - Setting Up GlusterFS Client
+http://gluster.readthedocs.io/en/latest/Administrator%20Guide/Setting%20Up%20Clients/
