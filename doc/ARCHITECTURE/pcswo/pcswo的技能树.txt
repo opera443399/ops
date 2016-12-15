@@ -87,7 +87,7 @@ a) 服务树
 5、云计算平台
 a) 服务器虚拟化: kvm(ovirt,zstack,cloudstack,openstack),xen(xen,Citrix XenServer),vmware(exsi,vCenter/vSphere)
 b) 容器化: docker
-c) 集群服务管理: mesos,k8s
+c) 集群服务管理: swarm,mesos,k8s
 d) 公有云: aliyun,qcloud,aws
 
 ===================================四、数据运维===================================
