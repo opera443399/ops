@@ -1,4 +1,4 @@
-2016/11/29
+2016/12/15
 
   . ____         . ____
  /\  ___ '\     /\  ____'\
@@ -12,115 +12,105 @@
         \_\/
         
 
-pcswo的技能树
-        
-一、基础架构
-【硬件】
-·）服务器管理（采购，硬件配置，磁盘类型和容量，BIOS和RAID配置等）
-·）操作系统，容量规划
-·）IDC 机柜规划
-·）硬件管理系统（cobbler, idrac/OME，MDSM等）
+~。~请点亮运维的技能树~。~
 
-【网络】
-·）IDC 网络规划
-·）规划先行。网段划分，数据和管理网络分离
-·）网卡配置
-·）VPN管理，二次验证，白名单等
-·）防火墙
-·）DNS
-·）NTP
-·）SNAT
-·）OSPF + LVS
+===================================一、系统运维===================================
+1、IDC数据中心建设
+a) 负责数据中心的建设: 选型,规划机柜布局
+b) 现场维护工作
 
+2、网络建设
+a) 设计及规划生产网络架构: 网段划分,网络分离(IPMI,MGMT,STOR,BIZ分离),高可用,易于扩容升级,ACL,防火墙
+b) 现场维护工作
 
-【系统】
-·）软件包（本地yum源等）
-·）系统参数优化
+3、服务器选型、交付和维护
+a) 选型: CPU,内存,硬盘,raid卡,网卡,电源
+b) 配置: BIOS,RAID,IPMI等
+c) 监控: 健康检查(iDRAC/OME,MDSM),故障诊断和处理
 
+4、操作系统
+a) OS选型,内核定制,更新和优化
+b) 软件包: 建立本地yum源
+c）调优：内核参数,tcpdump,strace
 
-【用户】
-·）ssh配置
-·）ACL访问限制
-·）操作日志
+5、基础服务建设
+a) LVS负载均衡(keepalived,nginx,haproxy,ospf,fullnat)和SNAT(gateway,iptables)建设
+b) 装机,测试和交付: kickstart,cobbler
+c) NTP,DNS(bind,dnsmasq),VPN(openvpn),认证(ssh,LDAP/AD,跳板机),日志(snmp,script,logrotate,rsyslog,ELK),邮件等常规服务的管理和规划
+d) 存储服务: 本地(ftp,samba,nfs/nfs-ganesha),集群(ocfs2),分布式(glusterfs,ceph)，商业(nas,iscsi)等
+e) 架构调优和提供稳定的基础服务
 
+6、资产管理
+a) 资源记录和管理: IDC,机柜,服务器,网络等
+b) 管理平台的建设: 制定有效的流程,确保信息的准确性为后续的自动化工作提供基础数据
 
-【存储和备份】
-·）存储（nfs，glusterfs，ceph，iscsi等）
-·）应用和服务的安装包，配置，数据存储到哪里？（例如，数据库的data文件，备份文件）
-·）大容量数据如何存储？（例如，500G/月的增长）
-·）目录和容量规划
-·）备份到哪里？（本地磁盘？远端分布式文件系统？）
-·）怎么备份？（rsync？scp？）
+7、CDN规划和建设
+a) 第三方: 选型,布局,测试,监控
+b) 自研
 
+===================================二、应用运维===================================
+1、架构设计
+a) 运维准入标准规划
+b) 可靠性方案
 
-【标准化】
-·）流程和文档（office文档？CMDB？自研？）
-·）配置管理和远程执行（shell，saltstack，ansible，fabric，puppet，自研？）
+2、服务管理
+a) 上下线和回滚方案
+b) 监控和预案管理: 指标,到阈值如何处理,演练
+c) 如何按需使用服务器/网络等资源
+d）服务发现: consul,etcd,zookeeper,eureka
+e）配置管理和远程执行: saltstack,puppet,ansible,fabric
+f）进程守护: supervisor,monit,god,frigga
 
+4、备份策略
+a) 使用什么工具: rsync,自研
+b) 备份到哪里: 存储设备选择
+c) 备份是否可用: 恢复测试
+d) 何时备份: 任务调度
 
-【监控】
-·）基础监控（zabbix，smokeping等）
-·）告警分类和升级（采取什么策略？）
-·）服务监管（保障服务是存活的，supervisor，monit等）
+===================================三、运维研发===================================
+1、运维平台
+a) 资源管理: 服务器,IP,域名等
+b) 权限管理
 
+2、监控平台
+a) 监控系统: 开源系统(zabbix),工具(smokeping,sar,iostat,vmstat,iftop,iotop),自研
+b) 告警系统: 告警收敛,告警升级,自研
 
-【数据库】
-·）怎么安装，选择什么版本，安装到哪里？启动和停止怎么控制？
-·）主从同步怎么做？配置文件需要怎么调整？从库遇到错误停止同步怎么解决？
-·）备份策略怎么做？
-·）cache的选择和管理（memcached，couchbase，redis，mongodb）
+3、部署平台
+a) 编译规范: 源码包结构,编译后输出结构
+b) 线上目录规范: 约束服务在线上运行时程序、日志、数据的位置,目录明确,日志和数据分离,服务起停控制
+c) 自动化部署系统: 规范,工具(jenkins,自研)
 
+4、服务管理平台
+a) 服务树
 
-【日志】
-·）ELK
-·）rsyslog
-·）scribe
+5、云计算平台
+a) 服务器虚拟化: kvm(ovirt,zstack,cloudstack,openstack),xen(xen,Citrix XenServer),vmware(exsi,vCenter/vSphere)
+b) 容器化: docker
+c) 集群服务管理: mesos,k8s
+d) 公有云: aliyun,qcloud,aws
 
+===================================四、数据运维===================================
+1、数据库
+a) mysql: 部署,配置,集群,主备,备份,权限,监控
 
-【负载均衡和高可用】
-·）负载均衡的管理（lvs, nginx, haproxy, F5）
-·）高可用的管理（keepalived）
+2、缓存
+a) memcache: couchbase
+b) redis：cluster,codis
 
+3、消息队列
+a) rabbitmq
+b) nsq
 
-【消息队列】
-·）RabbitMQ
-·）NSQ
+4、大数据
+a) hadoop
 
+===================================五、团队协作和开发===================================
+1、项目管理
+a) 代码库: svn,git
+b) 项目和缺陷: redmine,bugzilla
+c) 文档共享: seafile
 
-【服务发现】
-·）etcd
-·）zookeeper
-·）consul
-
-
-二、平台架构
-【虚拟化】
-·）kvm（ovirt，zstack，cloudstack，openstack等）
-·）xen（xen，Citrix XenServer）
-·）vmware（exsi，vCenter/vSphere）
-
-
-【容器】
-·）docker
-
-
-【集群管理】
-·）Mesos
-·）Kubernetes(k8s)
-
-
-【公有云】
-·）阿里云
-·）腾讯云
-·）UCloud
-·）数人云
-
-
-
-【协作开发】
-·）项目管理（gitlab，redmine，bugzilla，jenkins）
-·）文档共享（samba，seafile）
-·）语言和框架（Java, Python, nodejs+pm2, Django, jQuery, Ajax, BootStrap等）
-·）持续集成，持续交付
-
-
+2、开发语言
+a) 前端: html5,jQuery,Ajax,BootStrap
+b) 后端：Java,Python(Django),php,nodejs(pm2)

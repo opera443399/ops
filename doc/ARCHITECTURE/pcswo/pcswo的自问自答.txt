@@ -145,17 +145,6 @@ http://mp.weixin.qq.com/s?__biz=MzIxMzIyNDkyMw==&mid=2654108295&idx=1&sn=310444b
 http://mp.weixin.qq.com/s?__biz=MzIxMzIyNDkyMw==&mid=2654108274&idx=1&sn=210c1f1415cf7a2b757ff121cf8f8734&chksm=8c7cc6c6bb0b4fd072aad99b387bef2416eb8b6aae6f5670cd1539b0aa656f9a2419c3761bfe&scene=21#wechat_redirect
 
 
-------------
-【运维平台】
-------------
-第三章：运维平台
-http://mp.weixin.qq.com/s?__biz=MzIxMzIyNDkyMw==&mid=2654107988&idx=1&sn=cad957b7fde78888e2d7696b40c5a7b3&scene=21#wechat_redirect
-第七章：资产管理
-http://mp.weixin.qq.com/s?__biz=MzIxMzIyNDkyMw==&mid=2654108121&idx=1&sn=f4334e1237954a605af92092536bd2aa&chksm=8c7cc56dbb0b4c7b5db1cb4dd396e5b3411321406323545e02ec5aa5293d07174953683c1542&scene=21#wechat_redirect
-第十五章：服务管理平台
-http://mp.weixin.qq.com/s?__biz=MzIxMzIyNDkyMw==&mid=2654108400&idx=1&sn=c0488b907b176f4ef22b8b633913db87&chksm=8c7cc644bb0b4f521ee2e851ccb250f1ea718449758d2c356c90d1a3190282386ff3fb10e597&scene=21#wechat_redirect
-
-
 ------------------------
 【业务运维的工作怎么做】
 ------------------------
@@ -170,6 +159,12 @@ http://mp.weixin.qq.com/s?__biz=MzIxMzIyNDkyMw==&mid=2654108401&idx=1&sn=8ae0b12
 ------------------------
 【运维研发的工作怎么做】
 ------------------------
+第三章：运维平台
+http://mp.weixin.qq.com/s?__biz=MzIxMzIyNDkyMw==&mid=2654107988&idx=1&sn=cad957b7fde78888e2d7696b40c5a7b3&scene=21#wechat_redirect
+第七章：资产管理
+http://mp.weixin.qq.com/s?__biz=MzIxMzIyNDkyMw==&mid=2654108121&idx=1&sn=f4334e1237954a605af92092536bd2aa&chksm=8c7cc56dbb0b4c7b5db1cb4dd396e5b3411321406323545e02ec5aa5293d07174953683c1542&scene=21#wechat_redirect
+第十五章：服务管理平台
+http://mp.weixin.qq.com/s?__biz=MzIxMzIyNDkyMw==&mid=2654108400&idx=1&sn=c0488b907b176f4ef22b8b633913db87&chksm=8c7cc644bb0b4f521ee2e851ccb250f1ea718449758d2c356c90d1a3190282386ff3fb10e597&scene=21#wechat_redirect
 第十七章：部署系统（上）
 http://mp.weixin.qq.com/s?__biz=MzIxMzIyNDkyMw==&mid=2654108430&idx=1&sn=7d810b626996cc9bc4a0f05825be3cd4&chksm=8c7cc7babb0b4eac8c71396c89e47b69daf43d539e51d557f4f6acb0b819ce5c7c4c5ae96284&scene=21#wechat_redirect
 第十七章：部署系统（下）
@@ -179,7 +174,7 @@ http://mp.weixin.qq.com/s?__biz=MzIxMzIyNDkyMw==&mid=2654108451&idx=1&sn=26e9baf
 
 
 ------------------------
-【数据库运维的工作怎么做】
+【数据运维的工作怎么做】
 ------------------------
 第十九章：数据库自动运维系统
 http://mp.weixin.qq.com/s?__biz=MzIxMzIyNDkyMw==&mid=2654108467&idx=1&sn=a30949d24b87a24bb8ddbd1e7c49dc94&chksm=8c7cc787bb0b4e91b4e6a35657de16f3bbac7275265e3c4f6352212984685be7a80b4e35f335&scene=21#wechat_redirect
