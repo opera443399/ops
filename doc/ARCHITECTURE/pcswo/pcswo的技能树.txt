@@ -45,7 +45,7 @@ a) 资源记录和管理: IDC,机柜,服务器,网络等
 b) 管理平台的建设: 制定有效的流程,确保信息的准确性为后续的自动化工作提供基础数据
 
 7、CDN规划和建设
-a) 第三方: 选型,布局,测试,监控
+a) 第三方: 选型(网宿),测试,监控
 b) 自研
 
 ===================================二、应用运维===================================
@@ -79,7 +79,7 @@ b) 告警系统: 告警收敛,告警升级,自研
 3、部署平台
 a) 编译规范: 源码包结构,编译后输出结构
 b) 线上目录规范: 约束服务在线上运行时程序、日志、数据的位置,目录明确,日志和数据分离,服务起停控制
-c) 自动化部署系统: 规范,工具(jenkins,自研)
+c) 自动化部署系统: 规范,CI(jenkins),CD
 
 4、服务管理平台
 a) 服务树
@@ -91,26 +91,21 @@ c) 集群服务管理: swarm,mesos,k8s
 d) 公有云: aliyun,qcloud,aws
 
 ===================================四、数据运维===================================
-1、数据库
-a) mysql: 部署,配置,集群,主备,备份,权限,监控
+1、数据存储
+a) db: mysql(版本选择，部署方案,配置调优,集群管理,高可用,读写分离,主从同步,备份和恢复,权限,监控)
+b) cache: memcache(couchbase),redis,mongodb
+c) mq: rabbitmq,nsq
 
-2、缓存
-a) memcache: couchbase
-b) redis：cluster,codis
-
-3、消息队列
-a) rabbitmq
-b) nsq
-
-4、大数据
+2、大数据
 a) hadoop
 
 ===================================五、团队协作和开发===================================
-1、项目管理
+1、协作
 a) 代码库: svn,git
-b) 项目和缺陷: redmine,bugzilla
+b) 项目和缺陷管理: redmine,bugzilla
 c) 文档共享: seafile
 
-2、开发语言
+2、开发
 a) 前端: html5,jQuery,Ajax,BootStrap
-b) 后端：Java,Python(Django),php,nodejs(pm2)
+b) 后端：Java(jdk),Python(Django),php(php-fpm),nodejs(pm2)
+c）web服务：apache,nginx,tomcat
