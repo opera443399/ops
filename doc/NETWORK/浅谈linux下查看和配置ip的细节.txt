@@ -1,5 +1,5 @@
 浅谈linux下查看和配置ip的细节
-2015/10/16 time 13:21
+2016/12/15
 
 一、查看ip的方式有2种
 # ifconfig
@@ -222,5 +222,33 @@ esac
 
 
 
+五、细节说明
+1、dns的配置
+PEERDNS=yes
+DNS1=x.x.x.x
+DNS2=x.x.x.x
+
+网卡配置了上述内容后，将优先使用这里配置的DNS，写入/etc/resolv.conf
+
+2、domain配置
+[root@tvm01 ~]# hostname
+tvm01.dev.com
+[root@tvm01 ~]# cat /etc/resolv.conf 
+domain test.com
+[root@tvm01 ~]# hostname --fqdn
+tvm01.dev.com.test.com
+
+显然，domain的配置，影响了 FQDN (fully qualified domain name)
+当然，还可以在 /etc/hosts 中配置一个 FQDN 的解析
+[root@tvm01 ~]# cat /etc/hosts |grep dev
+127.0.0.1 tvm01.dev.com
+[root@tvm01 ~]# hostname --fqdn         
+tvm01.dev.com
 
 
+
+3、gateway的配置
+DEFROUTE=yes
+PEERROUTES=yes
+GATEWAY=x.x.x.x
+网卡配置了上述内容后，将优先使用这里的配置的gateway
