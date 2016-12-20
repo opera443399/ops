@@ -1,0 +1,194 @@
+etcd使用小结
+2016/12/20
+
+一、初识
+1、用途
+etcd是用于共享配置和服务发现的分布式、一致性的KV存储系统。
+
+2、下载
+来自：https://github.com/coreos/etcd/releases
+[root@n218 ~]# wget https://github.com/coreos/etcd/releases/download/v3.0.15/etcd-v3.0.15-linux-amd64.tar.gz
+[root@n218 ~]# tar zxvf etcd-v3.0.15-linux-amd64.tar.gz
+[root@n218 ~]# cp etcd-v3.0.15-linux-amd64/etcd* /bin/
+[root@n218 ~]# etcd --version
+etcd Version: 3.0.15
+Git SHA: fc00305
+Go Version: go1.6.3
+Go OS/Arch: linux/amd64
+[root@n218 ~]# etcdctl --version
+etcdctl version: 3.0.15
+API version: 2
+
+
+二、尝试一下
+1、环境
+NAME	ADDRESS	        HOSTNAME
+infra0	172.20.101.218	infra0.example.com
+infra1	172.20.101.219	infra1.example.com
+infra2	172.20.101.220	infra2.example.com
+
+2、初始化建立一个集群
+可以指定环境变量：
+ETCD_INITIAL_CLUSTER="infra0=http://172.20.101.218:2380,infra1=http://172.20.101.219:2380,infra2=http://172.20.101.220:2380"
+ETCD_INITIAL_CLUSTER_STATE=new
+
+也可以在命令行指定参数：
+--initial-cluster infra0=http://172.20.101.218:2380,infra1=http://172.20.101.219:2380,infra2=http://172.20.101.220:2380 \
+--initial-cluster-state new
+
+一个典型的集群创建方法：
+[root@n218 ~] mkdir -p /data/etcd/ && cd /data/etcd/ \
+&& etcd --name infra0 --initial-advertise-peer-urls http://172.20.101.218:2380 \
+--listen-peer-urls http://172.20.101.218:2380 \
+--listen-client-urls http://172.20.101.218:2379,http://127.0.0.1:2379 \
+--advertise-client-urls http://172.20.101.218:2379 \
+--initial-cluster-token etcd-cluster-1 \
+--initial-cluster infra0=http://172.20.101.218:2380,infra1=http://172.20.101.219:2380,infra2=http://172.20.101.220:2380 \
+--initial-cluster-state new >>etcd.log 2>&1 &
+  
+[root@n219 ~] mkdir -p /data/etcd/ && cd /data/etcd/ \
+&& etcd --name infra1 --initial-advertise-peer-urls http://172.20.101.219:2380 \
+--listen-peer-urls http://172.20.101.219:2380 \
+--listen-client-urls http://172.20.101.219:2379,http://127.0.0.1:2379 \
+--advertise-client-urls http://172.20.101.219:2379 \
+--initial-cluster-token etcd-cluster-1 \
+--initial-cluster infra0=http://172.20.101.218:2380,infra1=http://172.20.101.219:2380,infra2=http://172.20.101.220:2380 \
+--initial-cluster-state new >>etcd.log 2>&1 &
+  
+[root@n220 ~] mkdir -p /data/etcd/ && cd /data/etcd/ \
+&& etcd --name infra2 --initial-advertise-peer-urls http://172.20.101.220:2380 \
+--listen-peer-urls http://172.20.101.220:2380 \
+--listen-client-urls http://172.20.101.220:2379,http://127.0.0.1:2379 \
+--advertise-client-urls http://172.20.101.220:2379 \
+--initial-cluster-token etcd-cluster-1 \
+--initial-cluster infra0=http://172.20.101.218:2380,infra1=http://172.20.101.219:2380,infra2=http://172.20.101.220:2380 \
+--initial-cluster-state new >>etcd.log 2>&1 &
+
+
+3、初体验
+1）准备工作
+export ETCDCTL_API=3
+ETCD_HOST_1=172.20.101.218
+ETCD_HOST_2=172.20.101.219
+ETCD_HOST_3=172.20.101.220
+ENDPOINTS=$ETCD_HOST_1:2379,$ETCD_HOST_2:2379,$ETCD_HOST_3:2379
+
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS member list
+2d1d13afa9247812, started, infra0, http://172.20.101.218:2380, http://172.20.101.218:2379
+569c995bba1e3402, started, infra1, http://172.20.101.219:2380, http://172.20.101.219:2379
+876a9bb6cf01a32f, started, infra2, http://172.20.101.220:2380, http://172.20.101.220:2379
+
+2）put
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS put foo "Hello World" 
+OK
+
+3）get
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS get foo
+foo
+Hello World
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS --write-out="json" get foo
+{"header":{"cluster_id":9675665160038703428,"member_id":6241031802872280066,"revision":2,"raft_term":19},"kvs":[{"key":"Zm9v","create_revision":2,"mod_revision":2,"version":1,"value":"SGVsbG8gV29ybGQ="}],"count":1}
+
+4）delete
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS put key myvalue
+OK
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS del key
+1
+
+5）prefix
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS put web1 value1
+OK
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS put web2 value2
+OK
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS put web3 value3
+OK
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS get web --prefix
+web1
+value1
+web2
+value2
+web3
+value3
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS del web --prefix
+3
+
+6）watch
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS watch stock1
+
+在另一个窗口 put 数据，观察变化：
+[root@n220 ~]# etcdctl --endpoints=$ENDPOINTS put stock1 1000
+OK
+[root@n220 ~]# etcdctl --endpoints=$ENDPOINTS put stock1 2000
+OK
+
+发现变化：
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS watch stock1
+PUT
+stock1
+1000
+PUT
+stock1
+2000
+^C
+
+7）Distributed locks
+在会话1中获得锁：
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS lock mutex1
+mutex1/232f591b6f81c904
+（上述表示已经获得）
+
+在会话2中试图获得同一个锁：
+[root@n220 ~]# etcdctl --endpoints=$ENDPOINTS lock mutex1
+（无响应）
+
+在会话1中释放lock：
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS lock mutex1
+mutex1/232f591b6f81c904
+
+^C
+（上述表示已经释放）
+
+在会话2中查看状态：
+[root@n220 ~]# etcdctl --endpoints=$ENDPOINTS lock mutex1
+mutex1/232f591b6f81c909
+（上述表示已经获得，符合预期）
+^C
+
+
+8）Cluster status
+[root@n218 ~]# etcdctl --write-out=table --endpoints=$ENDPOINTS endpoint status
++---------------------+------------------+---------+---------+-----------+-----------+------------+
+|      ENDPOINT       |        ID        | VERSION | DB SIZE | IS LEADER | RAFT TERM | RAFT INDEX |
++---------------------+------------------+---------+---------+-----------+-----------+------------+
+| 172.20.101.218:2379 | 2d1d13afa9247812 | 3.0.15  | 33 kB   | true      |        19 |       3401 |
+| 172.20.101.219:2379 | 569c995bba1e3402 | 3.0.15  | 33 kB   | false     |        19 |       3401 |
+| 172.20.101.220:2379 | 876a9bb6cf01a32f | 3.0.15  | 33 kB   | false     |        19 |       3401 |
++---------------------+------------------+---------+---------+-----------+-----------+------------+
+
+[root@n218 ~]# etcdctl --endpoints=$ENDPOINTS endpoint health
+172.20.101.218:2379 is healthy: successfully committed proposal: took = 3.177292ms
+172.20.101.219:2379 is healthy: successfully committed proposal: took = 4.214202ms
+172.20.101.220:2379 is healthy: successfully committed proposal: took = 4.678532ms
+
+其他指令请参考原文。
+
+
+4、api
+请参考官网doc
+
+
+ZYXW、参考
+1、官网doc
+clustering: https://github.com/coreos/etcd/blob/master/Documentation/op-guide/clustering.md
+demo: https://github.com/coreos/etcd/blob/master/Documentation/demo.md
+interacting: https://github.com/coreos/etcd/blob/master/Documentation/dev-guide/interacting_v3.md
+api: https://coreos.com/etcd/docs/latest/v2/api.html
+
+2、ETCD系列之一：简介
+https://yq.aliyun.com/articles/11035
+
+
+
+
+
+
