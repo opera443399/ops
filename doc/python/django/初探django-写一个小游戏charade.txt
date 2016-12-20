@@ -1,5 +1,5 @@
 初探django-写一个小游戏charade
-2016/3/4
+2016/12/20
 在根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）
 
 一、准备环境
@@ -47,6 +47,14 @@ Migrations for 'charade':
 
 执行变更：
 [root@tvm01 www]# python manage.py migrate
+这个是 migrate 所有的 apps
+也可以指定某个 app 来执行 migrate 操作：
+[root@tvm01 www]# python manage.py migrate charade 0001
+
+查看执行过的变更：
+[root@tvm01 www]# python manage.py showmigrations charade
+charade
+ [X] 0001_initial
 
 4）注册模型到后台
 [root@tvm01 www]# vim charade/admin.py
@@ -306,7 +314,7 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.common.CommonMiddleware',
     （略）
 ]
-b）在 apps 的 views.py 中定义
+b）在 apps 的 views.py 中显示国际化的文字
 [root@tvm01 www]# vim charade/views.py
 from django.utils.translation import ugettext_lazy as _
 def show_lang(request):
@@ -315,6 +323,31 @@ def show_lang(request):
     context = msgs % request.LANGUAGE_CODE
     return HttpResponse(context)
     
+c）在 apps 的 models.py 中显示国际化的文字
+注意 verbose_name 的2种用法
+from django.utils.translation import ugettext_lazy as _
+class OSType(models.Model):
+    tag = models.CharField(_('OS Tag'), max_length=20)
+    desc = models.CharField(_('OS Description'), max_length=20, default='Extra info.')
+
+    def __str__(self):
+        return self.tag
+
+    class Meta:
+        verbose_name = _('OS Type')
+        verbose_name_plural = _('OS Type')
+        
+class Vm(models.Model):
+    hostname = models.CharField(_('hostname'), max_length=100, unique=True)
+    os_type = models.ForeignKey(OSType, default='1', verbose_name=_('OS Type'))
+    
+    def __str__(self):
+        return self.hostname
+
+    class Meta:
+        verbose_name = _('VMs')
+        verbose_name_plural = _('VMs')
+        
 
 2）在模版中使用
 模版的示例如下：
@@ -487,3 +520,6 @@ http://www.ibm.com/developerworks/cn/web/1101_jinjh_djangoi18n/
 
 4、define css class in django forms
 http://stackoverflow.com/questions/401025/define-css-class-in-django-forms
+
+5、让django模型中的字段和model名显示为中文
+http://blog.csdn.net/a0100034930/article/details/42392095
