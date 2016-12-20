@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UNICODE" ?>
 <topo version="1.2.00.390">
     <devices>
-        <dev id="D352C382-D9D4-43e1-8F7C-1E4939332684" name="WWW-SVR-1" poe="0" model="Server" settings="-domain 0 -eth 54-89-98-7E-54-48 -ipaddr 1.1.1.222 -ipmask 255.255.255.0 -gateway 1.1.1.1 -ipv6addr 2000::2 -ipv6gateway 2000::1 -prefixlen 64 -ipv4dns 0.0.0.0 -ipv6dns 3000::1 -dnslist NULL" system_mac="54-89-98-90-6E-2E" com_port="0" bootmode="0" cx="1073.000000" cy="114.000000" edit_left="1100" edit_top="168">
+        <dev id="D352C382-D9D4-43e1-8F7C-1E4939332684" name="WWW-SVR-1" poe="0" model="Server" settings="-domain 0 -eth 54-89-98-7E-54-48 -ipaddr 1.1.1.222 -ipmask 255.255.255.0 -gateway 1.1.1.1 -ipv6addr 2000::2 -ipv6gateway 2000::1 -prefixlen 64 -ipv4dns 0.0.0.0 -ipv6dns 3000::1 -dnslist NULL" system_mac="54-89-98-00-12-3D" com_port="0" bootmode="0" cx="1073.000000" cy="114.000000" edit_left="1100" edit_top="168">
             <slot number="slot17" isMainBoard="1">
                 <interface sztype="Ethernet" interfacename="Ethernet" count="1" />
             </slot>
@@ -88,7 +88,7 @@
         <txttip left="406" top="16" right="984" bottom="64" content="[traffice-policy] on [SW-ACC-CORE-1] GE 0/0/2 inbound:&#x0D;&#x0A;rule deny ip source 10.50.200.0 0.0.0.255 destination 172.30.0.0 0.0.63.255&#x0D;&#x0A;rule deny ip source 10.50.200.0 0.0.0.255 destination 172.30.64.0 0.0.63.255" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
         <txttip left="386" top="313" right="609" bottom="345" content="port trunk allow-pass vlan 20&#x0D;&#x0A;vlanif20: 172.30.0.1/18" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
         <txttip left="255" top="264" right="478" bottom="296" content="port trunk allow-pass vlan 40&#x0D;&#x0A;vlanif40: 10.50.200.1/24" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
-        <txttip left="20" top="17" right="281" bottom="65" content="私有云网络规划涂鸦(full vlan模式)&#x0D;&#x0A;2016/9/29&#x0D;&#x0A;via PC" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
+        <txttip left="20" top="17" right="273" bottom="65" content="私有云网络规划涂鸦(full vlan模式)&#x0D;&#x0A;2016/9/29&#x0D;&#x0A;via PC" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
         <txttip left="836" top="104" right="908" bottom="121" content="1.1.1.211" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
         <txttip left="999" top="100" right="1071" bottom="117" content="1.1.1.222" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
         <txttip left="668" top="111" right="770" bottom="128" content="192.168.200.1" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />

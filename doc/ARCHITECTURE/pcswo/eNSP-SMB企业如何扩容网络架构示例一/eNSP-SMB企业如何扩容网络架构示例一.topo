@@ -86,8 +86,8 @@
         <shape type="0" filloption="0" color="16744448" upleftcorner="0,0" width="0" height="0" startpt="607,341" endpt="669,299" borderStyle="3" borderWidth="1" />
     </shapes>
     <txttips>
-        <txttip left="523" top="380" right="633" bottom="428" content="192.168.1.251&#x0D;&#x0A;    ↓&#x0D;&#x0A;10.1.0.252" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
-        <txttip left="906" top="447" right="1016" bottom="495" content="192.168.1.252&#x0D;&#x0A;    ↓&#x0D;&#x0A;10.1.0.251" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
+        <txttip left="523" top="380" right="625" bottom="428" content="192.168.1.251&#x0D;&#x0A;    ↓&#x0D;&#x0A;10.1.0.252" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
+        <txttip left="906" top="447" right="1008" bottom="495" content="192.168.1.252&#x0D;&#x0A;    ↓&#x0D;&#x0A;10.1.0.251" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
         <txttip left="97" top="648" right="237" bottom="680" content="vlan110&#x0D;&#x0A;gw: 192.168.10.254" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
         <txttip left="542" top="651" right="674" bottom="683" content="vlan101&#x0D;&#x0A;gw: 192.168.1.254" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
         <txttip left="341" top="647" right="473" bottom="679" content="vlan101&#x0D;&#x0A;gw: 192.168.1.254" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
@@ -96,9 +96,9 @@
         <txttip left="236" top="256" right="414" bottom="320" content="link-type: trunk &#x0D;&#x0A;allow: 101 110&#x0D;&#x0A;vlan101: 192.168.1.254&#x0D;&#x0A;vlan110: 192.168.10.254" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
         <txttip left="655" top="496" right="780" bottom="528" content="link-type: trunk &#x0D;&#x0A;allow: 101 110" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
         <txttip left="341" top="143" right="496" bottom="160" content="vlan1: 10.1.0.254/20" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
-        <txttip left="648" top="95" right="1060" bottom="159" content="1、新增一个交换机，作为汇聚层&#x0D;&#x0A;2、将 ACC-IPMI to ACC-LAN-1 这2个交换机之间的连接移除&#x0D;&#x0A;3、将上述2个交换机分别接入 AGG-LAN&#x0D;&#x0A;4、划分vlan，做vlan间路由或隔离" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
-        <txttip left="19" top="404" right="129" bottom="452" content="192.168.1.250&#x0D;&#x0A;    ↓&#x0D;&#x0A;10.1.0.253" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
+        <txttip left="648" top="95" right="1052" bottom="159" content="1、新增一个交换机，作为汇聚层&#x0D;&#x0A;2、将 ACC-IPMI to ACC-LAN-1 这2个交换机之间的连接移除&#x0D;&#x0A;3、将上述2个交换机分别接入 AGG-LAN&#x0D;&#x0A;4、划分vlan，做vlan间路由或隔离" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
+        <txttip left="19" top="404" right="121" bottom="452" content="192.168.1.250&#x0D;&#x0A;    ↓&#x0D;&#x0A;10.1.0.253" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
         <txttip left="671" top="268" right="1030" bottom="300" content="1、下方为原来的网络架构，交换机仅作为2层使用&#x0D;&#x0A;2、分为2个网段：IPMI，LAN，通过调整subnet来互联" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
-        <txttip left="11" top="11" right="242" bottom="121" content="SMB企业如何扩容网络架构示例一&#x0D;&#x0A;2016/12/20&#x0D;&#x0A;PC&#x0D;&#x0A;&#x0D;&#x0A;背景：&#x0D;&#x0A;1、ip地址不够用&#x0D;&#x0A;2、初级网络架构" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
+        <txttip left="11" top="11" right="234" bottom="121" content="SMB企业如何扩容网络架构示例一&#x0D;&#x0A;2016/12/20&#x0D;&#x0A;PC&#x0D;&#x0A;&#x0D;&#x0A;背景：&#x0D;&#x0A;1、ip地址不够用&#x0D;&#x0A;2、初级网络架构" fontname="Consolas" fontstyle="0" editsize="100" txtcolor="-16777216" txtbkcolor="-7278960" charset="1" />
     </txttips>
 </topo>

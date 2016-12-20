@@ -31,7 +31,7 @@
                 <interface sztype="Ethernet" interfacename="GE" count="24" />
             </slot>
         </dev>
-        <dev id="D352C382-D9D4-43e1-8F7C-1E4939332684" name="WWW-SVR-1" poe="0" model="Server" settings="-domain 0 -eth 54-89-98-7E-54-48 -ipaddr 1.1.1.222 -ipmask 255.255.255.0 -gateway 1.1.1.1 -ipv6addr 2000::2 -ipv6gateway 2000::1 -prefixlen 64 -ipv4dns 0.0.0.0 -ipv6dns 3000::1 -dnslist NULL" system_mac="54-89-98-79-15-AD" com_port="0" bootmode="0" cx="534.000000" cy="38.000000" edit_left="503" edit_top="56">
+        <dev id="D352C382-D9D4-43e1-8F7C-1E4939332684" name="WWW-SVR-1" poe="0" model="Server" settings="-domain 0 -eth 54-89-98-7E-54-48 -ipaddr 1.1.1.222 -ipmask 255.255.255.0 -gateway 1.1.1.1 -ipv6addr 2000::2 -ipv6gateway 2000::1 -prefixlen 64 -ipv4dns 0.0.0.0 -ipv6dns 3000::1 -dnslist NULL" system_mac="54-89-98-E0-14-15" com_port="0" bootmode="0" cx="534.000000" cy="38.000000" edit_left="503" edit_top="56">
             <slot number="slot17" isMainBoard="1">
                 <interface sztype="Ethernet" interfacename="Ethernet" count="1" />
             </slot>
