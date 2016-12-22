@@ -1,3 +1,6 @@
+mysql安装
+2016/12/22
+
 一、客户端安装使用mysql来连接mysql server
 # yum install mysql
 
@@ -35,6 +38,17 @@ expire_logs_days=
 binlog_format=
 max-binlog-size=
 replicate-ignore-db=
+
+
+4、mysql账号设置
+root用户
+grant all on *.* to 'root'@'localhost' IDENTIFIED BY 'password';
+grant all on *.* to 'root'@'127.0.0.1' IDENTIFIED BY 'password';
+delete from mysql.user where user='' or password='';
+
+创建指定的db并授权用户
+create database abc;
+grant all on abc.* to 'abc_user'@'10.10.%.%' IDENTIFIED BY 'abcpass';
 
 
 

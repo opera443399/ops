@@ -1,5 +1,5 @@
 初探django-写一个小游戏charade
-2016/12/20
+2016/12/22
 在根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）
 
 一、准备环境
@@ -485,6 +485,42 @@ urlpatterns = [
 ]
 
 
+
+10、数据库
+默认使用的是sqlite，这个在测试时用还不错，问题是，如果你想转移到其他的数据库时，应该怎么操作呢？
+1）导出数据（如果你需要）
+建议只导出 app 的数据，django自身的管理数据可以用之前提到的方法再创建，否则后续导入时可能会引起冲突。
+[root@tvm01 www]# python manage.py dumpdata charade > ../dump.charade.json 
+
+2）调整配置（以mysql为例）
+首先，安装 MySQL-python 这个接口模块：
+[root@tvm01 www]# pip install MySQL-python
+
+然后，调整 settings 关于 database 这一段：
+[root@tvm01 www]# vim www/settings.py
+
+# Database
+# https://docs.djangoproject.com/en/1.9/ref/settings/#databases
+
+DATABASES = {
+    'default': {
+        #'ENGINE': 'django.db.backends.sqlite3',
+        #'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'charade',
+        'USER': 'charade_rw',
+        'PASSWORD': 'charadepass',
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
+    }
+}
+
+最后，重新加载服务，让新的配置生效。
+
+
+3）导入数据
+[root@tvm01 www]# python manage.py loaddata ../dump.charade.json 
+Installed 46 object(s) from 1 fixture(s)
 
 
 
