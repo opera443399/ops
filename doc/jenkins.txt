@@ -1,5 +1,5 @@
 jenkins的基础操作
-2016/7/11
+2016/12/23
 
 一、安装
 1、根据官网文档
@@ -7,27 +7,16 @@ jenkins的基础操作
 http://pkg.jenkins-ci.org/redhat-stable/
 https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins+on+Red+Hat+distributions
 
-2、直接下载指定的war包来使用
-1）在 centos 系统上（示例直接运行）
-~]# yum install java-1.8.0-openjdk
+2、直接下载指定的war包来使用（以在 centos 系统上为例）
+
+安装jdk，默认由于版权问题，centos 默认的yum源未加入 oracle jdk 的包，默认将安装开源版本的oepnjdk，请根据需要自行下载缓存后安装对应的jdk包。
+例如，本例所需jdk已经从 oracle 网站下载并缓存到本地yum源，可以直接安装：
+~]# yum install jdk1.8.0_60
+
+下载jenkins
 ~]# mkdir -p /opt/jenkins/logs
 ~]# wget http://mirrors.jenkins-ci.org/war/latest/jenkins.war -O /opt/jenkins/jenkins.war
 ~]# java -jar /opt/jenkins/jenkins.war >/opt/jenkins/logs/$(date +%F).log 2>&1 &
-
-
-
-2）在 ubuntu 系统上（示例在apache-tomcat下运行）
-~]# apt-get update
-~]# apt-get install git openjdk-8-jdk
-~]# apt-get install wget
-~]# cd /opt
-~]# wget http://apache.communilink.net/tomcat/tomcat-8/v8.5.3/bin/apache-tomcat-8.5.3.tar.gz
-~]# tar zxvf apache-tomcat-8.5.3.tar.gz
-~]# ln -s /opt/apache-tomcat-8.5.3 /opt/apache-tomcat
-~]# cd /opt/apache-tomcat/webapps/
-~]# rm ROOT -fr
-~]# wget http://mirrors.jenkins-ci.org/war/latest/jenkins.war -O ROOT.war
-~]# /opt/apache-tomcat/bin/startup.sh
 
 
 3、在 docker 环境中
@@ -43,6 +32,7 @@ https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins+on+Red+Hat+distri
 访问后的首要步骤：
 选择菜单：“Jenkins-系统管理-Configure Global Security”
 先增加一个管理员帐号密码，设置一下安全选项。
+再根据需要安装插件。
 
 
 三、使用
