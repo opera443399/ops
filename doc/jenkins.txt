@@ -29,10 +29,9 @@ https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins+on+Red+Hat+distri
 二、配置
 访问：http://IP:8080/
 
-访问后的首要步骤：
-选择菜单：“Jenkins-系统管理-Configure Global Security”
-先增加一个管理员帐号密码，设置一下安全选项。
-再根据需要安装插件。
+访问后，根据引导，将安装插件，但jenkins默认会去探测google能否访问，这个，，在国内会困住一批人，解决办法：
+请自行搜索关键词：“jenkins connectionCheckUrl”，了解解决办法。
+请根据需要安装插件，插件安装报错时，多半是有依赖关系，缺少哪个插件安装即可。
 
 
 三、使用

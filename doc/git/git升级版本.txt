@@ -1,0 +1,19 @@
+git升级版本
+2016/12/23
+
+centos6 的默认git的版本是1.7，现在都2.11了，肯定是跟不上时代的，现在有需求，要新的版本，咋办？
+一句话，源码编译安装即可。
+
+看说明文档，编译时，缺少啥组件就安装即可。
+实在不知道的，往下看。
+
+# git clone https://github.com/git/git
+# cd git/
+# vim INSTALL
+# yum -y groupinstall "Development Tools"
+# yum install expat-devel asciidoc xmlto docbook2X
+# ln -s /usr/bin/db2x_docbook2texi /usr/bin/docbook2x-texi
+# make prefix=/usr install install-doc install-html install-info
+# git --version
+git version 2.11.0.193.g1d1bdafd6
+
