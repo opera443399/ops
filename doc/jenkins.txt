@@ -172,6 +172,7 @@ display-url-api.jpi            gitlab-hook.jpi                 matrix-auth.jpi  
     项目名称:                asset
     （勾选）Restrict where this project can be run
                 Label Expression: n32
+                （注：本例中这个 slave 节点 n32 是使用 linux 帐号 jenkins 通过 ssh 连接到该 salve 节点，因而运行 job 时，也是使用的 jenkins 这个帐号，请合理的使用权限，例如配置sudo来执行命令）
     源码管理:
     Git:	
         Repositories
@@ -185,18 +186,27 @@ display-url-api.jpi            gitlab-hook.jpi                 matrix-auth.jpi  
     构建:                    
     （选择）Execute shell
                 Command:
+
+                    # setup
                     d_root='/opt/asset'
-                    [ -d ${d_root} ] || sudo mkdir -p ${d_root}
                     d_target="${d_root}/src_$(date +%Y%m%d_%H%M%S)"
                     d_link="${d_root}/latest"
+                    sudo mkdir -p ${d_target}
 
-                    sudo cp -av ../asset ${d_target}
+                    # deploy
+                    sudo rsync -av ../asset/ --exclude=".git/" ${d_target}/
                     sudo rm -fv ${d_link}
                     sudo ln -sv ${d_target} ${d_link}
                     sudo /bin/bash ${d_link}/ctl.sh f
 
-                    #clean up
-                    find ${d_root}/src_* -mtime +7 -delete
+                    # cleanup
+                    echo "[-] List dir:"
+                    sudo ls -l ${d_root}
+                    echo "[-] try to remove copies old than 60 minutes::"
+                    sudo find ${d_root} -maxdepth 1 -amin +60 -print |sort
+                    sudo find ${d_root} -maxdepth 1 -amin +60 -exec rm -fr {} \;
+                    echo "[-] List dir again:"
+                    sudo ls -l ${d_root}
 
 保存 
 ------------------------------------------------------------------------------
