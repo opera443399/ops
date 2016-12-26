@@ -1,25 +1,34 @@
 jenkins的基础操作
-2016/12/23
+2016/12/26
 
 一、安装
-1、根据官网文档
-请参考：
-http://pkg.jenkins-ci.org/redhat-stable/
-https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins+on+Red+Hat+distributions
+1、准备工作
+请先安装jdk
 
-2、直接下载指定的war包来使用（以在 centos 系统上为例）
-
-安装jdk，默认由于版权问题，centos 默认的yum源未加入 oracle jdk 的包，默认将安装开源版本的oepnjdk，请根据需要自行下载缓存后安装对应的jdk包。
+默认由于版权问题，centos 默认的yum源未加入 oracle jdk 的包，默认将安装开源版本的oepnjdk，请根据需要自行下载缓存后安装对应的jdk包。
 例如，本例所需jdk已经从 oracle 网站下载并缓存到本地yum源，可以直接安装：
 ~]# yum install jdk1.8.0_60
 
-下载jenkins
+
+2、安装方式
+1）yum源安装
+~]# wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+~]# rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+
+~]# yum install jenkins
+
+2）直接下载rpm包来安装
+~]# wget http://pkg.jenkins-ci.org/redhat-stable/jenkins-2.7.4-1.1.noarch.rpm
+~]# yum localinstall jenkins-2.7.4-1.1.noarch.rpm
+
+
+3）直接下载指定的war包来使用
 ~]# mkdir -p /opt/jenkins/logs
 ~]# wget http://mirrors.jenkins-ci.org/war/latest/jenkins.war -O /opt/jenkins/jenkins.war
 ~]# java -jar /opt/jenkins/jenkins.war >/opt/jenkins/logs/$(date +%F).log 2>&1 &
 
 
-3、在 docker 环境中
+3、在 docker 环境中使用
 ~]$ docker pull jenkins
 ~]$ mkdir -p /data/docker/jenkins-test
 ~]$ docker run -d --restart=always -p 8080:8080 -p 50000:50000 -v /data/docker/jenkins-test:/var/jenkins_home --name jenkins_36 jenkins
@@ -121,4 +130,7 @@ Success > 控制台输出 #1 2016-6-30 上午3:18
 本次示例，尚未使用 svn，git，仅简单示范在指定的节点上执行 shell 任务，体现出 jenkins 大致上是如何工作的。
 
 
-  
+ZYXW、参考
+1、doc
+http://pkg.jenkins-ci.org/redhat-stable/
+https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins+on+Red+Hat+distributions
