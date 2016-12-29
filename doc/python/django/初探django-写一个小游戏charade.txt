@@ -1,6 +1,6 @@
 初探django-写一个小游戏charade
-2016/12/22
-在根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）
+2016/12/29
+目的：通过“根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）”这样一个行为，来记录 django 开发过程中的经验细节。
 
 一、准备环境
 1、建立项目
@@ -124,17 +124,50 @@ TEMPLATES = [
 
 
 3、支持中文
-调整 model 内容：
+参考：
+https://docs.djangoproject.com/en/1.9/ref/unicode/#general-string-handling
+https://docs.djangoproject.com/en/1.9/ref/unicode/#models
 
+1）针对 string
+解决办法：
+from __future__ import unicode_literals
+原因：
+a）Python 2 legacy:
+my_string = "This is a bytestring"
+my_unicode = u"This is an Unicode string"
+
+b）Python 2 with unicode literals or Python 3:
+from __future__ import unicode_literals
+
+my_string = b"This is a bytestring"
+my_unicode = "This is an Unicode string"
+
+2）针对 model
+解决办法：
+from django.utils.encoding import python_2_unicode_compatible
+原因：
+选择 __str__() 还是 __unicode__()
+如果使用的是 Python 3 的环境，则使用 __str__() 而不是 __unicode__()
+如果要兼容 Python 2 的环境，请使用修饰符 python_2_unicode_compatible().
+
+3）通常情况下，异常内容包括
+UnicodeEncodeError
+UnicodeDecodeError 
+
+4）使用示例（针对 model class 使用修饰符，直接返回中文字符，而不会报错）
 # coding: utf-8
 from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 
-在 每个 model 的 class 或者 def 前，修饰一下：
+在每个 model class 前面，修饰一下：
 @python_2_unicode_compatible
-class Question(models.Model):
-    question_text = models.CharField('问题', max_length=200)
-    pub_date = models.DateTimeField('发布日期')
+class Choice(models.Model):
+    question = models.ForeignKey(Question)
+    choice_text = models.CharField('选项', max_length=200)
+    votes = models.IntegerField('票数', default=0)
+
+    def __str__(self):              # __unicode__ on Python 2
+        return self.choice_text
 
     
 4、使用用户认证系统组件
@@ -547,6 +580,7 @@ https://docs.djangoproject.com/en/1.9/topics/
 app：https://docs.djangoproject.com/en/1.9/ref/applications/
 i18n: https://docs.djangoproject.com/es/1.9/topics/i18n/translation/
 修饰符: https://docs.djangoproject.com/en/1.9/topics/class-based-views/intro/#decorating-class-based-views
+unicode：https://docs.djangoproject.com/en/1.9/ref/unicode/
 
 2、Django 基础教程
 http://www.ziqiangxuetang.com/django/django-tutorial.html
