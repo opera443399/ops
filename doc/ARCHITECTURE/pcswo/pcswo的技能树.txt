@@ -30,14 +30,13 @@ c) 监控: 健康检查(iDRAC/OME,MDSM),故障诊断和处理
 
 4、操作系统
 a) OS选型,内核定制,更新和优化
-b) 软件包: 建立本地yum源
-c）调优：内核参数,tcpdump,strace
+b) 调优:内核参数,tcpdump,strace
 
 5、基础服务建设
-a) LVS负载均衡(keepalived,nginx,haproxy,ospf,fullnat)和SNAT(gateway,iptables)建设
+a) 负载均衡(LVS,keepalived,nginx,haproxy,ospf,fullnat)和SNAT(gateway,iptables)建设
 b) 装机,测试和交付: kickstart,cobbler
-c) NTP,DNS(bind,dnsmasq),VPN(openvpn),认证(ssh,LDAP/AD,跳板机),日志(snmp,script,logrotate,rsyslog,ELK),邮件等常规服务的管理和规划
-d) 存储服务: 本地(ftp,samba,nfs/nfs-ganesha),集群(ocfs2),分布式(glusterfs,ceph)，商业(nas,iscsi)等
+c) NTP,DNS(bind,dnsmasq),VPN(openvpn),认证(ssh,LDAP/AD,跳板机),日志(snmp,script,logrotate,rsyslog,ELK),邮件,本地yum源等常规服务的管理和规划
+d) 存储服务: 本地(ftp,samba,nfs/nfs-ganesha),集群(ocfs2),分布式(glusterfs,ceph),商业(nas,iscsi)等:
 e) 架构调优和提供稳定的基础服务
 
 6、资产管理
@@ -57,9 +56,9 @@ b) 可靠性方案
 a) 上下线和回滚方案
 b) 监控和预案管理: 指标,到阈值如何处理,演练
 c) 如何按需使用服务器/网络等资源
-d）服务发现: consul,etcd,zookeeper,eureka
-e）配置管理和远程执行: saltstack,puppet,ansible,fabric
-f）进程守护: supervisor,monit,god,frigga
+d) 服务发现: consul,etcd,zookeeper,eureka
+e) 配置管理和远程执行: saltstack,puppet,ansible
+f) 进程守护: supervisor,monit,god,frigga
 
 4、备份策略
 a) 使用什么工具: rsync,自研
@@ -92,7 +91,7 @@ d) 公有云: aliyun,qcloud,aws
 
 ===================================四、数据运维===================================
 1、数据存储
-a) db: mysql(版本选择，部署方案,配置调优,集群管理,高可用,读写分离,主从同步,备份和恢复,权限,监控)
+a) db: mysql(版本选择,部署方案,配置调优,集群管理,高可用,读写分离,主从同步,备份和恢复,权限,监控)
 b) cache: memcache(couchbase),redis
 c) nosql: mongodb
 d) mq: rabbitmq,nsq
@@ -108,5 +107,5 @@ c) 文档共享: seafile
 
 2、开发
 a) 前端: html5,jQuery,Ajax,BootStrap
-b) 后端：Java(jdk),Python(Django),php(php-fpm),nodejs(pm2)
-c）web服务：apache,nginx,tomcat
+b) 后端: Java(jdk),Python(Django),php(php-fpm),nodejs(pm2)
+c) web服务:apache,nginx,tomcat
