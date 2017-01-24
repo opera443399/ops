@@ -1,5 +1,5 @@
 初探django-写一个小游戏charade
-2016/12/29
+2017/1/24
 目的：通过“根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）”这样一个行为，来记录 django 开发过程中的经验细节。
 
 一、准备环境
@@ -556,6 +556,53 @@ DATABASES = {
 Installed 46 object(s) from 1 fixture(s)
 
 
+11、关于 timezone 的问题
+【Django 1.9】
+参考：
+timezone：https://docs.djangoproject.com/en/1.9/topics/i18n/timezones/
+创建一个项目时，默认的值如下：
+LANGUAGE_CODE = 'en-us'
+        
+TIME_ZONE = 'UTC'
+
+USE_I18N = True
+
+USE_L10N = True
+
+USE_TZ = True
+
+而国际化过程中，我们通常会做如下配置：
+
+# Internationalization
+# https://docs.djangoproject.com/en/1.9/topics/i18n/
+
+#LANGUAGE_CODE = 'zh-hans'
+LANGUAGE_CODE = 'en'
+
+TIME_ZONE = 'Asia/Shanghai'（调整了这里）
+
+USE_I18N = True
+
+USE_L10N = True
+
+USE_TZ = True
+
+LANGUAGES = [
+    ('en', 'English'),
+    ('zh-cn', 'zh'),
+]
+
+【Django 1.11】
+参考：
+timezone：https://docs.djangoproject.com/en/1.11/topics/i18n/timezones/
+
+Time zone 默认是禁用的，要启用，请设置 USE_TZ = True 
+Time zone 使用了 pytz 这个模块在安装 Django 时会附带安装。
+旧的 django 版本不需要 pytz 或不会自动安装它。
+使用 django-admin startproject 创建项目时，为了方便，默认将在 settings.py 中配置 USE_TZ = True 
+
+
+
 
 四、示例
 https://github.com/opera443399/charade.git
@@ -579,8 +626,11 @@ https://docs.djangoproject.com/en/1.9/topics/
 模版系统标签：https://docs.djangoproject.com/en/1.9/ref/templates/builtins/#ref-templates-builtins-tags
 app：https://docs.djangoproject.com/en/1.9/ref/applications/
 i18n: https://docs.djangoproject.com/es/1.9/topics/i18n/translation/
+timezone：https://docs.djangoproject.com/en/1.9/topics/i18n/timezones/
+timezone：https://docs.djangoproject.com/en/1.11/topics/i18n/timezones/
 修饰符: https://docs.djangoproject.com/en/1.9/topics/class-based-views/intro/#decorating-class-based-views
 unicode：https://docs.djangoproject.com/en/1.9/ref/unicode/
+
 
 2、Django 基础教程
 http://www.ziqiangxuetang.com/django/django-tutorial.html
