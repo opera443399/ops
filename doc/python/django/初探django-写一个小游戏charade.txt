@@ -1,5 +1,5 @@
 初探django-写一个小游戏charade
-2017/1/24
+2017/2/4
 目的：通过“根据tutorial学习的同时，尝试写一个猜英文单词的游戏页面（charade）”这样一个行为，来记录 django 开发过程中的经验细节。
 
 一、准备环境
@@ -602,6 +602,34 @@ Time zone 使用了 pytz 这个模块在安装 Django 时会附带安装。
 使用 django-admin startproject 创建项目时，为了方便，默认将在 settings.py 中配置 USE_TZ = True 
 
 
+
+12、django自带的管理页面admin在哪里可以找到定义的urls
+通常在项目中，默认是这样的：
+url(r'^admin/', include(admin.site.urls)),
+
+admin.site.urls 究竟定义了哪些呢？
+首先，通过下述指令可以得到 django 的源码路径：
+python -c 'import django;print django' 
+其次，查找 contrib 目录下对应的源码即可：
+grep -A10 'urlpatterns' $(python -c 'import django;print django' |awk -F"'" '{print $(NF-1)}' |cut -d'_' -f1)contrib/admin/sites.py 
+
+部分结果如下所示：
+        urlpatterns = [
+            url(r'^$', wrap(self.index), name='index'),
+            url(r'^login/$', self.login, name='login'),
+            url(r'^logout/$', wrap(self.logout), name='logout'),
+            url(r'^password_change/$', wrap(self.password_change, cacheable=True), name='password_change'),
+            url(r'^password_change/done/$', wrap(self.password_change_done, cacheable=True),
+                name='password_change_done'),
+            url(r'^jsi18n/$', wrap(self.i18n_javascript, cacheable=True), name='jsi18n'),
+            url(r'^r/(?P<content_type_id>\d+)/(?P<object_id>.+)/$', wrap(contenttype_views.shortcut),
+                name='view_on_site'),
+        ]
+        
+很显然，在模版中如果要引用 admin 页面的地址，可以这样写：
+                            <a href="{% url 'admin:index' %}" class="navbar-link">
+                            {% trans 'Management' %}
+                            </a>
 
 
 四、示例
