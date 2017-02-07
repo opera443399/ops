@@ -1,5 +1,5 @@
 初探glusterfs-使用小结FAQ
-2016/12/14
+2017/2/7
 
 
 注：建议使用3副本（1x3），1x2副本危险，2x2也危险。
@@ -331,6 +331,48 @@ Number of entries: 0
 
 Brick 10.60.200.12:/data/gv1/brick1
 Number of entries: 0
+
+
+
+2、在增加或者删除一个集群中的节点时，要注意的问题
+现状：
+a+b 组成： replica 1x2 的集群。
+-----------------------------
+Number of Bricks: 1 x 2 = 2
+Bricks:
+Brick1: a.test.com:/data/test
+Brick2: b.test.com:/data/test
+
+增加c和d，变成：replica 1x4 的集群。
+gluster volume add-brick gv1 replica 4 c.test.com:/data/test d.test.com:/data/test
+-----------------------------
+Number of Bricks: 1 x 4 = 4
+Bricks:
+Brick1: a.test.com:/data/test
+Brick2: b.test.com:/data/test
+Brick3: c.test.com:/data/test
+Brick4: d.test.com:/data/test
+
+移除c，变成：replica 1x3 的集群
+gluster volume remove-brick gv1 replica 3 c.test.com:/data/test force
+-----------------------------
+Number of Bricks: 1 x 3 = 3
+Bricks:
+Brick1: a.test.com:/data/test
+Brick2: b.test.com:/data/test
+Brick3: d.test.com:/data/test
+
+这一步，可能导致数据错误，因为a+b+d，将重新heal数据。
+
+此时的解决方法是：
+移除d，变成：replica 1x2 的集群，因为a和b的数据最接近一致，heal的时间最短。
+gluster volume remove-brick gv1 replica 2 d.test.com:/data/test force
+-----------------------------
+Number of Bricks: 1 x 2 = 2
+Bricks:
+Brick1: a.test.com:/data/test
+Brick2: b.test.com:/data/test
+
 
 
 

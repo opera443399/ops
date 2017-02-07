@@ -1,19 +1,29 @@
 演示针对LVM分区的管理
-2016/10/19
+2017/2/7
 
 
 假设已经增加一块磁盘：/dev/sdb
 
 一、将sdb配置成LVM分区
-1）当前系统有sda和sdb2个物理磁盘，各有100G的大小。
+1、说明
+当前系统有sda和sdb这2个物理磁盘，各有100G的大小。
 [root@svr200-11 ~]# ls /dev/sd*
 sda   sda1  sda2  sdb   
 
-2）给sdb分区
-最简单的方式是使用整个磁盘：
+2、给sdb分区
+1）最简单的方式是使用整个磁盘：
 [root@svr200-11 ~]# pvcreate /dev/sdb
 
-否则的话，请继续：
+2）如果遇到这样的异常（多半是因为在之前的操作中已经创建过sdb）：
+[root@GZ01A020 ~]# pvcreate  /dev/sdb
+  Device /dev/sdb not found (or ignored by filtering).
+则如下操作：
+dmsetup remove_all
+fdisk /dev/sdb
+删除分区
+然后再使用pvcreate创建分区
+
+3）如果只是划分部分空间，时间lvm分区
 [root@svr200-11 ~]# fdisk /dev/sdb
 
 WARNING: DOS-compatible mode is deprecated. It's strongly recommended to
@@ -92,35 +102,35 @@ Syncing disks.
 
 
 二、物理卷（Physical Volume）
-1）创建PV
+1、创建PV
 [root@svr200-11 ~]# pvcreate  /dev/sdb
-2）查看PV
+2、查看PV
 [root@svr200-11 ~]# pvdisplay 
 
   
 三、卷组（Volume Group）  
-1）创建一个VG，定义组名，组员（PV）
+1、创建一个VG，定义组名，组员（PV）
 [root@svr200-11 ~]# vgcreate vg_test01 /dev/sdb
-2）查看VG
+2、查看VG
 [root@svr200-11 ~]# vgdisplay 
 
   
 四、逻辑卷（Logical Volume）
-1）创建一个新LV（理解成常规的一个分区，需要mkfs格式化后挂载到文件系统使用），定义大小，逻辑卷名称，以及从哪个VG上创建。
+1、创建一个新LV（理解成常规的一个分区，需要mkfs格式化后挂载到文件系统使用），定义大小，逻辑卷名称，以及从哪个VG上创建。
 [root@svr200-11 ~]# lvcreate -L 8G -n lv_test01 vg_test01
 当然，也可以使用全部的磁盘空间：
-[root@svr200-11 ~]# lvcreate -l 100%FREE lv_test01 vg_test01
+[root@svr200-11 ~]# lvcreate -l 100%FREE -n lv_test01 vg_test01
 这里要注意一下“-l”参数的用法。
 
-2）查看逻辑卷
+2、查看逻辑卷
 [root@svr200-11 ~]# lvdisplay 
 
 
 五、格式化lv并挂载到文件系统使用
-1）格式化
+1、格式化
 [root@svr200-11 ~]# mkfs -t ext4 /dev/vg_test01/lv_test01 
 
-2）挂载
+2、挂载
 [root@svr200-11 ~]# mkdir /data/test01 
 [root@svr200-11 ~]# mount /dev/vg_test01/lv_test01 /data/test01/
 [root@svr200-11 ~]# df -h |grep data
@@ -138,15 +148,15 @@ _EOF
 
 
 六、当前状态
-1）物理磁盘：sdb，100G
-2）新建了一个LVM格式的分区：sdb1，20G
-3）新建了一个vg（vg_test01），把sdb1加入了vg_test01中
-4）在vg_test01上，创建了一个大小为8G的分区lv_test01（逻辑卷lv）
-5）格式化和挂载分区lv_test01到/data/test01上使用
+1、物理磁盘：sdb，100G
+2、新建了一个LVM格式的分区：sdb1，20G
+3、新建了一个vg（vg_test01），把sdb1加入了vg_test01中
+4、在vg_test01上，创建了一个大小为8G的分区lv_test01（逻辑卷lv）
+5、格式化和挂载分区lv_test01到/data/test01上使用
 
 
 七、上述是常规的增加一个分区的步骤，接下来探讨如何给分区扩容。
-假设已经删除了上面使用的/dev/sdb，这次的目的是，给卷组（vg_svr20011）扩容，最终是要给逻辑卷（lv_home）扩容
+1、假设已经删除了上面使用的/dev/sdb，这次的目的是，给卷组（vg_svr20011）扩容，最终是要给逻辑卷（lv_home）扩容
 扫描和删除有如下命令：
 pvscan
 vgscan
@@ -156,7 +166,7 @@ vgremove
 lvremove
 
 
-1）创建/dev/sdb1，大小全部空间（100G），LVM分区
+2、创建/dev/sdb1，大小全部空间（100G），LVM分区
 
 fdisk /dev/sdb <<_EOF
 n
@@ -194,7 +204,7 @@ _EOF
 sdb1已经和sda2已经属于同一个卷组。
 
 
-2）给逻辑卷（LV）扩容
+3、给逻辑卷（LV）扩容
 查看LV的状态：
 [root@svr200-11 ~]# lvscan
   ACTIVE            '/dev/vg_svr20011/lv_root' [50.00 GiB] inherit
