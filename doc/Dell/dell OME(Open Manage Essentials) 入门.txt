@@ -1,5 +1,5 @@
 dell OME(Open Manage Essentials) 入门
-2016/8/8
+2017/2/10
 
 更便捷为您提供主动和自助技术支持，预先硬件日志下载，系统和驱动安装，保修和配置查询
 
@@ -135,3 +135,8 @@ ZYXW、参考
 2、OME和告警的流程，来自自己的测试小结；
 3、发现一篇文章，有大量截图介绍：DELL OME监控服务器安装配置
 http://www.cnblogs.com/wanggege/p/4770884.html
+
+
+补充说明：
+1、强烈推荐 dell 的工具 Dell OpenManage Mobile (OMM)，这是手机版的OME，可以在ios和android中安装，搜索“OpenManage Mobile”即可，当然，可能你还需要 openvpn 和 vnc viewer 这样的工具来辅助使用，具体介绍请参考：
+http://mp.weixin.qq.com/s?__biz=MzA3MzYwNjQ3NA==&mid=2651297613&idx=1&sn=a536650d22289acd6ec102d74b9b8b3c&chksm=84ff4368b388ca7ec6a5cacf786f1f45420312a6462c8943a6f33aacefed40288da3300c958e&mpshare=1&scene=23&srcid=0210ft9mQRp8VVkPKtpJwp87#rd
