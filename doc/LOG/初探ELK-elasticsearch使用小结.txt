@@ -1,5 +1,5 @@
 初探ELK-elasticsearch使用小结
-2016/9/22
+2017/2/13
 
 一、安装
 1、jdk 和 环境变量
@@ -441,6 +441,18 @@ es-cluster-test  es-test
         "tags" : {
           "type" : "string",
           "index": "not_analyzed"
+        },
+        "bytes" : {
+          "type" : "long",
+          "index": "not_analyzed"
+        },
+        "geoip" : {
+          "properties" : {
+            "location" : {
+              "type" : "geo_point",
+              "index": "not_analyzed"
+            }
+          }
         }
       }
     }
