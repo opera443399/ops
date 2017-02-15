@@ -1,0 +1,71 @@
+tengine
+2017/2/15
+
+
+一、安装
+1、访问：http://tengine.taobao.org/ 下载最新的稳定版。
+2、编译安装
+$ ./configure
+$ make
+# make install
+
+
+3、配置
+/usr/local/nginx/conf
+
+4、启动服务
+/usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf -t
+/usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf
+/usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf -s reload
+
+
+二、配置
+1、获取域名的状态
+
+[root@vm33 nginx]# cat conf/nginx.conf
+http {
+    （略）
+    req_status_zone z_all_vhosts "$host,$server_addr:$server_port" 10M;
+    req_status z_all_vhosts;
+    server {
+        listen       80 default;
+
+        location /rstatus {
+            req_status_show;
+        }
+        allow 127.0.0.1;
+        deny all;
+    }
+
+    include /usr/local/nginx/conf.d/*.conf;
+}
+
+
+[root@vm33 nginx]# cat conf.d/www.test.com.conf 
+server {
+    listen       80;
+    server_name  www.test.com;
+
+    access_log  /var/log/nginx/access_www.test.com.log  main;
+    error_log  /var/log/nginx/error_www.test.com.log;
+
+
+    location / {
+        root   /usr/local/nginx/html;
+        index  index.html index.htm;
+    }
+
+
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/local/nginx/html;
+    }
+
+}
+
+
+
+ZYXW、参考
+1、ngx_http_reqstat_module
+http://tengine.taobao.org/document_cn/http_reqstat_cn.html
+    
