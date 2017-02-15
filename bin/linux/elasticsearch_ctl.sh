@@ -1,54 +1,55 @@
 #!/bin/bash
 #
-#2016/10/20
-#ver:0.1.1
+#2017/2/15
+#ver:0.2.0
 
+es_domain='http://localhost:9200'
 dt_default=$(date -d"7 days ago" +"%Y.%m.%d")
 
 show_h(){
     echo -e '\033[32m[+] show health\033[0m'
     echo -e '\033[32m-----------------------------------------------------------\033[0m'
-    curl -s 'localhost:9200/_cat/health?v'
+    curl -s "${es_domain}/_cat/health?v"
 }
 
 show_n(){
     echo -e '\033[32m[+] show nodes\033[0m'
     echo -e '\033[32m-----------------------------------------------------------\033[0m'
-    curl -s 'localhost:9200/_cat/nodes?v'
+    curl -s "${es_domain}/_cat/nodes?v"
 }
 
 show_i(){
     echo -e '\033[32m[+] show indices\033[0m'
     echo -e '\033[32m-----------------------------------------------------------\033[0m'
-    curl -s 'localhost:9200/_cat/indices?v'
+    curl -s "${es_domain}/_cat/indices?v"
 }
 
 index_del(){
     #curl -XDELETE 'http://localhost:9200/filebeat-*?pretty'
     echo -e "\033[32m[+] delete index: ${1}*\033[0m"
     echo -e '\033[32m-----------------------------------------------------------\033[0m'
-    curl -s -XDELETE "http://localhost:9200/${1}*?pretty"
+    curl -s -XDELETE "${es_domain}/${1}*?pretty"
 }
 
 index_cls(){
     #curl -XDELETE 'http://localhost:9200/filebeat-*-2016.09.23?pretty'
     echo -e "\033[32m[+] delete index:  ${1}-*-${2}\033[0m"
     echo -e '\033[32m-----------------------------------------------------------\033[0m'
-    curl -s -XDELETE "http://localhost:9200/${1}-*-${2}?pretty"
+    curl -s -XDELETE "${es_domain}/${1}-*-${2}?pretty"
 }
 
 show_t(){
     #curl 'http://localhost:9200/_template/filebeat?pretty'
     echo -e "\033[32m[+] show template for index: ${1}\033[0m"
     echo -e '\033[32m-----------------------------------------------------------\033[0m'
-    curl -s 'http://localhost:9200/_template/${1}?pretty'
+    curl -s "${es_domain}/_template/${1}?pretty"
 }
 
 tpl_set(){
     #curl -XPUT 'http://localhost:9200/_template/filebeat?pretty' -d@/tmp/elasticsearch.template.filebeat.json
     echo -e "\033[32m[+] set template for index: ${1}\033[0m"
     echo -e '\033[32m-----------------------------------------------------------\033[0m'
-    curl -s -XPUT 'http://localhost:9200/_template/${1}?pretty' -d@${2}
+    curl -s -XPUT "${es_domain}/_template/${1}?pretty" -d@${2}
 }
 
 

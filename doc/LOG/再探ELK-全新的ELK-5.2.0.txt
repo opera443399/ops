@@ -1,13 +1,13 @@
-初探ELK-以收集 nginx 日志为例示范搭建一个 ELK 环境的基本步骤
+再探ELK-全新的ELK-5.2.0
 2017/2/15
 
 一、环境
 1、RPM
 1）收集 rpm 包
-wget https://download.elastic.co/logstash/logstash/packages/centos/logstash-2.4.0.noarch.rpm
-wget https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/rpm/elasticsearch/2.4.0/elasticsearch-2.4.0.rpm
-wget https://download.elastic.co/kibana/kibana/kibana-4.6.1-x86_64.rpm
-wget https://download.elastic.co/beats/filebeat/filebeat-1.3.1-x86_64.rpm
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.2.0.rpm
+wget https://artifacts.elastic.co/downloads/kibana/kibana-5.2.0-x86_64.rpm
+wget https://artifacts.elastic.co/downloads/logstash/logstash-5.2.0.rpm
+wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-5.2.0-x86_64.rpm
 
 2）缓存rpm包到本地yum源
 
@@ -40,19 +40,20 @@ www.work.com
   
 
 二、ELK 服务端配置
-1、配置 elasticsearch 服务【存储数据（来自 logstash ）】
+1、elasticsearch
 1）配置文件
 [root@vm220 ~]# mkdir -p /data/elasticsearch
 [root@vm220 ~]# chown elasticsearch:elasticsearch /data/elasticsearch
 [root@vm220 ~]# cp -a /etc/elasticsearch/elasticsearch.yml{,.bak}
 调整配置文件：
 【如果 ES 是单节点】
-[root@vm220 ~]# grep ^[^#] /etc/elasticsearch/elasticsearch.yml 
+[root@vm220 ~]# grep ^[^#] /etc/elasticsearch/elasticsearch.yml
 cluster.name: es-cluster-test
 node.name: node-vm220
 path.data: /data/elasticsearch
 path.logs: /var/log/elasticsearch
-network.host: 0.0.0.0
+bootstrap.system_call_filter: false
+network.host: 10.50.200.220
 
 【如果 elasticsearch 是集群】
 [root@vm220 ~]# grep ^[^#] /etc/elasticsearch/elasticsearch.yml    
@@ -60,10 +61,19 @@ cluster.name: es-cluster-test
 node.name: node-vm220
 path.data: /data/elasticsearch
 path.logs: /var/log/elasticsearch
-network.host: 0.0.0.0
+bootstrap.system_call_filter: false
+network.host: 10.50.200.220
 discovery.zen.ping.unicast.hosts: ["10.50.200.218", "10.50.200.219", "10.50.200.220"]
 discovery.zen.minimum_master_nodes: 3
 其他节点类似
+
+
+
+【特别说明】bootstrap.system_call_filter: false
+由于内核限制，在 centos6 下无法安装 syscall filter  报错信息如下：
+[2017-02-13T14:14:00,689][WARN ][o.e.b.JNANatives         ] unable to install syscall filter:
+java.lang.UnsupportedOperationException: seccomp unavailable: requires kernel 3.5+ with CONFIG_SECCOMP and CONFIG_SECCOMP_FILTER compiled in
+
 
 2）启动服务
 [root@vm220 ~]# service elasticsearch start
@@ -71,17 +81,23 @@ discovery.zen.minimum_master_nodes: 3
 
 
 
-2、配置 kibana 服务【展示数据（来自 elasticsearch ）】
+
+2、kibana
 1）配置文件
-[root@vm220 ~]# service kibana start
+[root@vm220 ~]# grep ^[^#] /etc/kibana/kibana.yml
+server.host: "10.50.200.220"
+server.name: "es-cluster-test-kibana"
+elasticsearch.url: "http://10.50.200.220:9200"
+
 2）启动服务
-[root@vm220 ~]# chkconfig kibana on 
+[root@vm220 ~]# service kibana restart
+[root@vm220 ~]# chkconfig kibana on
+
 3）访问
 http://10.50.200.220:5601/app/kibana
 
 
-
-3、配置 logstash 服务【过滤数据（来自 filebeat 发往 elasticsearch）】
+3、logstash
 1）配置自定义的 pattern
 [root@vm220 ~]# mkdir -p /etc/logstash/patterns.d
 [root@vm220 ~]# cat /etc/logstash/patterns.d/extra_patterns
@@ -91,8 +107,19 @@ NGINXERROR_PID (?:[0-9]+#[0-9]+\:)
 NGINXERROR_TID (?:\*[0-9]+)
 NGINXERROR %{NGINXERROR_DATESTAMP:timestamp} \[%{LOGLEVEL:loglevel}\] %{NGINXERROR_PID:pid} %{NGINXERROR_TID:tid} %{GREEDYDATA:errormsg}, client: %{IPORHOST:clientip}, server: %{HOSTNAME:server}, request: %{QS:request}(?:, upstream: %{QS:upstream})?, host: \"%{HOSTNAME:hostname}\"(?:, referrer: (?:"(?:%{URI:referrer}|-)"|%{QS:referrer}))?
 
+
+[root@vm220 ~]# grep ^[^#] /etc/logstash/logstash.yml
+path.data: /var/lib/logstash
+path.config: /etc/logstash/conf.d
+path.logs: /var/log/logstash
+
+【特别说明】geolite已经更新，格式有变更，请下载最新的版本。
+cd /etc/logstash/ && mkdir geoip && cd geoip
+wget http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz
+gunzip GeoLite2-City.mmdb.gz
+
 2）调整配置文件
-[root@vm220 ~]# cat /etc/logstash/conf.d/filebeat.conf
+[root@vm220 logstash]# cat conf.d/filebeat.conf 
 input {
     beats {
         port => "5044"
@@ -111,6 +138,11 @@ filter {
             match => [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
             remove_field => [ "timestamp" ]
         }
+        geoip {
+            source => "clientip"
+            target => "geoip"
+            database => "/etc/logstash/geoip/GeoLite2-City.mmdb"
+        }
     }
     if[type] =~ "NginxError-" {
         grok {
@@ -123,13 +155,18 @@ filter {
             match => [ "timestamp", "YYYY/MM/dd HH:mm:ss" ]
             remove_field => [ "timestamp" ]
         }
+        geoip {
+            source => "clientip"
+            target => "geoip"
+            database => "/etc/logstash/geoip/GeoLite2-City.mmdb"
+        }
     }
 }
 
 output {
     if[type] == "NginxAccess-www.test.com" {
         elasticsearch {
-            hosts =>"10.50.200.220:9200"
+            hosts => "10.50.200.220:9200"
             manage_template => false
             index => "%{[@metadata][beat]}-nginxaccess-www.test.com-%{+YYYY.MM.dd}"
             document_type => "%{[@metadata][type]}"
@@ -137,7 +174,7 @@ output {
     }
     if[type] == "NginxAccess-www.work.com" {
         elasticsearch {
-            hosts =>"10.50.200.220:9200"
+            hosts => "10.50.200.220:9200"
             manage_template => false
             index => "%{[@metadata][beat]}-nginxaccess-www.work.com-%{+YYYY.MM.dd}"
             document_type => "%{[@metadata][type]}"
@@ -145,7 +182,7 @@ output {
     }
     if[type] == "NginxError-www.test.com" {
         elasticsearch {
-            hosts =>"10.50.200.220:9200"
+            hosts => "10.50.200.220:9200"
             manage_template => false
             index => "%{[@metadata][beat]}-nginxerror-www.test.com-%{+YYYY.MM.dd}"
             document_type => "%{[@metadata][type]}"
@@ -153,7 +190,7 @@ output {
     }
     if[type] == "NginxError-www.work.com" {
         elasticsearch {
-            hosts =>"10.50.200.220:9200"
+            hosts => "10.50.200.220:9200"
             manage_template => false
             index => "%{[@metadata][beat]}-nginxerror-www.work.com-%{+YYYY.MM.dd}"
             document_type => "%{[@metadata][type]}"
@@ -161,67 +198,63 @@ output {
     }
 }
 
-【如果 elasticsearch 是集群】
-将：
-            hosts =>"10.50.200.220:9200"
-调整为：
-            hosts => ["10.50.200.218:9200", "10.50.200.219:9200", "10.50.200.220:9200"]
-            
-            
-
 3）启动服务
-[root@vm220 ~]# service logstash restart
-[root@vm220 ~]# chkconfig logstash on
+centos6下使用 upstart 来启动服务：
+[root@vm220 ~]# initctl restart logstash
 
-    
-
-三、使用 filebeat 在客户端收集日志。
-1）配置 filebeat 服务
-[root@vm49 ~]# cp /etc/filebeat/filebeat.yml{,.bak}
-[root@vm49 ~]# cat /etc/filebeat/filebeat.yml |grep -Ev '^(#|  #|    #|      #|        #|$)'
-filebeat:
-  prospectors:
-    -
-      paths:
-        - /var/log/nginx/access_www.test.com*.log
-      input_type: log
-      document_type: NginxAccess-www.test.com
-    -
-      paths:
-        - /var/log/nginx/access_www.work.com*.log
-      input_type: log
-      document_type: NginxAccess-www.work.com
-    -
-      paths:
-        - /var/log/nginx/error_www.test.com*.log
-      input_type: log
-      document_type: NginxError-www.test.com
-    -
-      paths:
-        - /var/log/nginx/error_www.work.com*.log
-      input_type: log
-      document_type: NginxError-www.work.com
-  registry_file: /var/lib/filebeat/registry
-output:
-  logstash:
-    hosts: ["10.50.200.220:5044"]
-shipper:
-logging:
-  to_files: true
-  files:
-    path: /var/log/filebeat
-    name: filebeat
-    rotateeverybytes: 10485760 # = 10MB
+centos7下使用 systemd 来启动服务：
+[root@vm220 ~]# systemctl start logstash.service
 
 
+4、filebeat
+1）配置文件
+[root@vm49 ~]# cat /etc/filebeat/filebeat.yml
+filebeat.prospectors:
+- input_type: log
+  paths:
+    - /var/log/nginx/access.www.test.com*.log
+  document_type: NginxAccess-www.test.com
+  
+- input_type: log
+  paths:
+    - /var/log/nginx/access.www.work.com*.log
+  document_type: NginxAccess-www.work.com
+  
+- input_type: log
+  paths:
+    - /var/log/nginx/error.www.test.com*.log
+  document_type: NginxError-www.test.com
+  
+- input_type: log
+  paths:
+    - /var/log/nginx/error.www.work.com*.log
+  document_type: NginxError-www.work.com
+  
+output.logstash:
+  hosts: ["10.50.200.220:5044"]
+  
+  
+2）启动服务
+[root@vm49 ~]# service filebeat restart
+[root@vm49 ~]# chkconfig filebeat on
 
-2）导入安装 filebeat 时，自带的模版
+
+3）导入安装 filebeat 时，自带的模版
 模版路径：/etc/filebeat/filebeat.template.json
 自己可以在默认的模版的基础上做调整，例如，对比默认配置，新增的内容为：
 （略）
       "dynamic_templates": [
         {
-          "template1": {
+          "strings_as_keyword": {
+            "mapping": {
+              "ignore_above": 1024,
+              "type": "keyword"
+            },
+            "match_mapping_type": "string"
+          }
+        },
+        {
+          "all_as_doc_values": {
             "mapping": {
               "doc_values": true,
               "ignore_above": 1024,
@@ -233,57 +266,19 @@ logging:
         }
       ],
 （略）
-        "type" : {
-          "type" : "string",
-          "index": "not_analyzed"
-        },
-        "input_type" : {
-          "type" : "string",
-          "index": "no"
-        },
-        "beat" : {
-          "properties" : {
-            "hostname" : {
-              "type" : "string",
-              "index": "not_analyzed",
-              "doc_values": "true"
-            },
-            "name" : {
-              "type" : "string",
-              "index": "not_analyzed",
-              "doc_values": "true"
-            }
-          }
-        },
-        "source" : {
-          "type" : "string",
-          "index": "no"
-        },
-        "offset": {
-          "type": "long",
-          "index": "no"
-        },
-        "count" : {
-          "type" : "long",
-          "index": "no"
-        },
-        "host" : {
-          "type" : "string",
-          "index": "not_analyzed"
-        },
-        "tags" : {
-          "type" : "string",
-          "index": "not_analyzed"
+        "type": {
+          "ignore_above": 1024,
+          "type": "keyword"
         },
         "bytes" : {
           "type" : "long",
-          "index": "not_analyzed"
+          "index": "no"
         },
         "geoip" : {
           "properties" : {
             "location" : {
               "type" : "geo_point",
-              "index": "not_analyzed"
+              "index": "no"
             }
           }
         }
@@ -302,9 +297,16 @@ c、清理旧的 index（如果是新配置的服务，没有生成任何 index 
 [root@vm220 ~]# curl -XDELETE 'http://10.50.200.220:9200/filebeat-*?pretty'
 再次查看，确认一下结果是否符合预期：
 [root@vm220 ~]# curl '10.50.200.220:9200/_cat/indices?v'
-    
 
-3）启动服务
-[root@vm49 ~]# service filebeat restart
-[root@vm49 ~]# chkconfig filebeat on
+
+
+
+ZYXW、参考
+1、logstash
+https://www.elastic.co/guide/en/logstash/5.2/running-logstash.html
+2、geoip
+https://github.com/elastic/logstash/issues/6167
+
+
+
 
