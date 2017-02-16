@@ -1,0 +1,22 @@
+ruby
+2017/2/16
+
+使用rvm来管理ruby
+
+
+curl -sSL https://rvm.io/mpapis.asc | gpg2 --import -
+curl -L https://get.rvm.io | bash -s stable --ruby
+
+重新打开一个shell
+# ruby -v
+ruby 2.4.0p0 (2016-12-24 revision 57164) [x86_64-linux]
+
+# rvm list       
+
+rvm rubies
+
+=* ruby-2.4.0 [ x86_64 ]
+
+# => - current
+# =* - current && default
+#  * - default
