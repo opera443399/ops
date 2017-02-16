@@ -1,57 +1,24 @@
-﻿日期：2015/7/15 - 2015/7/15
-主机：tvm-rpm
-目的：测试使用fpm将python3的源码打包成rpm来安装
-操作内容：
-一、基础环境
-1、在tvm-base-centos66的基础上，复制一个镜像为tvm-rpm来测试。
-2、网络：
-eth0：host-only（用于虚拟内网，手动固定IP，这样从宿主机可以直接连接到这个vm）
-eth1：NAT（用于上外网，动态IP）
-[root@tvm-rpm ~]# cd /etc/sysconfig/network-scripts/
-[root@tvm-rpm network-scripts]# cat ifcfg-eth0
-DEVICE=eth0
-TYPE=Ethernet
-ONBOOT=yes
-NM_CONTROLLED=yes
-BOOTPROTO=none
-IPADDR=192.168.56.253
-PREFIX=24
-GATEWAY=192.168.56.1
-DNS1=192.168.56.254
-
-[root@tvm-rpm network-scripts]# cat ifcfg-eth1
-DEVICE=eth1
-TYPE=Ethernet
-ONBOOT=yes
-NM_CONTROLLED=yes
-BOOTPROTO=dhcp
-DNS1=192.168.56.254
+﻿使用fpm来制作rpm包
+2017/2/16
 
 
-二、配置fpm环境
+一、配置fpm环境
 1、安装ruby和fpm
-[root@tvm-rpm ~]# yum install ruby rubygems ruby-devel
-
-更换gem的源：
-[root@tvm-rpm ~]# gem sources -a http://mirrors.aliyun.com/rubygems/
-[root@tvm-rpm ~]# gem sources -a https://ruby.taobao.org/
-[root@tvm-rpm ~]# gem sources --remove http://rubygems.org/ 
-[root@tvm-rpm ~]# gem sources -l
-*** CURRENT SOURCES ***
-
-http://mirrors.aliyun.com/rubygems/
-https://ruby.taobao.org/
+使用rvm来管理ruby
 
 
-[root@tvm-rpm ~]# gem -v
-1.3.7
-[root@tvm-rpm ~]# ruby -v
-ruby 1.8.7 (2013-06-27 patchlevel 374) [x86_64-linux]
+curl -sSL https://rvm.io/mpapis.asc | gpg2 --import -
+curl -L https://get.rvm.io | bash -s stable --ruby
+
+重新打开一个shell
+# ruby -v
+ruby 2.4.0p0 (2016-12-24 revision 57164) [x86_64-linux]
+
+安装fpm依赖包
+yum install rpm-build -y
 
 安装fpm
 [root@tvm-rpm ~]# gem install fpm -V
-[root@tvm-rpm ~]# fpm --version
-1.3.3
 
 2、fpm的参数
 参考：https://github.com/jordansissel/fpm/wiki
@@ -83,7 +50,8 @@ ruby 1.8.7 (2013-06-27 patchlevel 374) [x86_64-linux]
 -e                          building前编辑spec文件
 
 
-三、将python3的源码打包成rpm来安装
+二、示例
+【实例1：将python3的源码打包成rpm来安装】
 1、配置编译python环境所需的包
 [root@tvm-rpm ~]# mkdir /data/{download,rpms}
 使用局域网的epel源：
@@ -141,7 +109,7 @@ bin  include  lib  share
     -d 'db4' \
     -d 'sqlite' \
     -d 'ncurses' \
-    -d 'readline' \
+    -d 'readline'
 Created package {:path=>"/data/rpms/pkgs/python3-3.4.3-1.el6.x86_64.rpm"}
 
 我们来看看包的内容：
@@ -212,8 +180,7 @@ python3.1  python3.4.1
 符合预期。
 
 
-四、TODO
-1、打包几个其他的东西，例如yum源的配置文件。
+【实例2：打包yum源的配置文件为rpm包】
 [root@tvm-rpm pkgs]# cd /data/rpms/pkgs/
 [root@tvm-rpm pkgs]# fpm -s dir -t rpm \
     -a 'x86_64' \
@@ -267,11 +234,11 @@ Preparing...                ########################################### [100%]
 [root@tvm-test ~]# diff /etc/yum.repos.d/local-office.repo /tmp/local-office.repo    
 
 
-2、打包最新版的monit
+【实例3：打包最新版的monit】
 1）从官网下载最新的binary
-[root@tvm-pkgs rpms]# mkdir monit && cd monit
-[root@tvm-pkgs monit]# wget https://mmonit.com/monit/dist/binary/5.14/monit-5.14-linux-x64.tar.gz
-[root@tvm-pkgs monit]# tar zxvf monit-5.14-linux-x64.tar.gz 
+[root@tvm-rpm rpms]# mkdir monit && cd monit
+[root@tvm-rpm monit]# wget https://mmonit.com/monit/dist/binary/5.14/monit-5.14-linux-x64.tar.gz
+[root@tvm-rpm monit]# tar zxvf monit-5.14-linux-x64.tar.gz 
 monit-5.14/
 monit-5.14/bin/
 monit-5.14/bin/monit
@@ -281,8 +248,8 @@ monit-5.14/conf/monitrc
 monit-5.14/man/
 monit-5.14/man/man1/
 monit-5.14/man/man1/monit.1
-[root@tvm-pkgs monit]# cd monit-5.14
-[root@tvm-pkgs monit-5.14]# ll bin/ conf/ man/man1/
+[root@tvm-rpm monit]# cd monit-5.14
+[root@tvm-rpm monit-5.14]# ll bin/ conf/ man/man1/
 bin/:
 total 2688
 -rwxr-xr-x 1 root root 2752045 Jun  9 18:18 monit
@@ -296,20 +263,20 @@ total 132
 -rw-r--r-- 1 root root 131280 Jun  9 18:18 monit.1
 
 拷贝到合适的位置：
-[root@tvm-pkgs monit-5.14]# cp -a bin/monit /usr/bin/  
-[root@tvm-pkgs monit-5.14]# cp -a conf/monitrc /etc/
-[root@tvm-pkgs monit-5.14]# cp -a man/man1/monit.1 /usr/share/man/man1/
+[root@tvm-rpm monit-5.14]# cp -a bin/monit /usr/bin/  
+[root@tvm-rpm monit-5.14]# cp -a conf/monitrc /etc/
+[root@tvm-rpm monit-5.14]# cp -a man/man1/monit.1 /usr/share/man/man1/
 
 增加一个控制脚本：
-[root@tvm-pkgs monit-5.14]# ll init.d/
+[root@tvm-rpm monit-5.14]# ll init.d/
 total 4
 -rwxr-xr-x 1 root root 1272 Jun  5  2014 monit
-[root@tvm-pkgs monit-5.14]# cp -a init.d/monit /etc/init.d/
+[root@tvm-rpm monit-5.14]# cp -a init.d/monit /etc/init.d/
 
 创建目录：
-[root@tvm-pkgs monit-5.14]# mkdir /etc/monit.d
+[root@tvm-rpm monit-5.14]# mkdir /etc/monit.d
 调整配置文件：
-[root@tvm-pkgs monit-5.14]# grep ^[^#] /etc/monitrc
+[root@tvm-rpm monit-5.14]# grep ^[^#] /etc/monitrc
 set daemon  120
    with start delay 240 
 set logfile /var/log/monit
@@ -317,7 +284,7 @@ include /etc/monit.d/*
 
 2）打包
 [root@tvm-rpm monit-5.14]# cd /data/rpms/pkgs/
-[root@tvm-pkgs pkgs]# fpm -s dir -t rpm \
+[root@tvm-rpm pkgs]# fpm -s dir -t rpm \
     -a 'x86_64' \
     -n 'monit' \
     -v '5.14' \
@@ -334,17 +301,17 @@ include /etc/monit.d/*
 
 Created package {:path=>"monit-5.14-1.el6.x86_64.rpm"}
 
-[root@tvm-pkgs pkgs]# rpm -qpl monit-5.14-1.el6.x86_64.rpm 
+[root@tvm-rpm pkgs]# rpm -qpl monit-5.14-1.el6.x86_64.rpm 
 /etc/init.d/monit
 /etc/monit.d
 /etc/monitrc
 /usr/bin/monit
 /usr/share/man/man1/monit.1
-[root@tvm-pkgs pkgs]# rpm -qpi monit-5.14-1.el6.x86_64.rpm  
+[root@tvm-rpm pkgs]# rpm -qpi monit-5.14-1.el6.x86_64.rpm  
 Name        : monit                        Relocations: / 
 Version     : 5.14                              Vendor: pc@office
 Release     : 1.el6                         Build Date: Fri 28 Aug 2015 06:00:57 PM CST
-Install Date: (not installed)               Build Host: tvm-pkgs
+Install Date: (not installed)               Build Host: tvm-rpm
 Group       : default                       Source RPM: monit-5.14-1.el6.src.rpm
 Size        : 2895915                          License: unknown
 Signature   : (none)
@@ -430,6 +397,149 @@ Installed:
 Complete!
 
 
+
+
+【实例4：打包tengine】
+
+1、准备：
+mkdir /opt/fpm/{src,rpms,install} -p
+
+export DIR_SRC_MAKE_INSTALL=/opt/fpm/install
+export DIR_RPM_INSTALL=/opt/tengine
+export DIR_RPMS=/opt/fpm/rpms
+export DIR_FPM_SCRIPTS=/opt/fpm/scripts
+
+2、源码编译：
+cd /opt/fpm/src
+wget http://tengine.taobao.org/download/tengine-2.1.2.tar.gz
+yum install pcre pcre-devel -y
+tar zxvf tengine-2.1.2.tar.gz && cd tengine-2.1.2
+
+./configure --prefix=${DIR_RPM_INSTALL}
+===================================================注意以下输出，确认是否符合预期。
+Configuration summary
+  + using system PCRE library
+  + using system OpenSSL library
+  + md5: using OpenSSL library
+  + sha1: using OpenSSL library
+  + using system zlib library
+  + jemalloc library is disabled
+
+  nginx path prefix: "/opt/tengine"
+  nginx binary file: "/opt/tengine/sbin/nginx"
+  nginx configuration prefix: "/opt/tengine/conf"
+  nginx configuration file: "/opt/tengine/conf/nginx.conf"
+  nginx pid file: "/opt/tengine/logs/nginx.pid"
+  nginx error log file: "/opt/tengine/logs/error.log"
+  nginx http access log file: "/opt/tengine/logs/access.log"
+  nginx http client request body temporary files: "client_body_temp"
+  nginx dso module path: "/opt/tengine/modules/"
+  nginx http proxy temporary files: "proxy_temp"
+  nginx http fastcgi temporary files: "fastcgi_temp"
+  nginx http uwsgi temporary files: "uwsgi_temp"
+  nginx http scgi temporary files: "scgi_temp"
+===================================================
+make && make install DESTDIR=${DIR_SRC_MAKE_INSTALL}
+
+
+3、调整配置文件，启动脚本等定制化操作：
+[root@tvm-rpm tengine]# cd /opt/fpm
+[root@tvm-rpm tengine]# mkdir scripts
+[root@tvm-rpm tengine]# cat scripts/after-install.sh 
+#!/bin/bash
+#
+# 2017/2/16
+
+# user
+echo -e '\n\033[1;34mCreate user nginx:\033[0m\n'
+id nginx >/dev/null 2>&1 && echo 'User [nginx] exist.' || (useradd -s /sbin/nologin -d /var/lib/nginx -c "Nginx Server" nginx;id nginx)
+
+echo -e '\n\033[1;34mConfiguration summary:\033[0m\n'
+
+cat <<'_EOF'
+===================================================
+  + using system PCRE library
+  + using system OpenSSL library
+  + md5: using OpenSSL library
+  + sha1: using OpenSSL library
+  + using system zlib library
+  + jemalloc library is disabled
+
+  nginx path prefix: "/opt/tengine"
+  nginx binary file: "/opt/tengine/sbin/nginx"
+  nginx configuration prefix: "/opt/tengine/conf"
+  nginx configuration file: "/opt/tengine/conf/nginx.conf"
+  nginx pid file: "/opt/tengine/logs/nginx.pid"
+  nginx error log file: "/opt/tengine/logs/error.log"
+  nginx http access log file: "/opt/tengine/logs/access.log"
+  nginx http client request body temporary files: "client_body_temp"
+  nginx dso module path: "/opt/tengine/modules/"
+  nginx http proxy temporary files: "proxy_temp"
+  nginx http fastcgi temporary files: "fastcgi_temp"
+  nginx http uwsgi temporary files: "uwsgi_temp"
+  nginx http scgi temporary files: "scgi_temp"
+
+  startup script: /etc/init.d/tengine
+===================================================
+_EOF
+
+echo -e '\n\033[1;33mTengine has been successfully installed.\033[0m\n'
+
+
+[root@tvm-rpm tengine]# cat scripts/after-remove.sh 
+#!/bin/bash
+#
+# 2017/2/16
+
+# service
+echo -e '\n\033[1;34mService stopped.\033[0m\n'
+service tengine stop && rm -f /opt/tengine/scripts/init.d/el6/tengine
+
+# user
+echo -e '\n\033[1;34mRemove user nginx:\033[0m\n'
+id nginx >/dev/null 2>&1 || echo 'No such user.' && (id nginx && userdel -fr nginx)
+
+# dir
+echo -e '\n\033[1;34mRemove directory: [/opt/tengine]\033[0m\n'
+[ -d /opt/tengine ] && rm -fr /opt/tengine || echo 'No such directory.'
+
+echo -e '\n\033[1;33mTengine has been successfully removed.\033[0m\n'
+
+
+
+4、打包：
+[root@tvm-rpm tengine]# fpm -s dir -t rpm \
+    -n Tengine \
+    -v '2.1.2' \
+    --iteration '1.el6' \
+    --epoch '0' \
+    --vendor 'Tengine@taobao' \
+    --maintainer 'PC' \
+    --description 'Tengine is based on Nginx which stands for Engine-X.' \
+    --url 'tengine.taobao.org' \
+    -C ${DIR_SRC_MAKE_INSTALL} \
+    -p ${DIR_RPMS} \
+    -d 'pcre' \
+    --after-install ${DIR_FPM_SCRIPTS}/after-install.sh \
+    --after-remove ${DIR_FPM_SCRIPTS}/after-remove.sh \
+    -f
+    
+Created package {:path=>"/opt/fpm/rpms/Tengine-2.1.2-1.el6.x86_64.rpm"}   
+    
+    
+查看rpm包内的文件：
+[root@tvm-rpm fpm]# rpm -qpl /opt/fpm/rpms/Tengine-2.1.2-1.el6.x86_64.rpm  
+
+
+
+5、拷贝到一台新的机器上测试：
+符合预期。
+    
+    
+    
+    
+    
+    
 
 ZYXW、参考
 1、fpm/wiki
