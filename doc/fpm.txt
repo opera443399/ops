@@ -401,7 +401,7 @@ Complete!
 
 【实例4：打包tengine】
 
-1、准备：
+1、准备
 mkdir /opt/fpm/{src,rpms,install} -p
 
 export DIR_SRC_MAKE_INSTALL=/opt/fpm/install
@@ -409,7 +409,7 @@ export DIR_RPM_INSTALL=/opt/tengine
 export DIR_RPMS=/opt/fpm/rpms
 export DIR_FPM_SCRIPTS=/opt/fpm/scripts
 
-2、源码编译：
+2、源码编译
 cd /opt/fpm/src
 wget http://tengine.taobao.org/download/tengine-2.1.2.tar.gz
 yum install pcre pcre-devel -y
@@ -442,10 +442,12 @@ Configuration summary
 make && make install DESTDIR=${DIR_SRC_MAKE_INSTALL}
 
 
-3、调整配置文件，启动脚本等定制化操作：
-[root@tvm-rpm tengine]# cd /opt/fpm
-[root@tvm-rpm tengine]# mkdir scripts
-[root@tvm-rpm tengine]# cat scripts/after-install.sh 
+3、自定义配置文件和脚本
+[root@tvm-rpm tengine-2.1.2]# cd /opt/fpm
+
+1）编辑脚本，用于rpm包安装和卸载时执行指令：
+[root@tvm-rpm fpm]# mkdir scripts
+[root@tvm-rpm fpm]# cat scripts/after-install.sh 
 #!/bin/bash
 #
 # 2017/2/16
@@ -486,7 +488,7 @@ _EOF
 echo -e '\n\033[1;33mTengine has been successfully installed.\033[0m\n'
 
 
-[root@tvm-rpm tengine]# cat scripts/after-remove.sh 
+[root@tvm-rpm fpm]# cat scripts/after-remove.sh 
 #!/bin/bash
 #
 # 2017/2/16
@@ -506,9 +508,15 @@ echo -e '\n\033[1;34mRemove directory: [/opt/tengine]\033[0m\n'
 echo -e '\n\033[1;33mTengine has been successfully removed.\033[0m\n'
 
 
+2）控制脚本
+[root@tvm-rpm fpm]# mkdir install/etc/init.d
+[root@tvm-rpm fpm]# vim install/etc/init.d/tengine
+（略）
+[root@tvm-rpm fpm]# chmod +x install/etc/init.d/tengine
 
-4、打包：
-[root@tvm-rpm tengine]# fpm -s dir -t rpm \
+
+4、开始打包
+[root@tvm-rpm fpm]# fpm -s dir -t rpm \
     -n Tengine \
     -v '2.1.2' \
     --iteration '1.el6' \
@@ -527,12 +535,27 @@ echo -e '\n\033[1;33mTengine has been successfully removed.\033[0m\n'
 Created package {:path=>"/opt/fpm/rpms/Tengine-2.1.2-1.el6.x86_64.rpm"}   
     
     
-查看rpm包内的文件：
+5、查看rpm包内的文件：
 [root@tvm-rpm fpm]# rpm -qpl /opt/fpm/rpms/Tengine-2.1.2-1.el6.x86_64.rpm  
 
+[root@tvm-rpm fpm]# tree -L 2
+.
+├── install     -> fpm打包时，将chroot到这个目录，对应安装后的文件系统中以下路径：/opt, /etc
+│   ├── etc         -> 在nginx的安装包中拷贝/etc/init.d/nginx，改一下配置文件中的相关路径为tengine的即可，然后将文件拷贝到这里（/etc/init.d/tengine）即可。
+│   └── opt         -> 源码安装后的目录
+├── rpms
+│   └── Tengine-2.1.2-1.el6.x86_64.rpm      -> rpm包保存在这里
+├── scripts
+│   ├── after-install.sh                    -> 安装rpm包后执行这个脚本
+│   └── after-remove.sh                     -> 卸载rpm包后执行这个脚本
+└── src
+    ├── tengine-2.1.2                       -> 源码编译的工作目录
+    └── tengine-2.1.2.tar.gz                -> 源码
+
+7 directories, 4 files
 
 
-5、拷贝到一台新的机器上测试：
+6、拷贝rpm包到一台新的机器上测试：
 符合预期。
     
     
