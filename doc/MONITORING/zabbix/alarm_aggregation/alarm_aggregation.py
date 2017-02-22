@@ -1,10 +1,10 @@
 #!/bin/env python
 # coding=utf-8
 # ----------------------------------
-# @ 2017/2/21
+# @ 2017/2/22
 # @ PC
 # ----------------------------------
-# [zabbix alarm aggregation]
+# [zabbix alarm aggregation], vers=1.1.0
 #
 ##[requisition 1]: new action as given below
 # Default subject: {EVENT.ID}_1
@@ -48,7 +48,7 @@ def alert_by_email(triggername, status, content):
     cmd = 'export LANG="en_US.UTF-8";/your/orignal/zabbix/alertscripts/zabbix_email "{0}" "{1}" "{2}"'.format(users, subject, content)
     if debug>1: logging.info('function [alert_by_email] run command: {0}'.format(cmd))
     ret = os.popen(cmd)
-    if debug: logging.info('function [alert_by_email] return: {0}.'.format(ret.read()))
+    if debug>1: logging.info('function [os.popen] return: {0}.'.format(ret.read()))
 
 
 def handler_msgs(src, ok, reason):
@@ -74,10 +74,10 @@ def handler_msgs(src, ok, reason):
 
     content = '''
 {s_status}: {s_triggername}\n
-[Aggregation reson]\n{s_reason}\n
+[Aggregation Reason]\n{s_reason}\n
 [Hosts]\n{s_hosts}\n
-[Host groups]\n{s_hostgroups}\n
-[Report time]\n{s_dt}\n
+[Host Groups]\n{s_hostgroups}\n
+[Report Time]\n{s_dt}\n
 '''.format(s_status=status, s_triggername=triggername, s_reason=reason,
         s_hosts=list_of_hosts, s_hostgroups=list_of_hostgroups, s_dt=dt_now)
 
@@ -97,68 +97,45 @@ def check_msgs(src):
     for m in src:
         if m['triggerkey'] not in cnt_triggerkey:
             cnt_triggerkey[m['triggerkey']] = []
-            cnt_triggerkey[m['triggerkey']].append(m)
-        else:
-            cnt_triggerkey[m['triggerkey']].append(m)
+        cnt_triggerkey[m['triggerkey']].append(m)
 
     for k,v in  cnt_triggerkey.items():
         print("{star}\ntriggerkey={0}, count={1}".format(k, len(v), star='+'*12))
         if debug: logging.info("{star}\ntriggerkey={0}, count={1}".format(k, len(v), star='+'*12))
-        if len(v) > 10:
-            for n in v:
-                if n['triggervalue'] == '1':
-                    status_problem.append(n)
-                else:
-                    status_ok.append(n)
-            print("len(status_problem)={0}, len(status_ok)={1}\n{star}\n".format(len(status_problem), len(status_ok), star='-'*6))
-            if debug: logging.info("len(status_problem)={0}, len(status_ok)={1}\n{star}\n".format(len(status_problem), len(status_ok), star='-'*6))
-            if len(status_problem) > 5:
-                if debug: logging.info('handler_msgs: status_problem')
-                handler_msgs(status_problem, False, 'this triggername occurred more than 5 times.')
 
-            if len(status_ok) > 5:
-                if debug: logging.info('handler_msgs: status_ok')
-                handler_msgs(status_ok, True, 'this triggername occurred more than 5 times.')
+        for n in v:
+            if n['triggervalue'] == '1':
+                status_problem.append(n)
+            else:
+                status_ok.append(n)
+        print("len(status_problem)={0}, len(status_ok)={1}\n{star}\n".format(len(status_problem), len(status_ok), star='-'*6))
+        if debug: logging.info("len(status_problem)={0}, len(status_ok)={1}\n{star}\n".format(len(status_problem), len(status_ok), star='-'*6))
 
-            
-def get_data_by_eventid(action_id, event_id):
+        if len(status_problem) > 5:
+            handler_msgs(status_problem, False, 'trigger occurred > 5 times.')
+        else:
+            handler_msgs(status_problem, False, 'trigger occurred <= 5 times.')
+             
+
+        if len(status_ok) > 5:
+            handler_msgs(status_ok, True, 'trigger occurred > 5 times.')
+        else:
+            handler_msgs(status_ok, True, 'trigger occurred <= 5 times.')
+
+
+def trans_data_to_dict(data):
     '''
         return msgs as dict
     '''
-    try:
-        conn = MySQLdb.connect(host=ZBX_HOST,
-                            user=ZBX_DB_USER,
-                            passwd=ZBX_DB_PASS,
-                            db=ZBX_DB,
-                            port=3306)
-        cursor = conn.cursor()
-        sql = 'set names utf8'
-        cursor.execute(sql);
-
-        sql = "select message from alerts where actionid='{0}' and subject='{1}';".format(action_id, event_id)
-        cursor.execute(sql)
-
-        ret = cursor.fetchall()
-        if debug>2: logging.info('sql result: {0}'.format(ret))
-        subject = ret[0][0]
-        if debug>2: logging.info('subject: {0}'.format(subject))
-
-        msgs = {}
-        each_line = subject.split('#')
-        for i in each_line:
-            k, v = i.split('|')
-            msgs[k] = v
-        if debug>2: logging.info('msgs: {0}'.format(msgs))
-
-
-    except MySQLdb.Error as e:
-        print("[E] {0}".format(e))
-
-    finally:
-        if cursor: cursor.close()
-        if conn: conn.close()
+    msgs = {}
+    each_line = data.split('#')
+    for i in each_line:
+        k, v = i.split('|')
+        msgs[k] = v
+    if debug: logging.info('msgs: {0}'.format(msgs))
 
     return msgs
+
 
 
 def aggregation(action_id, r):
@@ -170,21 +147,27 @@ def aggregation(action_id, r):
     dt_now = datetime.datetime.now()
     if not r_size:
         print('{0}, No record found!'.format(dt_now))
+        if debug: logging.info('{0}, No record found!'.format(dt_now))
+
         return 
 
-    if debug: logging.info('redis get_and_removed: {0} keys'.format(r_size))
-    for e in event_ids:
-        ret = r.delete(e)
-        if debug: logging.info('redis delete key: {0}, result: {0}'.format(e, ret))
-
-    src_msg_queue = []
+    all_msgs = []
     for event_id in event_ids:
-        ret = get_data_by_eventid(action_id, event_id)
-        if debug>1: logging.info('function [get_data_by_eventid] result: {0}'.format(ret))
-        src_msg_queue.append(ret)
+        message = r.get(event_id) 
+        ret = trans_data_to_dict(message)
+        if debug>1: logging.info('function [trans_data_to_dict] result: {0}'.format(ret))
+        all_msgs.append(ret)
 
-    if src_msg_queue: check_msgs(src_msg_queue)
-    if debug>2: logging.info('[len(src_msg_queue)={0}]: \n{1}\n'.format(len(src_msg_queue), src_msg_queue))
+    if all_msgs:
+        check_msgs(all_msgs)
+        if debug>2: logging.info('[len(all_msgs)={0}]: \n{1}\n'.format(len(all_msgs), all_msgs))
+
+        print('redis get_and_removed: {0} keys'.format(r_size))
+        if debug: logging.info('redis get_and_removed: {0} keys'.format(r_size))
+        for e in event_ids:
+            ret = r.delete(e)
+            if debug>1: logging.info('redis delete key: {0}, result: {0}'.format(e, ret))
+
 
 
 def test_run(action_id, r, ts):
@@ -201,15 +184,15 @@ def test_run(action_id, r, ts):
         sql = 'set names utf8'
         cursor.execute(sql);
 
-        sql = "select subject from alerts where actionid='{0}' and clock>'{1}';".format(action_id, ts)
+        sql = "select subject, message from alerts where actionid='{0}' and clock>'{1}';".format(action_id, ts)
         cursor.execute(sql)
 
         ret = cursor.fetchall()
         if debug>2: logging.info('sql result: {0}'.format(ret))
         cnt = 0
         for id in ret:
-            if debug>1: logging.info('redis set: {0}'.format(id[0]))
-            ret = r.set(id[0], id[0])
+            if debug>1: logging.info('redis set: {0}->{1}'.format(id[0], id[1]))
+            ret = r.set(id[0], id[1])
             if debug>1: logging.info('redis result: {0}'.format(ret))
             cnt += 1
         if debug>1: logging.info('push to redis count: {0}'.format(cnt))
@@ -228,6 +211,7 @@ if __name__ == "__main__":
     '''
     pool = redis.ConnectionPool(host='127.0.0.1', port=6379)
     r = redis.StrictRedis(connection_pool=pool)
+    #on linux shell:
     #while true;do python -c "import redis;pool = redis.ConnectionPool(host='127.0.0.1', port=6379);r = redis.StrictRedis(connection_pool=pool);print r.keys()";sleep 1s;done
 
     #normal zbx action
@@ -236,15 +220,14 @@ if __name__ == "__main__":
         username, subject, content = sys.argv[1:]
         if debug>1: logging.info('argv: {0}'.format(sys.argv[1:]))
 
-        event_id = sys.argv[2]
-        if debug: logging.info('event_id: {0}'.format(event_id))
-
-        ret = r.set(event_id, event_id)
+        ret = r.set(subject, content)
         if debug: logging.info('redis result: {0}'.format(ret))
 
     #main
     else:
-        #push test data to redis
+        #push test data(depends on timestamp as given) to redis
         #import time; ts = int(time.time()-3600); test_run('14', r, ts)
+        
+        #[NOTICE: actionid=14 in this environment.]
         aggregation('14', r)
 
