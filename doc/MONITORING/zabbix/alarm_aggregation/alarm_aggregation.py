@@ -4,7 +4,7 @@
 # @ 2017/2/22
 # @ PC
 # ----------------------------------
-# [zabbix alarm aggregation], vers=1.1.0
+# [zabbix alarm aggregation], vers=1.1.2
 #
 ##[requisition 1]: new action as given below
 # Default subject: {EVENT.ID}_1
@@ -57,7 +57,7 @@ def handler_msgs(src, ok, reason):
     '''
     list_of_hosts = ''
     list_of_hostgroups = ''
-    s_triggername = ''
+    triggername = ''
 
     status = 'PROBLEM'
     if ok: status = 'OK'
@@ -112,15 +112,15 @@ def check_msgs(src):
         if debug: logging.info("len(status_problem)={0}, len(status_ok)={1}\n{star}\n".format(len(status_problem), len(status_ok), star='-'*6))
 
         if len(status_problem) > 5:
-            handler_msgs(status_problem, False, 'trigger occurred > 5 times.')
-        else:
-            handler_msgs(status_problem, False, 'trigger occurred <= 5 times.')
+            handler_msgs(status_problem, False, 'trigger occurred {0} times.'.format(len(status_problem)))
+        elif 3 < len(status_problem) <= 5:
+            handler_msgs(status_problem, False, 'trigger occurred {0} times.'.format(len(status_problem)))
              
 
         if len(status_ok) > 5:
-            handler_msgs(status_ok, True, 'trigger occurred > 5 times.')
-        else:
-            handler_msgs(status_ok, True, 'trigger occurred <= 5 times.')
+            handler_msgs(status_ok, True, 'trigger occurred {0} times.'.format(len(status_problem)))
+        elif 3 < len(status_problem) <= 5:
+            handler_msgs(status_ok, True, 'trigger occurred {0} times.'.format(len(status_problem)))
 
 
 def trans_data_to_dict(data):
@@ -227,7 +227,7 @@ if __name__ == "__main__":
     else:
         #push test data(depends on timestamp as given) to redis
         #import time; ts = int(time.time()-3600); test_run('14', r, ts)
-        
+
         #[NOTICE: actionid=14 in this environment.]
         aggregation('14', r)
 
