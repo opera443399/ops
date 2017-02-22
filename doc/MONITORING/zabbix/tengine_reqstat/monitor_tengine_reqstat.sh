@@ -26,7 +26,7 @@ http_other_status 其他请求的总数
 rt rt的总数
 ups_req 需要访问upstream的请求总数
 ups_rt 访问upstream的总rt
-ups_tries upstram总访问次数
+ups_tries upstream总访问次数
 http_200 200请求的总数
 http_206 206请求的总数
 http_302 302请求的总数
