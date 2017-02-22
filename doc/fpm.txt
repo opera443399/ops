@@ -1,5 +1,5 @@
 ﻿使用fpm来制作rpm包
-2017/2/16
+2017/2/22
 
 
 一、配置fpm环境
@@ -450,11 +450,11 @@ make && make install DESTDIR=${DIR_SRC_MAKE_INSTALL}
 [root@tvm-rpm fpm]# cat scripts/after-install.sh 
 #!/bin/bash
 #
-# 2017/2/16
+# 2017/2/22
 
 # user
 echo -e '\n\033[1;34mCreate user nginx:\033[0m\n'
-id nginx >/dev/null 2>&1 && echo 'User [nginx] exist.' || (useradd -s /sbin/nologin -d /var/lib/nginx -c "Nginx Server" nginx;id nginx)
+id nginx >/dev/null 2>&1 && echo 'User [nginx] exist.' || (useradd -s /sbin/nologin -d /var/cache/nginx -c "nginx user" nginx;id nginx)
 
 echo -e '\n\033[1;34mConfiguration summary:\033[0m\n'
 
@@ -488,24 +488,24 @@ _EOF
 echo -e '\n\033[1;33mTengine has been successfully installed.\033[0m\n'
 
 
-[root@tvm-rpm fpm]# cat scripts/after-remove.sh 
+[root@tvm-rpm fpm]# cat scripts/before-remove.sh 
 #!/bin/bash
 #
-# 2017/2/16
+# 2017/2/22
+
+echo -e '\n\033[1;33mIn order to backup you data, please follow the guide, control it by hand.\033[0m\n'
 
 # service
 echo -e '\n\033[1;34mService stopped.\033[0m\n'
-service tengine stop && rm -f /opt/tengine/scripts/init.d/el6/tengine
+service tengine stop
 
 # user
-echo -e '\n\033[1;34mRemove user nginx:\033[0m\n'
-id nginx >/dev/null 2>&1 || echo 'No such user.' && (id nginx && userdel -fr nginx)
+echo -e '\n\033[1;34m[Guide] Try to remove user nginx?\033[0m\n'
+echo 'userdel -fr nginx'
 
 # dir
-echo -e '\n\033[1;34mRemove directory: [/opt/tengine]\033[0m\n'
-[ -d /opt/tengine ] && rm -fr /opt/tengine || echo 'No such directory.'
-
-echo -e '\n\033[1;33mTengine has been successfully removed.\033[0m\n'
+echo -e '\n\033[1;34mDirectory backuped: [/opt/tengine] -> [/opt/tengine.old]\033[0m\n'
+mv -fv /opt/tengine /opt/tengine.old
 
 
 2）控制脚本
@@ -529,7 +529,7 @@ echo -e '\n\033[1;33mTengine has been successfully removed.\033[0m\n'
     -p ${DIR_RPMS} \
     -d 'pcre' \
     --after-install ${DIR_FPM_SCRIPTS}/after-install.sh \
-    --after-remove ${DIR_FPM_SCRIPTS}/after-remove.sh \
+    --before-remove ${DIR_FPM_SCRIPTS}/before-remove.sh \
     -f
     
 Created package {:path=>"/opt/fpm/rpms/Tengine-2.1.2-1.el6.x86_64.rpm"}   
@@ -547,7 +547,7 @@ Created package {:path=>"/opt/fpm/rpms/Tengine-2.1.2-1.el6.x86_64.rpm"}
 │   └── Tengine-2.1.2-1.el6.x86_64.rpm      -> rpm包保存在这里
 ├── scripts
 │   ├── after-install.sh                    -> 安装rpm包后执行这个脚本
-│   └── after-remove.sh                     -> 卸载rpm包后执行这个脚本
+│   └── before-remove.sh                    -> 卸载rpm包前执行这个脚本
 └── src
     ├── tengine-2.1.2                       -> 源码编译的工作目录
     └── tengine-2.1.2.tar.gz                -> 源码
