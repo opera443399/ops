@@ -1,17 +1,18 @@
 #!/bin/env python
 # coding=utf-8
 # ----------------------------------
-# @ 2017/2/22
+# @ 2017/2/24
 # @ PC
 # ----------------------------------
-# [zabbix alarm aggregation], vers=1.1.3
+# [zabbix alarm aggregation], vers=1.1.4
 #
 ##[requisition 1]: on zabbix frontend, added new action as given below.
 #######################################################################
-# Default subject: {EVENT.ID}_1
-# Default message: triggervalue|{TRIGGER.VALUE}#hostname|{HOSTNAME1}#ipaddress|{IPADDRESS}#hostgroup|{TRIGGER.HOSTGROUP.NAME}#triggernseverity|{TRIGGER.NSEVERITY}#triggername|{TRIGGER.NAME}#triggerkey|{TRIGGER.KEY1}#triggeritems|{ITEM.NAME}#itemvalue|{ITEM.VALUE}#eventid|{EVENT.ID}
-# Default subject: {EVENT.ID}_0
-# Default message:  triggervalue|{TRIGGER.VALUE}#hostname|{HOSTNAME1}#ipaddress|{IPADDRESS}#hostgroup|{TRIGGER.HOSTGROUP.NAME}#triggernseverity|{TRIGGER.NSEVERITY}#triggername|{TRIGGER.NAME}#triggerkey|{TRIGGER.KEY1}#triggeritems|{ITEM.NAME}#itemvalue|{ITEM.VALUE}#eventid|{EVENT.ID}
+##=> [PROBLEM] default subject: {EVENT.ID}_1
+# Default message: eventid|{EVENT.ID}#trigger_name|{TRIGGER.NAME}#trigger_value|{TRIGGER.VALUE}#item_key|{ITEM.KEY1}#item_value|{ITEM.VALUE1}#hostgroup_name|{TRIGGER.HOSTGROUP.NAME}#host_name|{HOST.NAME}#ipaddress|{IPADDRESS}#trigger_expr|{TRIGGER.EXPRESSION}#trigger_desc|{TRIGGER.DESCRIPTION}
+#
+##=> [OK] default subject: {EVENT.ID}_0
+# Default message: eventid|{EVENT.ID}#trigger_name|{TRIGGER.NAME}#trigger_value|{TRIGGER.VALUE}#item_key|{ITEM.KEY1}#item_value|{ITEM.VALUE1}#hostgroup_name|{TRIGGER.HOSTGROUP.NAME}#host_name|{HOST.NAME}#ipaddress|{IPADDRESS}#trigger_expr|{TRIGGER.EXPRESSION}#trigger_desc|{TRIGGER.DESCRIPTION}
 #######################################################################
 #
 ##[requisition 2]: redis, MySQLdb
@@ -45,11 +46,11 @@ logging.basicConfig(
     )
 
 
-def alert_by_email(triggername, status, content):
+def alert_by_email(trigger_name, status, content):
     import os
     users = ZBX_ALERT_RECIPIENTS
-    subject = '[AA->{1}]{0}'.format(triggername, status)
-    cmd = 'export LANG="en_US.UTF-8";/any_of_your_zabbix_alertscripts/like/zabbix_send_email "{0}" "{1}" "{2}"'.format(users, subject, content)
+    subject = '[AA->{1}]{0}'.format(trigger_name, status)
+    cmd = 'export LANG="en_US.UTF-8";/your/zabbix/alertscripts/zabbix_mail "{0}" "{1}" "{2}"'.format(users, subject, content)
     if DEBUG_LEVEL>1: logging.info('function [alert_by_email] run command: {0}'.format(cmd))
     ret = os.popen(cmd)
     if DEBUG_LEVEL>1: logging.info('function [os.popen] return: {0}.'.format(ret.read()))
@@ -61,76 +62,92 @@ def handler_msgs(src, ok, reason):
     '''
     list_of_hosts = ''
     list_of_hostgroups = ''
-    triggername = ''
+    trigger_name = ''
+    trigger_desc = ''
+
+    if DEBUG_LEVEL>1: logging.info("msgs:\n{star}\n{0}\n{star}\n".format(src, star='+'*79))
 
     status = 'PROBLEM'
     if ok: status = 'OK'
+    trigger_name = src[0]['trigger_name']
+    trigger_desc = src[0]['trigger_desc']
+    
 
-    if DEBUG_LEVEL>1: logging.info("msgs:\n{star}\n{0}\n{star}\n".format(src, star='+'*79))
     for s in src:
-        triggername = s['triggername']
-        if s['hostname'] not in list_of_hosts:
-            list_of_hosts += '{0}({1})\n'.format(s['hostname'], s['ipaddress'])
-        if s['hostgroup'] not in list_of_hostgroups:
-            list_of_hostgroups += '{0}\n'.format(s['hostgroup'])
+        if s['host_name'] not in list_of_hosts:
+            list_of_hosts += '{0}({1})\n'.format(s['host_name'], s['ipaddress'])
+        if s['hostgroup_name'] not in list_of_hostgroups:
+            list_of_hostgroups += '{0}\n'.format(s['hostgroup_name'])
 
     dt_now = datetime.datetime.now()
 
     content = '''
-{s_status}: {s_triggername}\n
-[Aggregation Reason]\n{s_reason}\n
-[Hosts]\n{s_hosts}\n
-[Host Groups]\n{s_hostgroups}\n
-[Report Time]\n{s_dt}\n
-'''.format(s_status=status, s_triggername=triggername, s_reason=reason,
-        s_hosts=list_of_hosts, s_hostgroups=list_of_hostgroups, s_dt=dt_now)
+[*] AA->{s_status}:
+{s_trigger_name}
+
+[*] Aggregation Reason:
+{s_reason}
+
+[*] Host Lists:
+{s_hosts}
+
+[*] Host Group Name Lists:
+{s_hostgroups}
+
+[*] Trigger Description:
+{s_trigger_desc}
+
+[*] Report Time:
+{s_dt}
+'''.format(s_status=status, s_trigger_name=trigger_name, s_reason=reason,
+            s_hosts=list_of_hosts, s_hostgroups=list_of_hostgroups, 
+            s_trigger_desc=trigger_desc, s_dt=dt_now)
 
     if DEBUG_LEVEL: logging.info(content)
     #print(content)
-    alert_by_email(triggername, status, content)
+    alert_by_email(trigger_name, status, content)
+    print('Alert is sent out.\n{star}\n'.format(star='-'*79))
 
 
 def check_msgs(src):
     '''
         classification
     '''
-    cnt_triggerkey = {}
+    list_of_item_keys = {}
     status_problem = []
     status_ok = []
 
     for m in src:
-        if m['triggerkey'] not in cnt_triggerkey:
-            cnt_triggerkey[m['triggerkey']] = []
-        cnt_triggerkey[m['triggerkey']].append(m)
+        if m['item_key'] not in list_of_item_keys:
+            list_of_item_keys[m['item_key']] = []
+        list_of_item_keys[m['item_key']].append(m)
 
-    for k,v in  cnt_triggerkey.items():
-        print("{star}\ntriggerkey={0}, count={1}".format(k, len(v), star='+'*79))
-        if DEBUG_LEVEL: logging.info("{star}\ntriggerkey={0}, count={1}".format(k, len(v), star='+'*79))
+    for k,v in  list_of_item_keys.items():
+        print("{star}\nitem_key={0}, count={1}".format(k, len(v), star='+'*79))
+        if DEBUG_LEVEL: logging.info("{star}\nitem_key={0}, count={1}".format(k, len(v), star='+'*79))
 
         for n in v:
-            if n['triggervalue'] == '1':
+            if n['trigger_value'] == '1':
                 status_problem.append(n)
             else:
                 status_ok.append(n)
-        print("len(status_problem)={0}, len(status_ok)={1}\n{star}\n".format(len(status_problem), len(status_ok), star='-'*6))
-        if DEBUG_LEVEL: logging.info("len(status_problem)={0}, len(status_ok)={1}\n{star}\n".format(len(status_problem), len(status_ok), star='-'*6))
+        print("Num(status_problem)={0}, Num(status_ok)={1}".format(len(status_problem), len(status_ok)))
+        if DEBUG_LEVEL: logging.info("Num(status_problem)={0}, Num(status_ok)={1}".format(len(status_problem), len(status_ok)))
 
         if len(status_problem) > 5:
-            handler_msgs(status_problem, False, 'trigger occurred {0} times.'.format(len(status_problem)))
-        elif 3 < len(status_problem) <= 5:
-            handler_msgs(status_problem, False, 'trigger occurred {0} times.'.format(len(status_problem)))
-        else:
-            print('[-] Msgs Dropped. Reason: trigger occurred {0} times for status problem.'.format(len(status_problem)))
-            if DEBUG_LEVEL: logging.info('[-] Msgs Dropped. Reason: trigger occurred {0} times for status problem.'.format(len(status_problem)))
+            print('[-] Msgs Posted. Reason: trigger occurred {0} times/minute for status -> problem.'.format(len(status_problem)))
+            handler_msgs(status_problem, False, 'trigger occurred {0} times/minute for status -> problem.'.format(len(status_problem)))
+        elif 0 < len(status_problem) <= 5:
+            print('[-] Msgs Dropped. Reason: trigger occurred only {0} times/minute for status -> problem.'.format(len(status_problem)))
+            if DEBUG_LEVEL: logging.info('[-] Msgs Dropped. Reason: trigger occurred {0} times/minute for status -> problem.'.format(len(status_problem)))
             
 
         if len(status_ok) > 5:
-            handler_msgs(status_ok, True, 'trigger occurred {0} times.'.format(len(status_problem)))
-        elif 3 < len(status_problem) <= 5:
-            handler_msgs(status_ok, True, 'trigger occurred {0} times.'.format(len(status_problem)))
-        else:
-            print('[-] Msgs Dropped. Reason: trigger occurred {0} times for status ok.'.format(len(status_ok)))
-            if DEBUG_LEVEL: logging.info('[-] Msgs Dropped. Reason: trigger occurred {0} times for status ok.'.format(len(status_ok)))
+            print('[-] Msgs Posted. Reason: trigger occurred {0} times/minute for status -> ok.'.format(len(status_ok)))
+            handler_msgs(status_ok, True, 'trigger occurred {0} times/minute for status -> ok.'.format(len(status_ok)))
+        elif 0 < len(status_ok) <= 5:
+            print('[-] Msgs Dropped. Reason: trigger occurred only {0} times/minute for status ->ok.'.format(len(status_ok)))
+            if DEBUG_LEVEL: logging.info('[-] Msgs Dropped. Reason: trigger occurred only {0} times/minute for status -> ok.'.format(len(status_ok)))
 
 
 def trans_data_to_dict(data):
@@ -237,7 +254,7 @@ if __name__ == "__main__":
     #main
     else:
         #push test data(depends on timestamp as given) to redis
-        #import time; ts = int(time.time()-12*3600); test_run(ZBX_ACTION_ID, ts, r, REDIS_KEY_EXPIRED)
+        import time; ts = int(time.time()-60); test_run(ZBX_ACTION_ID, ts, r, REDIS_KEY_EXPIRED)
 
         aggregation(ZBX_ACTION_ID, r)
 
