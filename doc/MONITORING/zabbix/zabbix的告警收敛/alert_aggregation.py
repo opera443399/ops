@@ -4,15 +4,15 @@
 # @ 2017/2/24
 # @ PC
 # ----------------------------------
-# [zabbix alert aggregation], vers=1.1.6
+# [zabbix alert aggregation], vers=1.1.7
 #
 ##[requisition 1]: on zabbix frontend, added new action as given below.
 #######################################################################
 ##=> [PROBLEM] default subject: {EVENT.ID}_1
-# Default message: eventid|{EVENT.ID}#trigger_name|{TRIGGER.NAME}#trigger_value|{TRIGGER.VALUE}#item_key|{ITEM.KEY1}#item_value|{ITEM.VALUE1}#hostgroup_name|{TRIGGER.HOSTGROUP.NAME}#host_name|{HOST.NAME}#ipaddress|{IPADDRESS}#trigger_expr|{TRIGGER.EXPRESSION}#trigger_desc|{TRIGGER.DESCRIPTION}
+# Default message: eventid|{EVENT.ID}^trigger_name|{TRIGGER.NAME}^trigger_value|{TRIGGER.VALUE}^item_key|{ITEM.KEY1}^item_value|{ITEM.VALUE1}^hostgroup_name|{TRIGGER.HOSTGROUP.NAME}^host_name|{HOST.NAME}^ipaddress|{IPADDRESS}^trigger_expr|{TRIGGER.EXPRESSION}^trigger_desc|{TRIGGER.DESCRIPTION}
 #
 ##=> [OK] default subject: {EVENT.ID}_0
-# Default message: eventid|{EVENT.ID}#trigger_name|{TRIGGER.NAME}#trigger_value|{TRIGGER.VALUE}#item_key|{ITEM.KEY1}#item_value|{ITEM.VALUE1}#hostgroup_name|{TRIGGER.HOSTGROUP.NAME}#host_name|{HOST.NAME}#ipaddress|{IPADDRESS}#trigger_expr|{TRIGGER.EXPRESSION}#trigger_desc|{TRIGGER.DESCRIPTION}
+# Default message: eventid|{EVENT.ID}^trigger_name|{TRIGGER.NAME}^trigger_value|{TRIGGER.VALUE}^item_key|{ITEM.KEY1}^item_value|{ITEM.VALUE1}^hostgroup_name|{TRIGGER.HOSTGROUP.NAME}^host_name|{HOST.NAME}^ipaddress|{IPADDRESS}^trigger_expr|{TRIGGER.EXPRESSION}^trigger_desc|{TRIGGER.DESCRIPTION}
 #######################################################################
 #
 ##[requisition 2]: redis, MySQLdb
@@ -35,7 +35,7 @@ ZBX_DB_USER = 'zabbix'
 ZBX_DB_PASS = 'pass'
 
 
-DEBUG_LEVEL = 0
+DEBUG_LEVEL = 1
 # +---- logging ---+
 LOG_FILE = '/tmp/alert_aggregation.py.log'
 logging.basicConfig(
@@ -155,7 +155,11 @@ def trans_data_to_dict(data):
         return msgs as dict
     '''
     msgs = {}
-    each_line = data.split('#')
+
+    if DEBUG_LEVEL: logging.info('data: {0}'.format(data))
+    each_line = data.split('^')
+    if DEBUG_LEVEL: logging.info('each line: {0}'.format(each_line))
+    
     for i in each_line:
         k, v = i.split('|')
         msgs[k] = v
@@ -254,7 +258,7 @@ if __name__ == "__main__":
     #main
     else:
         #push test data(depends on timestamp as given) to redis
-        import time; ts = int(time.time()-60); test_run(ZBX_ACTION_ID, ts, r, REDIS_KEY_EXPIRED)
+        #import time; ts = int(time.time()-60); test_run(ZBX_ACTION_ID, ts, r, REDIS_KEY_EXPIRED)
 
         aggregation(ZBX_ACTION_ID, r)
 
