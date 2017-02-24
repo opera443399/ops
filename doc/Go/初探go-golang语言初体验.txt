@@ -1,0 +1,313 @@
+初探go-golang语言初体验
+2017/2/24
+
+一、初体验
+1、环境
+wget https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz
+tar -C /usr/local -xzf go1.8.linux-amd64.tar.gz
+
+cat <<'_EOF' >>/etc/profile
+#golang
+export PATH=$PATH:/usr/local/go/bin
+export GOPATH=/opt/go
+_EOF
+
+source /etc/profile
+
+
+2、教程
+# go tool tour &
+访问：http://127.0.0.1:3999/
+
+
+3、第一个程序
+# cd $GOPATH
+# mkdir src/abc.com/demo/hello -p
+# vim src/abc.com/demo/hello/hello.go
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Printf("Hello, world.\n")
+}
+
+
+# go install abc.com/demo/hello
+# bin/hello 
+Hello, world.
+
+
+4、第一个包
+# mkdir src/abc.com/demo/stringutil -p
+# vim src/abc.com/demo/stringutil/reverse.go
+// Package stringutil contains utility functions for working with strings.
+package stringutil
+
+// Reverse returns its argument string reversed rune-wise left to right.
+func Reverse(s string) string {
+	r := []rune(s)
+	for i, j := 0, len(r)-1; i < len(r)/2; i, j = i+1, j-1 {
+		r[i], r[j] = r[j], r[i]
+	}
+	return string(r)
+}
+
+# go build abc.com/demo/stringutil
+# cat src/abc.com/demo/hello/hello.go
+package main
+
+import (
+	"fmt"
+
+	"abc.com/demo/stringutil"
+)
+
+func main() {
+	fmt.Printf(stringutil.Reverse("!oG ,olleH"))
+}
+
+# go install abc.com/demo/hello
+# bin/hello 
+Hello, Go!
+
+
+5、目录结构
+# tree /opt/go
+/opt/go
+├── bin                                 # install 后生成的可执行文件目录
+│   └── hello
+├── pkg                                 # install 后生成的包目录
+│   └── linux_amd64
+│       └── abc.com
+│           └── demo
+│               └── stringutil.a
+└── src                                 # 源码目录
+    └── abc.com
+        └── demo
+            ├── hello
+            │   └── hello.go
+            └── stringutil
+                └── reverse.go
+
+10 directories, 4 files
+
+
+6、引入测试
+# vim src/abc.com/demo/stringutil/reverse_test.go
+package stringutil
+
+import "testing"
+
+func TestReverse(t *testing.T) {
+	cases := []struct {
+		in, want string
+	}{
+		{"Hello, world", "dlrow ,olleH"},
+		{"Hello, 世界", "界世 ,olleH"},
+		{"", ""},
+	}
+	for _, c := range cases {
+		got := Reverse(c.in)
+		if got != c.want {
+			t.Errorf("Reverse(%q) == %q, want %q", c.in, got, c.want)
+		}
+	}
+}
+
+# go test abc.com/demo/stringutil
+ok      abc.com/demo/stringutil 0.007s
+
+
+
+7、使用远程的包
+示例，从git上指定的url获取包，go get 将完成 fetch, build 和 install的操作：
+# go get github.com/golang/example/hello
+# bin/hello
+Hello, Go examples!
+
+
+8、查看当前 go 的环境变量
+[root@tvm01 go]# go env
+GOARCH="amd64"
+GOBIN=""
+GOEXE=""
+GOHOSTARCH="amd64"
+GOHOSTOS="linux"
+GOOS="linux"
+GOPATH="/opt/go"
+GORACE=""
+GOROOT="/usr/local/go"
+GOTOOLDIR="/usr/local/go/pkg/tool/linux_amd64"
+GCCGO="gccgo"
+CC="gcc"
+GOGCCFLAGS="-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build679741147=/tmp/go-build"
+CXX="g++"
+CGO_ENABLED="1"
+PKG_CONFIG="pkg-config"
+CGO_CFLAGS="-g -O2"
+CGO_CPPFLAGS=""
+CGO_CXXFLAGS="-g -O2"
+CGO_FFLAGS="-g -O2"
+
+
+
+
+二、试着写一个小的程序
+1、设定目标
+1）尽量多的用到go语言的语法基础内容：packages, variables ,functions Flow control, method, interface, concurrency
+2）请求 url，获取状态等；
+
+
+2、代码示例
+[root@tvm01 go]# cat src/abc.com/demo/website/website.go
+package main
+
+import (
+    "fmt"
+    "log"
+    "time"
+    "net/http"
+    "io/ioutil"
+    "strings"
+    "strconv"
+    "os"
+)
+
+
+type taskstat struct {
+    success int
+    failure int
+}
+
+
+func checkError(err error, method string) bool {
+    if err != nil {
+        log.Printf("[E] %s : %v", method, err)
+        return true
+    }
+    return false
+}
+
+
+func getHosts() ([]string) {
+    var hosts []string
+    data, err := ioutil.ReadFile("hosts.txt")
+    if checkError(err, "outil.ReadFile") {
+        return hosts
+    }
+
+    for _, h := range strings.Split(string(data), "\n") {
+        if h == "" {
+            continue
+        }
+        hosts = append(hosts, h)
+    }
+    return hosts
+}
+
+
+func request_url(cnt int, url string, ch chan string, stat *taskstat) {
+    head, err := http.Head(url)
+    if checkError(err, "http.Head") {
+        ch <- "[" + strconv.Itoa(cnt)  + "]" + url
+        ch <- "[" + strconv.Itoa(cnt) + "]failed"
+        stat.failure += 1
+        return
+    }
+    status := head.Status
+    ch <- "[" + strconv.Itoa(cnt) +  "]" + url + " : " + status
+    stat.success += 1
+
+    res, err := http.Get(url)
+    if checkError(err, "http.Get") {
+        stat.failure += 1
+        return
+    }
+
+    data, err := ioutil.ReadAll(res.Body)
+    if checkError(err, "ioutil.ReadAll") {
+        stat.failure += 1
+        return
+    }
+    ch <- "[" + strconv.Itoa(cnt) +  "]" + "Got size: " + strconv.Itoa(len(data))
+    stat.success += 1
+
+}
+
+
+func main() {
+    var cnt int = 10
+    var err error
+    var hosts []string
+    var stat = taskstat{0, 0}
+
+    dt_start := time.Now()
+    if len(os.Args) > 2 {
+        cnt, err = strconv.Atoi(os.Args[1])
+        if checkError(err, "strconv.Atoi") {
+            return
+        }
+
+        if len(os.Args) == 3 {
+            hosts = append(hosts, os.Args[2]) 
+        } else {
+            hosts = getHosts()
+        }
+    }
+
+    for _, url := range hosts {
+        ch := make(chan string)
+        for i := 0; i < cnt; i++ {
+            go request_url(i, "http://"+url, ch, &stat)
+        }
+
+        for t := 0; t < cnt; t++ {
+            fmt.Println(<-ch)
+            fmt.Println(<-ch)
+        }
+    }
+    fmt.Printf("success: %d, failure %d\n", stat.success, stat.failure)
+    log.Printf("Time Cost: %v", time.Since(dt_start))
+}
+
+
+3、如何运行
+1）直接运行
+[root@tvm01 go]# go run src/abc.com/demo/website/website.go 3 www.qq.com 
+[1]http://www.qq.com : 200 OK
+[2]http://www.qq.com : 200 OK
+[0]http://www.qq.com : 200 OK
+[1]Got size: 251451
+[2]Got size: 251451
+[0]Got size: 251451
+success: 6, failure 0
+2017/02/24 16:40:21 Time Cost: 97.200212ms
+
+
+2）编译
+当前为 linux 环境
+[root@tvm01 go]# go install abc.com/demo/website 
+运行
+[root@tvm01 go]# bin/website 3 www.qq.com
+
+3）交叉编译
+以 windows 平台为例：
+[root@tvm01 go]# GOOS="windows" go install abc.com/demo/website
+[root@tvm01 go]# sz bin/windows_amd64/website.exe
+下载到windows下执行，符合预期
+
+
+
+
+
+
+
+
+XYXW、参考
+1、golang
+https://golang.org/doc
+https://golang.org/doc/code.html#Workspaces
+
+2、the-way-to-go_ZH_CN
+https://github.com/Unknwon/the-way-to-go_ZH_CN/blob/master/eBook/directory.md
