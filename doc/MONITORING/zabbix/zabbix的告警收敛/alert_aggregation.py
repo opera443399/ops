@@ -4,7 +4,7 @@
 # @ 2017/2/24
 # @ PC
 # ----------------------------------
-# [zabbix alert aggregation], vers=1.1.5
+# [zabbix alert aggregation], vers=1.1.6
 #
 ##[requisition 1]: on zabbix frontend, added new action as given below.
 #######################################################################
@@ -35,7 +35,7 @@ ZBX_DB_USER = 'zabbix'
 ZBX_DB_PASS = 'pass'
 
 
-DEBUG_LEVEL = 1
+DEBUG_LEVEL = 0
 # +---- logging ---+
 LOG_FILE = '/tmp/alert_aggregation.py.log'
 logging.basicConfig(
@@ -50,7 +50,7 @@ def alert_by_email(trigger_name, status, content):
     import os
     users = ZBX_ALERT_RECIPIENTS
     subject = '[AA->{1}]{0}'.format(trigger_name, status)
-    cmd = 'export LANG="en_US.UTF-8";/your/zabbix/alertscripts/zabbix_mail "{0}" "{1}" "{2}"'.format(users, subject, content)
+    cmd = 'export LANG="en_US.UTF-8";/your/zabbix/alertscripts/zabbix_email "{0}" "{1}" "{2}"'.format(users, subject, content)
     if DEBUG_LEVEL>1: logging.info('function [alert_by_email] run command: {0}'.format(cmd))
     ret = os.popen(cmd)
     if DEBUG_LEVEL>1: logging.info('function [os.popen] return: {0}.'.format(ret.read()))
@@ -104,9 +104,9 @@ def handler_msgs(src, ok, reason):
             s_trigger_desc=trigger_desc, s_dt=dt_now)
 
     if DEBUG_LEVEL: logging.info(content)
-    #print(content)
     alert_by_email(trigger_name, status, content)
-    print('Alert is sent out.\n{star}\n'.format(star='-'*79))
+    print('[-] Alert is sent out.\n{star}\n'.format(star='-'*79))
+    if DEBUG_LEVEL: ('[-] Alert is sent out.\n{star}\n'.format(star='-'*79))
 
 
 def check_msgs(src):
