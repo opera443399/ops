@@ -4,7 +4,7 @@
 # @ 2017/2/24
 # @ PC
 # ----------------------------------
-# [zabbix alarm aggregation], vers=1.1.4
+# [zabbix alert aggregation], vers=1.1.5
 #
 ##[requisition 1]: on zabbix frontend, added new action as given below.
 #######################################################################
@@ -37,7 +37,7 @@ ZBX_DB_PASS = 'pass'
 
 DEBUG_LEVEL = 1
 # +---- logging ---+
-LOG_FILE = '/tmp/alarm_aggregation.py.log'
+LOG_FILE = '/tmp/alert_aggregation.py.log'
 logging.basicConfig(
     level = logging.DEBUG,
     format = '%(asctime)s [%(levelname)s]: %(message)s',
@@ -85,7 +85,7 @@ def handler_msgs(src, ok, reason):
 [*] AA->{s_status}:
 {s_trigger_name}
 
-[*] Aggregation Reason:
+[*] Alert Aggregation Reason:
 {s_reason}
 
 [*] Host Lists:
@@ -234,7 +234,7 @@ def test_run(action_id, ts, r, rexpire):
 
 if __name__ == "__main__":
     '''
-        alarm aggregation for zbx
+        alert aggregation for zbx
     '''
 
     pool = redis.ConnectionPool(host='127.0.0.1', port=6379)

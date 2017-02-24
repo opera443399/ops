@@ -1,5 +1,5 @@
 zabbix的告警收敛
-2017/2/22
+2017/2/24
 
 一、前言
 1、目的
@@ -24,7 +24,7 @@ zabbix的告警收敛
 
 
 二、输出
-请参考本目录下的 zabbix 告警收敛脚本：alarm_aggregation.py
+请参考本目录下的 zabbix 告警收敛脚本： alert_aggregation.py
 
 嘿，看到的童鞋，希望多交流。
 
