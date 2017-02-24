@@ -1,3 +1,8 @@
+/*
+# go demo: website
+# 2017/2/24
+*/ 
+
 package main
 
 import (
@@ -47,28 +52,25 @@ func getHosts() ([]string) {
 func request_url(cnt int, url string, ch chan string, stat *taskstat) {
     head, err := http.Head(url)
     if checkError(err, "http.Head") {
+        stat.failure += 1
         ch <- "[" + strconv.Itoa(cnt)  + "]" + url
         ch <- "[" + strconv.Itoa(cnt) + "]failed"
-        stat.failure += 1
         return
     }
+    stat.success += 1
     status := head.Status
     ch <- "[" + strconv.Itoa(cnt) +  "]" + url + " : " + status
-    stat.success += 1
 
     res, err := http.Get(url)
     if checkError(err, "http.Get") {
-        stat.failure += 1
         return
     }
 
     data, err := ioutil.ReadAll(res.Body)
     if checkError(err, "ioutil.ReadAll") {
-        stat.failure += 1
         return
     }
     ch <- "[" + strconv.Itoa(cnt) +  "]" + "Got size: " + strconv.Itoa(len(data))
-    stat.success += 1
 
 }
 
@@ -104,6 +106,6 @@ func main() {
             fmt.Println(<-ch)
         }
     }
-    fmt.Printf("success: %d, failure %d\n", stat.success, stat.failure)
+    fmt.Printf("\nsuccess: %d, failure: %d\n", stat.success, stat.failure)
     log.Printf("Time Cost: %v", time.Since(dt_start))
 }
