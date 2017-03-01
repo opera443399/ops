@@ -111,3 +111,54 @@ ulimit -a
 7）strace
 strace -p pid
 查看系统调用
+
+
+8）top
+top 大家都知道，本来不想记录的，还是补上吧，说说几个技巧吧。
+PS：网络文章很多，不推荐，请自行按需搜索。
+
+a）快捷键
+z：打开颜色显示
+x：单独显示排序的那一列
+b：加粗显示运行进程的那一行
+
+b）命令行模式
+打印一次
+~]# top -n 1
+打印一次完整的
+~]# top -b -n 1
+打印指定pid的内容，并显示 thread
+~]# top -b -n 1 -p 4227 -H
+
+c）在 top 中，可能要重点注意的地方是：
+看到 load 很高（要注意一点，你的服务器有多少cpu，并非单纯的查看这个 load 的值是否超过 1 呢），，但是不知道消耗到哪里了，怎么办呢？例如下面的输出：
+~]# top -n 1
+Tasks: 124 total,   1 running, 123 sleeping,   0 stopped,   0 zombie
+Cpu(s):  1.7%us,  0.5%sy,  0.0%ni, 89.0%id,  8.8%wa,  0.0%hi,  0.0%si,  0.0%st
+Mem:   3920968k total,  3781008k used,   139960k free,   162768k buffers
+Swap:  4194296k total,   471156k used,  3723140k free,  2932460k cached
+
+  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND                                                                                                                                
+ 4227 root      20   0  589m 315m 1380 S  3.9  8.2  14858:22 carbon-cache.py                                                                                                                        
+ 2590 root      20   0  950m  64m 3756 S  2.0  1.7   1293:21 statsd config.j                                                                                                                        
+ 7845 root      20   0 15024 1220  896 R  2.0  0.0   0:00.01 top                                                                                                                                    
+    1 root      20   0 19232  600  428 S  0.0  0.0   0:34.87 init                                                                                                                                   
+    2 root      20   0     0    0    0 S  0.0  0.0   0:00.00 kthreadd                                                                                                                               
+    3 root      RT   0     0    0    0 S  0.0  0.0   1:12.47 migration/0                                                                                                                            
+    4 root      20   0     0    0    0 S  0.0  0.0   2:11.38 ksoftirqd/0                                                                                                                            
+    5 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 migration/0  
+ 
+ 
+咱们这样来分析，进入 top 后，在交互模式下（可用的命令请 man top 查看 INTERACTIVE Commands 这一节），按下数字1，查看每个cpu的状态：
+~]# top
+top - 15:25:22 up 176 days,  8:59,  1 user,  load average: 2.86, 2.87, 2.91
+Tasks: 124 total,   1 running, 123 sleeping,   0 stopped,   0 zombie
+Cpu0  :  0.3%us,  0.0%sy,  0.0%ni,  0.0%id, 99.7%wa,  0.0%hi,  0.0%si,  0.0%st
+Cpu1  :  0.0%us,  0.3%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
+Cpu2  :  0.0%us,  0.0%sy,  0.0%ni,100.0%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
+Cpu3  :  0.3%us,  0.0%sy,  0.0%ni,  0.0%id, 99.7%wa,  0.0%hi,  0.0%si,  0.0%st
+Mem:   3920968k total,  3728740k used,   192228k free,   162352k buffers
+Swap:  4194296k total,   471156k used,  3723140k free,  2885372k cached
+
+
+请注意，，，cpu0和cpu3的 %wa 都飙高了。
