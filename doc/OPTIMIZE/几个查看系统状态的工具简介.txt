@@ -187,3 +187,13 @@ Swap:  4194296k total,   471156k used,  3723140k free,  2885372k cached
 
 
 请注意，，，cpu0和cpu3的 %wa 都飙高了。
+
+
+9）常用的姿势
+
+sar -d -p 2
+iostat -d -x -k 2
+vmstat -S M -w 
+top -b -n 1 -c
+
+
