@@ -1,5 +1,5 @@
 几个查看系统状态的工具简介
-2016/7/29
+2017/3/3
 linux性能分析博大精深，各工具的详情请查看man和参考网络文章。
 
 一、查看主机流量
@@ -52,6 +52,15 @@ docker    23616 root    4u  IPv6 319706      0t0  TCP *:http (LISTEN)
 
 
 二、查看系统
+常用的姿势
+
+sar -d -p 2
+iostat -d -x -k 2
+vmstat -S M -w 
+top -b -n 1 -c
+pidstat -d 2
+
+
 1）sar
 例如：查看硬盘状态，1秒间隔
 [root@test79 ~]# sar -d -p 1
@@ -189,11 +198,17 @@ Swap:  4194296k total,   471156k used,  3723140k free,  2885372k cached
 请注意，，，cpu0和cpu3的 %wa 都飙高了。
 
 
-9）常用的姿势
+9）pidstat
+参考：
+http://weibo.com/ttarticle/p/show?id=2309404042490498950621
 
-sar -d -p 2
-iostat -d -x -k 2
-vmstat -S M -w 
-top -b -n 1 -c
+~]# pidstat -d 2
+Linux 2.6.32-431.el6.x86_64 (test79.company.com)   03/03/2017      _x86_64(32 CPU)
 
+06:34:10 PM       PID   kB_rd/s   kB_wr/s kB_ccwr/s  Command
+06:34:12 PM     12848      0.00    324.64      0.00  glusterfsd
+06:34:12 PM     43987    228.02      0.00      0.00  qemu-kvm
+06:34:12 PM     47625   1826.09      0.00      0.00  swapoff
+06:34:12 PM     48242      3.86      0.00      0.00  qemu-kvm
+06:34:12 PM     48520      7.73      0.00      0.00  qemu-kvm
 
