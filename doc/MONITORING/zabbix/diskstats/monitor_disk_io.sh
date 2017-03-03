@@ -2,7 +2,7 @@
 #
 # 2017/3/3
 # PC
-# ver1.0.3
+# ver1.0.4
 #echo "[`date`] $1 $2 $3" >>/tmp/test.log
 
 ##
@@ -35,19 +35,19 @@ disk_lld_pre(){
     local d=`lsblk -o NAME,TYPE |awk '$2=="disk"{print $1}'`
     for i in $d
     do
-        printf '\t\t{\n'
+        echo -e '\t\t{'
         echo -e "\t\t\t\"{#DISK_NAME}\": \"$i\""
-        printf '\t\t},\n'
+        echo -e '\t\t},'
     done
 }
 
 disk_lld(){
-    printf '{\n'
-    printf '\t"data": [\n'
+    echo -e '{'
+    echo -e '\t"data": ['
     disk_lld_pre |sed '$d'
-    printf '\t\t}\n'
-    printf '\t]\n'
-    printf '}\n'
+    echo -e '\t\t}'
+    echo -e '\t]'
+    echo -e '}'
 }
 
 

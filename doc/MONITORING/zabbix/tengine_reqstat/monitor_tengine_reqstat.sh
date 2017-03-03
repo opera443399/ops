@@ -1,7 +1,8 @@
 #!/bin/bash
 #
-# 2017/2/22
+# 2017/3/3
 # PC
+# ver1.0.2
 #echo "[`date`] $1 $2 $3" >>/tmp/test.log
 
 curl_opts='-s http://127.0.0.1:80/rstatus'
@@ -177,19 +178,19 @@ rstat_hosts_lld_pre(){
     local buckets=`rstat_hosts`
     for i in $buckets
     do
-        printf '\t\t{\n'
+        echo -e '\t\t{'
         echo -e "\t\t\t\"{#RSTAT_KEY}\": \"$i\""
-        printf '\t\t},\n'
+        echo -e '\t\t},'
     done
 }
 
 rstat_hosts_lld(){
-    printf '{\n'
-    printf '\t"data": [\n'
+    echo -e '{'
+    echo -e '\t"data": ['
     rstat_hosts_lld_pre |sed '$d'
-    printf '\t\t}\n'
-    printf '\t]\n'
-    printf '}\n'
+    echo -e '\t\t}'
+    echo -e '\t]'
+    echo -e '}'
 }
 
 ##

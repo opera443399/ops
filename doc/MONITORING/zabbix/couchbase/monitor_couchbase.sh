@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-#2016/11/25
-#v1.3
+#2017/3/3
+#v1.0.4
 #PC
 #echo "[`date`] $1 $2 $3" >>/tmp/test.log
 
@@ -60,19 +60,19 @@ cb_bucket_lld_pre(){
     echo $buckets |grep -o 'ERROR' >/dev/null && exit 2 
     for i in $buckets
     do
-        printf '\t\t{\n'
+        echo -e '\t\t{'
         echo -e "\t\t\t\"{#BUCKETNAME}\": \"$i\""
-        printf '\t\t},\n'
+        echo -e '\t\t},'
     done
 }
 
 cb_bucket_lld(){
-    printf '{\n'
-    printf '\t"data": [\n'
+    echo -e '{'
+    echo -e '\t"data": ['
     cb_bucket_lld_pre |sed '$d'
-    printf '\t\t}\n'
-    printf '\t]\n'
-    printf '}\n'
+    echo -e '\t\t}'
+    echo -e '\t]'
+    echo -e '}'
 }
 
 ##
