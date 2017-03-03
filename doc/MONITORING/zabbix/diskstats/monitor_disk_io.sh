@@ -2,6 +2,7 @@
 #
 # 2017/3/3
 # PC
+# ver1.0.3
 #echo "[`date`] $1 $2 $3" >>/tmp/test.log
 
 ##
@@ -31,7 +32,7 @@ _EOF
 ###### disk lld ######
 
 disk_lld_pre(){
-    local d=`lsblk -o NAME,TYPE |grep disk |awk '{print $1}'`
+    local d=`lsblk -o NAME,TYPE |awk '$2=="disk"{print $1}'`
     for i in $d
     do
         printf '\t\t{\n'
