@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>2.0</version>
-    <date>2017-03-03T03:20:52Z</date>
+    <date>2017-03-07T07:45:51Z</date>
     <groups>
         <group>
             <name>Templates</name>
@@ -56,7 +56,7 @@
                             <name>diskstats [$2] - $1</name>
                             <type>0</type>
                             <snmp_community/>
-                            <multiplier>0</multiplier>
+                            <multiplier>1</multiplier>
                             <snmp_oid/>
                             <key>diskstats.get['time_in_queue', {#DISK_NAME}]</key>
                             <delay>60</delay>
@@ -65,7 +65,7 @@
                             <status>0</status>
                             <value_type>0</value_type>
                             <allowed_hosts/>
-                            <units>ms</units>
+                            <units>s</units>
                             <delta>1</delta>
                             <snmpv3_contextname/>
                             <snmpv3_securityname/>
@@ -74,7 +74,7 @@
                             <snmpv3_authpassphrase/>
                             <snmpv3_privprotocol>0</snmpv3_privprotocol>
                             <snmpv3_privpassphrase/>
-                            <formula>1</formula>
+                            <formula>0.001</formula>
                             <delay_flex/>
                             <params/>
                             <ipmi_sensor/>
@@ -98,7 +98,7 @@
                             <name>diskstats [$2] - $1</name>
                             <type>0</type>
                             <snmp_community/>
-                            <multiplier>0</multiplier>
+                            <multiplier>1</multiplier>
                             <snmp_oid/>
                             <key>diskstats.get['io_ticks', {#DISK_NAME}]</key>
                             <delay>60</delay>
@@ -107,7 +107,7 @@
                             <status>0</status>
                             <value_type>0</value_type>
                             <allowed_hosts/>
-                            <units>ms</units>
+                            <units>s</units>
                             <delta>1</delta>
                             <snmpv3_contextname/>
                             <snmpv3_securityname/>
@@ -116,7 +116,7 @@
                             <snmpv3_authpassphrase/>
                             <snmpv3_privprotocol>0</snmpv3_privprotocol>
                             <snmpv3_privpassphrase/>
-                            <formula>1</formula>
+                            <formula>0.001</formula>
                             <delay_flex/>
                             <params/>
                             <ipmi_sensor/>
@@ -224,7 +224,7 @@
                             <name>diskstats [$2] - $1</name>
                             <type>0</type>
                             <snmp_community/>
-                            <multiplier>0</multiplier>
+                            <multiplier>1</multiplier>
                             <snmp_oid/>
                             <key>diskstats.get['write_ticks', {#DISK_NAME}]</key>
                             <delay>60</delay>
@@ -233,7 +233,7 @@
                             <status>0</status>
                             <value_type>0</value_type>
                             <allowed_hosts/>
-                            <units>ms</units>
+                            <units>s</units>
                             <delta>1</delta>
                             <snmpv3_contextname/>
                             <snmpv3_securityname/>
@@ -242,7 +242,7 @@
                             <snmpv3_authpassphrase/>
                             <snmpv3_privprotocol>0</snmpv3_privprotocol>
                             <snmpv3_privpassphrase/>
-                            <formula>1</formula>
+                            <formula>0.001</formula>
                             <delay_flex/>
                             <params/>
                             <ipmi_sensor/>
@@ -275,7 +275,7 @@
                             <status>0</status>
                             <value_type>3</value_type>
                             <allowed_hosts/>
-                            <units>B/sector</units>
+                            <units>B/s</units>
                             <delta>1</delta>
                             <snmpv3_contextname/>
                             <snmpv3_securityname/>
@@ -317,7 +317,7 @@
                             <status>0</status>
                             <value_type>3</value_type>
                             <allowed_hosts/>
-                            <units>B/sector</units>
+                            <units>B/s</units>
                             <delta>1</delta>
                             <snmpv3_contextname/>
                             <snmpv3_securityname/>
@@ -350,7 +350,7 @@
                             <name>diskstats [$2] - $1</name>
                             <type>0</type>
                             <snmp_community/>
-                            <multiplier>0</multiplier>
+                            <multiplier>1</multiplier>
                             <snmp_oid/>
                             <key>diskstats.get['read_ticks', {#DISK_NAME}]</key>
                             <delay>60</delay>
@@ -359,7 +359,7 @@
                             <status>0</status>
                             <value_type>0</value_type>
                             <allowed_hosts/>
-                            <units>ms</units>
+                            <units>s</units>
                             <delta>1</delta>
                             <snmpv3_contextname/>
                             <snmpv3_securityname/>
@@ -368,7 +368,7 @@
                             <snmpv3_authpassphrase/>
                             <snmpv3_privprotocol>0</snmpv3_privprotocol>
                             <snmpv3_privpassphrase/>
-                            <formula>1</formula>
+                            <formula>0.001</formula>
                             <delay_flex/>
                             <params/>
                             <ipmi_sensor/>
