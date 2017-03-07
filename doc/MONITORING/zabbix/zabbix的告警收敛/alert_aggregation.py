@@ -1,10 +1,10 @@
 #!/bin/env python
 # coding=utf-8
 # ----------------------------------
-# @ 2017/2/24
+# @ 2017/3/7
 # @ PC
 # ----------------------------------
-# [zabbix alert aggregation], vers=1.1.7
+# [zabbix alert aggregation], vers=1.1.8
 #
 ##[requisition 1]: on zabbix frontend, added new action as given below.
 #######################################################################
@@ -114,8 +114,6 @@ def check_msgs(src):
         classification
     '''
     list_of_item_keys = {}
-    status_problem = []
-    status_ok = []
 
     for m in src:
         if m['item_key'] not in list_of_item_keys:
@@ -125,6 +123,9 @@ def check_msgs(src):
     for k,v in  list_of_item_keys.items():
         print("{star}\nitem_key={0}, count={1}".format(k, len(v), star='+'*79))
         if DEBUG_LEVEL: logging.info("{star}\nitem_key={0}, count={1}".format(k, len(v), star='+'*79))
+
+        status_problem = []
+        status_ok = []
 
         for n in v:
             if n['trigger_value'] == '1':
@@ -146,8 +147,10 @@ def check_msgs(src):
             print('[-] Msgs Posted. Reason: trigger occurred {0} times/minute for status -> ok.'.format(len(status_ok)))
             handler_msgs(status_ok, True, 'trigger occurred {0} times/minute for status -> ok.'.format(len(status_ok)))
         elif 0 < len(status_ok) <= 5:
-            print('[-] Msgs Dropped. Reason: trigger occurred only {0} times/minute for status ->ok.'.format(len(status_ok)))
+            print('[-] Msgs Dropped. Reason: trigger occurred only {0} times/minute for status -> ok.'.format(len(status_ok)))
             if DEBUG_LEVEL: logging.info('[-] Msgs Dropped. Reason: trigger occurred only {0} times/minute for status -> ok.'.format(len(status_ok)))
+
+    print("{star}\n".format(star='+'*79))
 
 
 def trans_data_to_dict(data):
