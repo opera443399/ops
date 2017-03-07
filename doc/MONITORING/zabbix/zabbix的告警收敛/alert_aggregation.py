@@ -4,7 +4,7 @@
 # @ 2017/3/7
 # @ PC
 # ----------------------------------
-# [zabbix alert aggregation], vers=1.1.8
+# [zabbix alert aggregation], vers=1.1.9
 #
 ##[requisition 1]: on zabbix frontend, added new action as given below.
 #######################################################################
@@ -253,7 +253,7 @@ if __name__ == "__main__":
     #normal zbx action
     if len(sys.argv) == 4:
         username, subject, content = sys.argv[1:]
-        if DEBUG_LEVEL>1: logging.info('argv: {0}'.format(sys.argv[1:]))
+        if DEBUG_LEVEL: logging.info('argv: {0}'.format(sys.argv[1:]))
 
         ret = r.set(subject, content, REDIS_KEY_EXPIRED)
         if DEBUG_LEVEL: logging.info('redis result: {0}'.format(ret))
@@ -261,7 +261,7 @@ if __name__ == "__main__":
     #main
     else:
         #push test data(depends on timestamp as given) to redis
-        #import time; ts = int(time.time()-60); test_run(ZBX_ACTION_ID, ts, r, REDIS_KEY_EXPIRED)
+        #import time; ts = int(time.time()-12*60*60); test_run(ZBX_ACTION_ID, ts, r, REDIS_KEY_EXPIRED)
 
         aggregation(ZBX_ACTION_ID, r)
 
