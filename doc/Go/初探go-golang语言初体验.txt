@@ -172,6 +172,7 @@ import (
     "flag"
     "fmt"
     "log"
+    "sync"
     "time"
     "net/http"
     "io/ioutil"
@@ -181,8 +182,20 @@ import (
 
 
 type taskstat struct {
-    success int
-    failure int
+    v map[string]int
+    mux sync.Mutex
+}
+
+func (ts *taskstat) Inc(key string) {
+    ts.mux.Lock()
+    ts.v[key]++
+    ts.mux.Unlock()
+}
+
+func (ts *taskstat) Value(key string) int {
+    ts.mux.Lock()
+    defer ts.mux.Unlock()
+    return ts.v[key]
 }
 
 
@@ -215,11 +228,13 @@ func getHosts() ([]string) {
 func request_url(seq int, url string, ch chan string, stat *taskstat) {
     head, err := http.Head(url)
     if checkError(err, "http.Head") {
-        stat.failure += 1
+        stat.Inc("failure")
+
         ch <- "[" + strconv.Itoa(seq)  + "]" + url + " : failed."
         return
     }
-    stat.success += 1
+
+    stat.Inc("success")
     status := head.Status
     ch <- "[" + strconv.Itoa(seq) +  "]" + url + " : " + status
 }
@@ -232,7 +247,7 @@ func main() {
 
     flag.Parse()
 
-    var stat = taskstat{0, 0}
+    var stat = taskstat{v: make(map[string]int)}
     var hosts []string
 
     if *use_conf == true {
@@ -251,8 +266,7 @@ func main() {
             fmt.Println(<-ch)
         }
     }
-    log.Printf("success: %d, failure: %d, Time Cost: %v\n", stat.success, stat.failure, time.Since(dt_start))
-
+    log.Printf("success: %d, failure: %d, Time Cost: %v\n", stat.Value("success"), stat.Value("failure"), time.Since(dt_start))
 }
 
 
