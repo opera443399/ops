@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>2.0</version>
-    <date>2017-02-22T10:06:21Z</date>
+    <date>2017-03-09T05:30:56Z</date>
     <groups>
         <group>
             <name>Templates</name>
@@ -30,7 +30,7 @@
                     <snmp_community/>
                     <snmp_oid/>
                     <key>tengine.reqstat.discovery</key>
-                    <delay>1800</delay>
+                    <delay>3600</delay>
                     <status>0</status>
                     <allowed_hosts/>
                     <snmpv3_contextname/>
@@ -71,14 +71,14 @@
                             <multiplier>0</multiplier>
                             <snmp_oid/>
                             <key>tengine.reqstat.get[&quot;{#RSTAT_KEY}&quot;,&quot;ups_tries&quot;]</key>
-                            <delay>120</delay>
-                            <history>7</history>
-                            <trends>30</trends>
+                            <delay>60</delay>
+                            <history>90</history>
+                            <trends>365</trends>
                             <status>0</status>
                             <value_type>3</value_type>
                             <allowed_hosts/>
                             <units/>
-                            <delta>2</delta>
+                            <delta>1</delta>
                             <snmpv3_contextname/>
                             <snmpv3_securityname/>
                             <snmpv3_securitylevel>0</snmpv3_securitylevel>
@@ -115,13 +115,13 @@
                             <snmp_oid/>
                             <key>tengine.reqstat.get[&quot;{#RSTAT_KEY}&quot;,&quot;bytes_in&quot;]</key>
                             <delay>60</delay>
-                            <history>7</history>
-                            <trends>30</trends>
+                            <history>90</history>
+                            <trends>365</trends>
                             <status>0</status>
                             <value_type>3</value_type>
                             <allowed_hosts/>
                             <units>B</units>
-                            <delta>2</delta>
+                            <delta>1</delta>
                             <snmpv3_contextname/>
                             <snmpv3_securityname/>
                             <snmpv3_securitylevel>0</snmpv3_securitylevel>
@@ -158,13 +158,13 @@
                             <snmp_oid/>
                             <key>tengine.reqstat.get[&quot;{#RSTAT_KEY}&quot;,&quot;bytes_out&quot;]</key>
                             <delay>60</delay>
-                            <history>7</history>
-                            <trends>30</trends>
+                            <history>90</history>
+                            <trends>365</trends>
                             <status>0</status>
                             <value_type>3</value_type>
                             <allowed_hosts/>
                             <units>B</units>
-                            <delta>2</delta>
+                            <delta>1</delta>
                             <snmpv3_contextname/>
                             <snmpv3_securityname/>
                             <snmpv3_securitylevel>0</snmpv3_securitylevel>
@@ -200,14 +200,14 @@
                             <multiplier>0</multiplier>
                             <snmp_oid/>
                             <key>tengine.reqstat.get[&quot;{#RSTAT_KEY}&quot;,&quot;req_total&quot;]</key>
-                            <delay>120</delay>
-                            <history>7</history>
-                            <trends>30</trends>
+                            <delay>60</delay>
+                            <history>90</history>
+                            <trends>365</trends>
                             <status>0</status>
                             <value_type>3</value_type>
                             <allowed_hosts/>
                             <units/>
-                            <delta>2</delta>
+                            <delta>1</delta>
                             <snmpv3_contextname/>
                             <snmpv3_securityname/>
                             <snmpv3_securitylevel>0</snmpv3_securitylevel>
@@ -243,14 +243,14 @@
                             <multiplier>0</multiplier>
                             <snmp_oid/>
                             <key>tengine.reqstat.get[&quot;{#RSTAT_KEY}&quot;,&quot;conn_total&quot;]</key>
-                            <delay>120</delay>
-                            <history>7</history>
-                            <trends>30</trends>
+                            <delay>60</delay>
+                            <history>90</history>
+                            <trends>365</trends>
                             <status>0</status>
                             <value_type>3</value_type>
                             <allowed_hosts/>
                             <units/>
-                            <delta>2</delta>
+                            <delta>1</delta>
                             <snmpv3_contextname/>
                             <snmpv3_securityname/>
                             <snmpv3_securitylevel>0</snmpv3_securitylevel>
@@ -286,14 +286,14 @@
                             <multiplier>0</multiplier>
                             <snmp_oid/>
                             <key>tengine.reqstat.get[&quot;{#RSTAT_KEY}&quot;,&quot;ups_req&quot;]</key>
-                            <delay>120</delay>
-                            <history>7</history>
-                            <trends>30</trends>
+                            <delay>60</delay>
+                            <history>90</history>
+                            <trends>365</trends>
                             <status>0</status>
                             <value_type>3</value_type>
                             <allowed_hosts/>
                             <units/>
-                            <delta>2</delta>
+                            <delta>1</delta>
                             <snmpv3_contextname/>
                             <snmpv3_securityname/>
                             <snmpv3_securitylevel>0</snmpv3_securitylevel>
