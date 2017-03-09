@@ -1,5 +1,5 @@
 /*
-# go demo: website_status
+# go demo: http_status
 # 2017/3/9
 */ 
 

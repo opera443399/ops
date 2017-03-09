@@ -162,7 +162,7 @@ CGO_FFLAGS="-g -O2"
 2、代码示例
 [root@tvm01 go]# cat src/abc.com/demo/http_status/http_status.go
 /*
-# go demo: website_status
+# go demo: http_status
 # 2017/3/9
 */ 
 
