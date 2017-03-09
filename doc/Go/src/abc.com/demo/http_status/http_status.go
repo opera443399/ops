@@ -6,6 +6,7 @@
 package main
 
 import (
+    "flag"
     "fmt"
     "log"
     "time"
@@ -13,7 +14,6 @@ import (
     "io/ioutil"
     "strings"
     "strconv"
-    "os"
 )
 
 
@@ -34,7 +34,7 @@ func checkError(err error, method string) bool {
 
 func getHosts() ([]string) {
     var hosts []string
-    data, err := ioutil.ReadFile("hosts.txt")
+    data, err := ioutil.ReadFile("urls.txt")
     if checkError(err, "ioutil.ReadFile") {
         return hosts
     }
@@ -49,49 +49,45 @@ func getHosts() ([]string) {
 }
 
 
-func request_url(cnt int, url string, ch chan string, stat *taskstat) {
+func request_url(seq int, url string, ch chan string, stat *taskstat) {
     head, err := http.Head(url)
     if checkError(err, "http.Head") {
         stat.failure += 1
-        ch <- "[" + strconv.Itoa(cnt)  + "]" + url + " : failed."
+        ch <- "[" + strconv.Itoa(seq)  + "]" + url + " : failed."
         return
     }
     stat.success += 1
     status := head.Status
-    ch <- "[" + strconv.Itoa(cnt) +  "]" + url + " : " + status
+    ch <- "[" + strconv.Itoa(seq) +  "]" + url + " : " + status
 }
 
 
 func main() {
-    var cnt int = 10
-    var err error
-    var hosts []string
-    var stat = taskstat{0, 0}
-
     dt_start := time.Now()
-    if len(os.Args) > 2 {
-        cnt, err = strconv.Atoi(os.Args[1])
-        if checkError(err, "strconv.Atoi") {
-            return
-        }
+    cnt := flag.Int("c", 10, "[] set N times to request the http url.")
+    use_conf := flag.Bool("f", false, "[] parse urls from file: [urls.txt] or not?")
 
-        if len(os.Args) == 3 {
-            hosts = append(hosts, os.Args[2]) 
-        } else {
-            hosts = getHosts()
-        }
+    flag.Parse()
+
+    var stat = taskstat{0, 0}
+    var hosts []string
+
+    if *use_conf == true {
+        hosts = getHosts()
+    } else{
+        hosts = flag.Args()
     }
 
     for _, url := range hosts {
         ch := make(chan string)
-        for i := 0; i < cnt; i++ {
-            go request_url(i, "http://"+url, ch, &stat)
+        for i := 0; i < *cnt; i++ {
+            go request_url(i, url, ch, &stat)
         }
 
-        for t := 0; t < cnt; t++ {
+        for t := 0; t < *cnt; t++ {
             fmt.Println(<-ch)
         }
     }
-    fmt.Printf("\nsuccess: %d, failure: %d\n", stat.success, stat.failure)
-    log.Printf("Time Cost: %v", time.Since(dt_start))
+    log.Printf("success: %d, failure: %d, Time Cost: %v\n", stat.success, stat.failure, time.Since(dt_start))
+
 }

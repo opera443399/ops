@@ -169,6 +169,7 @@ CGO_FFLAGS="-g -O2"
 package main
 
 import (
+    "flag"
     "fmt"
     "log"
     "time"
@@ -176,7 +177,6 @@ import (
     "io/ioutil"
     "strings"
     "strconv"
-    "os"
 )
 
 
@@ -197,7 +197,7 @@ func checkError(err error, method string) bool {
 
 func getHosts() ([]string) {
     var hosts []string
-    data, err := ioutil.ReadFile("hosts.txt")
+    data, err := ioutil.ReadFile("urls.txt")
     if checkError(err, "ioutil.ReadFile") {
         return hosts
     }
@@ -212,76 +212,84 @@ func getHosts() ([]string) {
 }
 
 
-func request_url(cnt int, url string, ch chan string, stat *taskstat) {
+func request_url(seq int, url string, ch chan string, stat *taskstat) {
     head, err := http.Head(url)
     if checkError(err, "http.Head") {
         stat.failure += 1
-        ch <- "[" + strconv.Itoa(cnt)  + "]" + url + " : failed."
+        ch <- "[" + strconv.Itoa(seq)  + "]" + url + " : failed."
         return
     }
     stat.success += 1
     status := head.Status
-    ch <- "[" + strconv.Itoa(cnt) +  "]" + url + " : " + status
+    ch <- "[" + strconv.Itoa(seq) +  "]" + url + " : " + status
 }
 
 
 func main() {
-    var cnt int = 10
-    var err error
-    var hosts []string
-    var stat = taskstat{0, 0}
-
     dt_start := time.Now()
-    if len(os.Args) > 2 {
-        cnt, err = strconv.Atoi(os.Args[1])
-        if checkError(err, "strconv.Atoi") {
-            return
-        }
+    cnt := flag.Int("c", 10, "[] set N times to request the http url.")
+    use_conf := flag.Bool("f", false, "[] parse urls from file: [urls.txt] or not?")
 
-        if len(os.Args) == 3 {
-            hosts = append(hosts, os.Args[2]) 
-        } else {
-            hosts = getHosts()
-        }
+    flag.Parse()
+
+    var stat = taskstat{0, 0}
+    var hosts []string
+
+    if *use_conf == true {
+        hosts = getHosts()
+    } else{
+        hosts = flag.Args()
     }
 
     for _, url := range hosts {
         ch := make(chan string)
-        for i := 0; i < cnt; i++ {
-            go request_url(i, "http://"+url, ch, &stat)
+        for i := 0; i < *cnt; i++ {
+            go request_url(i, url, ch, &stat)
         }
 
-        for t := 0; t < cnt; t++ {
+        for t := 0; t < *cnt; t++ {
             fmt.Println(<-ch)
         }
     }
-    fmt.Printf("\nsuccess: %d, failure: %d\n", stat.success, stat.failure)
-    log.Printf("Time Cost: %v", time.Since(dt_start))
+    log.Printf("success: %d, failure: %d, Time Cost: %v\n", stat.success, stat.failure, time.Since(dt_start))
+
 }
 
 
 3、如何运行
 1）直接运行
-[root@tvm01 go]# go run src/abc.com/demo/http_status/http_status.go 3 www.qq.com 
+[root@tvm01 go]# go run src/abc.com/demo/http_status/http_status.go -h
+Usage of /tmp/go-build822199343/command-line-arguments/_obj/exe/http_status:
+  -c int
+        [] set N times to request the http url. (default 10)
+  -f    [] parse urls from file: [urls.txt] or not?
+exit status 2
+
+[root@tvm01 go]# go run src/abc.com/demo/http_status/http_status.go -c 3 http://www.qq.com
+[2]http://www.qq.com : 200 OK
+[0]http://www.qq.com : 200 OK
 [1]http://www.qq.com : 200 OK
+2017/03/09 17:55:50 success: 3, failure: 0, Time Cost: 36.062986ms
+
+[root@tvm01 go]# go run src/abc.com/demo/http_status/http_status.go -c 3 http://www.qq.com http://www.360.cn
 [0]http://www.qq.com : 200 OK
 [2]http://www.qq.com : 200 OK
-
-success: 3, failure: 0
-2017/03/09 15:34:10 Time Cost: 22.490043ms
+[1]http://www.qq.com : 200 OK
+[2]http://www.360.cn : 200 OK
+[1]http://www.360.cn : 200 OK
+[0]http://www.360.cn : 200 OK
+2017/03/09 17:56:21 success: 6, failure: 0, Time Cost: 569.670989ms
 
 
 2）编译
 当前为 linux 环境
 [root@tvm01 go]# go install abc.com/demo/http_status 
 运行
-[root@tvm01 go]# bin/http_status 3 www.qq.com
-[0]http://www.qq.com : 200 OK
-[2]http://www.qq.com : 200 OK
+[root@tvm01 go]# bin/http_status -c 3 http://www.qq.com
 [1]http://www.qq.com : 200 OK
-
-success: 3, failure: 0
-2017/03/09 15:34:33 Time Cost: 21.025665ms
+[2]http://www.qq.com : 200 OK
+[0]http://www.qq.com : 200 OK
+2017/03/09 17:56:56 success: 3, failure: 0, Time Cost: 23.548995ms
 
 
 
