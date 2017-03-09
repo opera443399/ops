@@ -1,6 +1,6 @@
 /*
-# go demo: website
-# 2017/2/24
+# go demo: website_status
+# 2017/3/9
 */ 
 
 package main
@@ -35,7 +35,7 @@ func checkError(err error, method string) bool {
 func getHosts() ([]string) {
     var hosts []string
     data, err := ioutil.ReadFile("hosts.txt")
-    if checkError(err, "outil.ReadFile") {
+    if checkError(err, "ioutil.ReadFile") {
         return hosts
     }
 
@@ -53,25 +53,12 @@ func request_url(cnt int, url string, ch chan string, stat *taskstat) {
     head, err := http.Head(url)
     if checkError(err, "http.Head") {
         stat.failure += 1
-        ch <- "[" + strconv.Itoa(cnt)  + "]" + url
-        ch <- "[" + strconv.Itoa(cnt) + "]failed"
+        ch <- "[" + strconv.Itoa(cnt)  + "]" + url + " : failed."
         return
     }
     stat.success += 1
     status := head.Status
     ch <- "[" + strconv.Itoa(cnt) +  "]" + url + " : " + status
-
-    res, err := http.Get(url)
-    if checkError(err, "http.Get") {
-        return
-    }
-
-    data, err := ioutil.ReadAll(res.Body)
-    if checkError(err, "ioutil.ReadAll") {
-        return
-    }
-    ch <- "[" + strconv.Itoa(cnt) +  "]" + "Got size: " + strconv.Itoa(len(data))
-
 }
 
 
@@ -102,7 +89,6 @@ func main() {
         }
 
         for t := 0; t < cnt; t++ {
-            fmt.Println(<-ch)
             fmt.Println(<-ch)
         }
     }

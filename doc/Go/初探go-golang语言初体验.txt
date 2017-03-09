@@ -1,5 +1,5 @@
 初探go-golang语言初体验
-2017/2/24
+2017/3/9
 
 一、初体验
 1、环境
@@ -160,10 +160,10 @@ CGO_FFLAGS="-g -O2"
 
 
 2、代码示例
-[root@tvm01 go]# cat src/abc.com/demo/website/website.go
+[root@tvm01 go]# cat src/abc.com/demo/http_status/http_status.go
 /*
-# go demo: website
-# 2017/2/24
+# go demo: website_status
+# 2017/3/9
 */ 
 
 package main
@@ -198,7 +198,7 @@ func checkError(err error, method string) bool {
 func getHosts() ([]string) {
     var hosts []string
     data, err := ioutil.ReadFile("hosts.txt")
-    if checkError(err, "outil.ReadFile") {
+    if checkError(err, "ioutil.ReadFile") {
         return hosts
     }
 
@@ -216,25 +216,12 @@ func request_url(cnt int, url string, ch chan string, stat *taskstat) {
     head, err := http.Head(url)
     if checkError(err, "http.Head") {
         stat.failure += 1
-        ch <- "[" + strconv.Itoa(cnt)  + "]" + url
-        ch <- "[" + strconv.Itoa(cnt) + "]failed"
+        ch <- "[" + strconv.Itoa(cnt)  + "]" + url + " : failed."
         return
     }
     stat.success += 1
     status := head.Status
     ch <- "[" + strconv.Itoa(cnt) +  "]" + url + " : " + status
-
-    res, err := http.Get(url)
-    if checkError(err, "http.Get") {
-        return
-    }
-
-    data, err := ioutil.ReadAll(res.Body)
-    if checkError(err, "ioutil.ReadAll") {
-        return
-    }
-    ch <- "[" + strconv.Itoa(cnt) +  "]" + "Got size: " + strconv.Itoa(len(data))
-
 }
 
 
@@ -266,7 +253,6 @@ func main() {
 
         for t := 0; t < cnt; t++ {
             fmt.Println(<-ch)
-            fmt.Println(<-ch)
         }
     }
     fmt.Printf("\nsuccess: %d, failure: %d\n", stat.success, stat.failure)
@@ -276,28 +262,33 @@ func main() {
 
 3、如何运行
 1）直接运行
-[root@tvm01 go]# go run src/abc.com/demo/website/website.go 3 www.qq.com 
-[0]http://www.qq.com : 200 OK
+[root@tvm01 go]# go run src/abc.com/demo/http_status/http_status.go 3 www.qq.com 
 [1]http://www.qq.com : 200 OK
+[0]http://www.qq.com : 200 OK
 [2]http://www.qq.com : 200 OK
-[0]Got size: 251425
-[1]Got size: 251425
-[2]Got size: 251425
 
 success: 3, failure: 0
-2017/02/24 16:59:40 Time Cost: 118.27674ms
+2017/03/09 15:34:10 Time Cost: 22.490043ms
 
 
 2）编译
 当前为 linux 环境
-[root@tvm01 go]# go install abc.com/demo/website 
+[root@tvm01 go]# go install abc.com/demo/http_status 
 运行
-[root@tvm01 go]# bin/website 3 www.qq.com
+[root@tvm01 go]# bin/http_status 3 www.qq.com
+[0]http://www.qq.com : 200 OK
+[2]http://www.qq.com : 200 OK
+[1]http://www.qq.com : 200 OK
+
+success: 3, failure: 0
+2017/03/09 15:34:33 Time Cost: 21.025665ms
+
+
 
 3）交叉编译
 以 windows 平台为例：
-[root@tvm01 go]# GOOS="windows" go install abc.com/demo/website
-[root@tvm01 go]# sz bin/windows_amd64/website.exe
+[root@tvm01 go]# GOOS="windows" go install abc.com/demo/http_status
+[root@tvm01 go]# sz bin/windows_amd64/http_status.exe
 下载到windows下执行，符合预期
 
 
