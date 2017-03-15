@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#/2017/2/15
+#/2017/3/15
 
 f_yml='/tmp/filebeat.yml'
 f_conf='/tmp/filebeat.conf'
@@ -12,15 +12,15 @@ www_error_path_prefix='/var/log/nginx/error_'
 ## 请取消 www_access 到 www_error 之间的注释
 
 ####A）示范直接列出所有的文件路径
-#www_access='
-#www.test.com
-#www.work.com
-#'
-#www_error=$www_access
+www_access='
+www.test.com
+www.work.com
+'
+www_error=$www_access
 
 ####B）示范匹配今天生成的日志文件，提取出域名
-www_access=$(ls -l /var/log/nginx/access_*.com*.log |grep -F "`date +'%b %d'`" |grep -Po '(?<=access_).*.com(?=[_-]\d+.log|.log)' |sort |uniq)
-www_error=$(ls -l /var/log/nginx/error_*.com*.log |grep -F "`date +'%b %d'`" |grep -Po '(?<=error_).*.com(?=[_-]\d+.log|.log)' |sort |uniq)
+#www_access=$(ls -l /var/log/nginx/access_*.com*.log |grep -F "`date +'%b %d'`" |grep -Po '(?<=access_).*.com(?=[_-]\d+.log|.log)' |sort |uniq)
+#www_error=$(ls -l /var/log/nginx/error_*.com*.log |grep -F "`date +'%b %d'`" |grep -Po '(?<=error_).*.com(?=[_-]\d+.log|.log)' |sort |uniq)
 
 
 ####2 filebeat
@@ -51,7 +51,7 @@ _EOF
 - input_type: log
   paths:
     - ${www_error_path_prefix}${i}*.log
-  document_type: NginxAccess-${i}
+  document_type: NginxError-${i}
 
 _EOF
     done
