@@ -1,10 +1,10 @@
 #!/bin/env python
 # coding=utf-8
 # ----------------------------------
-# @ 2017/3/7
+# @ 2017/3/22
 # @ PC
 # ----------------------------------
-# [zabbix alert aggregation], vers=1.1.9
+# [zabbix alert aggregation], vers=1.1.10
 #
 ##[requisition 1]: on zabbix frontend, added new action as given below.
 #######################################################################
@@ -36,6 +36,7 @@ ZBX_DB_PASS = 'pass'
 
 
 DEBUG_LEVEL = 1
+## NOTICE: zabbix user must have the permission to write the log file.
 # +---- logging ---+
 LOG_FILE = '/tmp/alert_aggregation.py.log'
 logging.basicConfig(
@@ -176,7 +177,6 @@ def aggregation(action_id, r):
     '''
         main
     '''
-    event_ids = r.keys()
     r_size = r.dbsize()
     dt_now = datetime.datetime.now()
     if not r_size:
@@ -184,6 +184,7 @@ def aggregation(action_id, r):
         if DEBUG_LEVEL: logging.info('{0}, No record found!'.format(dt_now))
 
         return 
+    event_ids = r.keys()
 
     all_msgs = []
     for event_id in event_ids:
@@ -261,7 +262,7 @@ if __name__ == "__main__":
     #main
     else:
         #push test data(depends on timestamp as given) to redis
-        #import time; ts = int(time.time()-12*60*60); test_run(ZBX_ACTION_ID, ts, r, REDIS_KEY_EXPIRED)
+        #import time; ts = int(time.time()-24*60*60); test_run(ZBX_ACTION_ID, ts, r, REDIS_KEY_EXPIRED)
 
         aggregation(ZBX_ACTION_ID, r)
 
