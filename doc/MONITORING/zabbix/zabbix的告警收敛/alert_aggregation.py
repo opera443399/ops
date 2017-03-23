@@ -1,10 +1,10 @@
 #!/bin/env python
 # coding=utf-8
 # ----------------------------------
-# @ 2017/3/22
+# @ 2017/3/23
 # @ PC
 # ----------------------------------
-# [zabbix alert aggregation], vers=1.1.10
+# [zabbix alert aggregation], vers=1.1.11
 #
 ##[requisition 1]: on zabbix frontend, added new action as given below.
 #######################################################################
@@ -184,6 +184,10 @@ def aggregation(action_id, r):
         if DEBUG_LEVEL: logging.info('{0}, No record found!'.format(dt_now))
 
         return 
+    else:
+        print('{0}, {1} record(s) found!'.format(dt_now, r_size))
+        if DEBUG_LEVEL: logging.info('{0}, {1} record(s) found!'.format(dt_now, r_size))
+
     event_ids = r.keys()
 
     all_msgs = []
