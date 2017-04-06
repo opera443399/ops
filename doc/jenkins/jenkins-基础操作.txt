@@ -1,5 +1,5 @@
 jenkins-基础操作
-2016/12/27
+2017/4/6
 
 一、安装
 1、准备工作
@@ -197,14 +197,16 @@ display-url-api.jpi            gitlab-hook.jpi                 matrix-auth.jpi  
                     sudo rsync -av ../asset/ --exclude=".git/" ${d_target}/
                     sudo rm -fv ${d_link}
                     sudo ln -sv ${d_target} ${d_link}
-                    sudo /bin/bash ${d_link}/ctl.sh f
+                    sudo /bin/bash ${d_link}/ctl.sh c
+                    sudo /bin/bash ${d_link}/ctl.sh t
+                    sudo /bin/bash ${d_link}/ctl.sh r
 
                     # cleanup
                     echo "[-] List dir:"
                     sudo ls -l ${d_root}
-                    echo "[-] try to remove copies old than 60 minutes::"
-                    sudo find ${d_root} -maxdepth 1 -amin +60 -print |sort
-                    sudo find ${d_root} -maxdepth 1 -amin +60 -exec rm -fr {} \;
+                    echo "[-] File was last accessed n*24 hours ago:"
+                    sudo find ${d_root} -maxdepth 1 -atime +7 -print |sort
+                    sudo find ${d_root} -maxdepth 1 -atime +7 -exec rm -fr {} \;
                     echo "[-] List dir again:"
                     sudo ls -l ${d_root}
 
