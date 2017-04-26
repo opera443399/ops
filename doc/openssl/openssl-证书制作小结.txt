@@ -1,0 +1,13 @@
+openssl证书制作小结
+2017/4/26
+
+
+配置证书：请参考：https://docs.docker.com/engine/security/https/
+【CA, server, client 证书的生成示意图】
+
+                              | ca-key.pem -> ca.pem |
+                              |......................|
+                              /......................\
+| server-key.pem->server.csr |           ↓            | key.pem->client.csr |
+              ↓                      <------->                  ↓
+|       server-cert.pem      |                        |      cert.pem       |

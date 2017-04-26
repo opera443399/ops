@@ -1,3 +1,6 @@
+openssl-linux 鐢熸垚 passwd
+2017/4/26
+
 openssl passwd:     Generation of hashed passwords.
 # openssl passwd -h
 Usage: passwd [options] [passwords]
@@ -14,13 +17,13 @@ where options are
 -reverse           switch table columns
 
 
-使用MD5+salt的方式生成密码对应的hash值：
+浣跨敤MD5+salt鐨勬柟寮忕敓鎴愬瘑鐮佸搴旂殑hash鍊硷細
 # openssl passwd -1 -salt 'root'
 Password: 
 $1$root$abcdylRh83kdjWxfghm.abc
 
-得到一个hash后的密码
-再举例：
+寰楀埌涓�涓猦ash鍚庣殑瀵嗙爜
+鍐嶄妇渚嬶細
 #openssl passwd -1 -salt 'random-phrase' 'password'
 $1$random-p$sFftrCTxKKsDZ.Sdr8mDG0
 
