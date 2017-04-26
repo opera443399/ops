@@ -35,6 +35,27 @@ fatal: HTTP request failed
 解决办法：
 [root@tvm001 charade]# git remote set-url origin https://tester01@github.com/tester01/charade.git
 
+当然了，上述配置都可以直接在配置文件中修改：
+[root@tvm001 charade]# cat .git/config
+[core]
+	repositoryformatversion = 0
+	filemode = false
+	bare = false
+	logallrefupdates = true
+	symlinks = false
+	ignorecase = true
+	hideDotFiles = dotGitOnly
+[remote "origin"]
+	url = https://tester01@github.com/tester01/charade.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master
+[user]
+    name = tester01
+    email = tester01@abc.com
+    
+
 1）add 所有文件
 [root@tvm001 charade]# git add .
 
