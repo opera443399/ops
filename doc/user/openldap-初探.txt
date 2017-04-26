@@ -412,6 +412,7 @@ description: LDAP Manager
 
 2）将上述配置发送给 OpenLDAP Server 来执行
 [root@ldapnode1 ldap_conf]# ldapadd -D "cn=ldapmgr,dc=test,dc=com" -f config/base.ldif -W -v
+ldap_initialize( <DEFAULT> )
 Enter LDAP Password: 
 adding new entry "dc=test,dc=com"
 
@@ -488,6 +489,7 @@ memberUid: 1001
 
 2）将上述配置发送给 OpenLDAP Server 来执行
 [root@ldapnode1 ldap_conf]# ldapadd -D "cn=ldapmgr,dc=test,dc=com" -f users/jack.lee.ldif -W -v
+ldap_initialize( <DEFAULT> )
 Enter LDAP Password: 
 adding new entry "uid=jack.lee,ou=People,dc=test,dc=com"
 
@@ -516,12 +518,11 @@ uid=1001(jack.lee) gid=1001(jack.lee) groups=1001(jack.lee) context=unconfined_u
 exit
 [root@ldapnode2 ~]# id jack.lee
 uid=1001(jack.lee) gid=1001(jack.lee) groups=1001(jack.lee)
-
 符合预期。
 
 
-4、 新建组，然后将刚才创建的用户也加入这个组
-1）创建配置文件
+4、 新建组，先增加用户到这个组，然后从这个组移除该用户
+1）创建配置文件：新建组
 [root@ldapnode1 ldap_conf]# cat groups/team_ops.ldif 
 dn: cn=team_ops,ou=Group,dc=test,dc=com
 objectClass: posixGroup
@@ -534,13 +535,14 @@ Enter LDAP Password: （输入： passwd ）
 
 2）将上述配置发送给 OpenLDAP Server 来执行
 [root@ldapnode1 ldap_conf]# ldapadd -D "cn=ldapmgr,dc=test,dc=com" -f groups/team_ops.ldif -W -v
+ldap_initialize( <DEFAULT> )
 Enter LDAP Password: 
 adding new entry "cn=team_ops,ou=Group,dc=test,dc=com"
 
 [root@ldapnode1 ldap_conf]# 
 
 
-3）创建配置文件，新建一个组
+3）创建配置文件：增加用户到这个组
 [root@ldapnode1 ldap_conf]# cat groups/add_user_to_team_ops.ldif 
 dn: cn=team_ops,ou=Group,dc=test,dc=com
 changetype: modify
@@ -548,11 +550,15 @@ add: memberUid
 memberUid: jack.lee
 
 4）将上述配置发送给 OpenLDAP Server 来执行
-[root@ldapnode1 ldap_conf]# ldapadd -D "cn=ldapmgr,dc=test,dc=com" -f groups/add_user_to_team_ops.ldif -W -v
+[root@ldapnode1 ldap_conf]# ldapmodify -D "cn=ldapmgr,dc=test,dc=com" -f groups/add_user_to_team_ops.ldif -W -v
+ldap_initialize( <DEFAULT> )
 Enter LDAP Password: 
+add memberUid:
+        jack.lee
 modifying entry "cn=team_ops,ou=Group,dc=test,dc=com"
+modify complete
 
-[root@ldapnode1 ldap_conf]# 
+[root@ldapnode1 ldap_conf]#
 
 查询：
 [root@ldapnode1 ldap_conf]# ldapsearch -D "uid=jack.lee,ou=People,dc=test,dc=com" -b "uid=jack.lee,ou=People,DC=test,DC=com" -W
@@ -565,13 +571,44 @@ uid=1001(jack.lee) gid=1001(jack.lee) groups=1001(jack.lee),901(team_ops) contex
 exit
 [root@ldapnode2 ~]# id jack.lee
 uid=1001(jack.lee) gid=1001(jack.lee) groups=1001(jack.lee),901(team_ops)
-
-
 符合预期。
 
-6）操作小结
+6）创建配置文件：从这个组移除用户
+[root@ldapnode1 ldap_conf]# cat groups/del_user_from_team_ops.ldif 
+dn: cn=team_ops,ou=Group,dc=test,dc=com
+changetype: modify
+delete: memberUid
+memberUid: jack.lee
+
+7）将上述配置发送给 OpenLDAP Server 来执行
+[root@ldapnode1 ldap_conf]# ldapmodify -D "cn=ldapmgr,dc=test,dc=com" -f groups/del_user_from_team_ops.ldif -W -v
+ldap_initialize( <DEFAULT> )
+Enter LDAP Password: 
+delete memberUid:
+        jack.lee
+modifying entry "cn=team_ops,ou=Group,dc=test,dc=com"
+modify complete
+
+[root@ldapnode1 ldap_conf]# 
+
+8）在客户端测试
+[root@ldapnode2 ~]# su jack.lee
+[jack.lee@ldapnode2 root]$ id
+uid=1001(jack.lee) gid=1001(jack.lee) groups=1001(jack.lee) context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+[jack.lee@ldapnode2 root]$ exit
+exit
+[root@ldapnode2 ~]# id jack.lee
+uid=1001(jack.lee) gid=1001(jack.lee) groups=1001(jack.lee)
+符合预期。
+
+
+
+5、操作小结
 新增
 ldapadd -D "cn=ldapmgr,dc=test,dc=com" -f users/jack.lee.ldif -W -v
+
+修改
+ldapmodify -D "cn=ldapmgr,dc=test,dc=com" -f groups/add_user_to_team_ops.ldif -W -v
 
 查询组
 ldapsearch -D "cn=ldapmgr,dc=test,dc=com" -b "cn=jack.lee,ou=Group,DC=test,DC=com" -W
@@ -615,5 +652,6 @@ https://www.ibm.com/developerworks/cn/linux/1312_zhangchao_opensslldap/
 http://www.openldap.org/faq/data/cache/185.html
 6、Setting up OpenLDAP on CentOS 6
 http://docs.adaptivecomputing.com/viewpoint/hpc/Content/topics/1-setup/installSetup/settingUpOpenLDAPOnCentos6.htm
-
+7、How to Add LDAP Users and Groups in OpenLDAP on Linux
+http://www.thegeekstuff.com/2015/02/openldap-add-users-groups
 
