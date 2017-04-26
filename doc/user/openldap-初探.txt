@@ -10,7 +10,9 @@ openldap-初探
 [root@ldapnode1 ~]# setenforce 0 && sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
 
 2）iptables
-[root@ldapnode1 ~]# sed -i '/-A INPUT -j REJECT --reject-with icmp-host-prohibited/i\-A INPUT -p tcp -m state --state NEW -m tcp --dport 389 -j ACCEPT' /etc/sysconfig/iptables && service iptables reload
+目前先使用 ldap （tcp 389），后续将调整为 ldaps （tcp 636）
+[root@ldapnode1 ~]# sed -i.backup -e '/-A INPUT -j REJECT --reject-with icmp-host-prohibited/i## ldap related \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 389 -j ACCEPT' /etc/sysconfig/iptables && service iptables reload
 
 3）rsyslog
 [root@ldapnode1 users]# cat /etc/rsyslog.d/ldap.conf 
@@ -296,18 +298,18 @@ modifying entry "cn=config"
 [root@ldapnode1 misc]# 
 
 
-5）启用 ldaps:///
-[root@ldapnode1 misc]# sed -i 's/SLAPD_LDAPS=no/SLAPD_LDAPS=yes/' /etc/sysconfig/ldap
+5）启用 ldaps:/// ，并关闭 ldap:///
+[root@ldapnode1 ldap_conf]# sed -i -e 's/^SLAPD_LDAPS=no/SLAPD_LDAPS=yes/' -e 's/^SLAPD_LDAP=yes/SLAPD_LDAP=no/' /etc/sysconfig/ldap
 [root@ldapnode1 misc]# service slapd restart 
 
-检查是否监听了 tcp 636 端口
-[root@ldapnode1 misc]# ss -ant src :636
-State      Recv-Q Send-Q                   Local Address:Port                        Peer Address:Port 
-LISTEN     0      128                      :::636                                    :::*     
-LISTEN     0      128                      *:636                                     *:*
+ldap：监听 tcp 389 端口
+ldaps: 监听 tcp 636 端口
 
 调整防火墙
-[root@ldapnode1 misc]# sed -i '/-A INPUT -j REJECT --reject-with icmp-host-prohibited/i\-A INPUT -p tcp -m state --state NEW -m tcp --dport 636 -j ACCEPT' /etc/sysconfig/iptables && service iptables reload
+[root@ldapnode1 misc]# sed -i.backup -e '/dport 389 -j ACCEPT/d' \
+-e '/-A INPUT -j REJECT --reject-with icmp-host-prohibited/i## ldaps related \
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 636 -j ACCEPT' /etc/sysconfig/iptables && service iptables reload
+
 
 
 
@@ -627,9 +629,18 @@ ldapdelete -D "cn=ldapmgr,dc=test,dc=com" -W "uid=jack.lee,ou=People,dc=test,dc=
 
 六、管理
 1、工具
-ApacheDirectoryStudio
+1）ApacheDirectoryStudio
 这里有最新的版本：http://ftp.cuhk.edu.hk/pub/packages/apache.org/directory/studio/
+下载 zip 包，解压即可使用，但要注意一个报错：exit code=13
 
+解决方案：
+假设程序目录是：D:\apps\ApacheDirectoryStudio
+则，编辑文件：D:\apps\ApacheDirectoryStudio\ApacheDirectoryStudio.ini
+增加以下2行内容：
+-vm 
+C:/Program Files/Java/jdk1.8.0_51/bin
+
+详情请参考：http://stackoverflow.com/questions/41166731/apache-directory-studio-java-was-started-by-returned-exit-code-13
 
 2、其他方法
 测试连接AD域控：
