@@ -654,4 +654,5 @@ http://www.openldap.org/faq/data/cache/185.html
 http://docs.adaptivecomputing.com/viewpoint/hpc/Content/topics/1-setup/installSetup/settingUpOpenLDAPOnCentos6.htm
 7、How to Add LDAP Users and Groups in OpenLDAP on Linux
 http://www.thegeekstuff.com/2015/02/openldap-add-users-groups
-
+8、Using ldapdelete to delete a user from a group
+http://www.openldap.org/lists/openldap-software/200304/msg00343.html
