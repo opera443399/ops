@@ -1,156 +1,619 @@
+初探OpenLDAP-初体验
+2017/4/25
 
-一、安装
-[root@vm221 ~]# yum -y install openldap openldap-clients openldap-servers
+一、服务端安装
+1、安装
+[root@ldapnode1 ~]# yum install openldap-clients openldap-servers -y
 
-二、配置slapd
-1、生成密码：
+2、系统设置
+1）selinux
+[root@ldapnode1 ~]# setenforce 0 && sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+
+2）iptables
+[root@ldapnode1 ~]# sed -i '/-A INPUT -j REJECT --reject-with icmp-host-prohibited/i\-A INPUT -p tcp -m state --state NEW -m tcp --dport 389 -j ACCEPT' /etc/sysconfig/iptables && service iptables reload
+
+3）rsyslog
+[root@ldapnode1 users]# cat /etc/rsyslog.d/ldap.conf 
+local4.* /var/log/ldap.log
+[root@ldapnode1 users]# service rsyslog restart
+
+
+3、LDAP DB
+[root@ldapnode1 ~]# cp /usr/share/openldap-servers/DB_CONFIG.example /var/lib/ldap/DB_CONFIG
+[root@ldapnode1 ~]# chown ldap:ldap /var/lib/ldap/DB_CONFIG
+
+4、启动 slapd 服务
+[root@ldapnode1 ~]# service slapd start
+[root@ldapnode1 ~]# chkconfig slapd on
+
+
+
+
+二、配置 OpenLDAP Server
+1、基础
+默认的 OpenLDAP Server 的配置文件是在这里： 
+/etc/openldap/slapd.d/
+
+需要更新的内容包括：olcSuffix, olcRootDN
+需要新增的内容包括：olcRootPW
+
+olcSuffix – Database Suffix, it is the domain name for which the LDAP server provides the information. In simple words, it should be changed to your domain name.
+olcRootDN – Root Distinguished Name (DN) entry for the user who has the unrestricted access to perform all administration activities on LDAP, like a root user.
+olcRootPW – Password for the above RootDN.
+
+以上更新内容是在这里配置文件中：
+/etc/openldap/slapd.d/cn=config/olcDatabase={2}bdb.ldif
+
+但，并不推荐手动更改这个配置的内容，因为使用 ldapmodify 时将丢失配置。
+因而引出下述方法的介绍。
+
+首先，创建几个目录，来存放配置文件，后续将通过读取配置文件的方式来更新 OpenLDAP Server 的配置信息。
+[root@ldapnode1 ~]# mkdir ldap_conf/{config,users,groups} -p
+[root@ldapnode1 ~]# cd ldap_conf
+
+
+2、更新域信息和管理员帐号
+1）生成密码，用于 ldap 管理员帐号：
 [root@vm221 ~]# slappasswd
-New password: (passwd)
+New password: (本次示例的密码为： passwd)
 Re-enter new password: 
 {SSHA}phFEEFqERbsIP84rONSKWpFY2jrd/rvD
 
-2、配置
-[root@vm221 ~]# cd /etc/openldap/slapd.d/cn\=config
+2）创建一个配置文件用于更新：【/etc/openldap/slapd.d/cn=config/olcDatabase={2}bdb.ldif】
+[root@ldapnode1 ldap_conf]# cat config/bdb.ldif 
+dn: olcDatabase={2}bdb,cn=config
+changetype: modify
+replace: olcSuffix
+olcSuffix: dc=test,dc=com
 
-1）配置 olcDatabase\=\{2\}bdb.ldif
-[root@vm221 cn=config]# vim olcDatabase\=\{2\}bdb.ldif
-增加一列：olcRootPW（如果不存在）
+dn: olcDatabase={2}bdb,cn=config
+changetype: modify
+replace: olcRootDN
+olcRootDN: cn=ldapmgr,dc=test,dc=com
+
+dn: olcDatabase={2}bdb,cn=config
+changetype: modify
+replace: olcRootPW
 olcRootPW: {SSHA}phFEEFqERbsIP84rONSKWpFY2jrd/rvD
 
-更改值：olcSuffix  和 distinguished name (DN) 
-例如：打算使用的域名是 "ovirt.com"
-olcSuffix: dc=ovirt,dc=com
-...
-olcRootDN: cn=Manager,dc=ovirt,dc=com
-...
-olcRootPW: {SSHA}phFEEFqERbsIP84rONSKWpFY2jrd/rvD
+dn: olcDatabase={2}bdb,cn=config
+changetype: modify
+add: olcAccess
+olcAccess: {0}to attrs=userPassword,shadowLastChange by
+  dn="cn=ldapmgr,dc=test,dc=com" write by anonymous auth by self write by * none
+olcAccess: {1}to dn.base="" by * read
+olcAccess: {2}to * by dn="cn=ldapmgr,dc=test,dc=com" write by * read
 
 
-新增2行：用来限制用户不许查询其他人的密码hash
-olcAccess: {0}to attrs=userPassword by self write by dn.base="cn=Manager,dc=ovirt,dc=com" write by anonymous auth by * none
-olcAccess: {1}to * by dn.base="cn=Manager,dc=ovirt,dc=com" write by self write by * read
 
 
-2）配置 olcDatabase\=\{1\}monitor.ldif
-[root@vm221 cn=config]# vim olcDatabase\=\{1\}monitor.ldif
-更改值：olcAccess，和上面的dc保持一致
-olcAccess: {0}to *  by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=externa
- l,cn=auth" read  by dn.base="cn=manager,dc=ovirt,dc=com" read  by * none
+3）将上述配置发送给 OpenLDAP Server 来执行
+[root@ldapnode1 ldap_conf]# ldapmodify -Y EXTERNAL  -H ldapi:/// -f config/bdb.ldif  
+SASL/EXTERNAL authentication started
+SASL username: gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth
+SASL SSF: 0
+modifying entry "olcDatabase={2}bdb,cn=config"
+
+modifying entry "olcDatabase={2}bdb,cn=config"
+
+modifying entry "olcDatabase={2}bdb,cn=config"
+
+modifying entry "olcDatabase={2}bdb,cn=config"
+
+[root@ldapnode1 ldap_conf]# 
 
 
-3）到这里，我们配置了LDAP的管理帐号和密码
-帐号：cn=Manager,dc=ovirt,dc=com
-密码：passwd
- 
- 
-
-3、启动服务
-[root@vm221 ~]# service slapd start
-Starting slapd:                                            [  OK  ]
-[root@vm221 ~]# chkconfig slapd on
+3、限制仅 LDAP 管理员用户（ldapmgr）可以访问 monitor
+1）创建1个配置文件用于更新： 【/etc/openldap/slapd.d/cn=config/olcDatabase\=\{1\}monitor.ldif】
+[root@ldapnode1 ldap_conf]# cat config/monitor.ldif
+dn: olcDatabase={1}monitor,cn=config
+changetype: modify
+replace: olcAccess
+olcAccess: {0}to * by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external, cn=auth" read by dn.base="cn=ldapmgr,dc=test,dc=com" read by * none
 
 
-三、使用
+2）将上述配置发送给 OpenLDAP Server 来执行
+[root@ldapnode1 ldap_conf]# ldapmodify -Y EXTERNAL  -H ldapi:/// -f config/monitor.ldif 
+SASL/EXTERNAL authentication started
+SASL username: gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth
+SASL SSF: 0
+modifying entry "olcDatabase={1}monitor,cn=config"
 
-1、创建一个实体到LDAP树中
-[root@vm221 ~]# mkdir /data/openldap -p && cd /data/openldap
+[root@ldapnode1 ldap_conf]#
 
-1）、先创建一个文件，导入到LDAP后即可删除
-[root@vm221 openldap]# cat ovirt.ldif 
-dn: dc=ovirt,dc=com
-objectClass: dcObject
-objectClass: organization
-dc: ovirt
-o : ovirt
 
-执行：
-[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=com -w passwd -f ovirt.ldif 
-adding new entry "dc=ovirt,dc=com"
 
-注：也可以只用-W，而不是"-w passwd"来通过提示输入密码。
+三、配置 LDAP 证书
+1、CA 证书
+[root@ldapnode1 ~]# cd /etc/pki/tls/misc
+[root@ldapnode1 misc]# ls
+CA  c_hash  c_info  c_issuer  c_name
 
-2）、验证
-[root@vm221 openldap]# ldapsearch -x -LLL -b dc=ovirt,dc=com
-dn: dc=ovirt,dc=com
-objectClass: dcObject
-objectClass: organization
-dc: ovirt
-o: ovirt
+【新建 CA 】
+[root@ldapnode1 misc]# ./CA -newca        
+CA certificate filename (or enter to create)【直接回车，默认名称为： cakey.pem 】
 
-其中：
+Making CA certificate ...
+Generating a 2048 bit RSA private key
+....................................................................................................................................................+++
+............................+++
+writing new private key to '/etc/pki/CA/private/./cakey.pem'
+Enter PEM pass phrase:【 CA 私钥的密码，此处演示密码为：  cakey 】
+Verifying - Enter PEM pass phrase:
+-----
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:CN
+State or Province Name (full name) []:GD
+Locality Name (eg, city) [Default City]:SZ
+Organization Name (eg, company) [Default Company Ltd]:test.com
+Organizational Unit Name (eg, section) []:ops.test.com
+Common Name (eg, your name or your server's hostname) []:ldapnode1.test.com
+Email Address []:ldapmgr@test.com
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request【证书请求的相关信息】
+A challenge password []:
+An optional company name []:
+Using configuration from /etc/pki/tls/openssl.cnf
+Enter pass phrase for /etc/pki/CA/private/./cakey.pem:【输入上面设置的密码： cakey 】
+Check that the request matches the signature
+Signature ok
+Certificate Details:
+        Serial Number: 12191592978020868300 (0xa9313d383d14a0cc)
+        Validity
+            Not Before: Apr 26 02:10:22 2017 GMT
+            Not After : Apr 25 02:10:22 2020 GMT
+        Subject:
+            countryName               = CN
+            stateOrProvinceName       = GD
+            organizationName          = test.com
+            organizationalUnitName    = ops.test.com
+            commonName                = ldapnode1.test.com
+            emailAddress              = ldapmgr@test.com
+        X509v3 extensions:
+            X509v3 Subject Key Identifier: 
+                EA:E5:0B:4C:7C:29:F2:DB:6D:54:7F:64:68:92:3C:52:88:79:0B:5A
+            X509v3 Authority Key Identifier: 
+                keyid:EA:E5:0B:4C:7C:29:F2:DB:6D:54:7F:64:68:92:3C:52:88:79:0B:5A
+
+            X509v3 Basic Constraints: 
+                CA:TRUE
+Certificate is to be certified until Apr 25 02:10:22 2020 GMT (1095 days)
+
+Write out database with 1 new entries
+Data Base Updated
+[root@ldapnode1 misc]# 
+
+
+注1：etc/pki/tls/misc 是工作目录，/etc/pki/CA 是存放所有 CA 相关文件的目录。如果脚本检测到/etc/pki/CA 下面有文件存在（请记住，如果之前操作过上述步骤，则目录 /etc/pki/CA/ 下将产生文件），CA 脚本什么工作也不会做。为确保 CA 脚本能正常工作，需要先把/etc/pki/CA 目录下的文件全删除。
+[root@ldapnode1 misc]# rm /etc/pki/CA/* -fr
+
+
+2、Server 证书
+1）生成证书请求文件
+注1：使用了参数 -nodes 来阻止加密 private key ，因为 OpenLDAP 只能支持未加密的 private keys
+[root@ldapnode1 misc]# ./CA -newreq-nodes 
+Generating a 2048 bit RSA private key
+.......................+++
+.+++
+writing new private key to 'newreq.pem'
+-----
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:CN
+State or Province Name (full name) []:GD
+Locality Name (eg, city) [Default City]:SZ
+Organization Name (eg, company) [Default Company Ltd]:test.com
+Organizational Unit Name (eg, section) []:ops.test.com
+Common Name (eg, your name or your server's hostname) []:ldapnode1.test.com
+Email Address []:ldapmgr@test.com
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+Request (and private key) is in newreq.pem
+[root@ldapnode1 misc]# ls
+CA  c_hash  c_info  c_issuer  c_name  newreq.pem
+
+
+2）用 CA 对证书文件进行签名
+[root@ldapnode1 misc]# ./CA -sign
+Using configuration from /etc/pki/tls/openssl.cnf
+Enter pass phrase for /etc/pki/CA/private/cakey.pem:【输入上面设置的密码： cakey 】
+（输出略过，有2个选项，输入 y 即可）
+Signed certificate is in newcert.pem
+[root@ldapnode1 misc]# ls
+CA  c_hash  c_info  c_issuer  c_name  newcert.pem  newreq.pem
+
+
+最终，在/etc/pki/tls/misc 路径下创建了 2 个文件：
+newreq.pem  由 Server 创建的证书请求文件，包含证书对应的钥匙
+newcert.pem 由 CA 签发的证书
+
+再加上 CA 证书文件：
+[root@ldapnode1 misc]# ls ../../CA/cacert.pem 
+../../CA/cacert.pem
+
+
+以上3个文件即本次在 server 端启用 TLS 需要的文件。接下来放到 openldap server 的配置中去。
+[root@ldapnode1 misc]# cp ../../CA/cacert.pem /etc/openldap/certs/
+[root@ldapnode1 misc]# mv newcert.pem /etc/openldap/certs/server.cert
+[root@ldapnode1 misc]# mv newreq.pem /etc/openldap/certs/server.key
+[root@ldapnode1 misc]# ll /etc/openldap/certs/
+total 88
+-rw-r--r--. 1 root root  4529 Apr 26 10:53 cacert.pem
+-rw-r--r--. 1 root root 65536 Apr 25 11:50 cert8.db
+-rw-r--r--. 1 root root 16384 Apr 25 11:50 key3.db
+-r--r-----. 1 root ldap    45 Apr 25 11:50 password
+-rw-r--r--. 1 root root 16384 Apr 25 11:50 secmod.db
+-rw-r--r--. 1 root root  4690 Apr 26 10:49 server.cert
+-rw-r--r--. 1 root root  2762 Apr 26 10:42 server.key
+
+
+
+3）创建一个配置文件用于更新：【/etc/openldap/slapd.d/cn\=config.ldif】 
+[root@ldapnode1 misc]# cat ~/ldap_conf/config/certs.ldif
+dn: cn=config
+changetype: modify
+replace: olcTLSCACertificateFile
+olcTLSCACertificateFile: /etc/openldap/certs/cacert.pem
+
+dn: cn=config
+changetype: modify
+replace: olcTLSCertificateFile
+olcTLSCertificateFile: /etc/openldap/certs/server.cert
+
+dn: cn=config
+changetype: modify
+replace: olcTLSCertificateKeyFile
+olcTLSCertificateKeyFile: /etc/openldap/certs/server.key
+
+
+
+4）将上述配置发送给 OpenLDAP Server 来执行
+[root@ldapnode1 misc]# ldapmodify -Y EXTERNAL  -H ldapi:/// -f ~/ldap_conf/ldap_conf/certs.ldif         
+SASL/EXTERNAL authentication started
+SASL username: gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth
+SASL SSF: 0
+modifying entry "cn=config"
+
+modifying entry "cn=config"
+
+modifying entry "cn=config"
+
+[root@ldapnode1 misc]# 
+
+
+5）启用 ldaps:///
+[root@ldapnode1 misc]# sed -i 's/SLAPD_LDAPS=no/SLAPD_LDAPS=yes/' /etc/sysconfig/ldap
+[root@ldapnode1 misc]# service slapd restart 
+
+检查是否监听了 tcp 636 端口
+[root@ldapnode1 misc]# ss -ant src :636
+State      Recv-Q Send-Q                   Local Address:Port                        Peer Address:Port 
+LISTEN     0      128                      :::636                                    :::*     
+LISTEN     0      128                      *:636                                     *:*
+
+调整防火墙
+[root@ldapnode1 misc]# sed -i '/-A INPUT -j REJECT --reject-with icmp-host-prohibited/i\-A INPUT -p tcp -m state --state NEW -m tcp --dport 636 -j ACCEPT' /etc/sysconfig/iptables && service iptables reload
+
+
+
+3、Client 证书
+1）生成 Client 证书请求
+[root@ldapnode1 misc]# ./CA -newreq-nodes
+（输出略过）
+Common Name (eg, your name or your server's hostname) []:ldapnode2.test.com
+（输出略过）
+
+2）用 CA 对证书文件进行签名
+[root@ldapnode1 misc]# ./CA -sign
+（输出略过）
+[root@ldapnode1 misc]# ls
+CA  c_hash  c_info  c_issuer  c_name  newcert.pem  newreq.pem
+[root@ldapnode1 misc]# mv newreq.pem ldapnode2.test.com.key
+[root@ldapnode1 misc]# mv newcert.pem ldapnode2.test.com.cert
+[root@ldapnode1 misc]# ls
+CA  c_hash  c_info  c_issuer  c_name  ldapnode2.test.com.cert  ldapnode2.test.com.key
+
+3）拷贝文件到 Client 端（ldapnode2.test.com）待使用
+[root@ldapnode1 misc]# sz ldapnode2.test.com.*
+[root@ldapnode1 misc]# sz ../../CA/cacert.pem 
+[root@ldapnode2 cacerts]# rz -be
+
+
+
+四、配置 OpenLDAP Client 端
+1、安装
+[root@ldapnode2 ~]# yum install openldap-clients nss-pam-ldapd -y
+
+2、调整本机使用 ldaps 认证
+[root@ldapnode2 ~]# authconfig --enableldap --enableldapauth --ldapserver="ldaps://ldapnode1.test.com" --ldapbasedn="dc=test,dc=com" --enablemkhomedir --update
+Starting sssd:                                             [  OK  ]
+Stopping nslcd:                                            [  OK  ]
+Starting oddjobd:                                          [  OK  ]
+[root@ldapnode2 ~]# 
+
+
+3、配置证书文件
+[root@ldapnode2 ~]# mv *.pem ldapnode2.* /etc/openldap/cacerts/
+[root@ldapnode2 ~]# ls cd /etc/openldap/cacerts/
+cacert.pem  ldapnode2.test.com.cert  ldapnode2.test.com.key
+
+4、重启 LDAP client 服务
+[root@ldapnode2 ~]# service nslcd restart
+Stopping nslcd:                                            [FAILED]
+Starting nslcd:                                            [  OK  ]
+
+
+5、验证 LDAP 服务
+[root@ldapnode2 ~]# ldapwhoami -D "uid=jack.lee,ou=People,dc=test,dc=com" -w testme -H ldap://ldapnode1.test.com -v 
+ldap_initialize( ldap://ldapnode1.test.com:389/??base )
+dn:uid=jack.lee,ou=People,dc=test,dc=com
+Result: Success (0)
+
+[root@ldapnode2 ~]# ldapwhoami -D "uid=jack.lee,ou=People,dc=test,dc=com" -w testme -H ldaps://ldapnode1.test.com -v
+ldap_initialize( ldaps://ldapnode1.test.com:636/??base )
+dn:uid=jack.lee,ou=People,dc=test,dc=com
+Result: Success (0)
+
+使用 getent 从 LDAP Server 读取信息
+[root@ldapnode2 ~]# getent passwd jack.lee
+jack.lee:*:1001:1001:jack.lee:/home/jack.lee:/bin/bash
+
+
+
+
+五、使用 LDAP 服务
+1、说明
 dn：(Distinguished Name)节点的识别名称
 ObjectClass：对象类别
 dc：（Domain Component）域
-o:(Organizational)组织
-
-3）、调整防火墙，放行 TCP 389 端口
-（略）
-
-
-2、新增OU
-我们加一个OU，名称为users
-[root@vm221 openldap]# cat users.ldif 
-dn: ou=Users,dc=ovirt,dc=com
-objectClass: organizationalUnit
-ou: Users
-
-其中：
-ou：(Organizational Unit)组织单位
-
-执行：
-[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=com -w passwd -f users.ldif 
-adding new entry "ou=Users,dc=ovirt,dc=com"
-
-
-3、新增一个用户
-[root@vm221 openldap]# cat jack_lee.ldif 
-dn: cn=Jack Lee,ou=Users,dc=ovirt,dc=com
-cn: Jack Lee
-sn: Lee
-objectClass: inetOrgPerson
-userPassword: pass01
-uid: jlee
-
-其中：
+ou：(Organizational Unit)组织单元
 cn：(Common Name)全名
 sn：（surname）姓
 uid：唯一标识
 
-执行：
-[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=com -w passwd -f jack_lee.ldif  
-adding new entry "cn=Jack Lee,ou=Users,dc=ovirt,dc=com"
+2、创建一个基础的组织架构到LDAP树中
+1）创建配置文件
+[root@ldapnode1 ldap_conf]# cat config/base.ldif
+dn: dc=test,dc=com
+dc: test
+objectClass: top
+objectClass: domain
+
+dn: ou=People,dc=test,dc=com
+ou: People
+objectClass: top
+objectClass: organizationalUnit
+
+dn: ou=Group,dc=test,dc=com
+ou: Group
+objectClass: top
+objectClass: organizationalUnit
+
+dn: cn=ldapmgr,dc=test,dc=com
+objectClass: organizationalRole
+cn: ldapmgr
+description: LDAP Manager
 
 
-4、新增组
-[root@vm221 openldap]# cat engineering.ldif
-dn: cn=Engineering,ou=Users,dc=ovirt,dc=com
-cn: Engineering
-objectClass: groupOfNames
-member: cn=Jack Lee,ou=Users,dc=ovirt,dc=com
+2）将上述配置发送给 OpenLDAP Server 来执行
+[root@ldapnode1 ldap_conf]# ldapadd -D "cn=ldapmgr,dc=test,dc=com" -f config/base.ldif -W -v
+Enter LDAP Password: 
+adding new entry "dc=test,dc=com"
 
-执行：
-[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=com -w passwd -f engineering.ldif 
-adding new entry "cn=Engineering,ou=Users,dc=ovirt,dc=com"
+adding new entry "ou=People,dc=test,dc=com"
 
-5、把用户加入组
-[root@vm221 openldap]# cat adduser2group.ldif 
-dn: cn=Engineering,ou=Users,dc=ovirt,dc=com
+adding new entry "ou=Group,dc=test,dc=com"
+
+adding new entry "cn=ldapmgr,dc=test,dc=com"
+
+[root@ldapnode1 ldap_conf]# 
+
+注：也可以用"-w passwd"来直接略过提示输入密码。
+
+
+
+3）验证
+[root@ldapnode1 ldap_conf]# ldapsearch -x -LLL -b "dc=test,dc=com"
+dn: dc=test,dc=com
+dc: test
+objectClass: top
+objectClass: domain
+
+dn: ou=People,dc=test,dc=com
+ou: People
+objectClass: top
+objectClass: organizationalUnit
+
+dn: ou=Group,dc=test,dc=com
+ou: Group
+objectClass: top
+objectClass: organizationalUnit
+
+dn: cn=ldapmgr,dc=test,dc=com
+objectClass: organizationalRole
+cn: ldapmgr
+description: LDAP Manager
+
+
+
+题外话：如何删除？
+[root@ldapnode1 ldap_conf]# ldapdelete -D "cn=ldapmgr,dc=test,dc=com" -W "cn=ldapmgr,dc=test,dc=com" -v
+[root@ldapnode1 ldap_conf]# ldapdelete -D "cn=ldapmgr,dc=test,dc=com" -W "ou=People,dc=test,dc=com" -v
+[root@ldapnode1 ldap_conf]# ldapdelete -D "cn=ldapmgr,dc=test,dc=com" -W "ou=Group,dc=test,dc=com" -v
+[root@ldapnode1 ldap_conf]# ldapdelete -D "cn=ldapmgr,dc=test,dc=com" -W "dc=test,dc=com" -v
+
+
+
+3、 新建 posix 用户和组
+1）创建配置文件
+[root@ldapnode1 ldap_conf]# cat users/jack.lee.ldif
+dn: uid=jack.lee,ou=People,dc=test,dc=com
+objectClass: top
+objectClass: account
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: jack.lee
+cn: jack.lee
+userPassword: {crypt}x
+shadowLastChange: 0
+shadowMax: 0
+shadowWarning: 0
+loginShell: /bin/bash
+uidNumber: 1001
+gidNumber: 1001
+homeDirectory: /home/jack.lee
+gecos: jack.lee
+
+dn: cn=jack.lee,ou=Group,dc=test,dc=com
+objectClass: posixGroup
+cn: jack.lee
+gidNumber: 1001
+memberUid: 1001
+
+
+2）将上述配置发送给 OpenLDAP Server 来执行
+[root@ldapnode1 ldap_conf]# ldapadd -D "cn=ldapmgr,dc=test,dc=com" -f users/jack.lee.ldif -W -v
+Enter LDAP Password: 
+adding new entry "uid=jack.lee,ou=People,dc=test,dc=com"
+
+adding new entry "cn=jack.lee,ou=Group,dc=test,dc=com"
+
+[root@ldapnode1 ldap_conf]# 
+
+3）设置密码
+[root@ldapnode1 ldap_conf]# ldappasswd -S -W -D "cn=ldapmgr,dc=test,dc=com" "uid=jack.lee,ou=People,dc=test,dc=com"
+New password: (本次示例的密码为： testme)
+Re-enter new password: (本次示例的密码为： testme)
+Enter LDAP Password: 
+[root@ldapnode1 ldap_conf]# 
+
+查询：
+[root@ldapnode1 ldap_conf]# ldapsearch -D "uid=jack.lee,ou=People,dc=test,dc=com" -b "uid=jack.lee,ou=People,DC=test,DC=com" -W                 
+Enter LDAP Password: （输入： testme ）
+
+4）在客户端测试
+[root@ldapnode2 ~]# getent passwd jack.lee
+jack.lee:*:1001:1001:jack.lee:/home/jack.lee:/bin/bash
+[root@ldapnode2 ~]# su jack.lee
+[jack.lee@ldapnode2 root]$ id
+uid=1001(jack.lee) gid=1001(jack.lee) groups=1001(jack.lee) context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+[jack.lee@ldapnode2 root]$ exit
+exit
+[root@ldapnode2 ~]# id jack.lee
+uid=1001(jack.lee) gid=1001(jack.lee) groups=1001(jack.lee)
+
+符合预期。
+
+
+4、 新建组，然后将刚才创建的用户也加入这个组
+1）创建配置文件
+[root@ldapnode1 ldap_conf]# cat groups/team_ops.ldif 
+dn: cn=team_ops,ou=Group,dc=test,dc=com
+objectClass: posixGroup
+cn: team_ops
+gidNumber: 901
+
+查询：
+[root@ldapnode1 ldap_conf]# ldapsearch -D "cn=ldapmgr,dc=test,dc=com" -b "cn=team_ops,ou=Group,DC=test,DC=com" -W
+Enter LDAP Password: （输入： passwd ）
+
+2）将上述配置发送给 OpenLDAP Server 来执行
+[root@ldapnode1 ldap_conf]# ldapadd -D "cn=ldapmgr,dc=test,dc=com" -f groups/team_ops.ldif -W -v
+Enter LDAP Password: 
+adding new entry "cn=team_ops,ou=Group,dc=test,dc=com"
+
+[root@ldapnode1 ldap_conf]# 
+
+
+3）创建配置文件，新建一个组
+[root@ldapnode1 ldap_conf]# cat groups/add_user_to_team_ops.ldif 
+dn: cn=team_ops,ou=Group,dc=test,dc=com
 changetype: modify
-add: member
-member: cn=Jack Lee,ou=Users,dc=ovirt,dc=com
+add: memberUid
+memberUid: jack.lee
 
-执行：
-[root@vm221 openldap]# ldapadd -D cn=Manager,dc=ovirt,dc=com -w passwd -f adduser2group.ldif 
-modifying entry "cn=Engineering,ou=Users,dc=ovirt,dc=com"
+4）将上述配置发送给 OpenLDAP Server 来执行
+[root@ldapnode1 ldap_conf]# ldapadd -D "cn=ldapmgr,dc=test,dc=com" -f groups/add_user_to_team_ops.ldif -W -v
+Enter LDAP Password: 
+modifying entry "cn=team_ops,ou=Group,dc=test,dc=com"
+
+[root@ldapnode1 ldap_conf]# 
+
+查询：
+[root@ldapnode1 ldap_conf]# ldapsearch -D "uid=jack.lee,ou=People,dc=test,dc=com" -b "uid=jack.lee,ou=People,DC=test,DC=com" -W
+
+5）在客户端测试
+[root@ldapnode2 ~]# su jack.lee
+[jack.lee@ldapnode2 root]$ id
+uid=1001(jack.lee) gid=1001(jack.lee) groups=1001(jack.lee),901(team_ops) context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+[jack.lee@ldapnode2 root]$ exit
+exit
+[root@ldapnode2 ~]# id jack.lee
+uid=1001(jack.lee) gid=1001(jack.lee) groups=1001(jack.lee),901(team_ops)
 
 
-四、管理
+符合预期。
+
+6）操作小结
+新增
+ldapadd -D "cn=ldapmgr,dc=test,dc=com" -f users/jack.lee.ldif -W -v
+
+查询组
+ldapsearch -D "cn=ldapmgr,dc=test,dc=com" -b "cn=jack.lee,ou=Group,DC=test,DC=com" -W
+
+查询用户
+ldapsearch -D "cn=ldapmgr,dc=test,dc=com" -b "uid=jack.lee,ou=People,DC=test,DC=com" -W
+
+删除组
+ldapdelete -D "cn=ldapmgr,dc=test,dc=com" -W "cn=jack.lee,ou=Group,dc=test,dc=com" -v
+
+删除用户
+ldapdelete -D "cn=ldapmgr,dc=test,dc=com" -W "uid=jack.lee,ou=People,dc=test,dc=com" -v
+
+
+
+
+六、管理
+1、工具
 ApacheDirectoryStudio
-http://ftp.cuhk.edu.hk/pub/packages/apache.org/directory/studio/2.0.0.v20150606-M9/ApacheDirectoryStudio-2.0.0.v20150606-M9-win32.win32.x86_64.zip
+这里有最新的版本：http://ftp.cuhk.edu.hk/pub/packages/apache.org/directory/studio/
 
-测试：
-ldapsearch -h xxx  -D "domain\username" -w xxx -b 'CN=username,OU=depart,OU=somegroup,DC=domain,DC=com,DC=cn'
+
+2、其他方法
+测试连接AD域控：
+ldapsearch -h xxx  -D "domain\username" -w xxx -b "CN=username,OU=depart,OU=somegroup,DC=domain,DC=com,DC=cn"
+
+
+
 
 
 ZYXW、参考
+1、Add LDAP User Accounts in the OpenLDAP Server.
+https://www.server-world.info/en/note?os=CentOS_7&p=openldap&f=2
+2、Step by Step OpenLDAP Server Configuration on CentOS 7 / RHEL 7
+http://www.itzgeek.com/how-tos/linux/centos-how-tos/step-step-openldap-server-configuration-centos-7-rhel-7.html
+3、Openldap集成tls/ssl
+http://mosquito.blog.51cto.com/2973374/1098456
+4、配置 OpenLDAP 使用 SSL/TLS 加密数据通信
+https://www.ibm.com/developerworks/cn/linux/1312_zhangchao_opensslldap/
+5、How do I use TLS/SSL?
+http://www.openldap.org/faq/data/cache/185.html
+6、Setting up OpenLDAP on CentOS 6
 http://docs.adaptivecomputing.com/viewpoint/hpc/Content/topics/1-setup/installSetup/settingUpOpenLDAPOnCentos6.htm
+
+
