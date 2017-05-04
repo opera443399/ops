@@ -27,3 +27,18 @@ $1$root$abcdylRh83kdjWxfghm.abc
 #openssl passwd -1 -salt 'random-phrase' 'password'
 $1$random-p$sFftrCTxKKsDZ.Sdr8mDG0
 
+
+应用：
+1、显示的的创建一个用户
+useradd admin
+SSH_USERPASS=admin
+echo -e "$SSH_USERPASS\n$SSH_USERPASS" | (passwd --stdin admin)
+
+更新：
+echo "username:password" | chpasswd 
+
+2、先生成加密后的密码，再创建用户
+[root@vm_1_2 ~]# openssl passwd -1 -salt 'cephuser'
+Password: 
+$1$cephuser$s.kBq3jpmu6NwZhSaIYW11
+[root@vm_1_2 ~]# useradd -p '$1$cephuser$s.kBq3jpmu6NwZhSaIYW11'  cephuser
