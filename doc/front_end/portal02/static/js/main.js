@@ -1,5 +1,7 @@
-//main.js
-
+/*
+ * main.js
+ * pc.peng @ 20170601
+ */
 
 function load_data_from_json(json_file){
     $("div#panel_lists").empty();
@@ -11,7 +13,7 @@ function load_data_from_json(json_file){
                 + '<div class="panel" id="links_online">'
                     + '<div class="panel-heading">'
                         + '<span class="panel-title">'
-                            + '<a class="accordion-toggle" data-toggle="collapse" data-parent="#links_online" href="#collapse_' + item_i.idx_i + '">'
+                            + '<a class="accordion-toggle" data-toggle="collapse" data-parent="#links_online" href="#collapse_' + idx_i + '">'
                                 + '<strong id="this_title" class="label label-success label-tag">' + item_i.title + '</strong>'
                             + '</a>'
                         + '</span>'
@@ -19,18 +21,17 @@ function load_data_from_json(json_file){
                 + '';
            
             content += ''
-                    + '<div id="collapse_' + item_i.idx_i + '" class="panel-collapse in">'
+                    + '<div id="collapse_' + idx_i + '" class="panel-collapse in">'
                         + '<div class="panel-body placeholders">'
                 + '';
                 
             $.each(item_i.portals, function(idx_j, item_j){
                 content += ''
                             + '<div class="col-xs-4 col-sm-2 placeholder">'
-                                + '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" class="img-item-list img-responsive" alt="Generic placeholder thumbnail">'
+                                + '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" class="img-item-list img-responsive">'
                                 + '<a class="portal" target="_blank" href="' + item_j.url+ '">'
-                                    + '<h4>' + item_j.name + '</h4>'
+                                    + '<h5 class="text-muted">' + item_j.name + '</h5>'
                                 + '</a>'
-                                + '<span class="text-muted">' + item_j.desc + '</span>'
                             + '</div>'
                 + '';
             });

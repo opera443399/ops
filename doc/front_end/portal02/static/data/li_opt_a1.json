@@ -4,17 +4,14 @@
         "portals": [
             {
                 "name": "portal101", 
-                "desc": "desc", 
                 "url": "#"
             }, 
             {
                 "name": "portal102", 
-                "desc": "desc", 
                 "url": "#"
             }, 
             {
                 "name": "portal103", 
-                "desc": "desc", 
                 "url": "#"
             }
         ]
@@ -24,17 +21,14 @@
         "portals": [
             {
                 "name": "portal201", 
-                "desc": "desc", 
                 "url": "#"
             }, 
             {
                 "name": "portal202", 
-                "desc": "desc", 
                 "url": "#"
             }, 
             {
                 "name": "portal203", 
-                "desc": "desc", 
                 "url": "#"
             }
         ]
