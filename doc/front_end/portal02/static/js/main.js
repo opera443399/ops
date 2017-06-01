@@ -6,7 +6,8 @@
 function load_data_from_json(json_file){
     $("div#panel_lists").empty();
     $.getJSON(json_file,function(result){
-        $.each(result, function(idx_i, item_i){
+        //console.info(result.data);
+        $.each(result.data, function(idx_i, item_i){
             var content = '';
             var img_default = 'default.svg';
             
@@ -30,7 +31,7 @@ function load_data_from_json(json_file){
             $.each(item_i.portals, function(idx_j, item_j){
                 if (item_j.img) {
                     item_img = item_j.img;
-                    console.info('item_id=' + idx_j + ', item_name=' + item_j.name + ', item_img=' + item_img);
+                    //console.info('item_id=' + idx_j + ', item_name=' + item_j.name + ', item_img=' + item_img);
                 } else {
                     item_img = img_default;
                 }
@@ -63,7 +64,7 @@ $(document).ready(function(){
     $("[id^='li_opt_']").click(function(){
         suffix = $(this).attr("id");
         json_file = 'static/data/' + suffix + '.json'
-        console.info('json_file = ' + json_file);
+        //console.info('json_file = ' + json_file);
         load_data_from_json(json_file);
         
     });
