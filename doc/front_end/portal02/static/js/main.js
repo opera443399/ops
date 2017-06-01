@@ -8,6 +8,8 @@ function load_data_from_json(json_file){
     $.getJSON(json_file,function(result){
         $.each(result, function(idx_i, item_i){
             var content = '';
+            var img_default = 'default.svg';
+            
             content = ''
                 + '<!-- panel Start-->'
                 + '<div class="panel" id="links_online">'
@@ -26,9 +28,16 @@ function load_data_from_json(json_file){
                 + '';
                 
             $.each(item_i.portals, function(idx_j, item_j){
+                if (item_j.img) {
+                    item_img = item_j.img;
+                    console.info('item_id=' + idx_j + ', item_name=' + item_j.name + ', item_img=' + item_img);
+                } else {
+                    item_img = img_default;
+                }
+                
                 content += ''
                             + '<div class="col-xs-4 col-sm-2 placeholder">'
-                                + '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" class="img-item-list img-responsive">'
+                                + '<img src="static/images/' + item_img + '" class="img-item-list img-responsive">'
                                 + '<a class="portal" target="_blank" href="' + item_j.url+ '">'
                                     + '<h5 class="text-muted">' + item_j.name + '</h5>'
                                 + '</a>'

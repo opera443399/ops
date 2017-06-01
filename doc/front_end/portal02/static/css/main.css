@@ -173,6 +173,6 @@ body {
 .placeholder img {
   display: inline-block;
   border-radius: 50%;
-  width: 64px;
-  height: 64px;
+  width: 32px;
+  height: 32px;
 }
