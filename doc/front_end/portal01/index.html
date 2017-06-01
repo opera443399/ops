@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>首页-portal.test.com</title>
+    <meta name="Description" content="">
+    <meta name="Keywords" content="">
+    <link rel="shortcut icon" target="_blank" href="" type="image/x-icon">
+    <!-- js Start -->
+    <script src="static/js/jquery-2.2.0.min.js"></script>
+	<script src="static/js/bootstrap.min.js"></script>
+    <!-- End of js -->
+    <!-- css Start -->
+    <link rel="stylesheet" target="_blank" href="static/css/bootstrap.min.css">
+    <!-- End of css -->
+	<style>
+/* after,before */
+#content-wrapper:after, #content-wrapper:before, body:after, body:before {
+	content: " ";
+	display: table;
+}
+#content-wrapper:after, body:after {
+	clear: both;
+}
+#content-wrapper:after, #content-wrapper:before, body:after, body:before {
+	content: " ";
+	display: table;
+}
+#content-wrapper {
+	max-width: 1000px;
+	margin: 0 auto;
+	padding-left: 5px;
+	padding-right: 5px;
+	position: relative;
+}
+
+/* panel */
+.panel, .panel-default {
+	border-color: #e4e4e4;
+	border: 1px dotted transparent;
+	position: relative;
+	box-shadow: none;
+}
+.panel-group .panel-heading {
+    padding: 0;
+}
+.panel-heading {
+}
+.panel-body {
+    background: #fff;
+    margin: 0;
+	min-height: 100px;
+}
+.accordion-toggle {
+    display: block;
+	line-height: 10px;
+    padding: 10px 20px;
+    position: relative;
+}
+.accordion-toggle:after {
+    color: #aaa;
+    content: "\262f";
+    font-size: 20px;
+    position: absolute;
+    top: 20px;
+    right: 10px;
+}
+.label {
+    text-shadow: 0 -1px 0 rgba(0,0,0,.2);
+    font-weight: 600;
+}
+.label.label-tag {
+    display: inline-block;
+    font-size: 11px;
+    line-height: 18px;
+    margin-left: 12px;
+    padding: 0 5px;
+    position: relative;
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 0;
+}
+.label.label-tag:before {
+    content: "";
+    display: block;
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 10px 12px 10px 0;
+    margin-left: -17px;
+    top: -1px;
+}
+.label.label-tag:after {
+    content: "";
+    display: block;
+    background: #fff;
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 99px;
+    margin: -12px 0 0 -10px;
+}
+.label.label-success.label-tag:before {
+    border-color: transparent #5cb85c transparent transparent;
+}
+
+/* a */
+a.portal{
+	display: inline-block;
+	color: black;
+	width: 200px;
+	margin: 5px 10px;
+	overflow: hidden;
+	text-align: center;
+	text-shadow: none;
+}
+a.portal :hover{
+	
+	background-color: #dff0d8;
+}
+a.portal .text-sm {
+	font-size: 12px;
+	padding: 10px 0;
+}
+
+	</style>
+</head>
+<body>
+	<!-- Content Start -->
+	<div id="content-wrapper">
+
+		<div class="alert alert-success">
+			<button type="button" class="close" data-dismiss="alert">×</button>
+			欢迎使用 <strong>portal.test.com</strong>
+		</div>
+		
+		<!-- Primary panel Start-->
+		<div class="panel-group panel-group-primary">
+			<!-- panel Start-->
+			<div class="panel" id="links_online">
+				<div class="panel-heading">
+					<span class="panel-title">
+						<a class="accordion-toggle" data-toggle="collapse" data-parent="#links_online" href="#collapse_A1">
+							<strong class="label label-success label-tag">title1</strong>
+						</a>
+					</span>
+				</div>
+				<div id="collapse_A1" class="panel-collapse in">
+					<div class="panel-body">
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link1</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link2</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link3</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link4</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link5</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link6</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link7</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link8</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link9</div>
+						</a>
+					</div>
+				</div>
+			</div>
+			<!-- End of panel-->
+			<!-- panel Start-->
+			<div class="panel" id="links_online">
+				<div class="panel-heading">
+					<span class="panel-title">
+						<a class="accordion-toggle" data-toggle="collapse" data-parent="#links_online" href="#collapse_A2">
+							<strong class="label label-success label-tag">title2</strong>
+						</a>
+					</span>
+				</div>
+				<div id="collapse_A2" class="panel-collapse in">
+					<div class="panel-body">
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link1</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link2</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link3</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link4</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link5</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link6</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link7</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link8</div>
+						</a>
+					</div>
+				</div>
+			</div>
+			<!-- End of panel-->
+			<!-- panel Start-->
+			<div class="panel" id="links_online">
+				<div class="panel-heading">
+					<span class="panel-title">
+						<a class="accordion-toggle" data-toggle="collapse" data-parent="#links_online" href="#collapse_A3">
+							<strong class="label label-success label-tag">title3</strong>
+						</a>
+					</span>
+				</div>
+				<div id="collapse_A3" class="panel-collapse in">
+					<div class="panel-body">
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link1</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link2</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link3</div>
+						</a>
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link4</div>
+						</a>
+					</div>
+				</div>
+			</div>		
+			<!-- End of panel-->
+			<!-- panel Start-->
+			<div class="panel" id="links_online">
+				<div class="panel-heading">
+					<span class="panel-title">
+						<a class="accordion-toggle" data-toggle="collapse" data-parent="#links_online" href="#collapse_A4">
+							<strong class="label label-success label-tag">title4</strong>
+						</a>
+					</span>
+				</div>
+				<div id="collapse_A4" class="panel-collapse in">
+					<div class="panel-body">
+						<a class="portal" target="_blank" href="#">
+							<img class="img-rounded" src="" />
+							<div class="text-sm">link1</div>
+						</a>
+					</div>
+				</div>
+			</div>	
+			<!-- End of panel-->
+		</div>
+		<!-- End of Primary panel -->
+	</div>
+	<!-- End of Content -->	
+
+	<div class="row text-center">Powered by PC</div>
+</body>
+</html>
