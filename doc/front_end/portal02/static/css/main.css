@@ -140,6 +140,10 @@ body {
   background-color: #428bca;
 }
 
+.nav-header {
+  padding-right: 10px;
+  padding-left: 10px;
+}
 
 /*
  * Main content
