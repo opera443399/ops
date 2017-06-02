@@ -9,7 +9,7 @@ pc.peng@20170602
     
     b. js解析：获取 url 后面的 hash 值： #appid_b1 -> appid_b1
     
-    c. 读取对于的 json 数据文件： appid_b1.json
+    c. 读取对应的 json 数据文件： appid_b1.json
     
     d. js生成 html code ：页面右侧内容
 
