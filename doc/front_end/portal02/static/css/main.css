@@ -1,5 +1,6 @@
 /*
- * Base structure
+ * main.css
+ * pc.peng @ 20170602
  */
 
 /* Move down content because we have a fixed navbar that is 50px tall */
@@ -143,6 +144,10 @@ body {
 .nav-header {
   padding-right: 10px;
   padding-left: 10px;
+  color: #a94442;
+}
+.nav-header:before {
+  content: "\272A";
 }
 
 /*
