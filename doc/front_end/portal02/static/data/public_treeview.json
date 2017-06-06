@@ -1,0 +1,32 @@
+{
+    "comment": "treeview, @20170605",
+    "data": [
+        {
+            "text": "分类1",
+            "nodes": [
+                {
+                    "text": "项目1",
+                    "href": "#appid_a1"
+                }
+            ]
+        },
+        {
+            "text": "分类2",
+            "nodes": [
+                {
+                    "text": "项目2",
+                    "href": "#appid_b1"
+                }
+            ]
+        },
+        {
+            "text": "分类3",
+            "nodes": [
+                {
+                    "text": "项目3",
+                    "href": "#appid_c1"
+                }
+            ]
+        }
+    ]
+}

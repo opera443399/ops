@@ -1,29 +1,9 @@
 {
-    "comment": "test, @20170601",
+    "comment": "test, @20170606",
     "data": [
         {
             "title": "title1",
             "portals": [
-                {
-                    "url": "#",
-                    "img": "",
-                    "name": "portal"
-                },
-                {
-                    "url": "#",
-                    "img": "",
-                    "name": "portal"
-                },
-                {
-                    "url": "#",
-                    "img": "",
-                    "name": "portal"
-                },
-                {
-                    "url": "#",
-                    "img": "",
-                    "name": "portal"
-                },
                 {
                     "url": "#",
                     "img": "",
@@ -44,21 +24,6 @@
          {
             "title": "title2",
             "portals": [
-                {
-                    "url": "#",
-                    "img": "",
-                    "name": "portal"
-                },
-                {
-                    "url": "#",
-                    "img": "",
-                    "name": "portal"
-                },
-                {
-                    "url": "#",
-                    "img": "",
-                    "name": "portal"
-                },
                 {
                     "url": "#",
                     "img": "",

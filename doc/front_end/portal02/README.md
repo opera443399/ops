@@ -1,6 +1,6 @@
 README
 ======
-pc.peng@20170602
+pc.peng@20170606
 
 1）原理简述
 -------------------
@@ -11,7 +11,7 @@ pc.peng@20170602
     
     c. 读取对应的 json 数据文件： appid_b1.json
     
-    d. js生成 html code ：页面右侧内容
+    d. js生成 html code ：页面顶部和左侧导航（public_treeview.json），页面右侧内容（appid_b1.json）
 
     
 
@@ -39,31 +39,59 @@ pc.peng@20170602
         
         提供 json 格式的数据给 js 来加载，示例：
         ->请求：http://m.test.com/
-        ->默认加载数据：http://m.test.com/static/data/appid_a1.json
+        ->默认加载菜单和侧边栏：http://m.test.com/static/data/public_treeview.json
+        ->默认加载右侧内容：http://m.test.com/static/data/appid_a1.json
 
-        【重点】新增项目的操作：增加一个对应的 json 文件。
+        【重点】新增项目的操作：
+        x. 增加一个对应的 json 文件： appid_xyz1.json
         数据示例：
+        
             {
-                "title": "分类标题",
-                "portals": [
-                    {
-                        "url": "超链接",
-                        "img": "图片名称",
-                        "name": "描述"
+                "comment": "描述, @更新日期，版本，作者等信息",
+                "data": [
+                     {
+                        "title": "分类1",
+                        "portals": [
+                            {
+                                "url": "链接1",
+                                "img": "",
+                                "name": "链接1对应的名称"
+                            },
+                            {
+                                "url": "链接2",
+                                "img": "",
+                                "name": "链接2对应的名称"
+                            }
+                        ]
                     },
                     {
-                        "url": "#",
-                        "img": "",
-                        "name": "portal"
-                    },
-                    {
-                        "url": "#",
-                        "img": "",
-                        "name": "portal"
+                        "title": "分类2",
+                        "portals": [
+                            {
+                                "url": "链接1",
+                                "img": "",
+                                "name": "链接1对应的名称"
+                            }
+                        ]
                     }
                 ]
             }
 
+            
+        x. 更新导航数据： public_treeview.json
+        数据示例：
+        
+            {
+                "text": "项目1",
+                "nodes": [
+                    {
+                        "text": "项目子类1",
+                        "href": "#appid_xyz1"
+                    }
+                ]
+            },
+            
+            
     d. image
     
         图标文件的根目录：/static/images

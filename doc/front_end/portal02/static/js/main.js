@@ -1,20 +1,72 @@
 /*
  * main.js
- * pc.peng @ 20170602
+ * pc.peng @ 20170606
  */
+
+
 
 
 /*
- * 用途：读取 json 文件，生成对应的 html code
- * json_file： json 数据文件路径
+ * 用途：生成右上角菜单的数据
+ * json_file： 提供 json 数据来源
  */
-function load_data_from_json(json_file){
+function load_nav_topright_from_json(json_file){
+    $("ul#navbar_topright").empty();
+    $.getJSON(json_file,function(result){
+        //console.info(result.data);
+        $.each(result.data, function(idx_i, item_i){
+            var content = '';
+            content = ''
+                    + '<!-- navbar_topright Start-->'
+                    + '<li class="dropdown">'
+                        + '<a href="#" class="dropdown-toggle" data-toggle="dropdown">' + item_i.text + '<b class="caret"></b></a>'
+                        + '<ul class="dropdown-menu">'
+
+            $.each(item_i.nodes, function(idx_j, item_j){
+                content += ''
+                            + '<li><a id="appid" href="' + item_j.href + '">' + item_j.text + '</a></li>';
+            });
+            
+            content += ''
+                        + '</ul>'
+                    + '</li>';
+                
+             $("ul#navbar_topright").append(content);
+        });
+    });
+
+}
+
+
+/*
+ * 用途：生成左侧侧边栏的数据
+ * json_file： 提供 json 数据来源
+ */
+function get_tree(json_file) {
+    $.getJSON(json_file,function(result){
+        $('div#tree').treeview({
+            data: result.data,
+            showBorder: false,
+            expandIcon: 'glyphicon glyphicon-chevron-right',
+            collapseIcon: 'glyphicon glyphicon-chevron-down',
+            nodeIcon: 'glyphicon glyphicon-link',
+            enableLinks: true
+        });
+    });
+}
+
+
+/*
+ * 用途：生成右侧内容栏的数据
+ * json_file： 提供 json 数据来源
+ */
+function load_content_from_json(json_file){
     $("div#panel_lists").empty();
     $.getJSON(json_file,function(result){
         //console.info(result.data);
         $.each(result.data, function(idx_i, item_i){
             var content = '';
-            var img_path = 'static/images/';
+            var img_path = './static/images/';
             var img_default = 'default.svg';
             
             content = ''
@@ -71,21 +123,43 @@ function load_data_from_json(json_file){
  */
 $(document).ready(function(){
     //页面首次加载
-    var prefix = 'static/data/';            //json 数据文件
-    var default_suffix = 'appid_a1';                //默认读取的 json 文件的名称
+    var prefix = './static/data/';                      //json 数据文件存放目录
+    var default_suffix = 'appid_a1';                    //默认读取的 json 文件的名称
+    
+    //加载默认内容
     request = location.hash.slice(1);
     suffix = request ? request : default_suffix; 
-    json_file = prefix + suffix + '.json'
-    //console.info('json_file1 = ' + json_file);
-    load_data_from_json(json_file);
-    
-    
-    //<a href="#appid_xxx"> 单击事件响应
-    $("[href^='#appid_']").click(function(){
-        suffix = $(this).attr("href").slice(1);
-        json_file = prefix + suffix + '.json'
-        //console.info('json_file2 = ' + json_file);
-        load_data_from_json(json_file);
-    });
+    json_file_default = prefix + suffix + '.json'
+    //console.info('json_file_default = ' + json_file_default);
+    load_content_from_json(json_file_default);
 
+    //加载右上角菜单
+    json_file_treeview = prefix + 'public_treeview.json'
+    //console.info('json_file_treeview = ' + json_file_treeview);
+    load_nav_topright_from_json(json_file_treeview);    
+
+    
+    //加载左侧的侧边栏 treeview
+    get_tree(json_file_treeview);
+
+
+    // treeview 的节点选中事件响应【js动态生成的选择器】
+    $(document).on('nodeSelected', 'div#tree', function(event, data) {
+        if (data.href && data.href.length > 1) {
+            suffix = data.href.slice(1);
+            json_file_tree_node = prefix + suffix + '.json'
+            //console.info('json_file_tree_node = ' + json_file_tree_node);
+            load_content_from_json(json_file_tree_node);
+        }
+    });
+    
+
+    //<a href="#appid_xxx"> 的单击事件响应【js动态生成的选择器】
+    $(document).on('click', 'a#appid', function() {
+        suffix = $(this).context.hash.slice(1);
+        json_file_a_appid = prefix + suffix + '.json'
+        //console.info('json_file_a_appid = ' + json_file_a_appid);
+        load_content_from_json(json_file_a_appid);
+    });
+    
 });
