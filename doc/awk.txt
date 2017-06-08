@@ -1,5 +1,5 @@
 awk博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
-2017/4/7
+2017/6/7
 
 另，附上几个blog的文章，后续可能会更新这个列表：
 Linux awk命令详解http://blog.chinaunix.net/uid-25120309-id-3801250.html
@@ -94,3 +94,30 @@ df -h |sed '1d' |egrep -v ""/dev/shm"|"/dev/mapper"" |awk '{print $NF"\t"$(NF-1)
 
 统计swap占用的进程：
 for i in `cd /proc;ls |grep "^[0-9]"|awk ' $0 >100'` ;do awk '/Swap:/{a=a+$2}END{print '"$i"',a/1024"M"}' /proc/$i/smaps ;done |sort -k2nr |head
+
+统计最小值，使用 BEGIN 来初始化变量，if做循环判断，END输出结果
+test.log：
+96.3738
+95.72002499999999
+96.78004999999999
+95.8748
+96.146125
+96.7587
+96.11826666666666
+96.69625
+95.88227499999999
+96.4341
+
+
+# cat test.log |awk 'BEGIN {min=100} {if ($1<min) {min=$1;x=$1}} END {print x}'
+95.72002499999999
+
+统计服务器的cpu，内存和磁盘信息，截取小数点，四舍五入
+echo `hostname` |cut -d'.' -f1 \
+&& echo `cat /proc/cpuinfo |grep processor |wc -l`'C' |tr '\n' '|' \
+&& cat /proc/meminfo |grep 'MemTotal' |awk '{m=$(NF-1)/1024/1024;print m"G"}' |tr '\n' '|' \
+&& lsblk -o SIZE,TYPE,MOUNTPOINT |grep -E '(data|disk1)' |awk '{print $1}' \
+&& echo && lsblk -o SIZE,TYPE,MOUNTPOINT && free -m |grep Mem |awk '{print "Mem="$2"M"}'
+
+
+
