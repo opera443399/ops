@@ -1,6 +1,6 @@
 /*
  * main.js
- * pc.peng @ 20170606
+ * pc.peng @ 20170608
  */
 
 
@@ -96,8 +96,9 @@ function load_content_from_json(json_file){
                 
                 content += ''
                             + '<div class="col-xs-4 col-sm-2 placeholder">'
-                                + '<img src="' + item_img + '" class="img-item-list img-responsive">'
+
                                 + '<a class="portal" target="_blank" href="' + item_j.url+ '">'
+                                    + '<img src="' + item_img + '" class="img-item-list img-responsive">'
                                     + '<h5 class="text-muted">' + item_j.name + '</h5>'
                                 + '</a>'
                             + '</div>'

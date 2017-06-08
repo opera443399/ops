@@ -1,6 +1,6 @@
 /*
  * main.css
- * pc.peng @ 20170606
+ * pc.peng @ 20170608
  */
 
 /* Move down content because we have a fixed navbar that is 50px tall */
@@ -97,7 +97,7 @@ body {
  * Hide default border to remove 1px line.
  */
 .navbar-fixed-top {
-  border: 0;
+    border: 0;
 }
 
 /*
@@ -106,7 +106,7 @@ body {
 
 /* Hide for mobile, show later */
 .sidebar {
-  display: none;
+    display: none;
 }
 @media (min-width: 768px) {
   .sidebar {
@@ -132,30 +132,39 @@ body {
   padding: 20px;
 }
 @media (min-width: 768px) {
-  .main {
-    padding-right: 40px;
-    padding-left: 40px;
-  }
+    .main {
+        padding-right: 40px;
+        padding-left: 40px;
+    }
+    .col-sm-2 {
+        display: inline-block;
+        float: none;
+    }
 }
-
 
 
 /*
  * Placeholder dashboard ideas
  */
 .placeholders {
-  margin-bottom: 30px;
-  text-align: center;
-}
-.placeholders h5 {
-  margin-bottom: 0;
+    margin-bottom: 30px;
 }
 .placeholder {
-  margin-bottom: 20px;
+    margin: 20px 0;
+    text-align: center;
 }
 .placeholder img {
-  display: inline-block;
-  border-radius: 20%;
-  width: 32px;
-  height: 32px;
+    display: inline-block;
+    border-radius: 25%;
+    width: 32px;
+    height: 32px;
+}
+.placeholder img:hover {
+    border: 1px dashed #3c763d;
+}
+.placeholder h5 {
+    margin-bottom: 10px;
+}
+a.portal :hover {
+    color: #a94442;
 }
