@@ -1,5 +1,5 @@
 linux bash shell 三言两语
-2017/6/2
+2017/6/8
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -508,6 +508,12 @@ set -x ：调试输出
 script
 PROMPT_COMMAND
 用法，请搜索相关主题。
+
+
+
+27、查看内存占用：
+ps -u appuser  -wo rss=,comm= --sort -rss | while read -r rss comm ; do echo $((rss/1024))"MB -" $comm; done |head -n 10
+
 
 
 
