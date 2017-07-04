@@ -64,14 +64,8 @@ cat /home/${username}/.ssh/authorized_keys
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+四、ssh chroot
+参考
+https://www.tecmint.com/restrict-ssh-user-to-directory-using-chrooted-jail/
+https://linux.cn/article-8313-1.html
+http://allanfeid.com/content/creating-chroot-jail-ssh-access
