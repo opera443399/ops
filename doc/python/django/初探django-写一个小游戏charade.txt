@@ -456,6 +456,42 @@ d）验证是否符合预期
 再次访问页面，将出现一个下拉菜单，选择语言后，单击“Go”，此时，将在session中记录语言偏好。
 
 
+4）异常处理 UnicodeEncodeError
+在使用python2的环境中，遇到一个异常，当时的场景是
+在使用 uwsgi 启动 django 工程后，访问某个 url 触发异常；
+而直接使用 django 的 manage.py 来启动 web 服务后，访问上述 url 则无异常；
+原因：
+由于代码中使用 print 打印了中文到终端，注释掉 print 语句后异常消失，以下是参考文章。
+大意就是需要指定 PYTHONIOENCODING 这个环境变量，对于到 uwsgi 中，应当设置 "evn = PYTHONIOENCODING=UTF-8" 到对应的配置文件中。
+
+from: 
+http://chase-seibert.github.io/blog/2014/01/12/python-unicode-console-output.html
+
+Print to the console in Python without UnicodeEncodeErrors 12 Jan 2014
+I can't believe I just found out about this! If you use Python with unicode data, such as Django database records, you may have seen cases where you print a value to the console, and if you hit a record with an extended (non-ascii) character, your program crashes with the following:
+
+Traceback (most recent call last):
+  File "foobar.py", line 792, in <module>
+    print value
+UnicodeEncodeError: 'ascii' codec can't encode character u'\xa0' in position 20: ordinal not in range(128)
+This often comes up when you have a Django model instance with a user-entered field in the __unicode__ return value. In the past, I have solved this by changing the print statement to print something that cannot be unicode, such as a database ID. Alternatively, you could do something like value.encode('ascii', 'ignore'). But just this week, I realized that there is a much better solution.
+
+Your termianl can typically handle UTF8 characters just fine. The issue is actually that Python is just getting confused about what encoding the terminal accepts. However, you can explicitly set this value.
+
+The PYTHONIOENCODING environment variable controls what encoding stdout/stderr uses. If you do an export PYTHONIOENCODING=UTF-8, it will solve the problem. You can also prefix any given single python command-line invocation with this value, such as PYTHONIOENCODING=UTF-8 ./manage.py runserver.
+
+Alternatively, you can set this value in your actual code, say in your settings.py file:
+
+import sys
+import codecs
+sys.stdout = codecs.getwriter('utf8')(sys.stdout)
+sys.stderr = codecs.getwriter('utf8')(sys.stderr)
+
+I'm currently working at NerdWallet, a startup in San Francisco trying to bring clarity to all of life's financial decisions. We're hiring like crazy. Hit me up on Twitter, I would love to talk.
+
+Follow @chase_seibert on Twitter
+
+
 8、邮件
 1）配置smtp帐号信息
 [root@tvm01 www]# vim www/settings.py
@@ -659,10 +695,25 @@ curl ${curl_opts} ${target_url} \
 echo -e "\n[-] Step3: perform logout ..."
 curl -L -I ${logout_url} && rm -f ${f_cookies}
                             
-                            
+
+
+14、如何自定义 django 自带的 admin 管理后台
+具体请参考官方文档。
+例如，这里有个示范，讲述了如何自定义批量更新的操作：
+https://docs.djangoproject.com/en/1.11/ref/contrib/admin/actions/       
+
+
+
+
+                    
 
 四、示例
+下面的示例列表是按照创建时间的先后顺序来的，理由是：
+写每一个项目时，经验多半是基于上一个项目的积累。
+
 https://github.com/opera443399/charade.git
+https://github.com/opera443399/asset.git
+https://github.com/opera443399/navigation.git
 
 
 ZYXW、参考
