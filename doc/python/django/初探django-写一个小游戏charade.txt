@@ -462,34 +462,21 @@ d）验证是否符合预期
 而直接使用 django 的 manage.py 来启动 web 服务后，访问上述 url 则无异常；
 原因：
 由于代码中使用 print 打印了中文到终端，注释掉 print 语句后异常消失，以下是参考文章。
-大意就是需要指定 PYTHONIOENCODING 这个环境变量，对于到 uwsgi 中，应当设置 "evn = PYTHONIOENCODING=UTF-8" 到对应的配置文件中。
 
-from: 
 http://chase-seibert.github.io/blog/2014/01/12/python-unicode-console-output.html
+大意是：在 uwsgi 的配置中，应当设置 "evn = PYTHONIOENCODING=UTF-8" 
 
-Print to the console in Python without UnicodeEncodeErrors 12 Jan 2014
-I can't believe I just found out about this! If you use Python with unicode data, such as Django database records, you may have seen cases where you print a value to the console, and if you hit a record with an extended (non-ascii) character, your program crashes with the following:
+https://docs.djangoproject.com/en/1.11/howto/deployment/wsgi/uwsgi/
+大意是：在文件上传中，要注意 unicode 字符，在 uwsgi 的配置中，应当设置 "env = LANG=en_US.UTF-8" 
 
-Traceback (most recent call last):
-  File "foobar.py", line 792, in <module>
-    print value
-UnicodeEncodeError: 'ascii' codec can't encode character u'\xa0' in position 20: ordinal not in range(128)
-This often comes up when you have a Django model instance with a user-entered field in the __unicode__ return value. In the past, I have solved this by changing the print statement to print something that cannot be unicode, such as a database ID. Alternatively, you could do something like value.encode('ascii', 'ignore'). But just this week, I realized that there is a much better solution.
+注：尝试过在uwsgi.ini的配置文件中写入 "evn = PYTHONIOENCODING=UTF-8" 这类配置，但并未生效。
+综合并测试后的解决方案：
+在 uwsgi 服务启动控制脚本中，增加环境变量的设置：
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export PYTHONIOENCODING=UTF-8
 
-Your termianl can typically handle UTF8 characters just fine. The issue is actually that Python is just getting confused about what encoding the terminal accepts. However, you can explicitly set this value.
 
-The PYTHONIOENCODING environment variable controls what encoding stdout/stderr uses. If you do an export PYTHONIOENCODING=UTF-8, it will solve the problem. You can also prefix any given single python command-line invocation with this value, such as PYTHONIOENCODING=UTF-8 ./manage.py runserver.
-
-Alternatively, you can set this value in your actual code, say in your settings.py file:
-
-import sys
-import codecs
-sys.stdout = codecs.getwriter('utf8')(sys.stdout)
-sys.stderr = codecs.getwriter('utf8')(sys.stderr)
-
-I'm currently working at NerdWallet, a startup in San Francisco trying to bring clarity to all of life's financial decisions. We're hiring like crazy. Hit me up on Twitter, I would love to talk.
-
-Follow @chase_seibert on Twitter
 
 
 8、邮件
@@ -738,7 +725,7 @@ timezone：https://docs.djangoproject.com/en/1.9/topics/i18n/timezones/
 timezone：https://docs.djangoproject.com/en/1.11/topics/i18n/timezones/
 修饰符: https://docs.djangoproject.com/en/1.9/topics/class-based-views/intro/#decorating-class-based-views
 unicode：https://docs.djangoproject.com/en/1.9/ref/unicode/
-
+actions：https://docs.djangoproject.com/en/1.11/ref/contrib/admin/actions/  
 
 2、Django 基础教程
 http://www.ziqiangxuetang.com/django/django-tutorial.html
@@ -751,3 +738,7 @@ http://stackoverflow.com/questions/401025/define-css-class-in-django-forms
 
 5、让django模型中的字段和model名显示为中文
 http://blog.csdn.net/a0100034930/article/details/42392095
+
+6、uwsgi
+https://docs.djangoproject.com/en/1.11/howto/deployment/wsgi/uwsgi/
+http://chase-seibert.github.io/blog/2014/01/12/python-unicode-console-output.html
