@@ -469,6 +469,9 @@ http://chase-seibert.github.io/blog/2014/01/12/python-unicode-console-output.htm
 https://docs.djangoproject.com/en/1.11/howto/deployment/wsgi/uwsgi/
 大意是：在文件上传中，要注意 unicode 字符，在 uwsgi 的配置中，应当设置 "env = LANG=en_US.UTF-8" 
 
+https://www.itopen.it/django-deployment-with-nginx-and-uwsgi/
+大意是：在 uwsgi 的服务控制脚本中，应当设置提前环境变量，再启动服务 
+
 注：尝试过在uwsgi.ini的配置文件中写入 "evn = PYTHONIOENCODING=UTF-8" 这类配置，但并未生效。
 综合并测试后的解决方案：
 在 uwsgi 服务启动控制脚本中，增加环境变量的设置：
