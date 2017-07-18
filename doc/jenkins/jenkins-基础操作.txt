@@ -1,21 +1,29 @@
 jenkins-基础操作
-2017/4/6
+2017/7/18
 
 一、安装
 1、准备工作
 请先安装jdk
 
 默认由于版权问题，centos 默认的yum源未加入 oracle jdk 的包，默认将安装开源版本的oepnjdk，请根据需要自行下载缓存后安装对应的jdk包。
+实例：
+wget -O jdk-8u131-linux-x64.rpm http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.rpm?AuthParam=1499769869_9f4e068e95446a4ea88c2fb85485e17d
+
 例如，本例所需jdk已经从 oracle 网站下载并缓存到本地yum源，可以直接安装：
 ~]# yum install jdk1.8.0_60
 
 
 2、安装方式
-1）yum源安装
+1）yum源安装（推荐）
 ~]# wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
 ~]# rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
 
 ~]# yum install jenkins
+
+启动服务
+~]# systemctl enable jenkins
+~]# systemctl start jenkins
+(防火墙略过)
 
 2）直接下载rpm包来安装
 ~]# wget http://pkg.jenkins-ci.org/redhat-stable/jenkins-2.7.4-1.1.noarch.rpm
@@ -36,11 +44,77 @@ jenkins-基础操作
 
 
 二、配置
+1、基础
 访问：http://ip_of_jenkins:8080/
+
+初始化-安装插件-设置admin帐号
+系统管理-系统设置-设置邮件等信息
+创建项目
+
 
 访问后，根据引导，将安装插件，但jenkins默认会去探测google能否访问，这个，，在国内会困住一批人，解决办法：
 请自行搜索关键词：“jenkins connectionCheckUrl”，了解解决办法。
 请根据需要安装插件，插件安装报错时，多半是有依赖关系，缺少哪个插件安装即可。
+
+2、注意事项
+1）权限
+例如，使用docker服务时，jenkins 用户要加入 docker 组
+
+usermod -a -G docker jenkins
+systemctl restart jenkins
+
+
+2）获取jenkins相关的几个key用于远程调用（注，新版本的jenkins的默认安全设置，导致请求时需要提供以下数据）
+目的：用于 svn hook 脚本远程调用触发 jenkins 的任务。
+
+【jenkins_api_token】
+右上角用户名-菜单-设置
+    API Token
+        单击: [Show API Token...]
+        User ID: admin
+        API Token: xxxxxx
+
+则：
+jenkins_api_token='admin:xxxxxx'
+
+
+【jenkins_crumb】（在每个客户端上执行的结果是不一样的）
+执行：
+    curl -s 'http://admin:password@${jenkins_server}/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,":",//crumb)'
+得到：
+    Jenkins-Crumb:35b5802e2f723e6ff7c3c0f1eb4097cb
+
+则：
+    jenkins_crumb='Jenkins-Crumb:35b5802e2f723e6ff7c3c0f1eb4097cb'
+
+【jenkins_token】
+项目-配置-构建触发器
+    触发远程构建 (例如,使用脚本)	Help for feature: 触发远程构建 (例如,使用脚本)
+        身份验证令牌：	test_build_token
+    Use the following URL to trigger build remotely: JENKINS_URL/job/projectname/build?token=TOKEN_NAME 或者 /buildWithParameters?token=TOKEN_NAME
+    Optionally append &cause=Cause+Text to provide text that will be included in the recorded build cause.
+
+则：
+    jenkins_token='test_build_token'
+    
+最终使用curl来调用：
+    curl -s \
+-H "${jenkins_crumb}" \
+--data-urlencode json="
+{
+    \"parameter\": [
+        {
+            \"name\": \"string_key_1\", 
+            \"value\": \"${string_key_1}\"
+        },
+        {
+            \"name\": \"string_key_2\", 
+            \"value\": \"${string_key_2}\"
+        }
+    ]
+}
+" "http://${jenkins_api_token}@${jenkins_server}/job/projectname/build?token=${jenkins_token}"
+
 
 
 三、使用
@@ -138,7 +212,7 @@ Success > 控制台输出 #1 2016-6-30 上午3:18
 通常是这样的思路：
 dev -> push -> gitlab(with web hook) -> jenkins-gitlab-hook -> build
 
-1、插件
+1）插件
 credentials：管理帐号密码
 git：
 gitlab-hook：配合gitlab项目下触发自动构建
@@ -161,7 +235,7 @@ credentials.jpi                git.jpi                         mapdb-api.jpi    
 display-url-api.jpi            gitlab-hook.jpi                 matrix-auth.jpi      pipeline-stage-view.jpi      timestamper.jpi        workflow-multibranch.jpi
 
 
-2、创建一个任务
+2）创建一个任务
 选择菜单：“Jenkins-新建”
 ------------------------------------------------------------------------------
     Item名称:                asset
@@ -213,12 +287,12 @@ display-url-api.jpi            gitlab-hook.jpi                 matrix-auth.jpi  
 保存 
 ------------------------------------------------------------------------------
 
-3、执行任务
+3）执行任务
 选择菜单：“立即构建”
 结果：成功，符合预期
 
 
-4、在gitlab上配置web hook
+4）在gitlab上配置web hook
 先测试一下 jenkins 插件 gitlab-hook 是否有效：
 页面请求：http://ip_of_jenkins:8080/gitlab/build_now
 返回结果：
@@ -248,6 +322,46 @@ Push Events
 
 
 
+2、svn的使用示例
+1）项目配置
+【General】
+项目名称: job02
+参数化构建过程
+    String parameter
+        名字: key01
+        默认值: default_not_exist
+        
+【源码管理】
+（略过）
+
+
+【构建触发器】（注：在svn中使用hook脚本过滤出最新版本中有变动的image目录名称作为参数传递到这里来build）
+✔触发远程构建 (例如,使用脚本)
+    身份验证令牌：test_build_token
+
+    
+【构建】
+选择：Execute shell
+    Command: （脚本略）
+    
+【构建后操作】
+选择：Editable Email Notification
+
+    单击: [Advanced Settings...]
+
+    Triggers:   Always
+                Send To
+                    Developers
+
+
+注1：目前jenkins未接入ldap，当svn用户提交后，jenkins会自动记录该用户，但svn提交的信息中只有用户名，没有邮箱信息（这点和git不一样），且该用户并未激活，需要激活（在jenkins中给该用户设置密码）后才能给该用户发送邮件，默认使用系统全局设置中的邮件后缀。
+    
+
+2）svn 仓库增加一个 hook 用来传递参数，并调用远程api
+首先，通过 svnlook changed -r ${svn_repository_revision} ${svn_repository} 来获取提交的内容，解析参数传递出去
+其次，通过调用远程api来触发build
+
+
 
 
 
@@ -259,3 +373,5 @@ https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins+on+Red+Hat+distri
 2、gitlab hook
 https://wiki.jenkins-ci.org/display/JENKINS/Gitlab+Hook+Plugin
 https://github.com/elvanja/jenkins-gitlab-hook-plugin#build-now-hook
+3、Running jenkins jobs via command line
+http://www.inanzzz.com/index.php/post/jnrg/running-jenkins-build-via-command-line
