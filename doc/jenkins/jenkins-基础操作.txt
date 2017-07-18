@@ -332,7 +332,9 @@ Push Events
         默认值: default_not_exist
         
 【源码管理】
-（略过）
+在源码管理模块选择Subversion。
+Repository URL中填入svn repo地址。（如果Jenkins master时区和SVN服务器时区不一致，请在repo地址末尾添加 @HEAD）
+Credentials中添加svn服务器的用户名和密码。
 
 
 【构建触发器】（注：在svn中使用hook脚本过滤出最新版本中有变动的image目录名称作为参数传递到这里来build）
