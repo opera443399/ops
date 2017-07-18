@@ -1,5 +1,5 @@
 jenkins-如何发送邮件
-2017/4/1
+2017/7/18
 
 记录一下配置操作，有助于后续快速部署。
 
@@ -18,79 +18,105 @@ Default Content Type: HTML(text/html)
 Default Recipients: user1,user2
 Default Subject: 构建通知:${BUILD_STATUS} - ${PROJECT_NAME} - Build # ${BUILD_NUMBER} !
 Default Content:
+（示例邮件模版如下：）
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>${ENV, var="JOB_NAME"}-第${BUILD_NUMBER}次构建日志</title>
-</head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="">
+    <title>${ENV, var="JOB_NAME"}-第${BUILD_NUMBER}次构建日志</title>
+    <style type="text/css">
+body table tr td {
+    font-size: 11px;
+    font-family: "Lucida Grande", Verdana, Arial, "Microsoft YaHei", Arial, Helvetica, Geneva, sans-serif;
+}
 
-<body leftmargin="8" marginwidth="0" topmargin="8" marginheight="4"
-    offset="0">
-    <table width="95%" cellpadding="0" cellspacing="0"
-        style="font-size: 11pt; font-family: Tahoma, Arial, Helvetica, sans-serif">
+.result {
+    color: #0000FF;
+    font-size: 20px;
+}
+
+.title {
+    color: #0000FF;
+    font-size: 15px;
+}
+
+    </style>
+</head>
+<body>
+    <table>
         <tr>
             <td>(这是一封来自Jenkins服务的邮件，请勿直接回复，谢谢！)</td>
         </tr>
         <tr>
-            <td><h2>
-                    <font color="#0000FF">构建结果 - ${BUILD_STATUS}</font>
-                </h2></td>
+            <td>
+                <h2 class="result">构建结果 - ${BUILD_STATUS}</h2>
+                <br />
+            </td>
+            
         </tr>
         <tr>
-            <td><br />
-            <b><font color="#0B610B">构建信息</font></b>
-            <hr size="2" width="100%" align="center" /></td>
+            <td>
+                <strong class="title">构建信息</strong>
+                <hr size="2" width="100%" align="center" />
+            </td>
         </tr>
         <tr>
             <td>
                 <ul>
-                    <li>项目名称&nbsp;：&nbsp;${PROJECT_NAME}</li>
-                    <li>构建编号&nbsp;：&nbsp;第${BUILD_NUMBER}次构建</li>
-                    <li>GIT&nbsp;版本：&nbsp;${GIT_REVISION}</li>
-                    <li>触发原因：&nbsp;${CAUSE}</li>
-                    <li>构建日志：&nbsp;<a href="${BUILD_URL}console">${BUILD_URL}console</a></li>
-                    <li>构建&nbsp;&nbsp;Url&nbsp;：&nbsp;<a href="${BUILD_URL}">${BUILD_URL}</a></li>
-                    <li>工作目录&nbsp;：&nbsp;<a href="${PROJECT_URL}ws">${PROJECT_URL}ws</a></li>
-                    <li>项目&nbsp;&nbsp;Url&nbsp;：&nbsp;<a href="${PROJECT_URL}">${PROJECT_URL}</a></li>
+                    <li>项目名称：${PROJECT_NAME}</li>
+                    <li>构建编号：第${BUILD_NUMBER}次构建</li>
+                    <li>SVN版本：${SVN_REVISION}</li>
+                    <li>触发原因：${CAUSE}</li>
+                    <li>构建日志：<a href="${BUILD_URL}console">${BUILD_URL}console</a></li>
+                    <li>构建Url：<a href="${BUILD_URL}">${BUILD_URL}</a></li>
+                    <li>工作目录：<a href="${PROJECT_URL}ws">${PROJECT_URL}ws</a></li>
+                    <li>项目：<a href="${PROJECT_URL}">${PROJECT_URL}</a></li>
                 </ul>
             </td>
         </tr>
         <tr>
-            <td><b><font color="#0B610B">Changes Since Last
-                        Successful Build:</font></b>
-            <hr size="2" width="100%" align="center" /></td>
+            <td>
+                <strong class="title">最近一次成功构建后的版本历史</strong>
+                <hr size="2" width="100%" align="center" />
+            </td>
         </tr>
         <tr>
             <td>
-                <ul>
-                    <li>历史变更记录 : <a href="${PROJECT_URL}changes">${PROJECT_URL}changes</a></li>
-                </ul> ${CHANGES_SINCE_LAST_SUCCESS,reverse=true, format="Changes for Build #%n:<br />%c<br />",showPaths=true,changesFormat="<pre>[%a]<br />%m</pre>",pathFormat="&nbsp;&nbsp;&nbsp;&nbsp;%p"}
-            </td>
-        </tr>
-        <tr>
-            <td><b>Failed Test Results</b>
-            <hr size="2" width="100%" align="center" /></td>
-        </tr>
-        <tr>
-            <td><pre
-                    style="font-size: 11pt; font-family: Tahoma, Arial, Helvetica, sans-serif">$FAILED_TESTS</pre>
-                <br /></td>
-        </tr>
-        <tr>
-            <td><b><font color="#0B610B">构建日志 (最后 100行):</font></b>
-            <hr size="2" width="100%" align="center" /></td>
-        </tr>
-        <!-- <tr>
-            <td>Test Logs (if test has ran): <a
-                href="${PROJECT_URL}ws/TestResult/archive_logs/Log-Build-${BUILD_NUMBER}.zip">${PROJECT_URL}/ws/TestResult/archive_logs/Log-Build-${BUILD_NUMBER}.zip</a>
+                ${CHANGES_SINCE_LAST_SUCCESS,reverse=true, format="Changes for Build #%n:<br />%c<br />",showPaths=true,changesFormat="<pre>[%a]<br />%m</pre>",pathFormat="%p"}
                 <br />
-            <br />
+                <ul>
+                    <li>所有修改记录: <a href="${PROJECT_URL}changes">${PROJECT_URL}changes</a></li>
+                    <br />
+                </ul>  
             </td>
-        </tr> -->
+        </tr>
         <tr>
-            <td><textarea cols="80" rows="30" readonly="readonly"
-                    style="font-family: Courier New">${BUILD_LOG, maxLines=100}</textarea>
+            <td>
+                <strong class="title">Failed Test Results</strong>
+                <hr size="2" width="100%" align="center" />
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <pre>${FAILED_TESTS}</pre>
+                <br />
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <strong class="title">构建日志</strong>
+                <hr size="2" width="100%" align="center" />
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <textarea cols="120" rows="30" readonly="readonly">${BUILD_LOG, maxLines=200}</textarea>
             </td>
         </tr>
     </table>
