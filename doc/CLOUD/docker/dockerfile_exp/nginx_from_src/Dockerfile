@@ -13,7 +13,8 @@ RUN tar zxf nginx-${NGINX_VERSION}.tar.gz \
     --with-pcre \
     --with-http_realip_module \
     && make \
-    && make install
+    && make install \
+    && rm nginx-${NGINX_VERSION}.tar.gz
 
 RUN useradd -s /sbin/nologin -d /var/lib/nginx -c "Nginx Web Server" nginx
 
