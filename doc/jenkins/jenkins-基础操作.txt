@@ -377,3 +377,5 @@ https://wiki.jenkins-ci.org/display/JENKINS/Gitlab+Hook+Plugin
 https://github.com/elvanja/jenkins-gitlab-hook-plugin#build-now-hook
 3、Running jenkins jobs via command line
 http://www.inanzzz.com/index.php/post/jnrg/running-jenkins-build-via-command-line
+4、使用阿里云容器服务Jenkins实现持续集成和Docker镜像构建(updated on 2017.3.3)
+https://yq.aliyun.com/articles/53971
