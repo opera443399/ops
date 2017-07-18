@@ -116,7 +116,7 @@ body table tr td {
         </tr>
         <tr>
             <td>
-                <textarea cols="120" rows="30" readonly="readonly">${BUILD_LOG, maxLines=200}</textarea>
+                <textarea cols="120" rows="30" readonly="readonly">${BUILD_LOG}</textarea>
             </td>
         </tr>
     </table>
