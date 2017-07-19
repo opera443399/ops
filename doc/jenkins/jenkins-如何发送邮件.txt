@@ -1,5 +1,5 @@
 jenkins-如何发送邮件
-2017/7/18
+2017/7/19
 
 记录一下配置操作，有助于后续快速部署。
 
@@ -19,6 +19,7 @@ Default Recipients: user1,user2
 Default Subject: 构建通知:${BUILD_STATUS} - ${PROJECT_NAME} - Build # ${BUILD_NUMBER} !
 Default Content:
 （示例邮件模版如下：）
+------------------------------------------------
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -37,12 +38,12 @@ body table tr td {
 }
 
 .result {
-    color: #0000FF;
+    color: #4caf50;
     font-size: 20px;
 }
 
 .title {
-    color: #0000FF;
+    color: #ff9800;
     font-size: 15px;
 }
 
@@ -55,6 +56,7 @@ body table tr td {
         </tr>
         <tr>
             <td>
+                <br />
                 <h2 class="result">构建结果 - ${BUILD_STATUS}</h2>
                 <br />
             </td>
@@ -62,6 +64,7 @@ body table tr td {
         </tr>
         <tr>
             <td>
+                <br />
                 <strong class="title">构建信息</strong>
                 <hr size="2" width="100%" align="center" />
             </td>
@@ -82,6 +85,7 @@ body table tr td {
         </tr>
         <tr>
             <td>
+                <br />
                 <strong class="title">最近一次成功构建后的版本历史</strong>
                 <hr size="2" width="100%" align="center" />
             </td>
@@ -92,12 +96,12 @@ body table tr td {
                 <br />
                 <ul>
                     <li>所有修改记录: <a href="${PROJECT_URL}changes">${PROJECT_URL}changes</a></li>
-                    <br />
                 </ul>  
             </td>
         </tr>
         <tr>
             <td>
+                <br />
                 <strong class="title">Failed Test Results</strong>
                 <hr size="2" width="100%" align="center" />
             </td>
@@ -110,18 +114,20 @@ body table tr td {
         </tr>
         <tr>
             <td>
+                <br />
                 <strong class="title">构建日志</strong>
                 <hr size="2" width="100%" align="center" />
             </td>
         </tr>
         <tr>
             <td>
-                <textarea cols="120" rows="30" readonly="readonly">${BUILD_LOG}</textarea>
+                <textarea cols="160" rows="40" readonly="readonly">${BUILD_LOG}</textarea>
             </td>
         </tr>
     </table>
 </body>
 </html>
+------------------------------------------------
 
 
 [邮件通知]
