@@ -1,5 +1,5 @@
 docker深入2-安装配置docker-ce
-2017/7/18
+2017/7/19
 
 1、服务安装
 
@@ -23,7 +23,7 @@ tee /etc/docker/daemon.json <<-'EOF'
     "dm.thinp_autoextend_percent=20",
     "dm.directlvm_device_force=false" 
   ],
-  "registry-mirrors": ["https://zvz7k9mh.mirror.aliyuncs.com"]
+  "registry-mirrors": ["https://xxxx.mirror.aliyuncs.com"]
 }
 EOF
 systemctl daemon-reload
