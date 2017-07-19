@@ -1,5 +1,5 @@
-FROM docker.cn/docker/centos:7
-MAINTAINER pcnk
+FROM centos:7
+MAINTAINER PC
 
 RUN yum -y update; yum clean all
 RUN yum -y install openssh-server passwd; yum clean all
@@ -10,6 +10,6 @@ RUN /bin/sed -i 's/.*session.*required.*pam_loginuid.so.*/session optional pam_l
 RUN ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N ''
 
 RUN chmod 755 /root/start.sh
-# EXPOSE 22
+EXPOSE 22
 RUN ./root/start.sh
 ENTRYPOINT ["/usr/sbin/sshd", "-D"]
