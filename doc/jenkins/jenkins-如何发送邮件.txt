@@ -156,9 +156,19 @@ Triggers: Send To
     Developers
     Recipient List
 
+    
+    
+4、Q&A
+1）如何传递参数给邮件内容中
+将参数化构建过程中定义的参数名称，按照下述方式传递过来即可：
+${ENV,var="your_parameterized_build_variable_name_here"}
+    
+    
 
 
 
 ZYXW、参考
 1、jenkins构建后邮件发送
 http://blog.csdn.net/songjiaping/article/details/51496977
+2、Passing variable from shell to email-ext in Jenkins
+https://stackoverflow.com/questions/15436915/passing-variable-from-shell-to-email-ext-in-jenkins
