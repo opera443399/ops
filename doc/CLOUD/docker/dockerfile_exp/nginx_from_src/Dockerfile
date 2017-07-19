@@ -14,7 +14,7 @@ RUN tar zxf nginx-${NGINX_VERSION}.tar.gz \
     --with-http_realip_module \
     && make \
     && make install \
-    && rm nginx-${NGINX_VERSION}.tar.gz
+    && rm -f nginx-${NGINX_VERSION}.tar.gz
 
 RUN useradd -s /sbin/nologin -d /var/lib/nginx -c "Nginx Web Server" nginx
 
@@ -26,5 +26,5 @@ ENV NGINX_LOGROOT /data/logs/nginx
 ENV NGINX_DEFAULT_SITE www.test.com
 RUN mkdir -p ${NGINX_WWWROOT}/${NGINX_DEFAULT_SITE} ${NGINX_LOGROOT}
 
-EXPOSE 80 8080
+EXPOSE 80
 ENTRYPOINT ["/usr/local/nginx/sbin/nginx", "-g", "daemon off;"]
