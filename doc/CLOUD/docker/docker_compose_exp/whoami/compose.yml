@@ -1,0 +1,8 @@
+web:
+  image: emilevauge/whoami
+  ports:
+    - '80'
+  restart: always
+  labels:
+    aliyun.routing.port_80: http://www.test.com
+    aliyun.scale: '1'
