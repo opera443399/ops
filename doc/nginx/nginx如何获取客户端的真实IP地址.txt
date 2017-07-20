@@ -1,0 +1,162 @@
+nginx如何获取客户端的真实IP地址
+2017/7/20
+
+
+一、概念
+通过 proxy_set_header 设置自定义的变量（例如： Remoteip ）或者系统变量（例如： Host，X-Forwarded-For ）来向后端传递IP等数据
+
+二、场景分析
+1、【场景：2层nginx-proxy做代理】
+1）配置：
+【代理层01】
+~]# cat www.test.com.conf
+## nginx-proxy-level01
+server {
+    listen       192.168.200.101:8888;
+    server_name  www.test.com;
+
+    access_log /data/other/nginx_logs/${host}_${server_port}_access.log main;
+
+    location / {
+        proxy_pass   http://192.168.200.102:11111;
+        proxy_set_header Remoteip $remote_addr;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+
+
+【代理层02】
+~]# cat www.test.com.conf
+## nginx-proxy-level02
+server {
+    listen       192.168.200.102:11111;
+    server_name  www.test.com;
+
+    access_log /data/other/nginx_logs/${host}_${server_port}_access.log main;
+
+    location / {
+        proxy_pass   http://192.168.120.11:22222;
+        proxy_set_header Remoteip $http_remoteip;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+
+
+【后端应用】服务器ip为：192.168.120.11
+~]# docker run -d -p 22222:80 emilevauge/whoami
+
+
+2）请求
+http://www.test8888.com:8888/
+
+3）返回
+
+Hostname: b6b73b62244c
+IP: 127.0.0.1
+IP: 172.17.0.2
+GET / HTTP/1.1
+Host: www.test8888.com
+Remoteip: 192.168.100.11
+Upgrade-Insecure-Requests: 1
+X-Forwarded-For: 192.168.100.11, 192.168.200.101
+
+
+4）链路
+客户端【192.168.100.11】 -> 代理1【192.168.200.101】 -> 代理2【192.168.200.102】 -> 服务器【192.168.120.11】
+
+
+5）分析小结
+【】Host的设置差异
+当前故意设置为：
+proxy_set_header Host $http_host;
+proxy_set_header Host $host;
+
+如果变成：
+proxy_set_header Host $http_host;
+proxy_set_header Host $http_host;
+
+则host变成：
+Host: www.test8888.com:8888
+
+由此可以辨别 http_host 和 host 的差异。
+
+
+【】自定义变量
+proxy_set_header Remoteip $remote_addr;
+proxy_set_header Remoteip $http_remoteip;
+上述指令1是 proxy01 上的，通过自定义变量 Remoteip ，来保存客户端真实IP（将 remote_addr 复制给 Remoteip 变量）
+上述指令2是 proxy02 上的，通过传递自定义变量 Remoteip 来保存客户端真实IP
+
+通过设置上述变量 Remoteip 来传递真实IP
+
+当然，网上很多文章使用的是：X-Real-IP 这个变量名，都是一个道理。
+
+
+【】系统变量 X-Forwarded-For （简称XFF）
+
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+
+上述指令1是 proxy01 上的，通过系统变量 remote_addr 将 192.168.100.11 加入了 X-Forwarded-For 列表中
+上述指令2是 proxy02 上的，通过系统变量 remote_addr 将 192.168.200.101 加入了 X-Forwarded-For 列表中
+
+
+多层proxy的配置依次类推。
+
+
+
+
+
+
+2、【场景：使用 nginx 模块 http_realip_module 来获取真实IP】
+1）前提
+编译时要选择安装该模块，示例：
+ENV NGINX_VERSION 1.12.1
+RUN yum install -y gcc gcc-c++ openssl-devel pcre-devel; yum clean all
+COPY ./nginx-${NGINX_VERSION}.tar.gz .
+RUN tar zxf nginx-${NGINX_VERSION}.tar.gz \
+    && cd nginx-${NGINX_VERSION} \
+    && ./configure \
+    --prefix=/usr/local/nginx \
+    --with-http_stub_status_module \
+    --with-http_ssl_module \
+    --with-pcre \
+    --with-http_realip_module \
+    && make \
+    && make install \
+    && rm -f nginx-${NGINX_VERSION}.tar.gz
+
+RUN useradd -s /sbin/nologin -d /var/lib/nginx -c "Nginx" nginx
+
+
+原理：
+设置proxy的ip白名单，然后在 X-Forwarded-For 递归过滤掉，生下来的就是真实IP地址。
+    
+
+2）使用方式【待测试】
+set_real_ip_from  192.168.1.0/24;
+set_real_ip_from  192.168.2.1;
+set_real_ip_from  2001:0db8::/32;
+real_ip_header    X-Forwarded-For;
+real_ip_recursive on;
+
+
+
+
+
+ZYXW、参考
+1、NGINX多层转发或使用CDN之后如何获取用户真实IP
+http://www.wkii.org/nginx-cdn-get-user-real-ip.html
+2、【整理】获取用户真实 ip 地址的 nginx 相关配置
+https://yq.aliyun.com/articles/42168
+3、Module ngx_http_realip_module
+http://nginx.org/en/docs/http/ngx_http_realip_module.html
+4、阿里云场景下获取用户真实 IP
+https://yq.aliyun.com/articles/70545
+5、nginx日志记录客户端真实ip
+http://liuping0906.blog.51cto.com/2516248/1300533
+
+
