@@ -1,5 +1,5 @@
 【yum和rpm】个人用到的方法记录
-2016/11/15
+2017/7/25
 yum和rpm博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
 
 1、搜索和查询
@@ -8,12 +8,20 @@ yum search zabbix
 yum search --disablerepo='*' --enablerepo=office zabbix   
 
 查询系统安装的rpm包：
-rpm -qa |grep mysql
+~]# rpm -qa |grep shadowsocks
+shadowsocks-libQtShadowsocks-1.10.0-1.el7.centos.x86_64
+
+查询yum安装的包安装到哪里了：
+~]# rpm -ql shadowsocks-libQtShadowsocks
+/usr/bin/shadowsocks-libqss
+
 查询rpm包是否有bugfix：
 rpm -q --changelog openssl |more
+
 查询某个rpm内的文件列表：
 [root@tvm-saltmaster pkgs]# rpm -qpl office-repo-latest-6-1.el6.x86_64.rpm 
 /etc/yum.repos.d/local-office.repo
+
 查询某个rpm内的信息：
 [root@tvm-saltmaster pkgs]# rpm -qpi office-repo-latest-6-1.el6.x86_64.rpm  
 Name        : office-repo-latest           Relocations: / 
