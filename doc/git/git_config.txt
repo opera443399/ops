@@ -1,0 +1,27 @@
+git config 解释
+2017/7/31
+
+~]# git config user.name "Jack"
+~]# git config user.email jack@test.com
+
+影响内容：.git/config
+
+
+~]# git config --global user.name "Jack"
+~]# git config --global user.email jack@test.com
+
+影响内容：~/.gitconfig
+
+~]# git config --system user.name "Jack"
+~]# git config --system user.email jack@test.com
+
+影响内容：/etc/gitconfig
+
+
+涉及内容：
+git 提交的作者信息
+
+配置文件变更如下：
+[user]
+        name = Jack
+        email = jack@test.com
