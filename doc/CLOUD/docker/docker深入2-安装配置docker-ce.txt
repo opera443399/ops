@@ -1,5 +1,5 @@
 docker深入2-安装配置docker-ce
-2017/7/19
+2017/7/31
 
 1、服务安装
 
@@ -7,6 +7,7 @@ yum install -y yum-utils device-mapper-persistent-data lvm2
 yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
 yum makecache fast
 yum -y install docker-ce
+systemctl enable docker
 
 
 2、服务配置阿里云registry-mirrors和存储
