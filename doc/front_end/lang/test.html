@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+	<body>
+	<h1>503 Service Unavailable</h1>
+    <h3>No server is available to handle this request.</h3>
+	<div lang="zh">
+	    <h3>如果您看到这个页面，说明您是中国人</h3>
+	</div>
+	<div lang="en">
+    	<h3>如果您看到这个页面，说明您是歪果仁</h3>
+	</div>
+	</body>
+
+	<script>
+		document.body.setAttribute("lang", navigator.language || navigator.userLanguage)
+	</script>
+
+	<style>
+		div {
+			display: none;
+		}
+		body:lang(zh) div:lang(zh) {
+			display: inline-block;
+		}
+		body:lang(en) div:lang(en) {
+			display: inline-block;
+		}
+	</style>
+
+</html>
