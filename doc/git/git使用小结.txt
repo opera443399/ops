@@ -1,0 +1,101 @@
+git使用小结
+2017/8/1
+
+
+一、配置
+1、config
+~]# git config user.name "Jack"
+~]# git config user.email jack@test.com
+
+影响内容：.git/config
+
+
+~]# git config --global user.name "Jack"
+~]# git config --global user.email jack@test.com
+
+影响内容：~/.gitconfig
+
+~]# git config --system user.name "Jack"
+~]# git config --system user.email jack@test.com
+
+影响内容：/etc/gitconfig
+
+
+涉及内容：
+git 提交的作者信息
+
+配置文件变更如下：
+[user]
+        name = Jack
+        email = jack@test.com
+
+        
+
+2、clone
+git clone https://tester01@github.com/tester01/charade.git
+
+3、init
+git init --bare
+
+4、remote
+git push时，会报错：
+error: The requested URL returned error: 403 Forbidden while accessing https://github.com/tester01/charade.git/info/refs
+
+fatal: HTTP request failed
+解决办法：
+git remote set-url origin https://tester01@github.com/tester01/charade.git
+
+
+5、hook
+示例 hooks/post-receive 如下：
+
+#!/bin/sh
+git checkout -f
+
+push 后将打印最近变动的文件
+
+
+二、回滚
+参考：
+https://www.atlassian.com/git/tutorials/undoing-changes
+
+1、git revert
+保存了 history 信息，适用于已经 push 到 public repository 后，要回滚
+
+
+2、git reset
+清除了 history 信息，很暴力，适用于 local 开发时要回滚
+
+
+
+
+三、提交变更的常用操作
+1、add
+将当前路径下的文件添加到VCS中：
+git add .
+
+2、commit
+在编辑器中写入修改信息后再提交：
+git commit -a
+
+简单的写一行信息并提交：
+git commit -am
+
+
+3、push
+简单的push到远端
+git push
+
+4、log
+查看最近5条日志：
+git log -5
+
+查看最近5条日志（单行）：
+git log -5 --oneline
+
+
+
+
+
+
+
