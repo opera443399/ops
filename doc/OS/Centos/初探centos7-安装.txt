@@ -1,5 +1,5 @@
 初探centos7-安装
-2015/12/31
+2017/8/7
 
 一、安装
 1、新的安装界面
@@ -34,6 +34,9 @@ local.centos7.test
        CPE OS Name: cpe:/o:centos:centos:7
             Kernel: Linux 3.10.0-327.el7.x86_64
       Architecture: x86-64
+
+如何更改hostname？
+hostnamectl --static set-hostname VM_200_5_centos.test.com
       
 5、/bin,/sbin,/lib,/lib64 的路径改变
 [root@local ~]# ls / -l |sort |grep -E 'bin|lib'    
