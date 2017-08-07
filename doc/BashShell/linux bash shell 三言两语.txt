@@ -1,5 +1,5 @@
 linux bash shell 三言两语
-2017/6/8
+2017/8/7
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -513,6 +513,17 @@ PROMPT_COMMAND
 
 27、查看内存占用：
 ps -u appuser  -wo rss=,comm= --sort -rss | while read -r rss comm ; do echo $((rss/1024))"MB -" $comm; done |head -n 10
+
+
+28、如何使用!$
+[root@test ~]# ls /tmp/
+cvm_init.log  net_affinity.log  sagent.pid  setRps.log
+[root@test ~]# echo !$
+echo /tmp/
+/tmp/
+
+显然，要调用上一条指令的最后一个参数，不妨试试 !$
+
 
 
 
