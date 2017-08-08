@@ -26,13 +26,13 @@ tree:
 
 
 
-commit prefix:
+commit labels:
 --------------
 
-chore(xxx): xxx
-docs(xxx): xxx
-feat(xxx): xxx
-fix(xxx): xxx
-refactor(xxx): xxx
-style(xxx): xxx
+    chore(xxx): xxx
+    docs(xxx): xxx
+    feat(xxx): xxx
+    fix(xxx): xxx
+    refactor(xxx): xxx
+    style(xxx): xxx
 
