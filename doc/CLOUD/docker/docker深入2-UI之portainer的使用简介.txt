@@ -1,0 +1,27 @@
+docker深入2-UI之 portainer 的使用简介
+2017/8/8
+
+
+1、配置防火墙
+示例：
+iptables -A INPUT -s 192.168.200.0/24 -p tcp -m tcp --dport 2375 -j ACCEPT
+iptables -A INPUT -p tcp -m tcp --dport 2375 -j DROP
+
+2、调整docker访问，允许内网访问 API 接口
+sed -i "/^ExecStart/c ExecStart=/usr/bin/dockerd -H unix:///var/run/docker.sock -H tcp://$(ip a |grep global |grep eth0 |awk '{print $2}' |cut -d'/' -f1):2375" /usr/lib/systemd/system/docker.service
+systemctl daemon-reload; systemctl restart docker
+
+
+3、启动 portainer
+mkdir -p /data/portainer
+docker --restart=unless-stopped run -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock -v /data/portainer:/data portainer/portainer -H unix:///var/run/docker.sock
+
+请求：
+http://服务器IP:9000
+
+
+
+
+ZYXW、参考
+1、doc
+https://portainer.readthedocs.io/en/latest/deployment.html
