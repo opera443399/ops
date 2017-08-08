@@ -1,5 +1,5 @@
 awk博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
-2017/6/7
+2017/8/8
 
 另，附上几个blog的文章，后续可能会更新这个列表：
 Linux awk命令详解http://blog.chinaunix.net/uid-25120309-id-3801250.html
@@ -39,6 +39,9 @@ zcat 2013-07-15-0000-2330_test.company.com.*|awk '{print $9}'|sort|uniq -c|sort 
 
 统计日志格式最后一行是源站IP的对应数据：
 zcat 2013-07-15-*|awk '$7~/test.company.com/{print $NF}'|sort|uniq -c|sort -nr|head
+
+统计日志中第2行超过1M大小的URL，并打印第2行的大小和第3行的URL
+awk '$2~/.*M/ {print $2"\t"$3}' access.log
 
 统计日志中18点访问test.company.com，状态码为200的数据，打印响应时间和源站地址：
 zcat 2013-07-15-18*|grep test.company.com|awk '$9=="200"{print $(NF-7),$NF}'|sort|uniq -c|sort -nr|more
