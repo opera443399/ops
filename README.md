@@ -1,6 +1,6 @@
 ops
 ---
-2017/8/8
+2017/8/9
 
 collecting #ops# related basic docs here.
 
@@ -10,7 +10,9 @@ collecting #ops# related basic docs here.
 who might need this:
 --------------------
 SRE/dev ops
+
 sys/net ops
+
 app/biz ops
 
 
