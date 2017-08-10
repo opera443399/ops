@@ -1,5 +1,5 @@
 linux bash shell 三言两语
-2017/8/7
+2017/8/10
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -525,8 +525,23 @@ echo /tmp/
 显然，要调用上一条指令的最后一个参数，不妨试试 !$
 
 
+28、查看 ip=192.168.200.201 监听的端口（8300-8599这个范围的）：
+ss -ant |awk '$4~/192.168.200.201:8[3-5]/ {print $0}'
 
 
+29、防火墙常用操作
+放行端口
+iptables -A INPUT -s 1.2.3.4/32 -p tcp -m tcp --dport 8080 -j ACCEPT
+iptables -A INPUT -s 1.2.3.4/32 -p tcp -m tcp --dport 4000:4099 -j DROP
+
+端口转发
+iptables -t nat -A PREROUTING -d 服务器外网IP/32 -p tcp -m tcp --dport 8080 -j DNAT --to-destination 服务器内网IP
+iptables -t nat -A POSTROUTING -d 服务器内网IP/32 -p tcp -m tcp --dport 8080 -o eth0 -j MASQUERADE
+
+
+30、查看和清理指定用户下的进程
+ps -U username
+ps -U username |awk '{print $1}' |grep -Eo '[0-9]+' |xargs -i kill {}
 
 
 
