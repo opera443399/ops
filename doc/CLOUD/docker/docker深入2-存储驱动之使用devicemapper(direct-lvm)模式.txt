@@ -1,7 +1,73 @@
 docker深入2-存储驱动之使用devicemapper(direct-lvm)模式
-2016/12/9
+2017/8/10
 
-一、现状
+一、存储概述
+1、如何选择驱动
+参考：https://docs.docker.com/engine/userguide/storagedriver/selectadriver/#supported-backing-filesystems
+每个存储方式都有优缺点，要根据实际的项目来选择：
+
+
+首先，如果使用的操作系统内核支持多个驱动，则 Docker 将按照下述优先级来选择默认的存储驱动（如果没有显式的去配置存储驱动）：
+-> 如果支持 aufs 则选它，因为这是最老的驱动，尽管它不是普遍存在的。
+-> 如果可能，选择只需尽量少的配置即可使用的驱动，例如 btrfs or zfs（要确保后端文件系统已经配置好）
+-> 最后，将尝试使用再性能和稳定性上最通用的驱动
+----> overlay2 是优先级最高的，其次是 overlay，这2个都不用配置。 
+----> devicemapper 其次，但生产环境使用时，要配置为 direct-lvm 的方式，因为默认的 loopback-lvm 尽管不用配置，但性能超级差。
+
+上述选择可查阅源码Docker 17.03 （https://github.com/moby/moby/blob/v17.03.1-ce/daemon/graphdriver/driver_linux.go#L54-L63）
+
+
+其次，要适合自己的业务场景的负载
+aufs, overlay, and overlay2 文件级别的存储，更有效的利用内存，但容器的 writable layer 再写io压力大时，增加较快。
+devicemapper, btrfs, and zfs 更擅长应对写io较大的业务
+overlay 比 overlay2 更擅长处理小文件的写，大量 layers，文件系统路径很深的场景
+btrfs and zfs 需要更多内存
+zfs 是高负载的一个较好选择，例如应用到PaaS上
+
+
+2、支持的文件系统
+存储驱动                支持的文件系统
+---------------------------------------------------------------
+overlay, overlay2       ext4, xfs
+aufs                    ext4, xfs
+devicemapper            direct-lvm
+btrfs                   btrfs
+zfs                     zfs
+
+
+3、docker-ce 测试过的操作系统和存储驱动：
+操作系统                        支持的存储驱动
+---------------------------------------------------------------
+Docker CE on Ubuntu             aufs, devicemapper, overlay2 (Ubuntu 14.04.4 or later, 16.04 or later), overlay, zfs
+Docker CE on Debian             aufs, devicemapper, overlay2 (Debian Stretch), overlay
+Docker CE on CentOS             devicemapper
+Docker CE on Fedora             devicemapper, overlay2 (Fedora 26 or later, experimental), overlay (experimental)
+
+
+二、现状
+新版本（docker-ce）简化了dm方式的操作：
+
+mkdir -p /etc/docker
+tee /etc/docker/daemon.json <<-'EOF' 
+{
+  "storage-driver": "devicemapper",
+  "storage-opts": [
+    "dm.directlvm_device=/dev/sdb",
+    "dm.thinp_percent=95",
+    "dm.thinp_metapercent=1",
+    "dm.thinp_autoextend_threshold=80",
+    "dm.thinp_autoextend_percent=20",
+    "dm.directlvm_device_force=false" 
+  ],
+  "registry-mirrors": ["https://xxxx.mirror.aliyuncs.com"]
+}
+EOF
+systemctl daemon-reload
+systemctl restart docker
+
+
+
+三、以前的方式是这样的（2016/12/9之前的doc，留作参考原理）
 1、默认使用的是 devicemapper(loop-lvm)
 [root@n33 lib]# docker info     
 （略）        
@@ -40,8 +106,8 @@ loop1                       7:1    0    2G  0 loop
 └─docker-253:3-33517-pool 252:0    0  100G  0 dm 
 
 
-二、调整为 devicemapper(direct-lvm)
-1、准备工作
+3、调整为 devicemapper(direct-lvm)
+1）准备工作
 安装 lvm2
 [root@n33 ~]# yum install lvm2
 增加一块磁盘
@@ -50,17 +116,17 @@ loop1                       7:1    0    2G  0 loop
 停止 docker 服务
 [root@n33 ~]# systemctl stop docker
 
-2、配置设备
-1）pv
+2）配置设备
+a）pv
 [root@n33 ~]# pvcreate /dev/vdb
-2）创建一个名称为 docker 的 vg 
+b）创建一个名称为 docker 的 vg 
 [root@n33 ~]# vgcreate docker /dev/vdb
-3）创建2个 lv，分别对应 data 和 metadata 设备
+c）创建2个 lv，分别对应 data 和 metadata 设备
 [root@n33 ~]# lvcreate --wipesignatures y -n thinpool docker -l 95%VG
 [root@n33 ~]# lvcreate --wipesignatures y -n thinpoolmeta docker -l 1%VG
-4）转换 pool 为 thinpool 格式
+d）转换 pool 为 thinpool 格式
 [root@n33 ~]# lvconvert -y --zero n -c 512K --thinpool docker/thinpool --poolmetadata docker/thinpoolmeta
-5）调整 lvm 配置
+e）调整 lvm 配置
 The value should be the percentage of space used before lvm attempts to autoextend the available space (100 = disabled).
 定义一个百分比的阈值，表明触发 lvm 自动扩容前，已用空间占比。
 thin_pool_autoextend_threshold = 80
@@ -74,22 +140,22 @@ activation {
     thin_pool_autoextend_threshold=80
     thin_pool_autoextend_percent=20
 }
-6）lvchange 应用配置
+f）lvchange 应用配置
 [root@n33 ~]# lvchange --metadataprofile docker-thinpool docker/thinpool
-7）lvs 查看卷的信息，验证 monitor 的状态
+g）lvs 查看卷的信息，验证 monitor 的状态
 [root@n33 ~]# lvs -o+seg_monitor
   LV       VG     Attr       LSize   Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert Monitor  
   thinpool docker twi-a-t--- 190.00g             0.00   0.01                             monitored
 
-3、调整 docker 存储
-1）备份
+3）调整 docker 存储
+a）备份
 [root@n33 ~]# mkdir /var/lib/docker.bk
 [root@n33 ~]# mv /var/lib/docker/* /var/lib/docker.bk
 如果这个 docker engine 上已经有部分 images 在使用，且需要保存，请先提前推送到自己的 registry 中保存。
 
 
-2）调整服务配置
-a、第一种方式
+b）调整服务配置
+【第一种方式】
 [root@n33 ~]# vim /lib/systemd/system/docker.service 
 增加参数：
 --storage-driver=devicemapper --storage-opt=dm.thinpooldev=/dev/mapper/docker-thinpool --storage-opt=dm.use_deferred_removal=true --storage-opt=dm.use_deferred_deletion=true
@@ -98,7 +164,7 @@ a、第一种方式
 [root@n33 ~]# sed -i '/^ExecStart=/c\ExecStart=/usr/bin/dockerd --storage-driver=devicemapper --storage-opt=dm.thinpooldev=/dev/mapper/docker-thinpool --storage-opt=dm.use_deferred_removal=true --storage-opt=dm.use_deferred_deletion=true' /lib/systemd/system/docker.service 
 
 
-b、第2种方式
+【第2种方式】
 调整 daemon.json 的配置：
 [root@n33 ~]# cat /etc/docker/daemon.json
 {
@@ -110,15 +176,15 @@ b、第2种方式
     ]
 }
 
-c、注意事项
+【注意事项】
 Note: Always set both dm.use_deferred_removal=true and dm.use_deferred_deletion=true to prevent unintentionally leaking mount points.
 启用上述2个参数来阻止可能意外产生的挂载点泄漏问题
 
-3）重启服务
+c）重启服务
 [root@n33 ~]# systemctl daemon-reload
 [root@n33 ~]# systemctl start docker
 
-4）验证
+d）验证
 [root@n33 lib]# docker info     
 （略）  
 Storage Driver: devicemapper
@@ -142,10 +208,10 @@ Storage Driver: devicemapper
  Library Version: 1.02.107-RHEL7 (2016-06-09)
 （略） 
 
-5）可以通过 lvs, lvdisplay, vgs 等指令来查看 lvm 卷的状态
-6）可以查看日志，了解 thin pool 在自动扩容触及阈值时的状态
+e）可以通过 lvs, lvdisplay, vgs 等指令来查看 lvm 卷的状态
+f）可以查看日志，了解 thin pool 在自动扩容触及阈值时的状态
 [root@n33 ~]# journalctl -fu dm-event.service
-7）对应的设备
+g）对应的设备
 [root@n33 ~]# lsblk -I '253' |grep -v vda
 NAME                    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
 vdb                     253:16   0  200G  0 disk 
@@ -153,12 +219,12 @@ vdb                     253:16   0  200G  0 disk
 │ └─docker-thinpool     252:2    0  190G  0 lvm  
 └─docker-thinpool_tdata 252:1    0  190G  0 lvm  
   └─docker-thinpool     252:2    0  190G  0 lvm 
-8）确认无误后，可以清理旧的数据
+h）确认无误后，可以清理旧的数据
 [root@n33 ~]# rm /var/lib/docker.bk -fr
 
 
 
-4、整合到一个小脚本中来配置direct-lvm的存储
+4）整合到一个小脚本中来配置direct-lvm的存储
 [root@n33 ~]# cat docker_direct_lvm_setup.sh    
 #!/bin/bash
 #
@@ -220,8 +286,11 @@ cat <<'_EOF'
 _EOF
 
 
+
+
 ZYXW、参考
 1、docs
+https://docs.docker.com/engine/userguide/storagedriver/selectadriver/#supported-backing-filesystems
 https://docs.docker.com/engine/userguide/storagedriver/device-mapper-driver/#/configure-direct-lvm-mode-for-production
 2、Docker Device Mapper 使用 direct-lvm
 http://www.cnblogs.com/SZLLQ2000/p/5486834.html
