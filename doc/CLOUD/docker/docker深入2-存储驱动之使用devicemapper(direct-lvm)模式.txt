@@ -14,7 +14,7 @@ docker深入2-存储驱动之使用devicemapper(direct-lvm)模式
 ----> overlay2 是优先级最高的，其次是 overlay，这2个都不用配置。 
 ----> devicemapper 其次，但生产环境使用时，要配置为 direct-lvm 的方式，因为默认的 loopback-lvm 尽管不用配置，但性能超级差。
 
-上述选择可查阅源码Docker 17.03 （https://github.com/moby/moby/blob/v17.03.1-ce/daemon/graphdriver/driver_linux.go#L54-L63）
+上述选择可查阅源码 Docker 17.03 （https://github.com/moby/moby/blob/v17.03.1-ce/daemon/graphdriver/driver_linux.go#L54-L63）
 
 
 其次，要适合自己的业务场景的负载
@@ -26,9 +26,9 @@ zfs 是高负载的一个较好选择，例如应用到PaaS上
 
 
 2、支持的文件系统
-存储驱动                支持的文件系统
+存储驱动                支持的文件系统          限制
 ---------------------------------------------------------------
-overlay, overlay2       ext4, xfs
+overlay, overlay2       ext4, xfs               仅支持docker-ce，overlay2要求使用4.0以及更高的linux内核
 aufs                    ext4, xfs
 devicemapper            direct-lvm
 btrfs                   btrfs
@@ -38,9 +38,9 @@ zfs                     zfs
 3、docker-ce 测试过的操作系统和存储驱动：
 操作系统                        支持的存储驱动
 ---------------------------------------------------------------
-Docker CE on Ubuntu             aufs, devicemapper, overlay2 (Ubuntu 14.04.4 or later, 16.04 or later), overlay, zfs
-Docker CE on Debian             aufs, devicemapper, overlay2 (Debian Stretch), overlay
-Docker CE on CentOS             devicemapper
+Docker CE on Ubuntu             aufs, devicemapper, overlay2 (Ubuntu 14.04.4 or later, 16.04 or later, Version 4.0 or higher of the Linux kernel), overlay, zfs
+Docker CE on Debian             aufs, devicemapper, overlay2 (Debian Stretch, Version 4.0 or higher of the Linux kernel), overlay
+Docker CE on RHEL/CentOS        devicemapper, overlay
 Docker CE on Fedora             devicemapper, overlay2 (Fedora 26 or later, experimental), overlay (experimental)
 
 
