@@ -1,5 +1,5 @@
 docker深入2-UI之 portainer 的使用简介
-2017/8/8
+2017/8/11
 
 
 1、配置防火墙
@@ -14,7 +14,7 @@ systemctl daemon-reload; systemctl restart docker
 
 3、启动 portainer
 mkdir -p /data/portainer
-docker --restart=unless-stopped run -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock -v /data/portainer:/data portainer/portainer -H unix:///var/run/docker.sock
+docker run --restart=unless-stopped -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock -v /data/portainer:/data portainer/portainer -H unix:///var/run/docker.sock
 
 请求：
 http://服务器IP:9000
