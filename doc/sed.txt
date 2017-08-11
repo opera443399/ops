@@ -1,5 +1,5 @@
 sed博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
-2016/12/7
+2017/8/11
 
 另，附上几个blog的文章，后续可能会更新这个列表：
 sed命令详解：http://www.cnblogs.com/edwardlost/archive/2010/09/17/1829145.html
@@ -84,9 +84,9 @@ sed -n '2p' 1630.1650.log_7_1
 sed 1,8d WAN.IP 
 
 ```两行变一行：
-sed 'N;s/\n//'
+sed 'N;s/\n//g'
 三行变一行：
-sed 'N;N;s/\n//'
+sed 'N;N;s/\n//g'
 
 注意，下列用法和上面的区别：
 sed ':a;N;s/\n//;ta'
@@ -122,7 +122,7 @@ N：Add a newline to the pattern space, then append the next line of input to th
 
 
 ```在输出时，增加一行内容的示例：
-1）在每1行前插入一段字符
+1）在第1行前插入一段字符
 ~]# ls |sed 'N;2iFILENAME'           
 FILENAME
 set_color.sh
@@ -146,7 +146,7 @@ zzz
 
 注：上述例子中，结合 'N;' 带来的用法比较特别，不妨仔细琢磨下。
 
-3）在每一行前插入一段字符
+3）在每1行前插入一段字符
 ~]# ls |sed 'iFILENAME'  
 FILENAME
 set_color.sh
