@@ -1,6 +1,14 @@
-xargs�÷�ʾ��
+xargs用法示例
+2017/8/14
 
-ʵ���ļ����ݣ�
+1、限制同时处理的数量
+       -n max-args
+              Use at most max-args arguments per command line.  Fewer than max-args arguments will be used if the size (see the -s option) is exceeded, unless the -x
+              option is given, in which case xargs will exit.
+
+【实例1】
+
+文件内容：
 ----------------------------
 # cat 1.log
  oraclelinux-release.x86_64 6:6Server-6.0.2                                                                               redhat-release-server.x86_64 1:6Server-6.6.0.2.0.1.el6                                                                              
@@ -23,15 +31,46 @@ xargs�÷�ʾ��
   
 ----------------------------  
   
-Ŀ�ģ���ȡÿ���������֣�Ȼ���yum��װ��
+目的：提取每个包的名字，然后给yum安装。
 
-һ���ǳɣ�
+一气呵成：
 for i in $(cat 1.log |xargs -n 2 |awk '{print $1}');do yum -y install $i;done
 
 
-ɵ�ϵ���İ취��
+傻瓜点儿的办法：
 cat 1.log |awk -F' ' '{print $1}' >2.log
 cat 1.log |awk -F' ' '{print $3}' >>2.log
 cat 1.log |awk -F' ' '{print $5}' >>2.log
 cat 1.log |awk -F' ' '{print $7}' >>2.log
 cat 2.log |xargs -i yum -y install {}
+
+
+【实例2】
+清理2016年的目录
+
+ls 2016* -d |xargs -n 5 -i rm {} -fr
+
+【实例3】
+N行变1行
+~]$ seq -f "%02g" 20 |xargs -n 20
+01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20
+
+
+
+2、替换
+        -I replace-str
+                      Replace  occurrences  of replace-str in the initial-arguments with names read from standard input.  Also, unquoted blanks do not terminate input items;
+                      instead the separator is the newline character.  Implies -x and -L 1.
+       -i[replace-str]
+              This option is a synonym for -Ireplace-str if replace-str is specified, and for -I{} otherwise.  This option is deprecated; use -I instead.
+
+【实例1】
+~]$ seq -f "%02g" 20 |xargs -Ivar1 echo var1
+
+-I后紧跟着变量名称，，如果使用 -i，其实代表的是 -Ireplace-str 其中，如果 replace-str 不存在，则默认使用 -I{}，，（推荐使用 -I 而不是 -i），举例说明：
+
+【实例2】
+~]$ seq -f "%02g" 20 |xargs -i echo {}
+
+
+
