@@ -1,5 +1,6 @@
+rsync使用小结
+2017/8/14
 
-rsync
 
 参数说明
 v：详细提示
@@ -49,6 +50,59 @@ rsync --avzP ipa::模块名a  目录/x/y/z
 
 刚测试了下，如果路径a配置的是/a/b/c/   则同步的是/x/y/z/(c目录下的文件)
 也就是要注意路径最后有没有斜杠/
+
+测试用例：
+
+~]$ mkdir d{1,2}/{a,b,c} -p
+~]$ ls
+d1  d2
+~]$ rsync d1 d2
+skipping directory d1
+~]$ rsync -avzP d1 d2
+sending incremental file list
+d1/
+d1/a/
+d1/b/
+d1/c/
+
+sent 96 bytes  received 28 bytes  248.00 bytes/sec
+total size is 0  speedup is 0.00
+~]$ tree d2
+d2
+├── a
+├── b
+├── c
+└── d1
+    ├── a
+    ├── b
+    └── c
+
+7 directories, 0 files
+~]$ rsync -avzP d1/ d2/
+sending incremental file list
+./
+
+sent 78 bytes  received 18 bytes  192.00 bytes/sec
+total size is 0  speedup is 0.00
+~]$ rsync -avzP --delete d1/ d2/
+sending incremental file list
+deleting d1/c/
+deleting d1/b/
+deleting d1/a/
+deleting d1/
+
+sent 75 bytes  received 15 bytes  180.00 bytes/sec
+total size is 0  speedup is 0.00
+~]$ tree d2
+d2
+├── a
+├── b
+└── c
+
+3 directories, 0 files
+
+
+
 
 4、限速
 
@@ -131,5 +185,4 @@ backup:111111
 111111
 # chmod 600 /etc/rsync.pass
 # rsync -av --no-o --no-g --password-file=/etc/rsync.pass /tmp/1 backup@192.168.1.100::data/backup/ovirt/engine
-
 
