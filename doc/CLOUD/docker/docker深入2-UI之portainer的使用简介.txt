@@ -1,5 +1,5 @@
 docker深入2-UI之 portainer 的使用简介
-2017/8/11
+2017/8/15
 
 
 1、配置防火墙
@@ -7,14 +7,30 @@ docker深入2-UI之 portainer 的使用简介
 iptables -A INPUT -s 192.168.200.0/24 -p tcp -m tcp --dport 2375 -j ACCEPT
 iptables -A INPUT -p tcp -m tcp --dport 2375 -j DROP
 
+最好是通过安全组之类的来限制，不要暴露到外网，以免未授权访问。
+
 2、调整docker访问，允许内网访问 API 接口
 sed -i "/^ExecStart/c ExecStart=/usr/bin/dockerd -H unix:///var/run/docker.sock -H tcp://$(ip a |grep global |grep eth0 |awk '{print $2}' |cut -d'/' -f1):2375" /usr/lib/systemd/system/docker.service
 systemctl daemon-reload; systemctl restart docker
 
 
 3、启动 portainer
-mkdir -p /data/portainer
-docker run --restart=unless-stopped -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock -v /data/portainer:/data portainer/portainer -H unix:///var/run/docker.sock
+$ mkdir -p /data/portainer
+
+
+直接运行一个容器：
+$ docker run --restart=unless-stopped -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock -v /data/portainer:/data portainer/portainer -H unix:///var/run/docker.sock
+
+
+或使用 swarm 集群的方式运行：
+$ docker service create \
+    --name portainer \
+    --publish 9000:9000 \
+    --constraint 'node.role == manager' \
+    --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
+    --mount type=bind,src=/data/portainer,dst=/data \
+    portainer/portainer \
+    -H unix:///var/run/docker.sock
 
 请求：
 http://服务器IP:9000
