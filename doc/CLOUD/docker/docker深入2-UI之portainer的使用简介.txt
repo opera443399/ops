@@ -15,15 +15,21 @@ systemctl daemon-reload; systemctl restart docker
 
 
 3、启动 portainer
-$ mkdir -p /data/portainer
+首先，引用以下一段话，来表达数据持久化时要考虑的细节：
+https://docs.docker.com/engine/admin/volumes/bind-mounts/#choosing-the--v-or-mount-flag
+Differences between -v and --mount behavior
+Because the -v and --volume flags have been a part of Docker for a long time, their behavior cannot be changed. This means that there is one behavior that is different between -v and --mount.
+
+If you use -v or --volume to bind-mount a file or directory that does not yet exist on the Docker host, -v will create the endpoint for you. It is always created as a directory.
+
+If you use --mount to bind-mount a file or directory that does not yet exist on the Docker host, Docker does not automatically create it for you, but generates an error.
 
 
-直接运行一个容器：
-$ docker run --restart=unless-stopped -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock -v /data/portainer:/data portainer/portainer -H unix:///var/run/docker.sock
+（本次示例仅在swarm集群的其中一个节点创建该目录即可，这样一来，没有该目录的节点，启动服务时将报错）
+# mkdir -p /data/portainer
 
-
-或使用 swarm 集群的方式运行：
-$ docker service create \
+使用 swarm 集群的方式运行：
+# docker service create \
     --name portainer \
     --publish 9000:9000 \
     --constraint 'node.role == manager' \
@@ -31,9 +37,15 @@ $ docker service create \
     --mount type=bind,src=/data/portainer,dst=/data \
     portainer/portainer \
     -H unix:///var/run/docker.sock
+    
+    
+或直接运行一个容器：
+# docker run --restart=unless-stopped -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock -v /data/portainer:/data portainer/portainer -H unix:///var/run/docker.sock
 
-请求：
+4、请求UI界面
 http://服务器IP:9000
+
+设置管理员密码。
 
 
 
