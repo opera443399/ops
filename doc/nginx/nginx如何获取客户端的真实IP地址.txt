@@ -1,5 +1,5 @@
-nginx如何获取客户端的真实IP地址
-2017/7/20
+nginx代理proxy如何获取客户端的真实IP地址
+2017/8/16
 
 
 一、概念
@@ -12,13 +12,13 @@ nginx如何获取客户端的真实IP地址
 ~]# cat www.test.com.conf
 ## nginx-proxy-level01
 server {
-    listen       192.168.200.101:8888;
+    listen       192.168.200.101:8080;
     server_name  www.test.com;
 
     access_log /data/other/nginx_logs/${host}_${server_port}_access.log main;
 
     location / {
-        proxy_pass   http://192.168.200.102:11111;
+        proxy_pass   http://192.168.200.102:8080;
         proxy_set_header Remoteip $remote_addr;
         proxy_set_header Host $http_host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -30,26 +30,26 @@ server {
 ~]# cat www.test.com.conf
 ## nginx-proxy-level02
 server {
-    listen       192.168.200.102:11111;
+    listen       192.168.200.102:8080;
     server_name  www.test.com;
 
     access_log /data/other/nginx_logs/${host}_${server_port}_access.log main;
 
     location / {
-        proxy_pass   http://192.168.120.11:22222;
+        proxy_pass   http://192.168.111.222:8080;
         proxy_set_header Remoteip $http_remoteip;
-        proxy_set_header Host $host;
+        proxy_set_header Host $http_host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 }
 
 
-【后端应用】服务器ip为：192.168.120.11
-~]# docker run -d -p 22222:80 emilevauge/whoami
+【后端应用】服务器ip为：192.168.111.222
+~]# docker run -d -p 192.168.111.222:8080:80 opera443399/whoami
 
 
 2）请求
-http://www.test8888.com:8888/
+http://www.test.com:8080/
 
 3）返回
 
@@ -57,28 +57,27 @@ Hostname: b6b73b62244c
 IP: 127.0.0.1
 IP: 172.17.0.2
 GET / HTTP/1.1
-Host: www.test8888.com
+Host: www.test.com:8080
 Remoteip: 192.168.100.11
 Upgrade-Insecure-Requests: 1
 X-Forwarded-For: 192.168.100.11, 192.168.200.101
 
 
 4）链路
-客户端【192.168.100.11】 -> 代理1【192.168.200.101】 -> 代理2【192.168.200.102】 -> 服务器【192.168.120.11】
+客户端【192.168.100.11】 -> 代理1【192.168.200.101】 -> 代理2【192.168.200.102】 -> 服务器【192.168.111.222】
 
 
 5）分析小结
 【】Host的设置差异
-当前故意设置为：
+【代理层02】当前设置为：
 proxy_set_header Host $http_host;
-proxy_set_header Host $host;
+
 
 如果变成：
-proxy_set_header Host $http_host;
-proxy_set_header Host $http_host;
+proxy_set_header Host $host;
 
-则host变成：
-Host: www.test8888.com:8888
+则请求的header中Host变成：
+Host: www.test.com
 
 由此可以辨别 http_host 和 host 的差异。
 
