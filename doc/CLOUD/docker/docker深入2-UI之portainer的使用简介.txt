@@ -31,6 +31,7 @@ If you use --mount to bind-mount a file or directory that does not yet exist on 
 使用 swarm 集群的方式运行：
 # docker service create \
     --name portainer \
+    --detach=true \
     --publish 9000:9000 \
     --constraint 'node.role == manager' \
     --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
