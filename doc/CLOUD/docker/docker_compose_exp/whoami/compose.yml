@@ -1,5 +1,5 @@
 web:
-  image: emilevauge/whoami
+  image: opera443399/whoami
   ports:
     - '80'
   restart: always
