@@ -1,0 +1,52 @@
+docker深入2-容器删除操作失败
+2017/8/16
+
+
+1、报错
+Error response from daemon: driver "overlay" failed to remove root filesystem for xxx: remove /var/lib/docker/overlay/xxx/merged: device or resource busy
+
+原因：被其他容器占用了资源。
+分析方法：查找 /proc/*/mountinfo 来确认是哪个 pid 在 mount 资源。
+解决办法：重启监控类型的 service
+
+
+2、分析过程
+1）尝试删除一个处于 dead 状态的容器：
+[root@test_node_02 ~]# docker rm -f $(docker ps -a --filter status=dead -q)
+Error response from daemon: driver "overlay" failed to remove root filesystem for 1a30e5ef52285d5a83f65c6d4929955a830cebc225098a34d8d40bf663633b0e/merged: device or resource busy
+
+2）查找 /proc/*/mountinfo 来确认是哪个 pid 在 mount 资源：
+[root@test_node_02 ~]# grep '3195fd14851ebc' /proc/*/mountinfo
+/proc/7781/mountinfo:254 251 0:43 / /rootfs/var/lib/docker/overlay/3195fd14851ebcc9f75f7251e77edc8dbcdaeb3e82c1d3dr/lib/docker/overlay/e4a7a896c3e838f728b09e1b6daa2cfac2db0beb746c12954d0870750d316b23/root,upperdir=/var/lib/docke101f/upper,workdir=/var/lib/docker/overlay/3195fd14851ebcc9f75f7251e77edc8dbcdaeb3e82c1d3dc3ddcf6f8721e101f/work
+
+3）查找 pid 确认进程的用途
+[root@test_node_02 ~]# ps -ef |grep 7781 |grep -v grep
+root      7781  7768  0 14:34 ?        00:00:06 /usr/bin/cadvisor -logtostderr
+  
+  
+4）尝试重启 cadvisor 服务：
+[root@test_node_01 ~]# docker service ls |grep cadvisor                                                 
+5f001c9293cf        cadvisor            global              11/11                 google/cadvisor:latest
+     
+[root@test_node_01 ~]# docker service update --force cadvisor
+cadvisor
+Since --detach=false was not specified, tasks will be updated in the background.
+In a future release, --detach=false will become the default.
+[root@test_node_01 ~]#
+  
+  
+5）再次删除：
+[root@test_node_02 ~]# docker rm -f $(docker ps -a --filter status=dead -q)
+1a30e5ef5228
+[root@test_node_02 ~]#
+ 
+ 
+  
+符合预期。
+
+
+
+ZYXW、参考
+1、github
+https://github.com/moby/moby/issues/22260
+ 
