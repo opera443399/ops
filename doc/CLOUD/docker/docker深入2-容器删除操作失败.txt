@@ -43,33 +43,38 @@ Experimental: false
 
 3、分析过程
 1）尝试删除一个处于 dead 状态的容器：
-[root@test_node_02 ~]# docker rm -f $(docker ps -a --filter status=dead -q)
-Error response from daemon: driver "overlay" failed to remove root filesystem for ba46923ec17b6e4f7929c83d612a438be855aa34dc1c5bc8ba988cac1e2bf43b: remove /var/lib/docker/overlay/1a30e5ef52285d5a83f65c6d4929955a830cebc225098a34d8d40bf663633b0e/merged: device or resource busy
+[root@test_node_02 ~]# docker rm -f $(docker ps -a --filter status=dead -q |head -n 1)
+Error response from daemon: driver "overlay" failed to remove root filesystem for 808acab2716420275cdb135ab964071cfc33406a34481354127635d3a282fa31: remove /var/lib/docker/overlay/88440438ea95b47e7459049fd765b51282afee4ad974107b0bf96d08d9c7763e/merged: device or resource busy
 
 
 2）查找 /proc/*/mountinfo 来确认是哪个 pid 在 mount 资源：
-[root@test_node_02 ~]# grep '1a30e5ef5228' /proc/*/mountinfo
-/proc/7781/mountinfo:254 251 0:43 / /rootfs/var/lib/docker/overlay/1a30e5ef52285d5a83f65c6d4929955a830cebc225098a34d8d40bf663633b0e/merged rw,relatime - overlay overlay rw,lowerdir=/var/lib/docker/overlay/ba46923ec17b6e4f7929c83d612a438be855aa34dc1c5bc8ba988cac1e2bf43b/root,upperdir=/var/lib/docker/overlay/1a30e5ef52285d5a83f65c6d4929955a830cebc225098a34d8d40bf663633b0e/upper,workdir=/var/lib/docker/overlay/1a30e5ef52285d5a83f65c6d4929955a830cebc225098a34d8d40bf663633b0e/work
+[root@test_node_02 ~]# grep -l --color `docker ps -a --filter status=dead -q |head -n 1` /proc/*/mountinfo
 
 
 3）查找 pid 确认进程的用途
-[root@test_node_02 ~]# ps -ef |grep 7781 |grep -v grep
-root      7781  7768  0 14:34 ?        00:00:06 /usr/bin/cadvisor -logtostderr
+[root@test_node_02 ~]# ps -f 7360
+UID        PID  PPID  C STIME TTY      STAT   TIME CMD
+root      7360  7344  1 Aug16 ?        Ssl   73:57 /usr/bin/cadvisor -logtostderr
+
   
-  
-4）尝试重启 cadvisor 服务：
-[root@test_node_01 ~]# docker service ls |grep cadvisor                                                 
-5f001c9293cf        cadvisor            global              11/11                 google/cadvisor:latest
+4）还可以验证，使用的不是同一个 mount namespace
+[root@test_node_02 ~]# ls -l /proc/$(cat /var/run/docker.pid)/ns/mnt /proc/7360/ns/mnt
+lrwxrwxrwx 1 root root 0 Aug 21 15:55 /proc/11460/ns/mnt -> mnt:[4026531840]
+lrwxrwxrwx 1 root root 0 Aug 21 15:55 /proc/7360/ns/mnt -> mnt:[4026532279]
+[root@test_node_02 ~]# 
+
+
+
+5）尝试重启 cadvisor 服务：
+[root@test_node_01 ~]# docker service ls |grep cadvisor
+5f001c9293cf        cadvisor            global              3/3                 google/cadvisor:latest
      
 [root@test_node_01 ~]# docker service update --force cadvisor
-cadvisor
-Since --detach=false was not specified, tasks will be updated in the background.
-In a future release, --detach=false will become the default.
 [root@test_node_01 ~]#
   
   
-5）再次删除：
-[root@test_node_02 ~]# docker rm -f $(docker ps -a --filter status=dead -q)
+6）再次删除：
+[root@test_node_02 ~]# docker rm -f $(docker ps -a --filter status=dead -q |head -n 1)
 808acab27164
 [root@test_node_02 ~]#
  
@@ -89,3 +94,6 @@ ZYXW、参考
 1、github
 https://github.com/moby/moby/issues/22260
 https://github.com/moby/moby/issues/22260#issuecomment-323645024
+
+2、docker: devicemapper fix for “device or resource busy” (EBUSY)
+http://blog.hashbangbash.com/2014/11/docker-devicemapper-fix-for-device-or-resource-busy-ebusy/
