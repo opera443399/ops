@@ -1,5 +1,5 @@
 docker深入2-容器删除操作失败
-2017/8/16
+2017/8/21
 
 
 1、报错
@@ -10,7 +10,38 @@ Error response from daemon: driver "overlay" failed to remove root filesystem fo
 解决办法：重启监控类型的 service
 
 
-2、分析过程
+2、版本信息
+[root@test_node_02 ~]# docker info
+
+Server Version: 17.06.0-ce
+Storage Driver: overlay
+ Backing Filesystem: extfs
+ Supports d_type: true
+Logging Driver: json-file
+Cgroup Driver: cgroupfs
+
+Plugins: 
+ Volume: local
+ Network: bridge host macvlan null overlay
+ Log: awslogs fluentd gcplogs gelf journald json-file logentries splunk syslog
+Swarm: active
+
+Kernel Version: 3.10.0-514.21.1.el7.x86_64
+Operating System: CentOS Linux 7 (Core)
+OSType: linux
+Architecture: x86_64
+CPUs: 1
+Total Memory: 1.797GiB
+
+Docker Root Dir: /var/lib/docker
+Debug Mode (client): false
+Debug Mode (server): false
+Registry: https://index.docker.io/v1/
+Experimental: false
+
+
+
+3、分析过程
 1）尝试删除一个处于 dead 状态的容器：
 [root@test_node_02 ~]# docker rm -f $(docker ps -a --filter status=dead -q)
 Error response from daemon: driver "overlay" failed to remove root filesystem for ba46923ec17b6e4f7929c83d612a438be855aa34dc1c5bc8ba988cac1e2bf43b: remove /var/lib/docker/overlay/1a30e5ef52285d5a83f65c6d4929955a830cebc225098a34d8d40bf663633b0e/merged: device or resource busy
@@ -48,7 +79,13 @@ In a future release, --detach=false will become the default.
 
 
 
+4、结论
+有其他的容器或服务，挂载的卷包含了 '/var/lib/docker' or '/' 后，将导致资源占用，从而引发异常。
+如何绕过：找到这样的容器或者服务，重启，然后再重试删除操作
+如何解决：未知，待跟进。
+
+
 ZYXW、参考
 1、github
 https://github.com/moby/moby/issues/22260
- 
+https://github.com/moby/moby/issues/22260#issuecomment-323645024
