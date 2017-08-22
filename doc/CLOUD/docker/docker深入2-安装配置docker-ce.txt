@@ -1,7 +1,12 @@
-docker深入2-安装配置docker-ce
-2017/7/31
+docker深入2-部署docker-ce服务的最佳实践
+2017/8/22
 
-1、服务安装
+一、目标
+部署 docker-ce 服务的最佳实践
+
+
+二、服务部署
+1、安装
 
 yum install -y yum-utils device-mapper-persistent-data lvm2
 yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
@@ -10,9 +15,67 @@ yum -y install docker-ce
 systemctl enable docker
 
 
-2、服务配置阿里云registry-mirrors和存储
 
+2、配置
+1）推荐配置如下内容
+存储驱动
+日志
+阿里云registry-mirrors
+
+2）目录
+有多种方式来配置 docker 服务。
+建议使用下述配置文件：
+/etc/docker/daemon.json
+
+linux上默认没有配置文件，需要创建：
 mkdir -p /etc/docker
+
+
+
+3、配置实例
+1）overlay 驱动 
+tee /etc/docker/daemon.json <<-'EOF' 
+{
+  "graph": "/mnt/docker-data",
+  "storage-driver": "overlay",
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m"
+  },
+  "registry-mirrors": ["https://xxxx.mirror.aliyuncs.com"]
+}
+EOF
+
+注：针对 自定义存储目录，使用 "graph": "/mnt/docker-data"
+参考：https://docs.docker.com/engine/admin/systemd/#start-automatically-at-system-boot
+
+
+
+
+2）overlay2 驱动（针对centos，使用 "overlay2.override_kernel_check=true" ）
+tee /etc/docker/daemon.json <<-'EOF' 
+{
+  "graph": "/mnt/docker-data",
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m"
+  },
+  "registry-mirrors": ["https://xxxx.mirror.aliyuncs.com"]
+}
+EOF
+
+注：针对 centos 系统和 docker-ce 版本，使用 "overlay2.override_kernel_check=true" 
+参考：https://docs.docker.com/engine/userguide/storagedriver/overlayfs-driver/#configure-docker-with-the-overlay-or-overlay2-storage-driver
+
+
+
+
+
+3）devicemapper 驱动
 tee /etc/docker/daemon.json <<-'EOF' 
 {
   "storage-driver": "devicemapper",
@@ -24,9 +87,20 @@ tee /etc/docker/daemon.json <<-'EOF'
     "dm.thinp_autoextend_percent=20",
     "dm.directlvm_device_force=false" 
   ],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m"
+  },
   "registry-mirrors": ["https://xxxx.mirror.aliyuncs.com"]
 }
 EOF
+
+注：针对 让 docker 服务来管理 （自动创建） DIRECT-LVM 设备，使用 dm 相关的参数
+参考：https://docs.docker.com/engine/userguide/storagedriver/device-mapper-driver/#configure-direct-lvm-mode-for-production
+
+
+
+4、重启服务
 systemctl daemon-reload
 systemctl restart docker
 
@@ -38,6 +112,10 @@ systemctl restart docker
 
 
 zyxw、参考
-1、https://yq.aliyun.com/articles/110806
-2、https://docs.docker.com/engine/userguide/storagedriver/device-mapper-driver/#configure-direct-lvm-mode-for-production
-3、https://cr.console.aliyun.com/#/accelerator
+1、official docs
+https://docs.docker.com/engine/admin/systemd/
+https://docs.docker.com/engine/userguide/storagedriver
+
+2、aliyun docs
+https://yq.aliyun.com/articles/110806
+https://cr.console.aliyun.com/#/accelerator
