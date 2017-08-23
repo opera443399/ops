@@ -1,5 +1,6 @@
 docker深入2-部署docker-ce服务的最佳实践
-2017/8/22
+2017/8/23
+
 
 一、目标
 部署 docker-ce 服务的最佳实践（持续更新）
@@ -7,8 +8,6 @@ docker深入2-部署docker-ce服务的最佳实践
 
 二、服务部署
 1、安装
-
-yum install -y yum-utils device-mapper-persistent-data lvm2
 yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
 yum makecache fast
 yum -y install docker-ce
@@ -40,7 +39,7 @@ tee /etc/docker/daemon.json <<-'EOF'
   "storage-driver": "overlay",
   "log-driver": "json-file",
   "log-opts": {
-    "max-size": "10m"
+    "max-size": "100m"
   },
   "registry-mirrors": ["https://xxxx.mirror.aliyuncs.com"]
 }
@@ -62,7 +61,7 @@ tee /etc/docker/daemon.json <<-'EOF'
   ],
   "log-driver": "json-file",
   "log-opts": {
-    "max-size": "10m"
+    "max-size": "100m"
   },
   "registry-mirrors": ["https://xxxx.mirror.aliyuncs.com"]
 }
@@ -76,6 +75,8 @@ EOF
 
 
 3）devicemapper 驱动
+yum install -y yum-utils device-mapper-persistent-data lvm2
+
 tee /etc/docker/daemon.json <<-'EOF' 
 {
   "storage-driver": "devicemapper",
@@ -89,7 +90,7 @@ tee /etc/docker/daemon.json <<-'EOF'
   ],
   "log-driver": "json-file",
   "log-opts": {
-    "max-size": "10m"
+    "max-size": "100m"
   },
   "registry-mirrors": ["https://xxxx.mirror.aliyuncs.com"]
 }
