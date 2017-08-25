@@ -1,5 +1,5 @@
 初探go-golang语言初体验
-2017/3/9
+2017/8/25
 
 一、初体验
 1、环境
@@ -149,6 +149,81 @@ CGO_CFLAGS="-g -O2"
 CGO_CPPFLAGS=""
 CGO_CXXFLAGS="-g -O2"
 CGO_FFLAGS="-g -O2"
+
+
+
+9、重新编译go源码
+
+1）源码
+需求：使用 go get 的时候，看不到下载的进度条。
+目标：调整go源码，重新编译
+
+[root@tvm01 src]# pwd
+/usr/local/go/src
+[root@tvm01 src]# vim cmd/go/vcs.go
+var vcsGit = &vcsCmd{
+（略）
+        createCmd:   []string{"clone {repo} {dir}", "-go-internal-cd {dir} submodule update --init --recursive"},
+        downloadCmd: []string{"pull --ff-only", "submodule update --init --recursive"},
+
+变更为：
+        createCmd:   []string{"clone --progress {repo} {dir}", "-go-internal-cd {dir} submodule update --init --recursive"},
+        downloadCmd: []string{"pull --ff-only", "submodule update --init --recursive"},
+
+（略）  
+        
+func (v *vcsCmd) run1(dir string, cmdline string, keyval []string, verbose bool) ([]byte, error) {
+（略）
+        cmd.Stdout = &buf
+        cmd.Stderr = &buf
+        
+变更为：
+        cmd.Stdout = &buf
+        cmd.Stderr = &buf
+        cmd.Stdout = os.Stdout
+        cmd.Stderr = os.Stderr
+（略）
+
+
+2）编译
+[root@tvm01 src]# ./all.bash 
+##### Building Go bootstrap tool.
+cmd/dist
+ERROR: $GOROOT_BOOTSTRAP must not be set to $GOROOT
+Set $GOROOT_BOOTSTRAP to a working Go tree >= Go 1.4.
+
+
+解决办法：编译go1.4，然后再重试
+unset GOPATH
+unset GOROOT
+
+
+cd /opt
+mkdir go1.4_src
+git clone https://github.com/golang/go.git
+cd go
+git checkout -b 1.4.3 go1.4.3
+cd src
+./all.bash
+cd ../..
+cp -a go /root/go1.4
+cd /usr/local/go
+
+[root@tvm01 src]# ./all.bash 
+
+
+重新测试：
+[root@tvm01 src]# source /etc/profile
+
+[root@tvm01 src]# go get -v github.com/docker/docker/client
+github.com/docker/docker (download)
+Cloning into '/opt/go/src/github.com/docker/docker'...
+remote: Counting objects: 234999, done.        
+remote: Compressing objects: 100% (24/24), done.        
+Receiving objects:   6% (15150/234999), 4.64 MiB | 345.00 KiB/s 
+
+
+符合预期。
 
 
 
@@ -327,3 +402,6 @@ https://golang.org/doc/code.html#Workspaces
 
 2、the-way-to-go_ZH_CN
 https://github.com/Unknwon/the-way-to-go_ZH_CN/blob/master/eBook/directory.md
+
+3、解决升级go版本遇到的Set $GOROOT_BOOTSTRAP to a working Go tree >= Go 1.4.问题
+http://blog.csdn.net/qq_15437667/article/details/59776840
