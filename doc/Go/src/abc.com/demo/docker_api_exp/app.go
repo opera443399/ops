@@ -24,7 +24,7 @@ func main() {
     }
 
     for _, service := range services {
-        fmt.Printf("    ├── %s[id=%s]\n", service.Spec.Name, service.ID[:10])
+        fmt.Printf("│   ├── %s[id=%s]\n", service.Spec.Name, service.ID[:10])
         
         //tasks
         
@@ -39,7 +39,7 @@ func main() {
         }
         
         for _, task := range tasks {
-            fmt.Printf("        ├── %s", task.ID[:10])
+            fmt.Printf("│   │   ├── %s", task.ID[:10])
             
             //nodes
             
