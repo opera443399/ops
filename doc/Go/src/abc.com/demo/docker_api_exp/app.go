@@ -1,11 +1,26 @@
+/*
+ * docker api and sdk exp
+ * api ref: https://docs.docker.com/engine/api/v1.3
+ * sdk go: https://godoc.org/github.com/moby/moby/client
+ 
+ * [howto] 
+ * # curl -s --unix-socket /var/run/docker.sock http:/v1.30/nodes |jq . |more
+ * # curl -s --unix-socket /var/run/docker.sock http:/v1.30/services |jq . |more
+ * # curl -s --unix-socket /var/run/docker.sock http:/v1.30/tasks |jq . |more
+ *
+ * pc@2017/8/28
+*/
+
 package main
 
 import (
     "flag"
-
+    
+    "strings"
     "fmt"
     "log"
-	"encoding/json"
+    "encoding/json"
+    
     "net/http"
     
     "context"
@@ -17,7 +32,7 @@ import (
 var port string
 
 func init() {
-    flag.StringVar(&port, "port", "80", "listen the port as given.")
+    flag.StringVar(&port, "port", "8007", "listen to the given port.")
 }
 
 func main() {
@@ -52,7 +67,22 @@ func index(w http.ResponseWriter, r *http.Request) {
     }
 
     for _, service := range services {
-        fmt.Fprintf(w, "│   ├── %s\n", service.Spec.Name)
+        ports := ""
+        
+        if len(service.Spec.EndpointSpec.Ports) > 0 {
+            pp := []string{}
+            for _, pConfig := range service.Spec.EndpointSpec.Ports {
+                pp = append(pp, fmt.Sprintf("*:%d->%d/%s",
+                    pConfig.PublishedPort,
+                    pConfig.TargetPort,
+                    pConfig.Protocol,
+                ))
+            }
+            ports = strings.Join(pp, ",")
+        }
+        
+        fmt.Fprintf(w, "│   ├── %s \t %s\n", service.Spec.Name, ports)
+        
         
         //tasks
         
@@ -79,7 +109,8 @@ func index(w http.ResponseWriter, r *http.Request) {
             }
             
             node := nodes[0]
-            fmt.Fprintf(w, "│   │   ├── [%s] %s\n", task.ID, node.Description.Hostname)
+
+            fmt.Fprintf(w, "│   │   ├── %s \t %s \t %s\n", task.Status.ContainerStatus.ContainerID[:12], strings.Split(task.Spec.ContainerSpec.Image, "@")[0], node.Description.Hostname)
         }
     }
     
@@ -92,12 +123,14 @@ func index(w http.ResponseWriter, r *http.Request) {
 */
 
 type tasksList struct {
-    ID string `json:"id"`
+    ContainerID string `json:"containerID"`
+    Image string `json:"image"`
     Hostname string `json:"hostname"`
 }
 
 type servicesList struct {
     Service string `json:"service"`
+    Ports string `json:"ports"`
     Tasks []tasksList `json:"tasks"`
 }
 
@@ -122,9 +155,26 @@ func api(w http.ResponseWriter, r *http.Request) {
 
     for _, service := range services {
         var ss servicesList
+        var tt tasksList
         
         ss.Service = service.Spec.Name
         
+        ports := ""
+        
+        if len(service.Spec.EndpointSpec.Ports) > 0 {
+            pp := []string{}
+            for _, pConfig := range service.Spec.EndpointSpec.Ports {
+                pp = append(pp, fmt.Sprintf("*:%d->%d/%s",
+                    pConfig.PublishedPort,
+                    pConfig.TargetPort,
+                    pConfig.Protocol,
+                ))
+            }
+            ports = strings.Join(pp, ",")
+        }
+        
+        ss.Ports = ports
+            
         //tasks
         
         f1 := filters.NewArgs()
@@ -138,6 +188,9 @@ func api(w http.ResponseWriter, r *http.Request) {
         }
         
         for _, task := range tasks {
+            tt.ContainerID = task.Status.ContainerStatus.ContainerID[:12]
+            tt.Image = strings.Split(task.Spec.ContainerSpec.Image, "@")[0]
+            
             //node
             
             f2 := filters.NewArgs()
@@ -150,7 +203,9 @@ func api(w http.ResponseWriter, r *http.Request) {
             }
             
             node := nodes[0]
-            ss.Tasks = append(ss.Tasks, tasksList{ID: task.ID, Hostname: node.Description.Hostname})
+            tt.Hostname = node.Description.Hostname
+            
+            ss.Tasks = append(ss.Tasks, tt)
         }
         
         dd.Services = append(dd.Services, ss)
