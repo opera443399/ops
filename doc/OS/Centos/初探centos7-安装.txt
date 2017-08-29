@@ -1,5 +1,5 @@
 初探centos7-安装
-2017/8/7
+2017/8/29
 
 一、安装
 1、新的安装界面
@@ -189,6 +189,38 @@ ExecStop=/usr/sbin/postfix stop
 
 [Install]
 WantedBy=multi-user.target
+
+
+6、使用 rc.local
+[root@local ~]# cat /etc/rc.d/rc.local
+#!/bin/sh
+
+
+# THIS FILE IS ADDED FOR COMPATIBILITY PURPOSES
+#
+# It is highly advisable to create own systemd services or udev rules
+# to run scripts during boot instead of using this file.
+#
+# In contrast to previous versions due to parallel execution during boot
+# this script will NOT be run after all other services.
+#
+# Please note that you must run 'chmod +x /etc/rc.d/rc.local' to ensure
+# that this script will be executed during boot.
+
+touch /var/lock/subsys/local
+/usr/sbin/ntpdate ntpupdate.tencentyun.com >/dev/null 2>&1 &
+
+
+
+注意这一句： 
+# Please note that you must run 'chmod +x /etc/rc.d/rc.local' to ensure
+# that this script will be executed during boot.
+
+
+[root@local ~]# ls -l /etc/rc.d/rc.local
+-rwxr-xr-x 1 root root 777 Aug  4 10:08 /etc/rc.d/rc.local
+
+
 
 
 四、常用服务
