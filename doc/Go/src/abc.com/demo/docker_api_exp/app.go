@@ -8,7 +8,7 @@
  * # curl -s --unix-socket /var/run/docker.sock http:/v1.30/services |jq . |more
  * # curl -s --unix-socket /var/run/docker.sock http:/v1.30/tasks |jq . |more
  *
- * pc@2017/8/28
+ * pc@2017/8/29
 */
 
 package main
@@ -58,7 +58,7 @@ func index(w http.ResponseWriter, r *http.Request) {
         panic(err)
     }
     
-    //services
+    //------ list services
     fmt.Fprint(w, "├── services:\n")
     
     services, err := cli.ServiceList(context.Background(), types.ServiceListOptions{})
@@ -67,8 +67,8 @@ func index(w http.ResponseWriter, r *http.Request) {
     }
 
     for _, service := range services {
-        ports := ""
-        
+        //------ get Ports
+        this_ports := "" 
         if len(service.Spec.EndpointSpec.Ports) > 0 {
             pp := []string{}
             for _, pConfig := range service.Spec.EndpointSpec.Ports {
@@ -78,14 +78,13 @@ func index(w http.ResponseWriter, r *http.Request) {
                     pConfig.Protocol,
                 ))
             }
-            ports = strings.Join(pp, ",")
+            this_ports = strings.Join(pp, ",")
         }
         
-        fmt.Fprintf(w, "│   ├── %s \t %s\n", service.Spec.Name, ports)
+        fmt.Fprintf(w, "│   ├── %s \t %s \t %s\n", service.Spec.Name, this_ports, strings.Split(service.Spec.TaskTemplate.ContainerSpec.Image, "@")[0])
         
         
-        //tasks
-        
+        //------ list nodes which running specific tasks
         f1 := filters.NewArgs()
         f1.Add("service", service.ID)
         f1.Add("desired-state", "running")
@@ -96,8 +95,9 @@ func index(w http.ResponseWriter, r *http.Request) {
             panic(err)
         }
         
+        this_node := make(map[string]string)
         for _, task := range tasks {        
-            //node
+            //get node info
             
             f2 := filters.NewArgs()
             f2.Add("id", task.NodeID)
@@ -109,9 +109,13 @@ func index(w http.ResponseWriter, r *http.Request) {
             }
             
             node := nodes[0]
-
-            fmt.Fprintf(w, "│   │   ├── %s \t %s \t %s\n", task.Status.ContainerStatus.ContainerID[:12], strings.Split(task.Spec.ContainerSpec.Image, "@")[0], node.Description.Hostname)
+            this_node[node.Description.Hostname] = node.Status.Addr
         }
+        
+        for k, v := range this_node {
+            fmt.Fprintf(w, "│   │   ├── %s \t %s\n", k, v)
+        }
+        
     }
     
 }
@@ -123,14 +127,14 @@ func index(w http.ResponseWriter, r *http.Request) {
 */
 
 type tasksList struct {
-    ContainerID string `json:"containerID"`
-    Image string `json:"image"`
+    IP string `json:"ip"`
     Hostname string `json:"hostname"`
 }
 
 type servicesList struct {
     Service string `json:"service"`
     Ports string `json:"ports"`
+    Image string `json:"image"`
     Tasks []tasksList `json:"tasks"`
 }
 
@@ -146,8 +150,7 @@ func api(w http.ResponseWriter, r *http.Request) {
         panic(err)
     }
     
-    //services
-    
+    //------ list services
     services, err := cli.ServiceList(context.Background(), types.ServiceListOptions{})
     if err != nil {
         panic(err)
@@ -159,8 +162,8 @@ func api(w http.ResponseWriter, r *http.Request) {
         
         ss.Service = service.Spec.Name
         
-        ports := ""
-        
+        //------get Ports
+        this_ports := ""
         if len(service.Spec.EndpointSpec.Ports) > 0 {
             pp := []string{}
             for _, pConfig := range service.Spec.EndpointSpec.Ports {
@@ -170,13 +173,13 @@ func api(w http.ResponseWriter, r *http.Request) {
                     pConfig.Protocol,
                 ))
             }
-            ports = strings.Join(pp, ",")
+            this_ports = strings.Join(pp, ",")
         }
         
-        ss.Ports = ports
+        ss.Ports = this_ports
+        ss.Image = strings.Split(service.Spec.TaskTemplate.ContainerSpec.Image, "@")[0]
             
-        //tasks
-        
+        //------list nodes which running specific tasks
         f1 := filters.NewArgs()
         f1.Add("service", service.ID)
         f1.Add("desired-state", "running")
@@ -187,10 +190,8 @@ func api(w http.ResponseWriter, r *http.Request) {
             panic(err)
         }
         
-        for _, task := range tasks {
-            tt.ContainerID = task.Status.ContainerStatus.ContainerID[:12]
-            tt.Image = strings.Split(task.Spec.ContainerSpec.Image, "@")[0]
-            
+        this_node := make(map[string]string)
+        for _, task := range tasks {          
             //node
             
             f2 := filters.NewArgs()
@@ -203,8 +204,12 @@ func api(w http.ResponseWriter, r *http.Request) {
             }
             
             node := nodes[0]
-            tt.Hostname = node.Description.Hostname
-            
+            this_node[node.Description.Hostname] = node.Status.Addr
+        }
+        
+        for k, v := range this_node {
+            tt.Hostname = k
+            tt.IP = v
             ss.Tasks = append(ss.Tasks, tt)
         }
         
