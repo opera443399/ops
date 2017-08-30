@@ -1,0 +1,15 @@
+{
+  "name": "rest-ip",
+  "version": "1.0.0",
+  "description": "node.js microservice with MongoDB database",
+  "main": "app.js",
+  "dependencies": {
+    "express": "^4.13.4",
+    "mongodb": "2.1.21"
+  },
+  "devDependencies": {},
+  "scripts": {
+  },
+  "author": "Francesco Uliana francesco@uliana.it",
+  "license": "MIT"
+}
