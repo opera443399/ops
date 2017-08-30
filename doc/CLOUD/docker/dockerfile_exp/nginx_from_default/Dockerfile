@@ -1,6 +1,5 @@
 FROM nginx
 MAINTAINER PC
 
-RUN echo 'test nginx' >/usr/share/html/index.html
-COPY ./conf.d /etc/nginx/conf.d
+COPY ./index.html /usr/share/nginx/html/index.html
 EXPOSE 80
