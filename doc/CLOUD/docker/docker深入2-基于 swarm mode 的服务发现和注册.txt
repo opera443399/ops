@@ -12,10 +12,14 @@ docker service -> swarm mode manager -> my_test_etcd_registrator -> net_etcd -> 
 
 
 二、示例 sergkh 的解决方案
-1、创建独立的网络：
+1、创建独立的网络
 docker network create --driver overlay net_etcd
 
-2、启动一个 etcd 服务：
+注1：使用默认的 overlay 网络时，通过服务名无法互相ping通
+注2：但通过 docker compose 创建 service 时，默认会创建一个独立的 overlay 网络
+
+
+2、启动一个 etcd 服务
 docker service create --name my_test_etcd \
     --network net_etcd \
     --publish 2379:2379 \
