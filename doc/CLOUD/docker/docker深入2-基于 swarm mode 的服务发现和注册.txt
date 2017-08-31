@@ -1,0 +1,77 @@
+docker深入2-基于 swarm mode 的服务发现和注册
+2017/8/31
+
+一、目的
+1、数据流
+docker service -> swarm mode manager -> my_test_etcd_registrator -> net_etcd -> LB+confd
+
+2、示例 sergkh 的解决方案
+
+
+3、参考示例后，自己的解决方案
+
+
+二、示例 sergkh 的解决方案
+1、创建独立的网络：
+docker network create --driver overlay net_etcd
+
+2、启动一个 etcd 服务：
+docker service create --name my_test_etcd \
+    --network net_etcd \
+    --publish 2379:2379 \
+    --publish 2380:2380 \
+    --detach=true \
+    --constraint 'node.role == manager' \
+    quay.io/coreos/etcd:latest etcd \
+     --advertise-client-urls http://my_test_etcd:2379 \
+     --listen-client-urls http://0.0.0.0:2379
+
+    
+    
+3、测试 etcd 服务是否工作
+curl 127.0.0.1:2379/v2/keys/
+curl -X PUT 127.0.0.1:2379/v2/keys/services -d key1='value1'
+curl 127.0.0.1:2379/v2/keys/services
+
+
+4、服务注册
+docker service create --name my_test_etcd_registrator \
+    --network net_etcd \
+    --mount type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock \
+    --env ETCD_HOST="my_test_etcd" \
+    --env ETCD_PORT="2379" \
+    --env BASE_DIR="/service" \
+    --env UPDATE_INTERVAL="30" \
+    --env RUN_ONCE="False" \
+    --detach=true \
+    --constraint 'node.role == manager' \
+    sergkh/docker-etcd-registrator
+    
+    
+5、服务发现
+（未完待续）
+
+
+
+
+
+
+三、参考示例后，自己的解决方案
+（待补充）
+1、TODO
+实现一个服务注册的 agent 
+实现一个服务发现的 agent
+
+
+
+
+
+
+
+
+    
+    
+ZYXW、参考
+1、https://github.com/sergkh
+https://github.com/sergkh/docker-etcd-registrator
+https://hub.docker.com/r/sergkh/nginx-autoproxy/
