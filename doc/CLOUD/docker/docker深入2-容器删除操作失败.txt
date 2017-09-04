@@ -90,6 +90,19 @@ lrwxrwxrwx 1 root root 0 Aug 21 15:55 /proc/7360/ns/mnt -> mnt:[4026532279]
 如何解决：未知，待跟进。
 
 
+来自：
+https://github.com/moby/moby/issues/34652#issuecomment-325352551
+
+cpuguy83 commented 7 days ago
+Let's close this because this is exactly the same as #22260 which is still open.
+Thanks!
+In order to fix your current situation, the easiest thing is a reboot.
+
+The issue is the mount has leaked into another mount namespace... likely another container by bind-mounting /var/lib/docker (or one of it's parents) into a container.
+
+
+因此，目前的结论是：挂载点泄漏，暂无最终的解决方案。
+
 
 
 
