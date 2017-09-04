@@ -1,14 +1,36 @@
 docker深入2-基于 swarm mode 的服务发现和注册
-2017/8/31
+2017/9/4
 
-一、目的
-1、数据流
+注：【未完待续】标签，表明现在没空继续研究，后续再补上，现在先分享出来，或许有朋友正需要思路和帮助。
+
+
+一、前言
+1、目的
+1）研究基于 swarm mode 的服务发现和注册
+2）熟悉使用 go 和 python 来写 agent 调用 docker api/sdk 来达到上述目的。
+3）docker api/sdk 参考
+ * docker api and sdk exp
+ * api ref: https://docs.docker.com/engine/api/v1.3
+ * sdk go: https://godoc.org/github.com/moby/moby/client
+
+ * [howto]
+ * # curl -s --unix-socket /var/run/docker.sock http:/v1.30/nodes |jq . |more
+ * # curl -s --unix-socket /var/run/docker.sock http:/v1.30/services |jq . |more
+ * # curl -s --unix-socket /var/run/docker.sock http:/v1.30/tasks |jq . |more
+
+4）示例参考
+https://github.com/opera443399/ops/blob/master/doc/Go/src/abc.com/demo/docker_api_exp/app.go
+https://github.com/sergkh/docker-etcd-registrator/blob/master/register.py
+
+
+
+2、数据流
 docker service -> swarm mode manager -> my_test_etcd_registrator -> net_etcd -> LB+confd
 
-2、示例 sergkh 的解决方案
 
+3、示例 sergkh 的解决方案
+4、参考示例后，自己的解决方案
 
-3、参考示例后，自己的解决方案
 
 
 二、示例 sergkh 的解决方案
@@ -53,15 +75,21 @@ docker service create --name my_test_etcd_registrator \
     
     
 5、服务发现
-（未完待续）
+（未完待续，后续有空实现后再更新）
 
 
+6、问题
+1）sergkh 的 docker-etcd-registrator 服务中 python 脚本提取的内容可能不符合我的需求，后续将 fork 后改成自己需要的版本。
+https://github.com/sergkh/docker-etcd-registrator/blob/c294b60cfb49a5213d9942b2ef4f99827435c182/register.py#L30
+                descr['address'] = '{0}:{1}'.format(service.name, ports[0]['TargetPort'])
+                
+这里使用的是 TargetPort 而我需要的是 PublishedPort
 
 
 
 
 三、参考示例后，自己的解决方案
-（待补充）
+（有时间实现后再补充）
 1、TODO
 实现一个服务注册的 agent 
 实现一个服务发现的 agent
@@ -79,3 +107,7 @@ ZYXW、参考
 1、https://github.com/sergkh
 https://github.com/sergkh/docker-etcd-registrator
 https://hub.docker.com/r/sergkh/nginx-autoproxy/
+2、docker api
+https://docs.docker.com/engine/api/v1.3
+3、docker sdk go
+https://godoc.org/github.com/moby/moby/client
