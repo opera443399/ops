@@ -1,9 +1,9 @@
-awk博大精深，本人除了简单的用法，其他的在工作中尚未深入研究。
+awk使用小结
 2017/8/8
 
-另，附上几个blog的文章，后续可能会更新这个列表：
-Linux awk命令详解http://blog.chinaunix.net/uid-25120309-id-3801250.html
-http://www.cnblogs.com/ggjucheng/archive/2013/01/13/2858470.html
+awk博大精深，本文仅持续更新在工作中频繁使用的方法。
+
+
 
 【AWK】
 截取一行数据中指定的2个数字做加减乘除运算：
