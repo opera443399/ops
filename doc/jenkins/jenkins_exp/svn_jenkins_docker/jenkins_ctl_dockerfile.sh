@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-#2017/9/4
+#2017/9/5
 #set -e
 
 ################################ global settings ################################
-repo_name='dockerfile'
-prefix_test='test'
+repo_name='repo_dockerfile'
+prefix_test='mytest'
 registry_server='registry.xxx.com'
 registry_username='xxx'
 registry_password='xxx'

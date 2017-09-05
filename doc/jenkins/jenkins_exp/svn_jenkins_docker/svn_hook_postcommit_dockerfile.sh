@@ -42,7 +42,7 @@ function do_filter_changed(){
     do  
         echo "[debug] dir: $d"
         docker_image_dir="$d"
-        docker_image_version="$(date +%Y%m%d_%H%M)_${svn_repository_revision}"
+        docker_image_version="$(date +%Y%m)_${svn_repository_revision}"
         docker_image_name_with_version="$(echo ${docker_image_dir} |tr '[A-Z]' '[a-z]' |sed 's#/#_#'):${docker_image_version}"
         echo -e "[debug] \nimage path -> ${docker_image_dir} \nversion -> ${docker_image_version} \nimage:tag -> ${docker_image_name_with_version} \n"
         do_curl
