@@ -5,7 +5,7 @@
 
 ################################ global settings ################################
 repo_name='repo_dockerfile'
-prefix_test='mytest'
+registry_namespace='mytest'
 registry_server='registry.xxx.com'
 registry_username='xxx'
 registry_password='xxx'
@@ -65,10 +65,10 @@ function do_init(){
         fi
     fi
 
-    prefix_test_image_name="${prefix_test}/$(echo ${path_to_image_dir} |tr '[A-Z]' '[a-z]' |sed 's#/#_#')"
-    print_info "repo: ${repo_name}, image: ${prefix_test_image_name}, version: ${image_version}"
+    image_name_with_prefix="${registry_namespace}/$(echo ${path_to_image_dir} |tr '[A-Z]' '[a-z]' |sed 's#/#_#')"
+    print_info "repo: ${repo_name}, image: ${image_name_with_prefix}, version: ${image_version}"
 
-    new_image_full_name="${prefix_test_image_name}:${image_version}"
+    new_image_full_name="${image_name_with_prefix}:${image_version}"
     print_info "new_image_full_name: ${new_image_full_name}"
 
 }
@@ -78,8 +78,12 @@ function do_init(){
 function do_build(){
     print_info '[ACTION build]'
     cd ${path_to_image_dir}
-    print_debug "~]# docker build --rm -t ${new_image_full_name} ."
-    docker build --rm -t ${new_image_full_name} .
+    print_debug "~]# docker build --rm -t ${image_name_with_prefix} ."
+    docker build --rm -t ${image_name_with_prefix} .
+    [ $? -eq 0 ] || exit 1
+    
+    print_debug "~]# docker tag ${image_name_with_prefix} ${new_image_full_name}"
+    docker tag ${image_name_with_prefix} ${new_image_full_name}
     [ $? -eq 0 ] || exit 1
     print_line
 }
@@ -91,11 +95,11 @@ function do_test(){
     test -z ${this_port_mapping} && this_opts='-P' || this_opts="-p ${this_port_mapping}"
 
     print_info '[ACTION test]'
-    new_image_id=$(docker images |grep "${prefix_test_image_name}" |grep ${image_version} |awk '{print $3}' |uniq)
+    new_image_id=$(docker images |grep "${image_name_with_prefix}" |grep ${image_version} |awk '{print $3}' |uniq)
 
     print_info 'list images:'
-    print_debug "~]# docker images |grep "${prefix_test_image_name}" |grep ${image_version}"
-    docker images |grep "${prefix_test_image_name}" |grep ${image_version}
+    print_debug "~]# docker images |grep "${image_name_with_prefix}" |grep ${image_version}"
+    docker images |grep "${image_name_with_prefix}" |grep ${image_version}
 
     print_info 'run container:'
     print_debug "~]# docker run -d ${this_opts} ${new_image_full_name}"
@@ -282,3 +286,4 @@ case $1 in
         exit 1
         ;;
 esac
+
