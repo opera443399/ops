@@ -1,5 +1,6 @@
 openldap-初探
-2017/4/25
+2017/9/6
+
 
 一、服务端安装
 1、安装
@@ -645,6 +646,192 @@ C:/Program Files/Java/jdk1.8.0_51/bin
 2、其他方法
 测试连接AD域控：
 ldapsearch -h xxx  -D "domain\username" -w xxx -b "CN=username,OU=depart,OU=somegroup,DC=domain,DC=com,DC=cn"
+获取组织结构：
+ldapsearch -x -LLL -b "dc=test,dc=com" -H ldap://1.2.3.4
+
+
+
+
+七、示例
+dn: dc=company,dc=com
+objectClass: top
+objectClass: organization
+objectClass: dcObject
+dc: company
+o: company.com
+
+dn: ou=People,dc=company,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: People
+
+dn: ou=Special,ou=People,dc=company,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: Special
+
+dn: ou=System,ou=People,dc=company,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: System
+
+dn: ou=Groups,dc=company,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: Groups
+
+dn: cn=sa,ou=Groups,dc=company,dc=com
+objectClass: posixGroup
+cn: sa
+gidNumber: 20001
+
+dn: cn=public,ou=Groups,dc=company,dc=com
+objectClass: posixGroup
+cn: public
+gidNumber: 20002
+memberUid: WwwCron
+memberUid: user01
+
+dn: cn=www,ou=Groups,dc=company,dc=com
+objectClass: posixGroup
+cn: www
+gidNumber: 20003
+memberUid: appuser
+memberUid: user02
+
+
+dn: cn=devel,ou=Groups,dc=company,dc=com
+objectClass: posixGroup
+cn: devel
+gidNumber: 20004
+memberUid: appuser
+memberUid: user03
+
+
+dn: ou=SUDOers,dc=company,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: SUDOers
+description: sudoers: ou=sudoers,dc=company,dc=com
+
+
+dn: cn=defaults,ou=SUDOers,dc=company,dc=com
+objectClass: top
+objectClass: sudoRole
+cn: defaults
+description: Default sudoOption's go here
+sudoOption: env_reset
+sudoOption: env_keep="COLORS DISPLAY HOSTNAME HISTSIZE INPUTRC KDEDIR LS_COLOR
+ S MAIL PS1 PS2 QTDIR USERNAME LANG LC_ADDRESS LC_CTYPE LC_COLLATE LC_IDENTIFI
+ CATION LC_MEASUREMENT LC_MESSAGES LC_MONETARY LC_NAME LC_NUMERIC LC_PAPER LC_
+ TELEPHONE LC_TIME LC_ALL LANGUAGE LINGUAS _XKB_CHARSET XAUTHORITY"
+ 
+
+dn: cn=%server,ou=SUDOers,dc=company,dc=com
+objectClass: top
+objectClass: sudoRole
+cn: %server
+sudoUser: %server
+sudoHost: ALL
+sudoCommand: /usr/sbin/lsof
+sudoCommand: /usr/bin/strace
+sudoCommand: /usr/bin/gdb
+sudoCommand: /usr/sbin/tcpdump
+sudoCommand: /bin/netstat
+sudoCommand: /bin/kill
+sudoCommand: /sbin/iptables -nL
+sudoCommand: /usr/local/bin/gdb
+sudoOption: !authenticate
+
+
+dn: cn=%www,ou=SUDOers,dc=company,dc=com
+objectClass: top
+objectClass: sudoRole
+cn: %www
+sudoUser: %www
+sudoHost: ALL
+sudoCommand: /usr/bin/strace
+sudoCommand: /bin/su - appuser
+sudoCommand: /usr/sbin/tcpdump
+sudoCommand: /bin/netstat
+sudoCommand: /usr/bin/gdb
+sudoCommand: /bin/su - WwwCron
+sudoCommand: /usr/sbin/lsof
+sudoOption: !authenticate
+
+
+dn: cn=%sa,ou=SUDOers,dc=company,dc=com
+objectClass: top
+objectClass: sudoRole
+cn: %sa
+sudoUser: %sa
+sudoHost: ALL
+sudoRunAsUser: ALL
+sudoCommand: ALL
+sudoOption: !authenticate
+
+
+dn: cn=%public,ou=SUDOers,dc=company,dc=com
+objectClass: top
+objectClass: sudoRole
+cn: %public
+sudoUser: %public
+sudoHost: ALL
+sudoRunAsUser: ALL
+sudoCommand: /usr/bin/strace
+sudoCommand: /usr/bin/gdb
+sudoCommand: /usr/sbin/ngrep
+sudoCommand: /usr/sbin/tcpdump
+sudoCommand: /bin/su - appuser
+sudoOption: !authenticate
+
+
+dn: uid=JackMa,ou=sa,ou=People,dc=company,dc=com
+objectClass: top
+objectClass: account
+objectClass: posixAccount
+objectClass: shadowAccount
+objectClass: hostObject
+gidNumber: 20001
+uid: JackMa
+homeDirectory: /home/JackMa
+loginShell: /bin/bash
+userPassword:: f1NxU0x9UGNQZW5nQGJvexFSLm3vbQ==
+uidNumber: 21138
+cn: JackMa
+host: n1.xxx.com
+host: n2.xxx.com
+host: n3.xxx.com
+
+
+dn: uid=AndyLiu,ou=sa,ou=People,dc=company,dc=com
+objectClass: top
+objectClass: account
+objectClass: posixAccount
+objectClass: shadowAccount
+objectClass: hostObject
+gidNumber: 20001
+uid: AndyLiu
+homeDirectory: /home/AndyLiu
+loginShell: /bin/bash
+userPassword:: f1NxU0x9UGNQZW5nQGJvexFSLm3vbQ==
+uidNumber: 21138
+cn: AndyLiu
+host: n4.xxx.com
+
+
+dn: cn=f3f2d0708683dx39bd4e62dd879da80,ou=SUDOers,dc=company,dc=com
+sudoCommand: ALL
+sudoUser: JackMa
+objectClass: top
+objectClass: sudoRole
+sudoOption: !authenticate
+sudoRunAsUser: ALL
+sudoHost: n4.xxx.com
+cn: f3f2d0708683dx39bd4e62dd879da80
+
+
+
 
 
 
