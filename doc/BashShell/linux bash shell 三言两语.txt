@@ -546,6 +546,10 @@ ps -U username |awk '{print $1}' |grep -Eo '[0-9]+' |xargs -i kill {}
 
 
 31、$'string' 的用法
+参考：
+http://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html
+https://stackoverflow.com/questions/18626209/bash-syntax-error-near-unexpected-token
+
 是不是在 init.d 的脚本中常看到这样一段：
 echo $"Usage: xxx"
 
@@ -555,7 +559,4 @@ Words of the form $'string' are treated specially. The word expands to string, w
 
 就是说，字符串前边有个美元符号，意味着可以使用转义符。
 
-参考：
-http://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html
-https://stackoverflow.com/questions/18626209/bash-syntax-error-near-unexpected-token
 
