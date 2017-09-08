@@ -1,0 +1,26 @@
+flock
+2017/9/7
+
+
+flock - Manage locks from shell scripts
+在 shell 脚本 中使用锁来避免多个脚本同时跑引发异常
+
+
+示例：
+
+pid_file='/tmp/test_flock.pid'
+pid_old=$(cat ${pid_file})
+echo $$ > ${pid_file}
+{
+    flock -n 101
+    if [ $? -eq 1 ] ; then
+        if lsof -n -P -l ${pid_file} | grep ${pid_old} | grep -v grep >/dev/null; then
+            echo "Warn: exec $0 timeout!"
+        else
+            flock -u 3
+        fi
+    fi
+
+    do_something
+
+} 101<> ${pid_file}
