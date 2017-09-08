@@ -3,30 +3,28 @@ ps
 
 ps这个工具也是博大精深，各工具的详情请查看man和参考网络文章。
 
-       -A              Select all processes. Identical to -e.
-       a               Lift the BSD-style "only yourself" restriction, which is imposed upon the set of all
-                       processes when some BSD-style (without "-") options are used or when the ps personality
-                       setting is BSD-like. The set of processes selected in this manner is in addition to the set
-                       of processes selected by other means. An alternate description is that this option causes ps
-                       to list all processes with a terminal (tty), or to list all processes when used together
-                       with the x option
+    -A              Select all processes. Identical to -e.
+    a               Lift the BSD-style "only yourself" restriction, which is imposed upon the set of all
+                   processes when some BSD-style (without "-") options are used or when the ps personality
+                   setting is BSD-like. The set of processes selected in this manner is in addition to the set
+                   of processes selected by other means. An alternate description is that this option causes ps
+                   to list all processes with a terminal (tty), or to list all processes when used together
+                   with the x option
 
 
-       -e              Select all processes. Identical to -A.
+    -e              Select all processes. Identical to -A.
+    f               ASCII-art process hierarchy (forest)    
+    -L              Show threads, possibly with LWP and NLWP columns 
+    x               Lift the BSD-style "must have a tty" restriction, which is imposed upon the set of all
+                   processes when some BSD-style (without "-") options are used or when the ps personality
+                   setting is BSD-like. The set of processes selected in this manner is in addition to the set
+                   of processes selected by other means. An alternate description is that this option causes ps
+                   to list all processes owned by you (same EUID as ps), or to list all processes when used
+                   together with the a option.
 
-       x               Lift the BSD-style "must have a tty" restriction, which is imposed upon the set of all
-                       processes when some BSD-style (without "-") options are used or when the ps personality
-                       setting is BSD-like. The set of processes selected in this manner is in addition to the set
-                       of processes selected by other means. An alternate description is that this option causes ps
-                       to list all processes owned by you (same EUID as ps), or to list all processes when used
-                       together with the a option.
+    u               display user-oriented format
 
-       u               display user-oriented format
-       
-       f               ASCII-art process hierarchy (forest)       
-                       
 
-                       
 常用
 1）ps -ef
 
@@ -63,17 +61,21 @@ ps这个工具也是博大精深，各工具的详情请查看man和参考网络
 ~]# su Jack
 su: cannot set user id: Resource temporarily unavailable
 
-
-ulimit 
--u     The maximum number of processes available to a single user
-ps
--L              Show threads, possibly with LWP and NLWP columns
-
 ~]# ps -u Jack |wc -l
 548
 ~]# ps -u Jack -L |wc -l
 1299
 
 显然，算上了线程数量。
-结论：调整 nproc 的上限。
+结论：调整 ulimit 中 nproc 的上限。
 
+
+ps
+
+
+ulimit 
+-u     The maximum number of processes available to a single user
+
+相关配置：
+/etc/security/limits.d/90-nproc.conf
+/etc/security/limits.conf
