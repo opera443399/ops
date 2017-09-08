@@ -1,0 +1,20 @@
+css技巧小结
+2017/9/5
+
+1、表格
+
+单双行的颜色控制：
+<style>
+table, th , td  {
+  border: 1px solid grey;
+  border-collapse: collapse;
+  padding: 5px;
+}
+table tr:nth-child(odd)	{
+  background-color: #f1f1f1;
+}
+table tr:nth-child(even) {
+  background-color: #ffffff;
+}
+</style>
+
