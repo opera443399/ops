@@ -1,28 +1,44 @@
-ps
+ps使用小结
+
 2017/9/8
 
 ps这个工具也是博大精深，各工具的详情请查看man和参考网络文章。
+例如：
+        -L              Show threads, possibly with LWP and NLWP columns 
 
-    -A              Select all processes. Identical to -e.
-    a               Lift the BSD-style "only yourself" restriction, which is imposed upon the set of all
-                   processes when some BSD-style (without "-") options are used or when the ps personality
-                   setting is BSD-like. The set of processes selected in this manner is in addition to the set
-                   of processes selected by other means. An alternate description is that this option causes ps
-                   to list all processes with a terminal (tty), or to list all processes when used together
-                   with the x option
+       -U userlist
+              Select by real user ID (RUID) or name.  It selects the processes whose real user name or ID is in the userlist list.  The real user ID identifies the user who
+              created the process, see getuid(2).
+
+       -u userlist
+              Select by effective user ID (EUID) or name.  This selects the processes whose effective user name or ID is in userlist.
+
+              The effective user ID describes the user whose file access permissions are used by the process (see geteuid(2)).  Identical to U and --user.
+
+RUID && EUID 的区别请参考；
+https://unix.stackexchange.com/questions/191940/difference-between-owner-root-and-ruid-euid
+
+Let's use the case of passwd:
+
+-rwsr-xr-x 1 root root 45396 may 25  2012 /usr/bin/passwd
 
 
-    -e              Select all processes. Identical to -A.
-    f               ASCII-art process hierarchy (forest)    
-    -L              Show threads, possibly with LWP and NLWP columns 
-    x               Lift the BSD-style "must have a tty" restriction, which is imposed upon the set of all
-                   processes when some BSD-style (without "-") options are used or when the ps personality
-                   setting is BSD-like. The set of processes selected in this manner is in addition to the set
-                   of processes selected by other means. An alternate description is that this option causes ps
-                   to list all processes owned by you (same EUID as ps), or to list all processes when used
-                   together with the a option.
+When user2 wants to change his password, he executes /usr/bin/passwd.
 
-    u               display user-oriented format
+The RUID will be user2 but the EUID of that process will be root.
+
+user2 can use passwd to change only his own password because internally passwd checks the RUID and, if it is not root, its actions will be limited to real user's password.
+
+It's neccesary that the EUID becomes root in the case of passwd because the process needs to write to /etc/passwd and/or /etc/shadow.
+
+
+个人理解：
+RUID，该进程的执行者
+EUID，进程文件的拥有者
+
+
+
+
 
 
 常用
@@ -61,9 +77,9 @@ ps这个工具也是博大精深，各工具的详情请查看man和参考网络
 ~]# su Jack
 su: cannot set user id: Resource temporarily unavailable
 
-~]# ps -u Jack |wc -l
+~]# ps -U Jack |wc -l
 548
-~]# ps -u Jack -L |wc -l
+~]# ps -U Jack -L |wc -l
 1299
 
 显然，算上了线程数量。
