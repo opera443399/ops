@@ -1,6 +1,6 @@
 ps使用小结
-
 2017/9/8
+
 
 ps这个工具也是博大精深，各工具的详情请查看man和参考网络文章。
 例如：
@@ -17,6 +17,8 @@ ps这个工具也是博大精深，各工具的详情请查看man和参考网络
 
 RUID && EUID 的区别请参考；
 https://unix.stackexchange.com/questions/191940/difference-between-owner-root-and-ruid-euid
+https://unix.stackexchange.com/questions/202322/how-to-start-or-find-a-process-with-ruid-different-from-euid
+
 
 Let's use the case of passwd:
 
@@ -35,6 +37,27 @@ It's neccesary that the EUID becomes root in the case of passwd because the proc
 个人理解：
 RUID，该进程的执行者
 EUID，进程文件的拥有者
+
+
+实例：
+You can easily observe the differing UIDs by running the passwd command as a non-root user. While the prompt is being displayed, run ps in another temrinal:
+
+ps -o user,ruser -C passwd
+To find all running processes with differing EUID and RUID, you can use
+
+ps -e -o user= -o ruser= | awk '$1 != $2'
+It's normal not to find any, most setuid processes are short-lived.
+
+上述操作要快，因为 setuid 的进程生命周期很短：
+[Jack@terminal_01 ~]$ passwd
+Changing password for user Jack.
+passwd: Authentication token manipulation error
+
+[Jack@terminal_02 ~]$ ps -o user,ruser -C passwd
+USER     RUSER
+root     Jack
+
+
 
 
 
