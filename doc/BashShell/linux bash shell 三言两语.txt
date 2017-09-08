@@ -1,5 +1,5 @@
 linux bash shell 三言两语
-2017/8/10
+2017/9/8
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -539,9 +539,23 @@ iptables -t nat -A PREROUTING -d 服务器外网IP/32 -p tcp -m tcp --dport 8080
 iptables -t nat -A POSTROUTING -d 服务器内网IP/32 -p tcp -m tcp --dport 8080 -o eth0 -j MASQUERADE
 
 
-30、查看和清理指定用户下的进程
+30、查看和清理指定用户下的进程和线程
 ps -U username
+ps -U username -L
 ps -U username |awk '{print $1}' |grep -Eo '[0-9]+' |xargs -i kill {}
 
 
+31、$'string' 的用法
+是不是在 init.d 的脚本中常看到这样一段：
+echo $"Usage: xxx"
+
+这个 dollar sign $ 是啥意思呢？
+
+Words of the form $'string' are treated specially. The word expands to string, with backslash-escaped characters replaced as specified by the ANSI C standard.
+
+就是说，字符串前边有个美元符号，意味着可以使用转义符。
+
+参考：
+http://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html
+https://stackoverflow.com/questions/18626209/bash-syntax-error-near-unexpected-token
 
