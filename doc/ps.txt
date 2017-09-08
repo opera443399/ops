@@ -1,4 +1,6 @@
-ps的用法简介
+ps
+2017/9/8
+
 ps这个工具也是博大精深，各工具的详情请查看man和参考网络文章。
 
        -A              Select all processes. Identical to -e.
@@ -42,15 +44,36 @@ ps这个工具也是博大精深，各工具的详情请查看man和参考网络
  8761 D    lookup df -h
  9285 D    lookup df -h
  9977 D    vfs_re bash
-10163 D    lookup umount -lf /home/web/upload/phonerecord/2012
-10672 D    lookup fuser -m -v /home/web/upload/phonerecord/2012
-12806 D    lookup ls --color=tty /home/web/upload/phonerecord/
-14184 D    nfs4_h ls --color=tty /home/web/upload/phonerecord/2012
-14507 D    lookup /sbin/mount.nfs 192.168.5.75:/home/phonerecord/2012 /home/web/upload/phonerecord/2012 -o rw
+10163 D    lookup umount -lf /data/wwwroot/upload/phonerecord/2012
+10672 D    lookup fuser -m -v /data/wwwroot/upload/phonerecord/2012
+12806 D    lookup ls --color=tty /data/wwwroot/upload/phonerecord/
+14184 D    nfs4_h ls --color=tty /data/wwwroot/upload/phonerecord/2012
+14507 D    lookup /sbin/mount.nfs 10.200.50.75:/home/phonerecord/2012 /data/wwwroot/upload/phonerecord/2012 -o rw
 17947 D    lookup df -h
-18195 D    lookup umount /home/web/upload/phonerecord/2012
-19069 D    lookup /sbin/mount.nfs 192.168.5.75:/home/phonerecord/2012 /home/web/upload/phonerecord/2012 -v -o rw
+18195 D    lookup umount /data/wwwroot/upload/phonerecord/2012
+19069 D    lookup /sbin/mount.nfs 10.200.50.75:/home/phonerecord/2012 /data/wwwroot/upload/phonerecord/2012 -v -o rw
 21375 D    lookup df -vh
 24728 D    lookup df -H
 28849 D    lookup ls --color=tty
 29396 D    lookup df -i
+
+
+4）列出线程
+遇到一个异常
+~]# su Jack
+su: cannot set user id: Resource temporarily unavailable
+
+
+ulimit 
+-u     The maximum number of processes available to a single user
+ps
+-L              Show threads, possibly with LWP and NLWP columns
+
+~]# ps -u Jack |wc -l
+548
+~]# ps -u Jack -L |wc -l
+1299
+
+显然，算上了线程数量。
+结论：调整 nproc 的上限。
+
