@@ -1,5 +1,5 @@
 docker深入2-基于 swarm mode 的服务发现和注册
-2017/9/4
+2017/9/12
 
 注：【未完待续】标签，表明现在没空继续研究，后续再补上，现在先分享出来，或许有朋友正需要思路和帮助。
 
@@ -38,7 +38,7 @@ docker service -> swarm mode manager -> my_test_etcd_registrator -> net_etcd -> 
 docker network create --driver overlay net_etcd
 
 注1：使用默认的 overlay 网络时，通过服务名无法互相ping通
-注2：但通过 docker compose 创建 service 时，默认会创建一个独立的 overlay 网络
+注2：但通过 docker stack 来创建 compose 时，默认会为 service 创建一个独立的 overlay 网络，因而可以使用服务名
 
 
 2、启动一个 etcd 服务
