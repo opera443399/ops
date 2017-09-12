@@ -1,6 +1,11 @@
+screen使用小结
+2017/9/12
 
-进入：
+
+进入screen：
 $ screen
+
+列出：
 $ screen -ls
 There is a screen on:
         18596.pts-0.test240     (Detached)
@@ -8,11 +13,13 @@ There is a screen on:
 
 $ screen -r 18596
 
-进入screen后，
+
+
+在screen中如何操作：
 先按：
 ctrl+a
 
-然后按：
+然后按下面的按键：
 a
 c：新建screen
 d：detached
@@ -23,3 +30,17 @@ w：显示screen
 A：给screen命名
 ?：帮助
 0-9：选择screen
+
+
+如果是这样的：
+$ screen -ls
+There is a screen on:
+        18596.pts-0.test240     (Attached)
+1 Socket in /var/run/screen/S-root.
+
+则：
+$ screen -D -r 18596
+
+
+参考：man
+-D -r   Reattach a session. If necessary detach and logout remotely first.
