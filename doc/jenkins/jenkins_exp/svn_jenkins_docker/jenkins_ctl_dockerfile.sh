@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#2017/9/5
+#2017/9/15
 #set -e
 
 ################################ global settings ################################
@@ -38,7 +38,7 @@ function do_init(){
     find ${path_to_image_dir} -cmin -30
     print_info "++++++++++++++++++++++"
 
-    local path_to_dockerfile="${path_to_image_dir}/Dockerfile"
+    path_to_dockerfile="${path_to_image_dir}/Dockerfile"
     if [ "X${action}" == "Xbuild" -o "X${action}" == "Xtest" ]; then
         if [ ! -f "${path_to_dockerfile}" ]; then
             print_info "Dockerfile not found for image: '${path_to_image_dir}'"
@@ -47,6 +47,7 @@ function do_init(){
     fi
 
     if [ "X${action}" == "Xtest" ]; then
+        ## as 'TEST_OFF' directive not only in the beginning, grep '^TEST_OFF' might not work.
         if [ $(grep 'TEST_OFF' ${path_to_dockerfile} 1>/dev/null && echo 0 || echo 1) -eq 0 ]; then
             print_info "jump out the unittest: Detected TEST_OFF directive in Dockerfile!"
             print_line
@@ -172,6 +173,69 @@ function do_push(){
 
     print_debug "~]# docker push ${registry_server}/${new_image_full_name}"
     docker push ${registry_server}/${new_image_full_name}
+
+
+    ## directive in dockerfile
+    #AUTO_UPDATE_SERVICE    SERVICE_NAME    SWARM_MGR_IP
+    if [ $(grep '^#AUTO_UPDATE_SERVICE' ${path_to_dockerfile} 1>/dev/null && echo 0 || echo 1) -eq 0 ]; then
+        print_line
+        print_info "Detected AUTO_UPDATE_SERVICE directive in Dockerfile!"
+
+        service_image_latest="${registry_server}/${new_image_full_name}"
+        service_name="$(grep '^#AUTO_UPDATE_SERVICE' ${path_to_dockerfile} |awk '{print $2}')"
+        swarm_mgr_ip="$(grep '^#AUTO_UPDATE_SERVICE' ${path_to_dockerfile} |awk '{print $3}')"
+        if [ -z "${service_name}" ]; then
+            print_info "[AUTO_UPDATE_SERVICE] SERVICE_NAME is empty in Dockerfile!"
+            exit 1
+        fi
+        if [ -z "${swarm_mgr_ip}" ]; then
+            print_info "[AUTO_UPDATE_SERVICE] SWARM_MGR_IP is empty in Dockerfile!"
+            exit 1
+        fi
+        
+        service_version_index=$(curl -s \
+                                    http://${swarm_mgr_ip}:2375/v1.30/services?filters='\{"name":\["'${service_name}'"\]\}' \
+                                    -H "Content-Type: application/json" \
+                                    |jq '.[].Version.Index')
+        if [[ ${service_version_index} =~ "^[0-9]+$" ]]; then
+            print_info "[AUTO_UPDATE_SERVICE] failed to get service_version_index from swarm mgr[${swarm_mgr_ip}]"
+            exit 1
+        fi
+        
+        print_info "service: ${service_name}, service version index: ${service_version_index}"
+        print_info "service image latest: ${service_image_latest}"
+        print_info "call ${swarm_mgr_ip} to update this service now!"
+        ret=$(curl -s \
+                    "http://${swarm_mgr_ip}:2375/v1.30/services/${service_name}/update?version=${service_version_index}" \
+                    -X POST \
+                    -H "Content-Type: application/json" \
+                    -d "
+                    {
+                        \"Name\": \"${service_name}\",
+                        \"TaskTemplate\": {
+                            \"ContainerSpec\": {
+                                \"Image\": \"${service_image_latest}\"
+                            }
+                        }
+                    }
+                    " |jq '.')
+        if [ $(echo ${ret} |grep '"Warnings": null' 1>/dev/null && echo 0 || echo 1) -eq 0 ]; then
+            curl -s \
+                http://${swarm_mgr_ip}:2375/v1.30/services?filters='\{"name":\["'${service_name}'"\]\}' \
+                -H "Content-Type: application/json" \
+                |jq '.'
+        else
+            print_info "[AUTO_UPDATE_SERVICE] failed to update service: \necho ${ret} |jq '.'"
+            exit 1
+        fi
+        
+        
+        print_line
+    else
+        print_debug "[AUTO_UPDATE_SERVICE] derective not found, skipped.\n\nEND OF THE TASK."
+    fi
+
+    exit 0
 }
 
 
