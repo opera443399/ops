@@ -1,5 +1,5 @@
 docker深入2-基于 swarm mode 的服务发现和注册
-2017/9/12
+2017/9/15
 
 注：【未完待续】标签，表明现在没空继续研究，后续再补上，现在先分享出来，或许有朋友正需要思路和帮助。
 
@@ -10,7 +10,7 @@ docker深入2-基于 swarm mode 的服务发现和注册
 2）熟悉使用 go 和 python 来写 agent 调用 docker api/sdk 来达到上述目的。
 3）docker api/sdk 参考
  * docker api and sdk exp
- * api ref: https://docs.docker.com/engine/api/v1.3
+ * api ref: https://docs.docker.com/engine/api/v1.30/
  * sdk go: https://godoc.org/github.com/moby/moby/client
 
  * [howto]
