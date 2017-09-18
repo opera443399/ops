@@ -225,7 +225,7 @@ function do_push(){
                 -H "Content-Type: application/json" \
                 |jq '.'
         else
-            print_info "[AUTO_UPDATE_SERVICE] failed to update service: \necho ${ret}"
+            print_info "[AUTO_UPDATE_SERVICE] failed to update service: \n${ret}"
             exit 1
         fi
         
