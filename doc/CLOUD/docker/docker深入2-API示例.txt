@@ -8,6 +8,26 @@ docker深入2-API示例
 
 docker 的 API 文档是自动生成的，没有太多有用的示例可用。
 
+【版本】
+~]# docker version
+Client:
+ Version:      17.06.0-ce
+ API version:  1.30
+ Go version:   go1.8.3
+ Git commit:   02c1d87
+ Built:        Fri Jun 23 21:20:36 2017
+ OS/Arch:      linux/amd64
+
+Server:
+ Version:      17.06.0-ce
+ API version:  1.30 (minimum version 1.12)
+ Go version:   go1.8.3
+ Git commit:   02c1d87
+ Built:        Fri Jun 23 21:21:56 2017
+ OS/Arch:      linux/amd64
+ Experimental: false
+
+
 
 二、实例
 1、创建一个服务
