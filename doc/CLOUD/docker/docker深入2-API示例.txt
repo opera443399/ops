@@ -23,7 +23,6 @@ service_name="t001"
 service_version_index=$(curl -s \
     --unix-socket /var/run/docker.sock \
     http:/v1.30/services?filters='\{"name":\["'${service_name}'"\]\}' \
-    -H "Content-Type: application/json" \
     |jq '.[].Version.Index')
 
 
@@ -49,7 +48,6 @@ curl -s \
 curl -s \
     --unix-socket /var/run/docker.sock \
     http:/services?filters='\{"name":\["'${service_name}'"\]\}' \
-    -H "Content-Type: application/json" \
     |jq '.'
    
 

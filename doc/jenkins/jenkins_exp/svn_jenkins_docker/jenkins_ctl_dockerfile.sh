@@ -195,7 +195,6 @@ function do_push(){
         
         service_version_index=$(curl -s \
                                     http://${swarm_mgr_ip}:2375/v1.30/services?filters='\{"name":\["'${service_name}'"\]\}' \
-                                    -H "Content-Type: application/json" \
                                     |jq '.[].Version.Index')
         if [[ ${service_version_index} =~ "^[0-9]+$" ]]; then
             print_info "[AUTO_UPDATE_SERVICE] failed to get service_version_index from swarm mgr[${swarm_mgr_ip}]"
@@ -222,7 +221,6 @@ function do_push(){
         if [ $(echo ${ret} |grep '"Warnings": null' 1>/dev/null && echo 0 || echo 1) -eq 0 ]; then
             curl -s \
                 http://${swarm_mgr_ip}:2375/v1.30/services?filters='\{"name":\["'${service_name}'"\]\}' \
-                -H "Content-Type: application/json" \
                 |jq '.'
         else
             print_info "[AUTO_UPDATE_SERVICE] failed to update service: \n${ret}"
