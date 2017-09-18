@@ -1,0 +1,156 @@
+docker深入2-API示例
+2017/9/18
+
+一、目的
+演示 http API 使用的方式
+注1：本次实例是在 docker swarm mode 下使用的，目的是：更新指定服务的镜像。
+注2：要在 swarm manager node 上执行。
+
+docker 的 API 文档是自动生成的，没有太多有用的示例可用。
+
+
+二、实例
+1、创建一个服务
+docker service create --name t001 --publish 22222:80 --detach=true opera443399/whoami:0.7
+
+
+2、更新服务
+1) 目标
+service_image_latest="opera443399/whoami:0.6"
+service_name="t001"
+
+2) 获取当前服务的版本
+service_version_index=$(curl -s \
+    --unix-socket /var/run/docker.sock \
+    http:/v1.30/services?filters='\{"name":\["'${service_name}'"\]\}' \
+    -H "Content-Type: application/json" \
+    |jq '.[].Version.Index')
+
+
+3) 执行更新
+curl -s \
+    --unix-socket /var/run/docker.sock \
+    "http:/v1.30/services/${service_name}/update?version=${service_version_index}" \
+    -X POST \
+    -H "Content-Type: application/json" \
+    -d "
+    {
+        \"Name\": \"${service_name}\",
+        \"TaskTemplate\": {
+            \"ContainerSpec\": {
+                \"Image\": \"${service_image_latest}\"
+            }
+        }
+    }
+    " |jq '.'
+    
+
+4) 查看服务现状
+curl -s \
+    --unix-socket /var/run/docker.sock \
+    http:/services?filters='\{"name":\["'${service_name}'"\]\}' \
+    -H "Content-Type: application/json" \
+    |jq '.'
+   
+
+
+   
+三、问题
+1、如果创建 service 时，使用自定义的网络，怎么办？
+状态：未解决
+注意这一段关于 Networks 的注释：
+
+引用自：https://github.com/moby/moby/blob/master/api/types/swarm/service.go
+
+// ServiceSpec represents the spec of a service.
+type ServiceSpec struct {
+	Annotations
+
+	// TaskTemplate defines how the service should construct new tasks when
+	// orchestrating this service.
+	TaskTemplate   TaskSpec      `json:",omitempty"`
+	Mode           ServiceMode   `json:",omitempty"`
+	UpdateConfig   *UpdateConfig `json:",omitempty"`
+	RollbackConfig *UpdateConfig `json:",omitempty"`
+
+	// Networks field in ServiceSpec is deprecated. The
+	// same field in TaskSpec should be used instead.
+	// This field will be removed in a future release.
+	Networks     []NetworkAttachmentConfig `json:",omitempty"`
+	EndpointSpec *EndpointSpec             `json:",omitempty"`
+}
+
+
+引用自：https://github.com/moby/moby/blob/master/api/types/swarm/task.go
+// TaskSpec represents the spec of a task.
+type TaskSpec struct {
+	// ContainerSpec and PluginSpec are mutually exclusive.
+	// PluginSpec will only be used when the `Runtime` field is set to `plugin`
+	ContainerSpec *ContainerSpec      `json:",omitempty"`
+	PluginSpec    *runtime.PluginSpec `json:",omitempty"`
+
+	Resources     *ResourceRequirements     `json:",omitempty"`
+	RestartPolicy *RestartPolicy            `json:",omitempty"`
+	Placement     *Placement                `json:",omitempty"`
+	Networks      []NetworkAttachmentConfig `json:",omitempty"`
+
+	// LogDriver specifies the LogDriver to use for tasks created from this
+	// spec. If not present, the one on cluster default on swarm.Spec will be
+	// used, finally falling back to the engine default if not specified.
+	LogDriver *Driver `json:",omitempty"`
+
+	// ForceUpdate is a counter that triggers an update even if no relevant
+	// parameters have been changed.
+	ForceUpdate uint64
+
+	Runtime RuntimeType `json:",omitempty"`
+}
+
+
+尝试过在 API 中增加：
+TaskTemplate.Networks
+
+    {
+        \"Name\": \"${service_name}\",
+        \"TaskTemplate\": {
+            \"ContainerSpec\": {
+                \"Image\": \"${service_image_latest}\"
+            },
+            \"Networks\": [
+                {
+                    \"Target\": \"xxx\"
+                }
+            ]
+        }
+    }
+
+但效果是：
+ingress网络消失，该 service 对外发布的端口消失。
+
+因为，创建 service 时：
+docker service create --name t001 --network t001only --publish 22222:80 --detach=true opera443399/whoami:0.7
+
+使用 --network 将关联到一个网络 t001only
+使用 --publish 将关联到一个网络 ingress
+
+因此，实际上有2个网络。
+注1：在反复测试的过程中，出现一个奇怪的现象，，创建 service 时，，容器处于 new 的状态，无法上线，暂时还未找到原因，因而中止了测试。
+注2：或许可以尝试在更新 service 的过程中，指定 ip 和 port 等信息，待后续测试后再更新本段信息。
+
+
+
+
+
+    
+    
+ZYXW、参考
+1、API
+https://docs.docker.com/engine/api/v1.30
+
+2、moby src
+https://github.com/moby/moby/blob/master/api/types/swarm/task.go
+https://github.com/moby/moby/blob/master/api/types/swarm/service.go
+
+3、portainer src
+https://github.com/portainer/portainer/blob/04ea81e7cd8401690058c4b4264452bf9d7a05eb/app/components/service/serviceController.js
+
