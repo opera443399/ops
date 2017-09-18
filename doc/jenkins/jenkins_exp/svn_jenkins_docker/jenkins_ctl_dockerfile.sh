@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#2017/9/15
+#2017/9/18
 #set -e
 
 ################################ global settings ################################
@@ -225,7 +225,7 @@ function do_push(){
                 -H "Content-Type: application/json" \
                 |jq '.'
         else
-            print_info "[AUTO_UPDATE_SERVICE] failed to update service: \necho ${ret} |jq '.'"
+            print_info "[AUTO_UPDATE_SERVICE] failed to update service: \necho ${ret}"
             exit 1
         fi
         
