@@ -5,8 +5,6 @@ docker深入2-API示例
 一、目的
 1、前言
 演示 http API 如何使用，作为入门指引，或许能帮助到人，因为 docker 的 API 文档是自动生成的（看起来是用的 Swagger 有待后续深入研究），我比较笨，没找到太多有用的示例，在自己探索的路上毕竟浪费了点时间，本文若能节约你的时间，是我的幸运。
-注1：本次实例是在 docker swarm mode 下使用的，目的是：更新指定服务的镜像。
-注2：要在 swarm manager node 上执行。
 
 首先，当然是建议先看官方文档 Docker Engine API and SDKs
 https://docs.docker.com/engine/api/
@@ -19,6 +17,16 @@ https://docs.docker.com/engine/api/v1.30
 
 go 的示例：
 https://github.com/opera443399/ops/blob/master/doc/Go/src/abc.com/demo/docker_api_exp/app.go
+
+
+
+题外话：如果要完成任务，其实可以考虑最简单的 API 调用，即利用 docker ckuebt 来做（而不是自己去写 shell/go/python 来达到目的）：
+~] docker -H your_remote_docker_node_ip version
+
+
+
+注1：本次实例是在 docker swarm mode 下使用的，目的是：更新指定服务的镜像。
+注2：要在 swarm manager node 上执行。
 
 
 2、版本
@@ -275,6 +283,8 @@ curl -s --unix-socket /var/run/docker.sock http:/tasks |jq '.' >tmp.1
 
 
 初步看起来，似乎是网络方面的问题，没有可用的 VIP 了？神奇，，待查证。
+截止到目前，并未找到原因，为了节约时间，只能采取重启 docker 服务后，恢复集群到正常的状态，最后调用前文提及的 docker client 通过远程 API 来执行的方式完成任务先，后续有空再尝试重放现场。
+
 
 
 
