@@ -76,7 +76,11 @@ curl -s \
 三、问题
 1、如果创建 service 时，使用自定义的网络，怎么办？
 状态：未解决
-注意这一段关于 Networks 的注释：
+
+1）如果直接使用上述方案，则报错如下
+msg="Handler for POST /v1.30/services/t001/update returned error: rpc error: code = 12 desc = networks must be migrated to TaskSpec before being changed"
+
+2）注意下述关于 Networks 的注释
 
 引用自：https://github.com/moby/moby/blob/master/api/types/swarm/service.go
 
@@ -125,7 +129,8 @@ type TaskSpec struct {
 }
 
 
-尝试过在 API 中增加：
+3）尝试过多种在 API 中增加网络相关的配置，均未找到合理的方法
+示例：
 TaskTemplate.Networks
 
     {
@@ -142,7 +147,8 @@ TaskTemplate.Networks
         }
     }
 
-但效果是：
+
+注：执行有风险，效果是：
 ingress网络消失，该 service 对外发布的端口消失。
 
 因为，创建 service 时：
@@ -156,6 +162,20 @@ docker service create --name t001 --network t001only --publish 22222:80 --detach
 注2：或许可以尝试在更新 service 的过程中，指定 ip 和 port 等信息，待后续测试后再更新本段信息。
 
 
+相关报错：
+
+【rm service】
+msg="Error removing service lvmkw77uhqcxjfzgtls48aen1: rpc error: code = 4 desc = context deadline exceeded"
+【create service】
+msg="Handler for POST /v1.30/services/t001/update returned error: rpc error: code = 2 desc = update out of sequence"
+
+
+
+4）查看报错的方法
+~]# journalctl -u docker -a -S "2017-09-18 14:00" |grep "rpc error" |awk -F'=' '{print $NF}' |sort |uniq |sed -e 's/"$//g' -e 's/^\ //g'
+context deadline exceeded
+networks must be migrated to TaskSpec before being changed
+update out of sequence
 
 
 
