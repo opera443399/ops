@@ -1,7 +1,7 @@
-curlµÄÓÃ·¨¼ÇÂ¼
+curlçš„ç”¨æ³•è®°å½•
 2015/12/25
 
-1¡¢httpÇëÇóÌø×ª
+1ã€httpè¯·æ±‚è·³è½¬
 [root@n86 bin]# curl -I -L 10.50.200.32
 HTTP/1.1 302 FOUND
 Server: nginx/1.6.2
@@ -21,9 +21,9 @@ X-Frame-Options: SAMEORIGIN
 Set-Cookie: csrftoken=5dY37iQgcjQnYh1jZdrxptyIkTfUh3Rr; expires=Fri, 23-Dec-2016 02:43:18 GMT; Max-Age=31449600; Path=/
 
 
-2¡¢httpsÇëÇóGETºÍPUT
-Ê¹ÓÃÖ¤Êé  curl -s --cacert ca.crt
-ºöÂÔÖ¤Êé  curl -s -k
+2ã€httpsè¯·æ±‚GETå’ŒPUT
+ä½¿ç”¨è¯ä¹¦  curl -s --cacert ca.crt
+å¿½ç•¥è¯ä¹¦  curl -s -k
 curl -s -k -u "user:passwd" -H "Content-type: application/xml" -X GET https://abc.com/api/vms
 
 curl -s -k \
@@ -40,15 +40,15 @@ curl -s -k \
 
 
 
-3¡¢http×´Ì¬
+3ã€httpçŠ¶æ€
 hostname=www.qq.com
 
-1£©µÃµ½http status
+1ï¼‰å¾—åˆ°http status
 [root@svr200-22 ~]# curl -o /dev/null -s -w %{http_code} ${hostname}
 200
 
 
-2£©µÃµ½ÏêÏ¸µÄ http headers ĞÅÏ¢
+2ï¼‰å¾—åˆ°è¯¦ç»†çš„ http headers ä¿¡æ¯
 [root@svr200-22 ~]# curl -o /dev/null -v http://${hostname}
 * About to connect() to www.qq.com port 80 (#0)
 *   Trying 14.17.32.211... connected
@@ -80,7 +80,7 @@ hostname=www.qq.com
 
 
  
-3£©Ö¸¶¨Ò»¸öÄ¿±êÖ÷»úIP£¨´Ë´¦ÒÔ´ÓdnsÖĞµÃµ½µÄÒ»¸ö½âÎö½á¹ûÎªÀı£©£¬µÃµ½ http headers ĞÅÏ¢£º
+3ï¼‰æŒ‡å®šä¸€ä¸ªç›®æ ‡ä¸»æœºIPï¼ˆæ­¤å¤„ä»¥ä»dnsä¸­å¾—åˆ°çš„ä¸€ä¸ªè§£æç»“æœä¸ºä¾‹ï¼‰ï¼Œå¾—åˆ° http headers ä¿¡æ¯ï¼š
 [root@svr200-22 ~]# nslookup ${hostname} |grep Address |grep -v "#53$" |cut -d " " -f2 |head -n 1 |xargs -i curl -I -H "Host:${hostname}" http://{}/ 
 HTTP/1.1 200 OK
 Server: squid/3.4.1
@@ -94,7 +94,7 @@ Vary: Accept-Encoding
 X-Cache: HIT from shenzhen.qq.com
 
 
-4£©Ö¸¶¨Ò»¸öÄ¿±êÖ÷»úIP£¨´Ë´¦ÒÔ´ÓdnsÖĞµÃµ½µÄÒ»¸ö½âÎö½á¹ûÎªÀı£©£¬µÃµ½ÏêÏ¸µÄ http headers ĞÅÏ¢£º
+4ï¼‰æŒ‡å®šä¸€ä¸ªç›®æ ‡ä¸»æœºIPï¼ˆæ­¤å¤„ä»¥ä»dnsä¸­å¾—åˆ°çš„ä¸€ä¸ªè§£æç»“æœä¸ºä¾‹ï¼‰ï¼Œå¾—åˆ°è¯¦ç»†çš„ http headers ä¿¡æ¯ï¼š
 [root@svr200-22 ~]# nslookup ${hostname} |grep Address |grep -v "#53$" |cut -d " " -f2 |head -n 1 |xargs -i curl -o /dev/null -v -H "Host:${hostname}" http://{}/
 * About to connect() to 14.17.32.211 port 80 (#0)
 *   Trying 14.17.32.211... connected
@@ -124,8 +124,27 @@ X-Cache: HIT from shenzhen.qq.com
 * Closing connection #0
 
 
-5£©µÃµ½ÇëÇóÏìÓ¦Ê±¼ä
+5ï¼‰å¾—åˆ°è¯·æ±‚å“åº”æ—¶é—´
 [root@svr200-22 ~]# curl -o /dev/null -s -w "time_connect: %{time_connect}\ntime_starttransfer: %{time_starttransfer}\ntime_total: %{time_total}\n" ${hostname}
 time_connect: 0.046
 time_starttransfer: 0.078
 time_total: 0.078
+
+
+
+4ã€curl GET è¯·æ±‚ä¸­ä¼ é€’å‚æ•°ä¸º json æ ¼å¼ï¼Œä¸”éœ€è¦ä¼ é€’å˜é‡è¿›å»æ—¶ï¼Œå¦‚ä½•å¤„ç†è½¬ä¹‰çš„é—®é¢˜
+æœ‰2ç§æ–¹å¼æ¥å¤„ç†ï¼š
+
+1ï¼‰è½¬ä¹‰å‚æ•°ä¸­çš„ï¼š {} [] " 
+curl -s \
+    --unix-socket /var/run/docker.sock \
+    "http:/services?filters=\{\"name\":\[\"${service_name}\"\]\}" \
+    |jq '.'
+
+1ï¼‰è½¬ä¹‰å‚æ•°ä¸­çš„ï¼š urlå¤–å±‚ä¸ç”¨""åŒ…å«ï¼Œå†…å±‚ä½¿ç”¨ '' æ¥é™åˆ¶ã€‚
+curl -s \
+    --unix-socket /var/run/docker.sock \
+    http:/services?filters='\{"name":\["'${service_name}'"\]\}' \
+    |jq '.'
+    
+    
