@@ -1,14 +1,27 @@
 docker深入2-API示例
-2017/9/18
+2017/9/19
+
 
 一、目的
-演示 http API 使用的方式
+1、前言
+演示 http API 如何使用，作为入门指引，或许能帮助到人，因为 docker 的 API 文档是自动生成的（看起来是用的 Swagger 有待后续深入研究），我比较笨，没找到太多有用的示例，在自己探索的路上毕竟浪费了点时间，本文若能节约你的时间，是我的幸运。
 注1：本次实例是在 docker swarm mode 下使用的，目的是：更新指定服务的镜像。
 注2：要在 swarm manager node 上执行。
 
-docker 的 API 文档是自动生成的，没有太多有用的示例可用。
+首先，当然是建议先看官方文档 Docker Engine API and SDKs
+https://docs.docker.com/engine/api/
 
-【版本】
+有3个类型的示例：go, python, curl
+
+如果熟悉 go 或者 python 的童鞋，要使用 SDK 来达到自己的目的，建议结合 API 文档看 json output 的字段是否有你需要的，然后去获取它。
+https://docs.docker.com/engine/api/v1.30
+
+
+go 的示例：
+https://github.com/opera443399/ops/blob/master/doc/Go/src/abc.com/demo/docker_api_exp/app.go
+
+
+2、版本
 ~]# docker version
 Client:
  Version:      17.06.0-ce
@@ -183,6 +196,7 @@ update out of sequence
     
 ZYXW、参考
 1、API
+https://docs.docker.com/engine/api/
 https://docs.docker.com/engine/api/v1.30
 
 2、moby src
