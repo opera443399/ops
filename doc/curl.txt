@@ -141,10 +141,19 @@ curl -s \
     "http:/services?filters=\{\"name\":\[\"${service_name}\"\]\}" \
     |jq '.'
 
-1）转义参数中的： url外层不用""包含，内层使用 '' 来限制。
+2）转义参数中的： url外层不用""包含，内层使用 '' 来限制。
 curl -s \
     --unix-socket /var/run/docker.sock \
     http:/services?filters='\{"name":\["'${service_name}'"\]\}' \
     |jq '.'
     
+3）实例
+~]$ curl "127.0.0.1:10001/services?filters=\{\"name\":\[\"${service_name}\"\]\}"
+GET /services?filters={"name":[""]} HTTP/1.1
+
+~]$ curl 127.0.0.1:10001/services?filters='\{"name":\["'${service_name}'"\]\}'
+GET /services?filters={"name":[""]} HTTP/1.1
+
+    
+
     
