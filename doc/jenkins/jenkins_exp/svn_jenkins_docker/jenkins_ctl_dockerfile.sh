@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#2017/9/18
+#2017/9/19
 #set -e
 
 ################################ global settings ################################
@@ -192,43 +192,22 @@ function do_push(){
             print_info "[AUTO_UPDATE_SERVICE] SWARM_MGR_IP is empty in Dockerfile!"
             exit 1
         fi
-        
-        service_version_index=$(curl -s \
-                                    http://${swarm_mgr_ip}:2375/v1.30/services?filters='\{"name":\["'${service_name}'"\]\}' \
-                                    |jq '.[].Version.Index')
-        if [[ ${service_version_index} =~ "^[0-9]+$" ]]; then
-            print_info "[AUTO_UPDATE_SERVICE] failed to get service_version_index from swarm mgr[${swarm_mgr_ip}]"
+        docker -H ${swarm_mgr_ip} service ls -f "name=${service_name}"
+        if [ ! $? -eq 0 ]; then
+            print_info "[AUTO_UPDATE_SERVICE] failed to execute task on remote: '${swarm_mgr_ip}'"
             exit 1
         fi
         
-        print_info "service: ${service_name}, service version index: ${service_version_index}"
-        print_info "service image latest: ${service_image_latest}"
-        print_info "call ${swarm_mgr_ip} to update this service now!"
-        ret=$(curl -s \
-                    "http://${swarm_mgr_ip}:2375/v1.30/services/${service_name}/update?version=${service_version_index}" \
-                    -X POST \
-                    -H "Content-Type: application/json" \
-                    -d "
-                    {
-                        \"Name\": \"${service_name}\",
-                        \"TaskTemplate\": {
-                            \"ContainerSpec\": {
-                                \"Image\": \"${service_image_latest}\"
-                            }
-                        }
-                    }
-                    " |jq '.')
-        if [ $(echo ${ret} |grep '"Warnings": null' 1>/dev/null && echo 0 || echo 1) -eq 0 ]; then
-            curl -s \
-                http://${swarm_mgr_ip}:2375/v1.30/services?filters='\{"name":\["'${service_name}'"\]\}' \
-                |jq '.'
+        print_info "service [${service_name}] will update image to:\n ${service_image_latest}"
+        print_info "execute task on remote [${swarm_mgr_ip}] to update this service now!"
+        print_debug "~] docker -H ${swarm_mgr_ip} service update --image ${service_name} ${service_image_latest}"
+        local ret=$(docker -H ${swarm_mgr_ip} service update --image ${service_image_latest} ${service_name})
+        if [ $(echo ${ret} |head -n1 |grep "^${service_name}$" 1>/dev/null && echo 0 || echo 1) -eq 0 ]; then
+            docker -H ${swarm_mgr_ip} service ls -f "name=${service_name}"
         else
-            print_info "[AUTO_UPDATE_SERVICE] failed to update service: \n${ret}"
+            print_info "[AUTO_UPDATE_SERVICE] failed to update service ${service_name}\n${ret}"
             exit 1
         fi
-        
-        
-        print_line
     else
         print_debug "[AUTO_UPDATE_SERVICE] derective not found, skipped.\n\nEND OF THE TASK."
     fi
@@ -288,20 +267,6 @@ function do_cleanup_containers_not_running(){
 }
 
 
-function do_cleanup_images_untagged(){
-    print_info 'This will display untagged images that are the leaves of the images tree (not intermediary layers). These images occur when a new build of an image takes the repo:tag away from the image ID, leaving it as <none>:<none> or untagged. A warning will be issued if trying to remove an image when a container is presently using it.'
-    local cnt=$(docker images --filter "dangling=true" -q |wc -l)
-    if [ ${cnt} -gt 0 ]; then
-        print_debug '~]# docker images --filter "dangling=true"'
-        docker images --filter "dangling=true"
-        print_debug '~]# docker rmi $(docker images -f "dangling=true" -q)'
-        docker rmi $(docker images -f "dangling=true" -q)
-    else
-        print_info 'not found.'
-    fi
-}
-
-
 ################################ main ################################
 function usage(){
     cat <<_EOF
@@ -341,7 +306,6 @@ case $1 in
         docker system prune
         docker image prune
         do_cleanup_containers_not_running
-        #do_cleanup_images_untagged
         ;;
     *)
         usage
