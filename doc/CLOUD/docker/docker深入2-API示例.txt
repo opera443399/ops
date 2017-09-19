@@ -91,7 +91,9 @@ curl -s \
 状态：未解决
 
 1）如果直接使用上述方案，则报错如下
-msg="Handler for POST /v1.30/services/t001/update returned error: rpc error: code = 12 desc = networks must be migrated to TaskSpec before being changed"
+{
+  "message": "rpc error: code = 12 desc = networks must be migrated to TaskSpec before being changed"
+}
 
 2）注意下述关于 Networks 的注释
 
@@ -176,19 +178,104 @@ docker service create --name t001 --network t001only --publish 22222:80 --detach
 
 
 相关报错：
+~]# journalctl -u docker -a -S "2017-09-18 14:00" |sed -r "s/(.*)msg=(.*)/\2/g" |grep rpc |sort |uniq
+"Error updating service t001: rpc error: code = 12 desc = networks must be migrated to TaskSpec before being changed"
+"Error creating service t001: rpc error: code = 4 desc = context deadline exceeded"
+"Error removing service t001: rpc error: code = 4 desc = context deadline exceeded"
+"Error updating service t001: rpc error: code = 2 desc = update out of sequence"
 
-【rm service】
-msg="Error removing service lvmkw77uhqcxjfzgtls48aen1: rpc error: code = 4 desc = context deadline exceeded"
-【create service】
-msg="Handler for POST /v1.30/services/t001/update returned error: rpc error: code = 2 desc = update out of sequence"
+"Handler for POST /v1.30/services/t001/update returned error: rpc error: code = 12 desc = networks must be migrated to TaskSpec before being changed"
+"Handler for POST /services/create returned error: rpc error: code = 4 desc = context deadline exceeded"
+"Handler for DELETE /v1.30/services/t001 returned error: rpc error: code = 4 desc = context deadline exceeded"
+"Handler for POST /v1.30/services/t001/update returned error: rpc error: code = 2 desc = update out of sequence"
 
 
 
-4）查看报错的方法
-~]# journalctl -u docker -a -S "2017-09-18 14:00" |grep "rpc error" |awk -F'=' '{print $NF}' |sort |uniq |sed -e 's/"$//g' -e 's/^\ //g'
-context deadline exceeded
-networks must be migrated to TaskSpec before being changed
-update out of sequence
+2、昨天的测试后，出现创建的 service 无法正常运行的错误追踪
+从头开始，继续排错。
+
+1）创建一个 global 类型的服务
+~]# docker service create --name t002 --publish 10008:80 --mode global --detach=true nginx:latest
+
+2）查看服务状态
+~]# docker service ls -f 'name=t002'
+ID                  NAME                MODE                REPLICAS            IMAGE               PORTS
+5a8nps5pssho        t002                global              0/4                 nginx:latest        *:10008->80/tcp
+~]# docker service ps t002
+ID              NAME                    IMAGE           NODE                DESIRED STATE       CURRENT STATE        ERROR   PORTS
+4vr4ehhj17l3    t002.node1_id_here      nginx:latest    node1.test.com      Running             New 21 minutes ago                       
+0k2ttjveis6t    t002.node2_id_here      nginx:latest    node2.test.com      Running             New 21 minutes ago                       
+wwopgjy8pfxj    t002.node3_id_here      nginx:latest    node3.test.com      Running             New 21 minutes ago                                     
+
+果然，没有端口映射，服务还没上线：
+~]# docker service inspect --pretty t002
+
+ID:		5a8nps5psshoemixl8w6iygss
+Name:		t002
+Service Mode:	Global
+Placement:
+UpdateConfig:
+ Parallelism:	1
+ On failure:	pause
+ Monitoring Period: 5s
+ Max failure ratio: 0
+ Update order:      stop-first
+RollbackConfig:
+ Parallelism:	1
+ On failure:	pause
+ Monitoring Period: 5s
+ Max failure ratio: 0
+ Rollback order:    stop-first
+ContainerSpec:
+ Image:		nginx:latest
+Resources:
+Endpoint Mode:	vip
+
+查看 task 信息：
+curl -s --unix-socket /var/run/docker.sock http:/tasks |jq '.' >tmp.1
+  {
+    "ID": "wwopgjy8pfxj4baa3jrn438rm",
+    "Version": {
+      "Index": 5070352
+    },
+    "CreatedAt": "2017-09-19T03:22:07.779333332Z",
+    "UpdatedAt": "2017-09-19T03:22:07.779333332Z",
+    "Labels": {},
+    "Spec": {
+      "ContainerSpec": {
+        "Image": "nginx:latest"
+      },
+      "Placement": {},
+      "ForceUpdate": 0
+    },
+    "ServiceID": "5a8nps5psshoemixl8w6iygss",
+    "NodeID": "node2_id_here",
+    "Status": {
+      "Timestamp": "2017-09-19T03:22:07.77932103Z",
+      "State": "new",
+      "Message": "created",
+      "ContainerStatus": {},
+      "PortStatus": {}
+    },
+    "DesiredState": "running"
+  }
+
+该 task 的状态不符合预期，最终 service 启动失败。
+
+
+3）日志
+~]# journalctl -u docker -a -S "2017-09-19 11:00" |sed -r "s/(.*)msg=(.*)/\2/g" |sort |uniq |grep -vE "(Logs begin|taskmanager|no pull access|Node join event|for pull|authentication|raft)"
+"Could not parse VIP address  while releasing"
+"error deallocating vip" error="invalid CIDR address: " vip.addr= vip.network=fjvkitgqzewmtujakidzo38pk
+"Failed allocation for service 5a8nps5psshoemixl8w6iygss" error="could not find an available IP while allocating VIP" module=node node.id=node2_id_here
+"task allocation failure" error="service 5a8nps5psshoemixl8w6iygss to which this task 0k2ttjveis6tliuxqyuxqyp97 belongs has pending allocations" module=node node.id=node2_id_here
+"task allocation failure" error="service 5a8nps5psshoemixl8w6iygss to which this task 4vr4ehhj17l3f768ksc14w6rz belongs has pending allocations" module=node node.id=node2_id_here
+"task allocation failure" error="service 5a8nps5psshoemixl8w6iygss to which this task wwopgjy8pfxj4baa3jrn438rm belongs has pending allocations" module=node node.id=node2_id_here
+
+
+
+初步看起来，似乎是网络方面的问题，没有可用的 VIP 了？神奇，，待查证。
+
 
 
 
