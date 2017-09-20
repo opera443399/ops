@@ -333,8 +333,43 @@ Push Events
         
 【源码管理】
 在源码管理模块选择Subversion。
-Repository URL中填入svn repo地址。（如果Jenkins master时区和SVN服务器时区不一致，请在repo地址末尾添加 @HEAD）
+Repository URL中填入svn repo地址。【特别注意：注1】
 Credentials中添加svn服务器的用户名和密码。
+
+~~~~~注1
+########################################################################
+重点：为了避免Jenkins master时区和SVN服务器时区不一致，请在repo地址末尾添加 @HEAD，例如：http://svn_server/repo_name@HEAD
+否则 jenkins 构建时 update svn 仓库是根据 jenkins 服务器当前的时间来拉取的，极可能拉取到的是一个旧的 svn 版本，从而引发错误。
+jenkins 上的相关说明：
+Specify the subversion repository URL to check out, such as "http://svn.apache.org/repos/asf/ant/". You can also add "@NNN" at the end of the URL to check out a specific revision number, if that's desirable. This works for Subversion Revision Keywords and Dates like e.g. "HEAD", too. 
+When you enter URL, Jenkins automatically checks if Jenkins can connect to it. If access requires authentication, it will ask you the necessary credential. If you already have a working credential but would like to change it for other reasons, click this link and specify different credential. 
+During the build, revision number of the module that was checked out is available through the environment variable SVN_REVISION, provided that you are only checking out one module. If you have multiple modules checked out, use the svnversion command. If you have multiple modules checked out, you can use the svnversion command to get the revision information, or you can use the SVN_REVISION_<n> environment variables, where <n> is a 1-based index matching the locations configured. The URLs are available through similar SVN_URL_<n> environment variables.
+
+svn的文档参考：
+http://svnbook.red-bean.com/en/1.5/svn.tour.revs.specifiers.html
+
+~~~~~案例
+jenkins构建过程中，遇到一个问题：获取 svn postcommit 触发传递的参数和作者信息，出现混乱，初步判断和 jenkins 服务器停机维护有关系。
+注意到以下提示：
+Updating http://svn_server/repo_name at revision '2017-09-20T15:52:45.978 +0800'
+U         xxxx
+At revision 312
+
+WARNING: clock of the subversion server appears to be out of sync. This can result in inconsistent check out behavior.
+
+
+提交版本313到svn -> svn hook postcommit 请求 jenkins 远程API -> 触发任务：http://jenkins_server/job/test01/401/changes -> 此处却获取到svn版本312的内容
+
+核对时间发现：
+15：53由版本313触发的构建
+在 jenkins 服务器上的日志显示 update 的 svn 仓库版本却是 312，这是因为构建时指定了版本的时间为15:52
+Updating http://svn_server/repo_name at revision '2017-09-20T15:52:45.978 +0800'
+
+
+小结：初步判断是jenkins服务器今天关机维护后，时间没及时同步导致的异常。
+解决方法：在svn仓库的url后指定 @HEAD
+########################################################################
+
 
 
 【构建触发器】（注：在svn中使用hook脚本过滤出最新版本中有变动的image目录名称作为参数传递到这里来build）
