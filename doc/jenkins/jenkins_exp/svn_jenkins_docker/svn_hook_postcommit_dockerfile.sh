@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#2017/9/4
+#2017/9/20
 
 svn_repository="$1"
 svn_repository_revision="$2"
@@ -51,4 +51,4 @@ function do_filter_changed(){
 }
 
 echo "--------------------[`date`]----------------------" >>${f_log}
-do_filter_changed >>${f_log}
+do_filter_changed >>${f_log} 2>&1
