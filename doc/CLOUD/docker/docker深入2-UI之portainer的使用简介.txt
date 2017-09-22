@@ -1,7 +1,10 @@
 docker深入2-UI之 portainer 的使用简介
-2017/8/15
+2017/9/20
 
-一、配置实例
+一、前言
+预计该 UI 仅满足部分需求，还有坑要填，部分需求得自己去实现。
+
+二、配置实例
 1、配置防火墙
 示例：
 iptables -A INPUT -s 192.168.200.0/24 -p tcp -m tcp --dport 2375 -j ACCEPT
@@ -50,7 +53,7 @@ http://node_ip:9000
 
 
 
-二、FAQ
+三、FAQ
 1、在 UI 中 service restart 策略 默认值为 none 的疑惑。
 UI创建的 service 在页面显示策略的值为 none 但实际测试发现：
 
