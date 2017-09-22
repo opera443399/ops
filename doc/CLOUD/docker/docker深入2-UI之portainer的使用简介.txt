@@ -1,7 +1,7 @@
 docker深入2-UI之 portainer 的使用简介
 2017/8/15
 
-
+一、配置实例
 1、配置防火墙
 示例：
 iptables -A INPUT -s 192.168.200.0/24 -p tcp -m tcp --dport 2375 -j ACCEPT
@@ -25,28 +25,46 @@ If you use -v or --volume to bind-mount a file or directory that does not yet ex
 If you use --mount to bind-mount a file or directory that does not yet exist on the Docker host, Docker does not automatically create it for you, but generates an error.
 
 
-（本次示例仅在swarm集群的其中一个节点创建该目录即可，这样一来，没有该目录的节点，启动服务时将报错）
-# mkdir -p /data/portainer
+（本次示例仅在swarm集群的其中一个节点创建该目录即可，这样一来，没有该目录的节点，启动服务时将报错，后续可考虑使用 NFS 之类的共享存储来存放数据。）
+# mkdir -p /data/portainer_dev
 
 使用 swarm 集群的方式运行：
 # docker service create \
-    --name portainer \
+    --name portainer_dev \
     --detach=true \
     --publish 9000:9000 \
     --constraint 'node.role == manager' \
     --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
-    --mount type=bind,src=/data/portainer,dst=/data \
+    --mount type=bind,src=/data/portainer_dev,dst=/data \
     portainer/portainer \
     -H unix:///var/run/docker.sock
     
     
 或直接运行一个容器：
-# docker run --restart=unless-stopped -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock -v /data/portainer:/data portainer/portainer -H unix:///var/run/docker.sock
+# docker run --restart=unless-stopped -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock -v /data/portainer_dev:/data --name portainer_dev portainer/portainer -H unix:///var/run/docker.sock
 
 4、请求UI界面
-http://服务器IP:9000
+http://node_ip:9000
 
 设置管理员密码。
+
+
+
+二、FAQ
+1、在 UI 中 service restart 策略 默认值为 none 的疑惑。
+UI创建的 service 在页面显示策略的值为 none 但实际测试发现：
+
+默认策略是：any
+[root@test01 ~]# docker service inspect --format '{{ .Spec.TaskTemplate.RestartPolicy.Condition }}' t001
+any
+
+且测试集群一个 node 下线后，指定的 service 的副本是否会自动漂移到其他 node 时发现：
+命令行得到的的结果，符合预期；
+UI 得到的结果，不符合预期；（任务还在已经下线的 node 中显示为 running 状态）
+
+结论： UI 的显示错误。
+
+
 
 
 
