@@ -1,0 +1,43 @@
+docker深入2-熟悉 ingress routing mesh 的工作方式
+2017/9/22
+
+1、目的
+总所周知，service 通过 ingress load balancing 来发布服务，且 swarm 集群中所有 node 都参与到 ingress 路由网格（ingress routing mesh） 中，访问任意一个 node+PublishedPort 即可访问到服务。
+其中负载均衡相关的原理是怎样的呢？
+网络流量是怎样流动的呢？
+让我们探索一下吧。
+
+
+2、具体请参考博文，有空翻译一下。
+How Docker Swarm Container Networking Works – Under the Hood
+https://neuvector.com/blog/docker-swarm-container-networking/
+
+
+3、划重点
+docker 通过 iptables 转发流量，给流量打标签，最后通过 IPVS 模块来做4层负载均衡到后端容器上
+
+主要查看的指令：
+docker network inspect ingress
+docker network inspect docker_gwbridge
+
+
+cd /var/run
+ln -s /var/run/docker/netns netns
+    
+ip netns exec ingress_sbox ip a
+
+ip netns exec ingress_sbox iptables -nL -t nat
+ip netns exec ingress_sbox iptables -nL -t mangle
+
+ip netns exec ingress_sbox ipvsadm -ln
+
+
+ZYXW、参考
+1、数人云工程师手记 | Docker1.12服务发现，负载均衡和Routing Mesh
+http://blog.shurenyun.com/shurenyun-docker-168/
+2、How Docker Swarm Container Networking Works – Under the Hood
+https://neuvector.com/blog/docker-swarm-container-networking/
+3、doc
+https://docs.docker.com/engine/swarm/key-concepts/#load-balancing
+https://docs.docker.com/engine/swarm/networking/#customize-the-docker_gwbridge
+https://docs.docker.com/engine/swarm/ingress/
