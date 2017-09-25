@@ -6,7 +6,7 @@
  * go install app.go
  * CGO_ENABLED=0 go build -a --installsuffix cgo --ldflags="-s" -o whoamI
  *
- * pc@2017/8/16
+ * pc@2017/9/25
  *
 */
 
@@ -28,7 +28,7 @@ import (
 var port string
 
 func init() {
-    flag.StringVar(&port, "port", "80", "listen the port as given.")
+    flag.StringVar(&port, "port", "80", "listen to the given port.")
 }
 
 func main() {
@@ -86,7 +86,7 @@ func index(w http.ResponseWriter, req *http.Request) {
     req.Write(w)
 
     fmt.Fprintln(w, "\n---- Active Endpoint ----\n")
-    fmt.Fprintln(w, "[howto] version: 0.7 \n",
+    fmt.Fprintln(w, "[howto] version: 0.9 \n",
                     "   curl 127.0.0.1/ \n",
                     "   curl 127.0.0.1/?wait=2s \n",
                     "   curl 127.0.0.1/test \n",
