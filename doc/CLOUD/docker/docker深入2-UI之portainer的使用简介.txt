@@ -69,6 +69,22 @@ UI 得到的结果，不符合预期；（任务还在已经下线的 node 中�
 
 
 
+2、在 UI 页面如何升级 portainer 这个 service 呢？
+获取新版本的 digests 串：
+]# docker images --digests |grep portainer
+
+例如：
+从
+sha256:81e216c4b05ab16fbabb69e447fbe0ee408e29cc3aab0404e21e7507d3648df5
+升级为：
+sha256:c56769dbee09a51af76d7df9fdc5d18411a4328cf1db512416b858a0f831d925
+
+
+则新的 image 为：
+portainer/portainer:latest@sha256:c56769dbee09a51af76d7df9fdc5d18411a4328cf1db512416b858a0f831d925
+
+更新该 service 后刷新下页面即可使用新版本。
+
 
 
 
