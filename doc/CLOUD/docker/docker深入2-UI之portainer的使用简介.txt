@@ -1,5 +1,5 @@
 docker深入2-UI之 portainer 的使用简介
-2017/9/20
+2017/9/26
 
 一、前言
 预计该 UI 仅满足部分需求，还有坑要填，部分需求得自己去实现。
@@ -86,8 +86,19 @@ portainer/portainer:latest@sha256:c56769dbee09a51af76d7df9fdc5d18411a4328cf1db51
 更新该 service 后刷新下页面即可使用新版本。
 
 
+3、如何限制 CPU 等资源
+请升级到 1.14.1 以后的版本
+Add the ability to manage CPU/MEM limits & reservations for Swarm services: #516
+
+4、如何默认不显示所有的容器
+请升级到 1.14.1 以后的版本
+Persist the status of the show all containers filter: #1198
+
+
 
 
 ZYXW、参考
 1、doc
 https://portainer.readthedocs.io/en/latest/deployment.html
+2、github
+https://github.com/portainer/portainer/releases
