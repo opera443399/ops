@@ -96,6 +96,22 @@ Done, without errors.
 
 访问 UI 地址： http://localhost:9000
 
+有一个问题，如果是使用的本机的 docker 服务，要传递 -H unix:///var/run/docker.sock 参数进去，怎么办？
+
+~]# vim gruntfile.js 
+找到：
+
+          'docker run -d -p 9000:9000 -v $(pwd)/dist:/app -v /tmp/portainer:/data -v /var/run/docker.sock:/var/run/docker.sock:z --name portainer portainer/base /app/portainer-linux-am
+d64 --no-analytics -a /app'
+
+调整为：
+
+          'docker run -d -p 9000:9000 -v $(pwd)/dist:/app -v /tmp/portainer:/data -v /var/run/docker.sock:/var/run/docker.sock:z --name portainer portainer/base /app/portainer-linux-am
+d64 --no-analytics -a /app -H unix:///var/run/docker.sock'
+
+
+
+
 7、不要忘记 lint 代码
 ~] grunt lint
 
