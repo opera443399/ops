@@ -1,0 +1,144 @@
+docker深入2-UI之Portainer的本地构建
+2017/9/26
+
+
+一、准备环境
+依赖：Docker, Node.js >= 0.8.4 和 npm
+
+~] curl --silent --location https://rpm.nodesource.com/setup_7.x | sudo bash -
+~] yum install -y nodejs
+~] npm install -g grunt-cli
+
+二、构建
+1、checkout
+~] git clone https://github.com/portainer/portainer.git
+~] cd portainer
+
+2、使用 npm 安装依赖包
+~] npm install -g bower && npm install
+
+3、根目录没有这个目录： bower_components 的话则执行
+~] bower install --allow-root
+
+
+4、针对 centos 执行
+~] ln -s /usr/bin/sha1sum /usr/bin/shasum
+
+
+5、构建 app
+~] grunt build
+
+如果遇到这样的错误：
+Building portainer for linux-amd64
+/go/src/github.com/portainer/portainer/crypto/crypto.go:4:2: cannot find package "golang.org/x/crypto/bcrypt" in any of:
+	/usr/local/go/src/golang.org/x/crypto/bcrypt (from $GOROOT)
+	/go/src/golang.org/x/crypto/bcrypt (from $GOPATH)
+/go/src/github.com/portainer/portainer/http/handler/websocket.go:21:2: cannot find package "golang.org/x/net/websocket" in any of:
+	/usr/local/go/src/golang.org/x/net/websocket (from $GOROOT)
+	/go/src/golang.org/x/net/websocket (from $GOPATH)
+mv: cannot stat ‘api/cmd/portainer/portainer-linux-amd64’: No such file or directory
+Warning: Command failed: build/build_in_container.sh linux amd64
+mv: cannot stat ‘api/cmd/portainer/portainer-linux-amd64’: No such file or directory
+ Use --force to continue.
+
+Aborted due to warnings.
+
+那是因为网络可达性问题，国内访问 golang.org 异常。
+~]# host golang.org
+golang.org is an alias for golang-consa.l.google.com.
+golang-consa.l.google.com has address 216.239.37.1
+
+
+导致这2个依赖下载失败：
+golang.org/x/crypto/bcrypt
+golang.org/x/net/websocket
+
+
+解决方法：
+~] go get github.com/golang/crypto/tree/master/bcrypt
+~] go get github.com/golang/net/tree/master/websocket
+
+~] cd $GOPATH/src
+~] mkdir golang.org/x -p
+~] mv github.com/golang/* golang.org/x/
+
+
+然后再切换到源码目录，调整构建脚本： 
+
+~] vim build/build_in_container.sh
+挂载本地的 $GOPATH/src/golang.org 到容器路径：/go/src/golang.org
+
+docker run --rm -tv $(pwd)/api:/src -e BUILD_GOOS="$1" -e BUILD_GOARCH="$2" portainer/golang-builder:cross-platform /src/cmd/portainer
+
+调整为：
+
+docker run --rm -tv $(pwd)/api:/src -v $GOPATH/src/golang.org:/go/src/golang.org -e BUILD_GOOS="$1" -e BUILD_GOARCH="$2" portainer/golang-builder:cross-platform /src/cmd/portainer
+
+
+最后重新构建一次：
+~] grunt build
+（略）
+Cleaning "dist/js/angular.37dfac18.js"...OK
+Cleaning "dist/js/portainer.cab56db9.js"...OK
+Cleaning "dist/js/vendor.4edc9b0f.js"...OK
+Cleaning "dist/css/portainer.e7f7fdaa.css"...OK
+
+Done, without errors.
+
+
+看到上述输出，表示符合预期。
+
+
+
+
+6、运行（可以自动重启）
+~] grunt run-dev
+
+访问 UI 地址： http://localhost:9000
+
+7、不要忘记 lint 代码
+~] grunt lint
+
+
+
+三、开发需求示例
+可结合 github 的搜索功能来查找关键字。
+
+1、需求：页面-容器列表-默认不显示所有容器
+注1：从 1.14.1 版本开始使用 cookie 来记录是否显示所有的状态（Persist the status of the show all containers filter: #1198），其实完全可以不更改代码，去掉 checkbox 的选择后，下次登录还是 unchecked 的状态，本例仅作为修改代码的一个 howto 来展示。
+注2：从 1.14.1 版本开始，新增了针对资源的限制（Add the ability to manage CPU/MEM limits & reservations for Swarm services: #516），不妨一试。
+https://github.com/portainer/portainer/releases
+
+
+
+目的：调整 filter_containerShowAll 的默认值为 false 来达到初始化的目的。
+
+~] vim app/services/localStorage.js
+从：
+    getFilterContainerShowAll: function() {
+      var filter = localStorageService.cookie.get('filter_containerShowAll');
+      if (filter === null) {
+        filter = true;
+      }
+      return filter;
+    }
+    
+调整为：
+  
+    getFilterContainerShowAll: function() {
+      var filter = localStorageService.cookie.get('filter_containerShowAll');
+      if (filter === null) {
+        filter = false;
+      }
+      return filter;
+    }
+
+
+
+
+
+ZYXW、参考
+1、doc
+https://portainer.readthedocs.io/en/latest/contribute.html
+2、国内下载golang.org的包有什么好办法么？
+https://gocn.io/question/362
