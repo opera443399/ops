@@ -1,5 +1,5 @@
 docker深入2-部署docker-ce服务的最佳实践
-2017/9/19
+2017/9/26
 
 
 一、目标
@@ -26,7 +26,9 @@ systemctl enable docker
 1）推荐配置如下内容
 存储驱动
 日志
-阿里云registry-mirrors
+阿里云registry-mirrors（可选，适用于访问 docker hub 很慢的场景，使用注意事项请参考后续FAQ#1）
+
+
 
 2）目录
 有多种方式来配置 docker 服务。
@@ -114,8 +116,43 @@ systemctl restart docker
 
 
 
+三、FAQ
+1、使用阿里云 Docker Hub 镜像站点和 latest 这个 tag 带来的问题
+注1：拉取镜像时，不推荐使用 latest 这个 tag 来拉取，否则可能拉取到旧的镜像，建议指定明确的版本号。
+
+问题描述
+我的 docker node 使用了 Docker Hub 镜像站点（https://cr.console.aliyun.com/#/accelerator ），然后发现一个问题：
+
+~]$ sudo cat /etc/docker/daemon.json |grep registry
+  "registry-mirrors": ["https://xxx.mirror.aliyuncs.com"]
+
+~]$ sudo docker pull opera443399/whoami
+Using default tag: latest
+latest: Pulling from opera443399/whoami
+Digest: sha256:4119c322c2d9f007af8751394a63ed6809158bc39456e6aa60ab84e7a21429c5
+Status: Image is up to date for opera443399/whoami:latest
+
+~]$ sudo docker images |grep opera
+opera443399/whoami         latest              160ed79ce86f        5 weeks ago         4.13MB
+实际上，拉取到的是一个旧的版本 160ed79ce86f 对比下面这个节点的状态（没有使用加速镜像）
+
+~]$ sudo docker pull opera443399/whoami
+Using default tag: latest
+latest: Pulling from opera443399/whoami
+Digest: sha256:a05120d9fe157868f7f1c8b842cc860fb58665d74cadaf8eb7d6091af626cccd
+Status: Downloaded newer image for opera443399/whoami:latest
+
+~]$ sudo docker images |grep opera
+opera443399/whoami          0.9                  a7878d3e0fdf        20 hours ago        4.13MB
+opera443399/whoami          latest               a7878d3e0fdf        20 hours ago        4.13MB
+opera443399/whoami          0.8                  ae008c956c53        3 weeks ago         4.13MB
+opera443399/whoami          0.7                  160ed79ce86f        5 weeks ago         4.13MB
+小结：使用阿里云的容器服务中的 Docker Hub 镜像站点后，缓存的 latest 这个 tag 是旧版本，且过了好几天还没有刷新
 
 
+已经试图反馈给阿里云，如果进展，后续更新。
+
+https://github.com/aliyun/aliyun-cli/issues/36
 
 
 
