@@ -1,5 +1,5 @@
 docker深入2-容器删除操作失败
-2017/9/4
+2017/9/26
 
 
 1、报错
@@ -103,6 +103,50 @@ The issue is the mount has leaked into another mount namespace... likely another
 
 因此，目前的结论是：挂载点泄漏，暂无最终的解决方案。
 
+
+20170926更新：
+https://github.com/moby/moby/issues/22260#issuecomment-329322860
+
+Vanuan commented 12 days ago • edited
+Looks like RHEL/CentOS 7.4 has a "detached mount" option:
+https://bugzilla.redhat.com/show_bug.cgi?id=1441737
+It is "0" by default. Does it mean we should set it to "1"? Or does a recent docker yum package has this option included?
+
+RHEL 7.4 kernel has introduced a new sysctl knob to control kernel behavior. This is called /proc/sys/fs/may_detach_mounts. This knob is set to value 0 by default. Container run times (docker and others) need the new behavior and
+want it to be set to 1.
+
+So modify runc package to drop a file say /usr/lib/sysctl.d/99-docker.conf. Contents of this file can be say following.
+
+fs.may_detach_mounts=1
+
+
+https://github.com/moby/moby/issues/22260#issuecomment-329716346
+owhen commented 11 days ago
+@antoinetran CentOS 7.4 is available. https://lists.centos.org/pipermail/centos-announce/2017-September/022532.html
+Check out some mirrors: http://mirror.wiuwiu.de/centos/7.4.1708/
+
+
+https://github.com/moby/moby/issues/22260#issuecomment-330214623
+cpuguy83 commented 8 days ago
+fs.may_detach_mounts=1 should resolve this on 7.4
+ @xdexter
+ 
+https://github.com/moby/moby/issues/22260#issuecomment-330217256
+xdexter commented 8 days ago
+Hello,
+
+The option fs.may_detach_mounts=1 fixed my problem in CentOS 7.4.
+
+Regards
+
+https://github.com/moby/moby/issues/22260#issuecomment-330222776
+cpuguy83 commented 8 days ago
+Working on a patch to make Docker set this param on startup.
+
+
+https://github.com/moby/moby/pull/34886
+
+因此，目前的结论是：在 CentOS 7.4 可以解决这个问题，待自行验证。
 
 
 
