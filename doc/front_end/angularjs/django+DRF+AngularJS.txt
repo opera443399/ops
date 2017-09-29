@@ -1,0 +1,14 @@
+django+DRF+AngularJS
+2017/9/29
+
+待完成
+
+
+
+
+1、Getting Started with Django REST Framework (DRF) and AngularJS 
+http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-1/
+http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-2/
+http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-3/
+http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-4/
+http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-5/
