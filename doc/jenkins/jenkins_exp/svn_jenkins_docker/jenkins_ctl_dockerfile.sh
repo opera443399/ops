@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#2017/9/19
+#2017/9/29
 #set -e
 
 ################################ global settings ################################
@@ -33,20 +33,22 @@ function do_init(){
     test -z ${path_to_image_dir} && path_to_image_dir=$1
     test -z ${image_version} && image_version='20170101_0000_1111'
 
-    print_info "list files changed in 30min.\n[current work dir: $(pwd)/${path_to_image_dir}]"
-    print_info "++++++++++++++++++++++"
-    find ${path_to_image_dir} -cmin -30
-    print_info "++++++++++++++++++++++"
-
     path_to_dockerfile="${path_to_image_dir}/Dockerfile"
-    if [ "X${action}" == "Xbuild" -o "X${action}" == "Xtest" ]; then
+    if [ "X${action}" == "Xbuild" ]; then
         if [ ! -f "${path_to_dockerfile}" ]; then
             print_info "Dockerfile not found for image: '${path_to_image_dir}'"
             exit 1
         fi
-    fi
+        print_info "list files changed in 30min.\n[current work dir: $(pwd)/${path_to_image_dir}]"
+        print_info "++++++++++++++++++++++"
+        find ${path_to_image_dir} -cmin -30
+        print_info "++++++++++++++++++++++"
+    elif [ "X${action}" == "Xtest" ]; then
+        if [ ! -f "${path_to_dockerfile}" ]; then
+            print_info "Dockerfile not found for image: '${path_to_image_dir}'"
+            exit 1
+        fi
 
-    if [ "X${action}" == "Xtest" ]; then
         ## as 'TEST_OFF' directive not only in the beginning, grep '^TEST_OFF' might not work.
         if [ $(grep 'TEST_OFF' ${path_to_dockerfile} 1>/dev/null && echo 0 || echo 1) -eq 0 ]; then
             print_info "jump out the unittest: Detected TEST_OFF directive in Dockerfile!"
@@ -209,7 +211,7 @@ function do_push(){
             exit 1
         fi
     else
-        print_debug "[AUTO_UPDATE_SERVICE] derective not found, skipped.\n\nEND OF THE TASK."
+        print_debug "[AUTO_UPDATE_SERVICE] directive not found, skipped.\n\nEND OF THE TASK."
     fi
 
     exit 0
