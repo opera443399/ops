@@ -1,0 +1,149 @@
+jenkins-使用Jenkinsfile来定义pipeline
+2017/9/30
+
+一、概念
+1、什么是 pipeline
+Jenkins Pipeline is a suite of plugins which supports implementing and integrating continuous delivery pipelines into Jenkins. Pipeline provides an extensible set of tools for modeling simple-to-complex delivery pipelines "as code" via the Pipeline DSL
+
+pipeline 是 jenkins 的一套插件，用于定义 CD 流程，弹性，可管理。
+
+
+2、什么是 Jenkinsfile
+通过代码的方式来管理 pipeline 
+这样一来，可以通过版本控制系统来管理。
+
+
+3、Jenkinsfile 的内容示例
+---------------------------------------------------------------------------------------
+~]# cat Jenkinsfile
+#!/usr/bin/env groovy
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Prepare') {
+            steps {
+                echo 'Preparing..'
+                echo "[+] --> Job: ${env.BUILD_URL}"
+
+            }
+        }
+        stage('Build') {
+            steps {
+                echo 'Building..'
+                sh 'xxx.sh build'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Testing..'
+                sh 'xxx.sh test'
+            }
+        }
+
+        stage('Deploy') {
+            when {
+              expression {
+                currentBuild.result == null || currentBuild.result == 'SUCCESS' 
+              }
+            }
+            steps {
+                echo 'Deploying....'
+                sh 'xxx push'
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo 'Sending....'
+            emailext attachLog: true, body: '$DEFAULT_CONTENT', recipientProviders: [[$class: 'DevelopersRecipientProvider']], subject: '$DEFAULT_SUBJECT', to: '$DEFAULT_RECIPIENTS'
+        }
+    }
+}
+---------------------------------------------------------------------------------------
+
+
+4、Blue Ocean
+Blue Ocean rethinks the user experience of Jenkins. Designed from the ground up for Jenkins Pipeline, but still compatible with Freestyle jobs, Blue Ocean reduces clutter and increases clarity for every member of the team.
+
+Blue Ocean 是 jenkins 为了增强用户体验放出来的一个新的 UI 插件。
+
+
+
+二、如何工作
+1、安装插件
+
+
+2、创建一个任务
+选择菜单：“Jenkins-新建”
+------------------------------------------------------------------------------
+    Item名称:                test_pipeline
+    （勾选）Pipeline
+    
+确定
+
+
+【General】
+
+    项目名称:                test_pipeline
+
+
+
+    
+    参数化构建过程:                    
+            String parameter
+                        名字: key01
+                        默认值: default_not_exist
+            String parameter
+                        名字: key02
+                        默认值: default_not_exist
+
+                        
+【Build Triggers】
+
+    ✔触发远程构建 (例如,使用脚本)
+        身份验证令牌：test_build_token
+    
+    
+【Pipeline】
+Definition:         Pipeline script from SCM （下拉菜单选择）
+            SCM:        Subvision
+                            Modules:
+                                        Repository URL: xxx
+                                        Credentials: xxx
+            Script Path: Jenkinsfile
+            
+
+保存
+------------------------------------------------------------------------------
+
+
+3、提交到代码仓库，触发构建后观察页面。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ZYXW、参考
+1、Getting Started with Pipeline 
+https://jenkins.io/doc/book/pipeline/getting-started/
