@@ -1,5 +1,6 @@
 curl的用法记录
-2015/12/25
+2017/10/9
+
 
 1、http请求跳转
 [root@n86 bin]# curl -I -L 10.50.200.32
@@ -133,7 +134,7 @@ time_total: 0.078
 
 
 4、curl GET 请求中传递参数为 json 格式，且需要传递变量进去时，如何处理转义的问题
-有2种方式来处理：
+有3种方式来处理：
 
 1）转义参数中的： {} [] " 
 curl -s \
@@ -147,13 +148,20 @@ curl -s \
     http:/services?filters='\{"name":\["'${service_name}'"\]\}' \
     |jq '.'
     
-3）实例
+3）使用 curl -g 参数来允许 URL 中使用  {}[] 而不用转义
+       -g, --globoff
+              This option switches off the "URL globbing parser". When you set this option, you can specify URLs that contain the letters {}[] without  having  them  being  inter‐
+              preted by curl itself. Note that these letters are not normal legal URL contents but they should be encoded according to the URI standard.
+
+
+实例
 ~]$ curl "127.0.0.1:10001/services?filters=\{\"name\":\[\"${service_name}\"\]\}"
-GET /services?filters={"name":[""]} HTTP/1.1
+GET /services?filters={"name":["t001"]} HTTP/1.1
 
 ~]$ curl 127.0.0.1:10001/services?filters='\{"name":\["'${service_name}'"\]\}'
-GET /services?filters={"name":[""]} HTTP/1.1
-
+GET /services?filters={"name":["t001"]} HTTP/1.1
     
+~]$ curl -g 127.0.0.1:10001/services?filters='{"name":["'${service_name}'"]}'
+GET /services?filters={"name":["t001"]} HTTP/1.1
 
     

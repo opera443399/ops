@@ -1,5 +1,5 @@
 docker深入2-API示例
-2017/9/19
+2017/10/9
 
 
 一、目的
@@ -52,18 +52,18 @@ Server:
 
 二、实例
 1、创建一个服务
-docker service create --name t001 --publish 22222:80 --detach=true opera443399/whoami:0.7
+docker service create --name t001 --publish 22222:80 --detach=true opera443399/whoami:0.9
 
 
 2、更新服务
 1) 目标
-service_image_latest="opera443399/whoami:0.6"
+service_image_latest="opera443399/whoami:0.7"
 service_name="t001"
 
-2) 获取当前服务的版本
-service_version_index=$(curl -s \
+2) 获取当前服务的版本            
+service_version_index=$(curl -s -g \
     --unix-socket /var/run/docker.sock \
-    http:/v1.30/services?filters='\{"name":\["'${service_name}'"\]\}' \
+    http:/v1.30/services?filters='{"name":["'${service_name}'"]}' \
     |jq '.[].Version.Index')
 
 
@@ -86,9 +86,9 @@ curl -s \
     
 
 4) 查看服务现状
-curl -s \
+curl -s -g \
     --unix-socket /var/run/docker.sock \
-    http:/services?filters='\{"name":\["'${service_name}'"\]\}' \
+    http:/services?filters='{"name":["'${service_name}'"]}' \
     |jq '.'
    
 
