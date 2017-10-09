@@ -225,10 +225,9 @@ curl -s \
 五、FAQ
 1、为何不能统一管理 swarm mode 集群下的资源
 状态：
-
 我理解，这个UI的开发理念是一个简单通用的docker UI
-目前的方式是：entrypoint，每个node都是一个entrypoint，要切换node来查看该node上的容器等信息
-未来计划增加 endpoint 的开关，一个入口，通过远程调用每个 node 上的endpoint API 来获取数据。
+目前的方式是：每个 node 都是一个 endpoint，要切换 endpoint 来执行 docker API 指令获取该 node 上的容器等信息。
+未来计划增加 swarm mode 集群管理的功能。
 
 具体的讨论，还请跟踪下这个 issue 相关的内容：
 [FEATURE REQUEST] Be able to use all the Portainer built-in functionalities in all the containers running in a swarm cluster #461
