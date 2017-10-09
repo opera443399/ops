@@ -1,5 +1,5 @@
 jenkins-使用Jenkinsfile来定义pipeline
-2017/9/30
+2017/10/9
 
 一、概念
 1、什么是 pipeline
@@ -59,7 +59,7 @@ pipeline {
     post {
         always {
             echo 'Sending....'
-            emailext attachLog: true, body: '$DEFAULT_CONTENT', recipientProviders: [[$class: 'DevelopersRecipientProvider']], subject: '$DEFAULT_SUBJECT', to: '$DEFAULT_RECIPIENTS'
+            emailext attachLog: true, body: '$DEFAULT_CONTENT', recipientProviders: [[$class: 'DevelopersRecipientProvider']], subject: '$DEFAULT_SUBJECT'
         }
     }
 }
@@ -75,7 +75,7 @@ Blue Ocean 是 jenkins 为了增强用户体验放出来的一个新的 UI 插�
 
 二、如何工作
 1、安装插件
-
+在插件管理页面，搜搜 pipeline 和 Blue Ocean 的关键词来安装你想要的插件。
 
 2、创建一个任务
 选择菜单：“Jenkins-新建”
@@ -121,7 +121,43 @@ Definition:         Pipeline script from SCM （下拉菜单选择）
 ------------------------------------------------------------------------------
 
 
-3、提交到代码仓库，触发构建后观察页面。
+3、打开上述任务页面，有如下菜单
+ Back to Dashboard
+ Status
+ Changes
+ Build with Parameters
+ 删除 Pipeline
+ 配置
+ Open Blue Ocean
+ Full Stage View
+ Embeddable Build Status
+ Pipeline Syntax
+ 
+
+其中，
+选择： Open Blue Ocean
+结果：新版本的 UI 入口。
+
+选择： Pipeline Syntax
+结果：编写 Jenkinsfile 的帮助文档（咱们重点查看这个）
+进入上述页面，有一个菜单：
+ Back
+ Snippet Generator
+ Step Reference
+ Global Variables Reference
+ Online Documentation
+ IntelliJ IDEA GDSL
+ 
+【 重点1： Snippet Generator 】
+通过这个工具，可以自动的生成你想要的 Pipeline Script 实例，快去试试吧。（上一节提到的 Jenkinsfile 的内容示例中，最后一段发邮件的内容，我百思不得其解，后来就是这样轻易得到代码的。）
+This Snippet Generator will help you learn the Pipeline Script code which can be used to define various steps. Pick a step you are interested in from the list, configure it, click Generate Pipeline Script, and you will see a Pipeline Script statement that would call the step with that configuration. You may copy and paste the whole statement into your script, or pick up just the options you care about. (Most parameters are optional and can be omitted in your script, leaving them at default values.)
+
+【 重点2： Global Variables Reference 】
+你肯定会想要用到一些全局变量，参数，那么请到这里找找文档吧。（有点遗憾的是 svn 相关的变量没找到，希望你用的是 git 来管理代码）
+
+ 
+ 
+4、提交到代码仓库，触发构建后观察页面。
 
 
 
