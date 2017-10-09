@@ -1,32 +1,33 @@
 docker深入2-UI之portainer的本地构建
-2017/9/26
+2017/10/9
 
 
 一、准备环境
 依赖：Docker, Node.js >= 0.8.4 和 npm
 
-~] curl --silent --location https://rpm.nodesource.com/setup_7.x | sudo bash -
-~] yum install -y nodejs
-~] npm install -g grunt-cli
+[root@dev_08 ~] curl --silent --location https://rpm.nodesource.com/setup_7.x | sudo bash -
+[root@dev_08 ~] yum install -y nodejs
+[root@dev_08 ~] npm install -g grunt-cli
 
 二、构建
 1、checkout
-~] git clone https://github.com/portainer/portainer.git
-~] cd portainer
+[root@dev_08 ~] cd /opt
+[root@dev_08 opt] git clone https://github.com/portainer/portainer.git
+[root@dev_08 opt] cd portainer
 
 2、使用 npm 安装依赖包
-~] npm install -g bower && npm install
+[root@dev_08 portainer] npm install -g bower && npm install
 
 3、根目录没有这个目录： bower_components 的话则执行
-~] bower install --allow-root
+[root@dev_08 portainer] bower install --allow-root
 
 
 4、针对 centos 执行
-~] ln -s /usr/bin/sha1sum /usr/bin/shasum
+[root@dev_08 portainer] ln -s /usr/bin/sha1sum /usr/bin/shasum
 
 
 5、构建 app
-~] grunt build
+[root@dev_08 portainer] grunt build
 
 如果遇到这样的错误：
 Building portainer for linux-amd64
@@ -44,7 +45,7 @@ mv: cannot stat ‘api/cmd/portainer/portainer-linux-amd64’: No such file or d
 Aborted due to warnings.
 
 那是因为网络可达性问题，国内访问 golang.org 异常。
-~]# host golang.org
+[root@dev_08 portainer]# host golang.org
 golang.org is an alias for golang-consa.l.google.com.
 golang-consa.l.google.com has address 216.239.37.1
 
@@ -55,17 +56,17 @@ golang.org/x/net/websocket
 
 
 解决方法：
-~] go get github.com/golang/crypto/tree/master/bcrypt
-~] go get github.com/golang/net/tree/master/websocket
+[root@dev_08 portainer] go get github.com/golang/crypto/tree/master/bcrypt
+[root@dev_08 portainer] go get github.com/golang/net/tree/master/websocket
 
-~] cd $GOPATH/src
-~] mkdir golang.org/x -p
-~] mv github.com/golang/* golang.org/x/
+[root@dev_08 portainer] cd $GOPATH/src
+[root@dev_08 portainer] mkdir golang.org/x -p
+[root@dev_08 portainer] mv github.com/golang/* golang.org/x/
 
 
 然后再切换到源码目录，调整构建脚本： 
 
-~] vim build/build_in_container.sh
+[root@dev_08 portainer] vim build/build_in_container.sh
 挂载本地的 $GOPATH/src/golang.org 到容器路径：/go/src/golang.org
 
 docker run --rm -tv $(pwd)/api:/src -e BUILD_GOOS="$1" -e BUILD_GOARCH="$2" portainer/golang-builder:cross-platform /src/cmd/portainer
@@ -76,7 +77,7 @@ docker run --rm -tv $(pwd)/api:/src -v $GOPATH/src/golang.org:/go/src/golang.org
 
 
 最后重新构建一次：
-~] grunt build
+[root@dev_08 portainer] grunt build
 （略）
 Cleaning "dist/js/angular.37dfac18.js"...OK
 Cleaning "dist/js/portainer.cab56db9.js"...OK
@@ -92,13 +93,13 @@ Done, without errors.
 
 
 6、运行（可以自动重启）
-~] grunt run-dev
+[root@dev_08 portainer] grunt run-dev
 
 访问 UI 地址： http://localhost:9000
 
 有一个问题，如果是使用的本机的 docker 服务，要传递 -H unix:///var/run/docker.sock 参数进去，怎么办？
 
-~]# vim gruntfile.js 
+[root@dev_08 portainer]# vim gruntfile.js 
 找到：
 
           'docker run -d -p 9000:9000 -v $(pwd)/dist:/app -v /tmp/portainer:/data -v /var/run/docker.sock:/var/run/docker.sock:z --name portainer portainer/base /app/portainer-linux-am
@@ -113,7 +114,7 @@ d64 --no-analytics -a /app -H unix:///var/run/docker.sock'
 
 
 7、不要忘记 lint 代码
-~] grunt lint
+[root@dev_08 portainer] grunt lint
 
 
 
@@ -129,7 +130,7 @@ https://github.com/portainer/portainer/releases
 
 目的：调整 filter_containerShowAll 的默认值为 false 来达到初始化的目的。
 
-~] vim app/services/localStorage.js
+[root@dev_08 portainer] vim app/services/localStorage.js
 53c53
 <         filter = false;
 ---
@@ -140,7 +141,7 @@ https://github.com/portainer/portainer/releases
 2、需求：页面-服务列表-服务-任务列表：过滤器
 
 目的：调整 tasks 页面，增加一个 filter
-~] vim app/components/service/includes/tasks.html
+[root@dev_08 portainer] vim app/components/service/includes/tasks.html
 15,19d14
 <     <rd-widget-taskbar classes="col-lg-12">
 <       <div class="pull-right">
@@ -152,12 +153,99 @@ https://github.com/portainer/portainer/releases
 ---
 >         <tr dir-paginate="task in (filteredTasks = ( tasks | orderBy:sortType:sortReverse | itemsPerPage: state.pagination_count))">
 
+
+具体请参考：
+https://github.com/portainer/portainer/pull/1242
+
+
+    
+    
+四、源码分析示例
+1、在 UI 界面中是如何请求 docker api 来完成 container list 之类的请求的？
+分析过程：
+
+1）例如，在 Container list 页面，有如下请求：
+/api/endpoints/1/docker/containers/json?all=0
+
+列出了处于 running 状态的容器，我们去找找相关的代码。
+
+
+2）找找 js 代码
+[root@dev_08 portainer]# find ./app -type f -name '*.js' -exec grep -l 'docker\/containers' {} \;
+./app/rest/docker/container.js
+./app/rest/docker/containerLogs.js
+[root@dev_08 portainer]# 
+
+[root@dev_08 portainer]# vim app/rest/docker/container.js
+
+angular.module('portainer.rest')
+.factory('Container', ['$resource', 'API_ENDPOINT_ENDPOINTS', 'EndpointProvider', function ContainerFactory($resource, API_ENDPOINT_ENDPOINTS, EndpointProvider) {
+  'use strict';
+  return $resource(API_ENDPOINT_ENDPOINTS + '/:endpointId/docker/containers/:id/:action', {
+    name: '@name',
+    endpointId: EndpointProvider.endpointID
+  },
+
+  
+  
+3）找找 go 代码
+[root@dev_08 portainer]# find ./api -type f -name '*.go' -exec grep -l '\/api\/endpoints' {} \;
+./api/http/handler/handler.go
+[root@dev_08 portainer]# 
+
+
+[root@dev_08 portainer]# vim api/http/handler/handler.go
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+        case strings.HasPrefix(r.URL.Path, "/api/endpoints"):                                   // 该请求的 URL 是 /api/endpoints 开头的
+                if strings.Contains(r.URL.Path, "/docker") {                                    // 且URL 包含 /docker
+                        http.StripPrefix("/api/endpoints", h.DockerHandler).ServeHTTP(w, r)     // 去掉 /api/endpoints 变成 /1/docker/containers/json?all=0  然后交给 DockerHandler 来处理
+
+                        
+[root@dev_08 portainer]# vim api/http/handler/docker.go
+func (handler *DockerHandler) proxyRequestsToDockerAPI(w http.ResponseWriter, r *http.Request) {
+
+        http.StripPrefix("/"+id+"/docker", proxy).ServeHTTP(w, r)                               // 去掉 /1/docker 变成 /containers/json?all=0  （这就是最终请求 docker api 的路径）
+
+        
+通过上述代理行为，最终变成请求类似这样的 docker api （具体的请求是走的本地 socket 还是 tcp 的行为尚未分析）
+
+curl -s \
+    --unix-socket /var/run/docker.sock \
+    http:/containers/json?all=0 
+
+或者：
+
+curl -s \
+    http://endpoint_ip:port/containers/json?all=0 
     
 
+    
+    
+五、FAQ
+1、为何不能统一管理 swarm mode 集群下的资源
+状态：
 
+我理解，这个UI的开发理念是一个简单通用的docker UI
+目前的方式是：entrypoint，每个node都是一个entrypoint，要切换node来查看该node上的容器等信息
+未来计划增加 endpoint 的开关，一个入口，通过远程调用每个 node 上的endpoint API 来获取数据。
+
+具体的讨论，还请跟踪下这个 issue 相关的内容：
+[FEATURE REQUEST] Be able to use all the Portainer built-in functionalities in all the containers running in a swarm cluster #461
+https://github.com/portainer/portainer/issues/461
+    
+    
+    
+    
+    
+    
 
 ZYXW、参考
 1、doc
 https://portainer.readthedocs.io/en/latest/contribute.html
 2、国内下载golang.org的包有什么好办法么？
 https://gocn.io/question/362
+3、github
+https://github.com/portainer/portainer/issues/461
+https://github.com/portainer/portainer/pull/1242
+
