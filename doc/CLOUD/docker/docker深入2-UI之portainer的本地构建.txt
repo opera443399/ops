@@ -1,5 +1,5 @@
 docker深入2-UI之portainer的本地构建
-2017/10/9
+2017/10/10
 
 
 一、准备环境
@@ -97,24 +97,50 @@ Done, without errors.
 
 访问 UI 地址： http://localhost:9000
 
-有一个问题，如果是使用的本机的 docker 服务，要传递 -H unix:///var/run/docker.sock 参数进去，怎么办？
-
-[root@dev_08 portainer]# vim gruntfile.js 
-找到：
-
-          'docker run -d -p 9000:9000 -v $(pwd)/dist:/app -v /tmp/portainer:/data -v /var/run/docker.sock:/var/run/docker.sock:z --name portainer portainer/base /app/portainer-linux-am
-d64 --no-analytics -a /app'
-
-调整为：
-
-          'docker run -d -p 9000:9000 -v $(pwd)/dist:/app -v /tmp/portainer:/data -v /var/run/docker.sock:/var/run/docker.sock:z --name portainer portainer/base /app/portainer-linux-am
-d64 --no-analytics -a /app -H unix:///var/run/docker.sock'
-
-
 
 
 7、不要忘记 lint 代码
 [root@dev_08 portainer] grunt lint
+
+
+
+8、release（通常我们使用 linux-amd64 这个平台，具体过程请参考脚本 build.sh）
+[root@dev_08 portainer]# grunt "release:linux:amd64"
+(略)
+Done, without errors.
+[root@dev_08 portainer]# ls dist/
+css  fonts  ico  images  index.html  js  portainer-linux-amd64
+[root@dev_08 portainer]# mv dist/portainer-linux-amd64 dist/portainer
+
+
+
+9、打包成镜像
+[root@dev_08 portainer]# docker build -t 'opera443399/portainer:dev' -f build/linux/Dockerfile .
+
+
+
+10、测试上述镜像
+[root@dev_08 portainer]# mkdir -p /data/portainer_dev
+[root@dev_08 portainer]# docker run -d -p 9001:9000 -v /var/run/docker.sock:/var/run/docker.sock -v /data/portainer_dev:/data --name portainer_dev opera443399/portainer:dev
+[root@dev_08 portainer]# docker ps -l
+CONTAINER ID        IMAGE                                   COMMAND             CREATED             STATUS              PORTS                    NAMES
+cbd986df765b        opera443399/portainer:dev               "/portainer"        8 seconds ago       Up 7 seconds        0.0.0.0:9001->9000/tcp   portainer_dev
+
+首次使用时将初始化一个管理员账户（本例使用 httpie 来提交）
+[root@dev_08 portainer]# http POST :9001/api/users/admin/init Username="admin" Password="Develop"
+HTTP/1.1 200 OK
+Content-Length: 0
+Content-Type: text/plain; charset=utf-8
+Date: Tue, 10 Oct 2017 08:18:19 GMT
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+
+访问页面：your_dev_ip:9001
+验证功能：符合预期
+
+清理：
+[root@dev_08 portainer]# docker rm -f portainer_dev
+
 
 
 
@@ -157,6 +183,21 @@ https://github.com/portainer/portainer/releases
 具体请参考：
 https://github.com/portainer/portainer/pull/1242
 
+
+
+3、需求：任务详情：增加一个容器 Console 的按钮
+当前操作要找到 service 下所有容器的 Console 并打开，则要执行下述步骤:
+1 个 service 对应 N 个 tasks(containers) (运行在 M nodes 中)
+
+    -> 打开 'Service Details' 页面，过滤处于 running 状态的 tasks 并注意对应的 node 名称  
+    -> 选择 node N1 并切换到 endpoint N1
+    -> 在 N1 的 'Container List' 页面上通过过滤器找到 container C1 
+    -> 在 'Container Details' 页面打开 Console
+    
+    
+[root@dev_08 portainer]# vim app/components/task/task.html
+48d47
+<               <a class="btn btn-outline-secondary" type="button" target="_blank" ui-sref="console({id: task.Status.ContainerStatus.ContainerID})"><i class="fa fa-terminal space-right" aria-hidden="true"></i>Container Console  (<i>need endpoint switch first!</i>)</a>
 
     
     
@@ -223,7 +264,7 @@ curl -s \
     
     
 五、FAQ
-1、为何不能统一管理 swarm mode 集群下的资源
+1、为何不能统一管理 swarm mode 集群下的资源？
 状态：
 我理解，这个UI的开发理念是一个简单通用的docker UI
 目前的方式是：每个 node 都是一个 endpoint，要切换 endpoint 来执行 docker API 指令获取该 node 上的容器等信息。
@@ -234,9 +275,69 @@ curl -s \
 https://github.com/portainer/portainer/issues/461
     
     
-    
-    
-    
+2、如何提交 github PR 来为本项目共享代码？
+请先阅读：https://github.com/portainer/portainer/blob/develop/CONTRIBUTING.md
+
+贡献代码的指引
+1）通用
+先看看有没有相关的 PR/issues 已经存在，如果没有则进入下一步
+打开一个 issue 讨论你要带来的一些变化（也可以在已经存在 的 issue 上讨论）
+在一个特定主题的分支上开发，不要在 master/develop 分支开发！
+新建分支时，有一些命名规则，例如：
+(type)(issue number)-text-desc
+
+举例：
+你在提交一个 bugfix 来解决 issue #361 则分支可以命名为： fix361-template-selection.
+
+2）为已经打开的 issues 贡献代码
+想做却不知道如何开始？
+
+有一些 issues 的标签是 exp/ 开头的，意味着可以供大家去开发，但有难度的区分：
+beginner: 针对不太熟系该项目代码的开发者
+intermediate: 针对该项目代码有一定理解，或对 AngularJS or Golang 有使用经验的开发者
+advanced: 针对该项目代码有深入理解的开发者
+
+可以使用 Github filters 来过滤出 issues:
+
+beginner labeled issues: https://github.com/portainer/portainer/labels/exp%2Fbeginner
+intermediate labeled issues: https://github.com/portainer/portainer/labels/exp%2Fintermediate
+advanced labeled issues: https://github.com/portainer/portainer/labels/exp%2Fadvanced
+
+3）代码 Linting
+
+检查代码使用 grunt lint 然后再提交 PR
+
+
+4）提交的信息格式
+ <type>(<scope>): <subject>
+不要超过 100 字符，整洁的 commit log 示例：
+
+ #271 feat(containers): add exposed ports in the containers view
+ #270 fix(templates): fix a display issue in the templates view
+ #269 style(dashboard): update dashboard with new layout
+
+
+有如下几类 type
+
+feat: A new feature
+fix: A bug fix
+docs: Documentation only changes
+style: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+refactor: A code change that neither fixes a bug or adds a feature
+test: Adding missing tests
+chore: Changes to the build process or auxiliary tools and libraries such as documentation generation
+Scope
+
+关于 scope ：表示
+提交的代码是改动了哪一块的内容，例如：networks, containers, images 可以使用 area 标签来关联 issue (例如：标签 area/containers 使用 containers 作为a scope)
+
+关于 subject ：表示
+简明的描述本次提交做了那些改变
+
+使用祈使句和现在时： "change" not "changed" nor "changes"
+不要大些第一个字母
+语句最后不要使用点 (.) 
+
     
 
 ZYXW、参考
