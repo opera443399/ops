@@ -60,12 +60,12 @@ golang.org/x/net/websocket
 [root@dev_08 portainer]# go get github.com/golang/net/tree/master/websocket
 
 [root@dev_08 portainer]# cd $GOPATH/src
-[root@dev_08 portainer]# mkdir golang.org/x -p
-[root@dev_08 portainer]# mv github.com/golang/* golang.org/x/
+[root@dev_08 src]# mkdir golang.org/x -p
+[root@dev_08 src]# mv github.com/golang/* golang.org/x/
 
 
 然后再切换到源码目录，调整构建脚本： 
-
+[root@dev_08 src]# cd /opt/portainer
 [root@dev_08 portainer]# vim build/build_in_container.sh
 挂载本地的 $GOPATH/src/golang.org 到容器路径：/go/src/golang.org
 
