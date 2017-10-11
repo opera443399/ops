@@ -1,5 +1,5 @@
 docker深入2-UI之portainer的本地构建
-2017/10/10
+2017/10/11
 
 
 一、准备环境
@@ -16,18 +16,18 @@ docker深入2-UI之portainer的本地构建
 [root@dev_08 opt] cd portainer
 
 2、使用 npm 安装依赖包
-[root@dev_08 portainer] npm install -g bower && npm install
+[root@dev_08 portainer]# npm install -g bower && npm install
 
 3、根目录没有这个目录： bower_components 的话则执行
-[root@dev_08 portainer] bower install --allow-root
+[root@dev_08 portainer]# bower install --allow-root
 
 
 4、针对 centos 执行
-[root@dev_08 portainer] ln -s /usr/bin/sha1sum /usr/bin/shasum
+[root@dev_08 portainer]# ln -s /usr/bin/sha1sum /usr/bin/shasum
 
 
 5、构建 app
-[root@dev_08 portainer] grunt build
+[root@dev_08 portainer]# grunt build
 
 如果遇到这样的错误：
 Building portainer for linux-amd64
@@ -56,17 +56,17 @@ golang.org/x/net/websocket
 
 
 解决方法：
-[root@dev_08 portainer] go get github.com/golang/crypto/tree/master/bcrypt
-[root@dev_08 portainer] go get github.com/golang/net/tree/master/websocket
+[root@dev_08 portainer]# go get github.com/golang/crypto/tree/master/bcrypt
+[root@dev_08 portainer]# go get github.com/golang/net/tree/master/websocket
 
-[root@dev_08 portainer] cd $GOPATH/src
-[root@dev_08 portainer] mkdir golang.org/x -p
-[root@dev_08 portainer] mv github.com/golang/* golang.org/x/
+[root@dev_08 portainer]# cd $GOPATH/src
+[root@dev_08 portainer]# mkdir golang.org/x -p
+[root@dev_08 portainer]# mv github.com/golang/* golang.org/x/
 
 
 然后再切换到源码目录，调整构建脚本： 
 
-[root@dev_08 portainer] vim build/build_in_container.sh
+[root@dev_08 portainer]# vim build/build_in_container.sh
 挂载本地的 $GOPATH/src/golang.org 到容器路径：/go/src/golang.org
 
 docker run --rm -tv $(pwd)/api:/src -e BUILD_GOOS="$1" -e BUILD_GOARCH="$2" portainer/golang-builder:cross-platform /src/cmd/portainer
@@ -77,7 +77,7 @@ docker run --rm -tv $(pwd)/api:/src -v $GOPATH/src/golang.org:/go/src/golang.org
 
 
 最后重新构建一次：
-[root@dev_08 portainer] grunt build
+[root@dev_08 portainer]# grunt build
 （略）
 Cleaning "dist/js/angular.37dfac18.js"...OK
 Cleaning "dist/js/portainer.cab56db9.js"...OK
@@ -93,14 +93,14 @@ Done, without errors.
 
 
 6、运行（可以自动重启）
-[root@dev_08 portainer] grunt run-dev
+[root@dev_08 portainer]# grunt run-dev
 
 访问 UI 地址： http://localhost:9000
 
 
 
 7、不要忘记 lint 代码
-[root@dev_08 portainer] grunt lint
+[root@dev_08 portainer]# grunt lint
 
 
 
@@ -155,29 +155,49 @@ https://github.com/portainer/portainer/releases
 
 
 目的：调整 filter_containerShowAll 的默认值为 false 来达到初始化的目的。
-
-[root@dev_08 portainer] vim app/services/localStorage.js
-53c53
-<         filter = false;
----
->         filter = true;
+[root@dev_08 portainer]# diff -u /tmp/localStorage.js app/services/localStorage.js
+--- /tmp/localStorage.js	2017-09-26 15:11:41.062167776 +0800
++++ app/services/localStorage.js	2017-09-26 15:21:11.604992708 +0800
+@@ -50,7 +50,7 @@
+     getFilterContainerShowAll: function() {
+       var filter = localStorageService.cookie.get('filter_containerShowAll');
+       if (filter === null) {
+-        filter = true;
++        filter = false;
+       }
+       return filter;
+     }
 
 
 
 2、需求：页面-服务列表-服务-任务列表：过滤器
 
 目的：调整 tasks 页面，增加一个 filter
-[root@dev_08 portainer] vim app/components/service/includes/tasks.html
-15,19d14
-<     <rd-widget-taskbar classes="col-lg-12">
-<       <div class="pull-right">
-<         <input type="text" id="filter" ng-model="state.filter" placeholder="Filter..." class="form-control input-sm" />
-<       </div>
-<     </rd-widget-taskbar>
-56c51
-<         <tr dir-paginate="task in (filteredTasks = ( tasks | filter:state.filter | orderBy:sortType:sortReverse | itemsPerPage: state.pagination_count))">
----
->         <tr dir-paginate="task in (filteredTasks = ( tasks | orderBy:sortType:sortReverse | itemsPerPage: state.pagination_count))">
+[root@dev_08 portainer]# vim app/components/service/includes/tasks.html
+[root@dev_08 portainer]# diff -u /tmp/tasks.html app/components/service/includes/tasks.html
+--- /tmp/tasks.html	2017-09-26 18:00:45.893169748 +0800
++++ app/components/service/includes/tasks.html	2017-09-26 18:22:10.188208664 +0800
+@@ -12,6 +12,11 @@
+       </select>
+       </div>
+     </rd-widget-header>
++    <rd-widget-taskbar classes="col-lg-12">
++      <div class="pull-right">
++        <input type="text" id="filter" ng-model="state.filter" placeholder="Filter..." class="form-control input-sm" />
++      </div>
++    </rd-widget-taskbar>
+     <rd-widget-body classes="no-padding">
+       <table class="table">
+       <thead>
+@@ -48,7 +53,7 @@
+         </tr>
+       </thead>
+       <tbody>
+-        <tr dir-paginate="task in (filteredTasks = ( tasks | orderBy:sortType:sortReverse | itemsPerPage: state.pagination_count))">
++        <tr dir-paginate="task in (filteredTasks = ( tasks | filter:state.filter | orderBy:sortType:sortReverse | itemsPerPage: state.pagination_count))">
+         <td><a ui-sref="task({ id: task.Id })" class="monospaced">{{ task.Id }}</a></td>
+         <td><span class="label label-{{ task.Status.State|taskstatusbadge }}">{{ task.Status.State }}</span></td>
+         <td ng-if="service.Mode !== 'global'">{{ task.Slot }}</td>
 
 
 具体请参考：
@@ -194,13 +214,25 @@ https://github.com/portainer/portainer/pull/1242
     -> 在 N1 的 'Container List' 页面上通过过滤器找到 container C1 
     -> 在 'Container Details' 页面打开 Console
     
-    
-[root@dev_08 portainer]# vim app/components/task/task.html
-48d47
-<               <a class="btn btn-outline-secondary" type="button" target="_blank" ui-sref="console({id: task.Status.ContainerStatus.ContainerID})"><i class="fa fa-terminal space-right" aria-hidden="true"></i>Container Console  (<i>need endpoint switch first!</i>)</a>
 
-    
-    
+为了简化操作，实现咱们的小目标，改进页面新增一个 Console 按钮，如下：
+[root@dev_08 portainer]# vim app/components/task/task.html
+[root@dev_08 portainer]# diff -u /tmp/task.html app/components/task/task.html
+--- /tmp/task.html	2017-10-10 14:22:29.782178036 +0800
++++ app/components/task/task.html	2017-10-10 12:16:13.317950356 +0800
+@@ -45,6 +45,7 @@
+             <tr ng-if="task.Status.ContainerStatus.ContainerID">
+               <td>Container ID</td>
+               <td>{{ task.Status.ContainerStatus.ContainerID }}</td>
++              <a class="btn btn-outline-secondary" type="button" target="_blank" ui-sref="console({id: task.Status.ContainerStatus.ContainerID})"><i class="fa fa-terminal space-right" aria-hidden="true"></i>Container Console  (<i>need endpoint switch first!</i>)</a>
+             </tr>
+           </tbody>
+         </table>
+
+
+
+
+
 四、源码分析示例
 1、在 UI 界面中是如何请求 docker api 来完成 container list 之类的请求的？
 分析过程：
@@ -273,8 +305,9 @@ curl -s \
 具体的讨论，还请跟踪下这个 issue 相关的内容：
 [FEATURE REQUEST] Be able to use all the Portainer built-in functionalities in all the containers running in a swarm cluster #461
 https://github.com/portainer/portainer/issues/461
-    
-    
+
+
+
 2、如何提交 github PR 来为本项目共享代码？
 请先阅读：https://github.com/portainer/portainer/blob/develop/CONTRIBUTING.md
 
