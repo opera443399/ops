@@ -1,4 +1,4 @@
-docker深入2-UI之portainer的本地构建
+docker深入2-UI之portainer的二次开发
 2017/10/12
 
 
@@ -280,7 +280,7 @@ https://github.com/portainer/portainer/pull/1242
 
 
 具体请参考：
-https://github.com/portainer/portainer/pull/1272
+https://github.com/portainer/portainer/pull/1271
 
 
 四、源码分析示例
@@ -364,13 +364,15 @@ https://github.com/portainer/portainer/issues/461
 贡献代码的指引
 1）通用
 先看看有没有相关的 PR/issues 已经存在，如果没有则进入下一步
-打开一个 issue 讨论你要带来的一些变化（也可以在已经存在 的 issue 上讨论）
+打开一个 issue 讨论你要带来的一些变化（也可以在已经存在 的 issue 上讨论），包括功能合理性和技术可行性等方面，在解决方案上讨论出一个解决，一致同意后，再去开发【这一步很重要，不能跨过】
 在一个特定主题的分支上开发，不要在 master/develop 分支开发！
 新建分支时，有一些命名规则，例如：
 (type)(issue number)-text-desc
 
 举例：
 你在提交一个 bugfix 来解决 issue #361 则分支可以命名为： fix361-template-selection.
+参考这里的讨论：
+https://github.com/portainer/portainer/issues/1271#issuecomment-336033282
 
 2）为已经打开的 issues 贡献代码
 想做却不知道如何开始？
@@ -431,4 +433,5 @@ https://gocn.io/question/362
 3、github
 https://github.com/portainer/portainer/issues/461
 https://github.com/portainer/portainer/pull/1242
+https://github.com/portainer/portainer/issues/1271#issuecomment-336033282
 
