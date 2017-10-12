@@ -1,0 +1,87 @@
+docker深入2-UI之portainer的API示例
+2017/10/12
+
+
+一、准备工作
+1、阅读文档
+2、本例使用 httpie 来发送请求
+yum install httpie -y
+
+
+二、示例
+1、初始化帐号
+[root@dev_08 portainer]# http POST :9000/api/users/admin/init Username="admin" Password="Develop"
+HTTP/1.1 200 OK
+Content-Length: 0
+Content-Type: text/plain; charset=utf-8
+Date: Tue, 10 Oct 2017 08:18:19 GMT
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+
+
+2、认证并获取 JWT token
+[root@dev_08 portainer]# http POST :9000/api/auth Username="admin" Password="Develop"
+
+HTTP/1.1 200 OK
+Content-Length: 163
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 12 Oct 2017 04:19:53 GMT
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+
+{
+    "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOjEsImV4cCI6MTUwNzgxMDc5M30.aNzbWNDXppi8Ke_Hv6msCBxbNeTIuE1oyVDWDCS0zEs"
+}
+
+
+3、获取 endpoints 列表，要带上 JWT token
+[root@dev_08 portainer]# http GET :9000/api/endpoints \
+"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOjEsImV4cCI6MTUwNzgxMDc5M30.aNzbWNDXppi8Ke_Hv6msCBxbNeTIuE1oyVDWDCS0zEs"
+
+HTTP/1.1 200 OK
+Content-Length: 422
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 12 Oct 2017 04:20:12 GMT
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+
+[
+    {
+        "AuthorizedTeams": [], 
+        "AuthorizedUsers": [], 
+        "Id": 1, 
+        "Name": "local", 
+        "PublicURL": "", 
+        "TLSConfig": {
+            "TLS": false, 
+            "TLSCACert": "/certs/ca.pem", 
+            "TLSCert": "/certs/cert.pem", 
+            "TLSKey": "/certs/key.pem", 
+            "TLSSkipVerify": false
+        }, 
+        "URL": "unix:///var/run/docker.sock"
+    }, 
+    {
+        "AuthorizedTeams": [], 
+        "AuthorizedUsers": [], 
+        "Id": 2, 
+        "Name": "test", 
+        "PublicURL": "127.0.0.1", 
+        "TLSConfig": {
+            "TLS": false, 
+            "TLSSkipVerify": true
+        }, 
+        "URL": "tcp://1.2.3.4:2375"
+    }
+]
+
+
+
+
+ZYXW、参考
+1、docs
+https://portainer.readthedocs.io/en/latest/API.html
+2、gist
+https://gist.github.com/deviantony/77026d402366b4b43fa5918d41bc42f8
+3、swagger
+https://app.swaggerhub.com/apis/deviantony/Portainer/1.14.3/
