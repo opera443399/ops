@@ -12,9 +12,15 @@ docker深入2-UI之portainer的二次开发
 二、构建
 1、checkout
 [root@dev_08 ~] cd /opt
-[root@dev_08 opt] git clone https://github.com/portainer/portainer.git
+先 fork 一个 portainer的分支，然后 clone 到本地， 然后在 branch 上开发，例如：
+[root@dev_08 opt] git clone https://github.com/opera443399/portainer.git
 [root@dev_08 opt] cd portainer
-
+[root@dev_08 opt] git branch feat-add-container-console-on-task-details
+[root@dev_08 portainer]# git branch
+* develop
+  feat-add-container-console-on-task-details
+[root@dev_08 opt] git checkout feat-add-container-console-on-task-details
+  
 2、使用 npm 安装依赖包
 [root@dev_08 portainer]# npm install -g bower && npm install
 
