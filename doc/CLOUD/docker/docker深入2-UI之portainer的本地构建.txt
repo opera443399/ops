@@ -1,5 +1,5 @@
 docker深入2-UI之portainer的本地构建
-2017/10/11
+2017/10/12
 
 
 一、准备环境
@@ -147,14 +147,15 @@ X-Frame-Options: DENY
 三、开发需求示例
 可结合 github 的搜索功能来查找关键字。
 
-1、需求：页面-容器列表：设置复选框，默认不显示所有容器
+1、需求：在 'Container list' 页面，设定初始化时，默认不显示所有容器（即默认不勾选 'Show all containers' 这个复选框）
 注1：从 1.14.1 版本开始使用 cookie 来记录是否显示所有的状态（Persist the status of the show all containers filter: #1198），其实完全可以不更改代码，去掉 checkbox 的选择后，下次登录还是 unchecked 的状态，本例仅作为修改代码的一个 howto 来展示。
 注2：从 1.14.1 版本开始，新增了针对资源的限制（Add the ability to manage CPU/MEM limits & reservations for Swarm services: #516），不妨一试。
 https://github.com/portainer/portainer/releases
 
 
 
-目的：调整 filter_containerShowAll 的默认值为 false 来达到初始化的目的。
+为了达到我们的小目标，需要调整 filter_containerShowAll 在初始化时的默认值为 false 即可。
+
 [root@dev_08 portainer]# diff -u /tmp/localStorage.js app/services/localStorage.js
 --- /tmp/localStorage.js	2017-09-26 15:11:41.062167776 +0800
 +++ app/services/localStorage.js	2017-09-26 15:21:11.604992708 +0800
@@ -170,10 +171,10 @@ https://github.com/portainer/portainer/releases
 
 
 
-2、需求：页面-服务列表-服务-任务列表：过滤器
+2、需求：在 'Service details' 页面的 'Tasks' 标签页中增加一个过滤器
+当前操作列出了所有的 tasks
+而我有时候只需要查看处于 running 状态的 tasks 即可，因而需要一个过滤器，改动代码如下：
 
-目的：调整 tasks 页面，增加一个 filter
-[root@dev_08 portainer]# vim app/components/service/includes/tasks.html
 [root@dev_08 portainer]# diff -u /tmp/tasks.html app/components/service/includes/tasks.html
 --- /tmp/tasks.html	2017-09-26 18:00:45.893169748 +0800
 +++ app/components/service/includes/tasks.html	2017-09-26 18:22:10.188208664 +0800
@@ -205,7 +206,7 @@ https://github.com/portainer/portainer/pull/1242
 
 
 
-3、需求：任务详情：增加一个容器 Console 的按钮
+3、需求：在 'Service details > Tasks > Task details' 页面增加一个 Container Console 按钮
 当前操作要找到 service 下所有容器的 Console 并打开，则要执行下述步骤:
 1 个 service 对应 N 个 tasks(containers) (运行在 M nodes 中)
 
@@ -215,22 +216,71 @@ https://github.com/portainer/portainer/pull/1242
     -> 在 'Container Details' 页面打开 Console
     
 
-为了简化操作，实现咱们的小目标，改进页面新增一个 Console 按钮，如下：
-[root@dev_08 portainer]# vim app/components/task/task.html
-[root@dev_08 portainer]# diff -u /tmp/task.html app/components/task/task.html
---- /tmp/task.html	2017-10-10 14:22:29.782178036 +0800
-+++ app/components/task/task.html	2017-10-10 12:16:13.317950356 +0800
-@@ -45,6 +45,7 @@
+为了简化操作，实现咱们的小目标，改动代码如下：
+    -> 在 'Service details > tasks' 页面，打开 'Task details' 页面时跳转到新的标签页
+    -> 在 'Task details' 页面，新增 container console 按钮，新增一个提示框，提示后续步骤遇到错误时如何处理
+    -> 点击 Console 按钮打开 'Container console' 页面时，跳转到新的标签页
+            如果该 Container 不在当前 endpoint 中运行，则有一个错误通知：
+                'Failure: Docker container identifier not found'
+            此时，我们要做的就是一个 endpoint 切换的操作
+    -> 当我们切换 endpoint 时，不是跳转页面到 dashboard 页面，而仅仅使用一个消息通知，然后等待页面刷新后，得到的页面即我们想要的。
+    -> 如果我们切换到 swarm worker node 则后续需要一个切换回 swarm manager node 的操作
+    -> 小结：用户体验有点糟糕，但能工作。
+
+
+
+
+[root@dev_08 portainer]# diff -u /tmp/tasks.html app/components/service/includes/tasks.html
+--- /tmp/tasks.html	2017-10-12 11:55:23.247181711 +0800
++++ app/components/service/includes/tasks.html	2017-10-12 10:12:52.653767466 +0800
+@@ -54,7 +54,7 @@
+       </thead>
+       <tbody>
+         <tr dir-paginate="task in (filteredTasks = ( tasks | filter:state.filter | orderBy:sortType:sortReverse | itemsPerPage: state.pagination_count))">
+-        <td><a ui-sref="task({ id: task.Id })" class="monospaced">{{ task.Id }}</a></td>
++        <td><a ui-sref="task({ id: task.Id })" class="monospaced" target="_blank">{{ task.Id }}</a></td>
+         <td><span class="label label-{{ task.Status.State|taskstatusbadge }}">{{ task.Status.State }}</span></td>
+         <td ng-if="service.Mode !== 'global'">{{ task.Slot }}</td>
+         <td>{{ task.NodeId | tasknodename: nodes }}</td>
+
+         
+         
+[root@dev_08 portainer]# diff -u /tmp/task.html app/components/task/task.html 
+--- /tmp/task.html	2017-10-11 14:22:29.782178036 +0800
++++ app/components/task/task.html	2017-10-12 10:13:28.367767064 +0800
+@@ -44,7 +44,12 @@
+             </tr>
              <tr ng-if="task.Status.ContainerStatus.ContainerID">
                <td>Container ID</td>
-               <td>{{ task.Status.ContainerStatus.ContainerID }}</td>
-+              <a class="btn btn-outline-secondary" type="button" target="_blank" ui-sref="console({id: task.Status.ContainerStatus.ContainerID})"><i class="fa fa-terminal space-right" aria-hidden="true"></i>Container Console  (<i>need endpoint switch first!</i>)</a>
+-              <td>{{ task.Status.ContainerStatus.ContainerID }}</td>
++              <td title="Notify 'Failure: Docker container identifier not found' -> Try 'Switch endpoint to the node where the container is running'">
++                {{ task.Status.ContainerStatus.ContainerID }}
++                <a class="btn btn-outline-secondary" target="_blank" type="button" ui-sref="console({id: task.Status.ContainerStatus.ContainerID})">
++                  <i class="fa fa-terminal space-right" aria-hidden="true"></i>Console
++                </a>
++              </td>
              </tr>
            </tbody>
          </table>
+         
+         
+         
+[root@dev_08 portainer]# diff -u /tmp/sidebarController.js app/components/sidebar/sidebarController.js 
+--- /tmp/sidebarController.js	2017-10-12 11:57:10.063180508 +0800
++++ app/components/sidebar/sidebarController.js	2017-10-12 09:37:32.314244435 +0800
+@@ -14,7 +14,7 @@
+     EndpointProvider.setEndpointPublicURL(endpoint.PublicURL);
+     StateManager.updateEndpointState(true)
+     .then(function success() {
+-      $state.go('dashboard');
++      Notifications.success('switch endpoint to: ', endpoint.Name);
+     })
+     .catch(function error(err) {
+       Notifications.error('Failure', err, 'Unable to connect to the Docker endpoint');
 
 
-
+具体请参考：
+https://github.com/portainer/portainer/pull/1272
 
 
 四、源码分析示例
