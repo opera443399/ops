@@ -1,5 +1,5 @@
 初探go-golang语言初体验
-2017/8/25
+2017/10/16
 
 一、初体验
 1、环境
@@ -393,6 +393,78 @@ exit status 2
 
 
 
+三、FAQ
+1、访问 golang.org 异常
+
+注1：引用【docker深入2-UI之portainer的二次开发】文章的实例
+
+构建 app
+
+[root@dev_08 portainer]# grunt build
+
+如果遇到这样的错误：
+Building portainer for linux-amd64
+/go/src/github.com/portainer/portainer/crypto/crypto.go:4:2: cannot find package "golang.org/x/crypto/bcrypt" in any of:
+	/usr/local/go/src/golang.org/x/crypto/bcrypt (from $GOROOT)
+	/go/src/golang.org/x/crypto/bcrypt (from $GOPATH)
+/go/src/github.com/portainer/portainer/http/handler/websocket.go:21:2: cannot find package "golang.org/x/net/websocket" in any of:
+	/usr/local/go/src/golang.org/x/net/websocket (from $GOROOT)
+	/go/src/golang.org/x/net/websocket (from $GOPATH)
+mv: cannot stat ‘api/cmd/portainer/portainer-linux-amd64’: No such file or directory
+Warning: Command failed: build/build_in_container.sh linux amd64
+mv: cannot stat ‘api/cmd/portainer/portainer-linux-amd64’: No such file or directory
+ Use --force to continue.
+
+Aborted due to warnings.
+
+那是因为网络可达性问题，国内访问 golang.org 异常。
+[root@dev_08 portainer]# host golang.org
+golang.org is an alias for golang-consa.l.google.com.
+golang-consa.l.google.com has address 216.239.37.1
+
+
+导致这2个依赖下载失败：
+golang.org/x/crypto/bcrypt
+golang.org/x/net/websocket
+
+
+解决方法：
+[root@dev_08 portainer]# go get github.com/golang/crypto/tree/master/bcrypt
+[root@dev_08 portainer]# go get github.com/golang/net/tree/master/websocket
+
+[root@dev_08 portainer]# cd $GOPATH/src
+[root@dev_08 src]# mkdir golang.org/x -p
+[root@dev_08 src]# mv github.com/golang/* golang.org/x/
+
+
+然后再切换到源码目录，调整构建脚本： 
+[root@dev_08 src]# cd /opt/portainer
+[root@dev_08 portainer]# vim build/build_in_container.sh
+挂载本地的 $GOPATH/src/golang.org 到容器路径：/go/src/golang.org
+
+docker run --rm -tv $(pwd)/api:/src -e BUILD_GOOS="$1" -e BUILD_GOARCH="$2" portainer/golang-builder:cross-platform /src/cmd/portainer
+
+调整为：
+
+docker run --rm -tv $(pwd)/api:/src -v $GOPATH/src/golang.org:/go/src/golang.org -e BUILD_GOOS="$1" -e BUILD_GOARCH="$2" portainer/golang-builder:cross-platform /src/cmd/portainer
+
+
+最后重新构建一次：
+[root@dev_08 portainer]# grunt build
+（略）
+Cleaning "dist/js/angular.37dfac18.js"...OK
+Cleaning "dist/js/portainer.cab56db9.js"...OK
+Cleaning "dist/js/vendor.4edc9b0f.js"...OK
+Cleaning "dist/css/portainer.e7f7fdaa.css"...OK
+
+Done, without errors.
+
+
+看到上述输出，表示符合预期。
+
+
+
+
 
 
 XYXW、参考
@@ -405,3 +477,6 @@ https://github.com/Unknwon/the-way-to-go_ZH_CN/blob/master/eBook/directory.md
 
 3、解决升级go版本遇到的Set $GOROOT_BOOTSTRAP to a working Go tree >= Go 1.4.问题
 http://blog.csdn.net/qq_15437667/article/details/59776840
+
+4、国内下载golang.org的包有什么好办法么？
+https://gocn.io/question/362
