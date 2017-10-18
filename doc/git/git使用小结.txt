@@ -192,3 +192,9 @@ git log -5 --oneline
 
 
 
+XYWX、参考
+1、gitlab或github下fork后如何同步源的新更新内容？
+https://www.zhihu.com/question/28676261
+
+
+
