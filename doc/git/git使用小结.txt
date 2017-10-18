@@ -47,7 +47,7 @@ git init --bare
 创建分支：
 [root@dev_08 portainer]# git branch bbb
 
-查看分支：
+查看本地分支：
 [root@dev_08 portainer]# git branch
   bbb
 * develop
@@ -59,13 +59,41 @@ Switched to branch 'bbb'
 * bbb
   develop
   
-删除分支：
+切换分支：
 [root@dev_08 portainer]# git checkout develop
 Switched to branch 'develop'
+
+删除分支：
 [root@dev_08 portainer]# git branch -d bbb
 Deleted branch bbb (was f3a1250).
+
 [root@dev_08 portainer]# git branch
 * develop
+
+
+列出所有分支：
+[root@dev_08 portainer]# git branch -a
+* develop
+  remotes/origin/HEAD -> origin/develop
+  remotes/origin/angular-loading-bar
+  remotes/origin/codefresh-pr1224
+  remotes/origin/demo
+  remotes/origin/develop
+  remotes/origin/docker17
+  remotes/origin/feat-add-container-console-on-task-details
+  remotes/origin/feat1235-setting-disable-binds
+  remotes/origin/feat257-compose-support
+  remotes/origin/feat257-stack-deploy
+  remotes/origin/feat807-i18n
+  remotes/origin/gh-pages
+  remotes/origin/master
+  remotes/upstream/codefresh-pr996
+  remotes/upstream/demo
+  remotes/upstream/develop
+  remotes/upstream/feat257-compose-support
+  remotes/upstream/feat807-i18n
+  remotes/upstream/gh-pages
+  remotes/upstream/master
 
 
 
