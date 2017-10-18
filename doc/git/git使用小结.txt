@@ -1,5 +1,5 @@
 git使用小结
-2017/8/23
+2017/10/18
 
 注释：不定时更新
 
@@ -36,11 +36,41 @@ git 提交的作者信息
 2、clone
 git clone https://tester01@github.com/tester01/charade.git
 
+
+
 3、init
 git init --bare
 
-4、remote
-git push时，会报错：
+
+
+4、分支管理
+创建分支：
+[root@dev_08 portainer]# git branch bbb
+
+查看分支：
+[root@dev_08 portainer]# git branch
+  bbb
+* develop
+
+使用分支：
+[root@dev_08 portainer]# git checkout bbb
+Switched to branch 'bbb'
+[root@dev_08 portainer]# git branch
+* bbb
+  develop
+  
+删除分支：
+[root@dev_08 portainer]# git checkout develop
+Switched to branch 'develop'
+[root@dev_08 portainer]# git branch -d bbb
+Deleted branch bbb (was f3a1250).
+[root@dev_08 portainer]# git branch
+* develop
+
+
+
+5、remote
+1）git push时，会报错：
 error: The requested URL returned error: 403 Forbidden while accessing https://github.com/tester01/charade.git/info/refs
 
 fatal: HTTP request failed
@@ -48,7 +78,68 @@ fatal: HTTP request failed
 git remote set-url origin https://tester01@github.com/tester01/charade.git
 
 
-5、hook
+2）当我 fork 一个项目后，如果 upstream 有更新，如何合并到自己 fork 的项目中
+查看 remote 的状态：
+[root@dev_08 portainer]# git remote -v
+origin	https://github.com/opera443399/portainer.git (fetch)
+origin	https://github.com/opera443399/portainer.git (push)
+
+
+增加一个 upstream 到 remote 中：
+[root@dev_08 portainer]# git remote add upstream https://github.com/portainer/portainer.git
+[root@dev_08 portainer]# git remote -v
+origin	https://github.com/opera443399/portainer.git (fetch)
+origin	https://github.com/opera443399/portainer.git (push)
+upstream	https://github.com/portainer/portainer.git (fetch)
+upstream	https://github.com/portainer/portainer.git (push)
+
+
+获取 upstream 的代码：
+[root@dev_08 portainer]# git fetch upstream
+remote: Counting objects: 249, done.
+remote: Compressing objects: 100% (3/3), done.
+remote: Total 249 (delta 176), reused 179 (delta 176), pack-reused 70
+Receiving objects: 100% (249/249), 37.10 KiB | 0 bytes/s, done.
+Resolving deltas: 100% (176/176), completed with 134 local objects.
+From https://github.com/portainer/portainer
+ * [new branch]      codefresh-pr996 -> upstream/codefresh-pr996
+ * [new branch]      demo       -> upstream/demo
+ * [new branch]      develop    -> upstream/develop
+ * [new branch]      feat257-compose-support -> upstream/feat257-compose-support
+ * [new branch]      feat807-i18n -> upstream/feat807-i18n
+ * [new branch]      gh-pages   -> upstream/gh-pages
+ * [new branch]      master     -> upstream/master
+ * [new tag]         1.15.0     -> 1.15.0
+
+
+
+确认分支后，开始 merge 代码：
+[root@dev_08 portainer]# git branch
+* develop
+[root@dev_08 portainer]# git merge upstream/develop
+[root@dev_08 portainer]# git log --oneline -15
+730925b fix(containers): fix an issue with filters
+7eaaf9a feat(container-inspect): add the ability to inspect containers
+925326e feat(volume-details): show a list of containers using the volume
+dc05ad4 fix(templates): add missing NetworkSettings field (#1287)
+8ec7b4f chore(codefresh): add a step to download docker binary (#1283)
+dc48fa6 fix(cli): fix default asset directory value
+7727fc6 Merge tag '1.15.0' into develop
+5785ba5 Merge branch 'release/1.15.0'
+e110986 chore(version): bump version number
+587e2fa feat(stacks): add support for stack deploy (#1280)
+8082793 chore(build-system): fix 'gruntify-eslint' usage (#1276)
+f3a1250 feat(container-creation) - Add container resource management (#1224)
+79121f9 docs(swagger): add missing Username field in UserAdminInitRequest
+f678d05 feat(tasks): add a filter for tasks in service-details view
+c6341ee docs(swagger): update swagger docs
+
+推送到自己 fork 的项目中
+git push
+
+
+
+6、git hooks
 示例 hooks/post-receive 如下：
 
 #!/bin/sh
