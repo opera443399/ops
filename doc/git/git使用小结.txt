@@ -187,27 +187,103 @@ https://www.atlassian.com/git/tutorials/undoing-changes
 2、git reset
 清除了 history 信息，很暴力，适用于 local 开发时要回滚
 
+回退到上一个版本：
+[root@dev_08 portainer]# git log -2 --oneline
+0dd239c add console on 'Task details' view; move tasks to the top
+730925b fix(containers): fix an issue with filters
+[root@dev_08 portainer]# git reset --hard HEAD^
+HEAD is now at 730925b fix(containers): fix an issue with filters
 
 
 
 三、提交变更的常用操作
-1、add
-将当前路径下的文件添加到VCS中：
+1、当前状态
+[root@dev_08 portainer]# git status
+# On branch feat-add-container-console-on-task-details
+# Changes not staged for commit:
+#   (use "git add <file>..." to update what will be committed)
+#   (use "git checkout -- <file>..." to discard changes in working directory)
+#
+#	modified:   app/components/service/includes/tasks.html
+#	modified:   app/components/service/service.html
+#	modified:   app/components/sidebar/sidebarController.js
+#	modified:   app/components/task/task.html
+#	modified:   build/build_in_container.sh
+#
+no changes added to commit (use "git add" and/or "git commit -a")
+
+
+2、丢弃某个文件的修改（commit前操作）
+[root@dev_08 portainer]# git checkout -- build/build_in_container.sh
+[root@dev_08 portainer]# git status
+# On branch feat-add-container-console-on-task-details
+# Changes not staged for commit:
+#   (use "git add <file>..." to update what will be committed)
+#   (use "git checkout -- <file>..." to discard changes in working directory)
+#
+#	modified:   app/components/service/includes/tasks.html
+#	modified:   app/components/service/service.html
+#	modified:   app/components/sidebar/sidebarController.js
+#	modified:   app/components/task/task.html
+#
+no changes added to commit (use "git add" and/or "git commit -a")
+
+
+2、add
+将当前路径下的所有文件添加到VCS中：
 git add .
 
-2、commit
+3、commit
 在编辑器中写入修改信息后再提交：
-git commit -a
+[root@dev_08 portainer]# git commit -a
 
-简单的写一行信息并提交：
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# On branch feat-add-container-console-on-task-details
+# Changes to be committed:
+#   (use "git reset HEAD <file>..." to unstage)
+#
+#       modified:   app/components/service/includes/tasks.html
+#       modified:   app/components/service/service.html
+#       modified:   app/components/sidebar/sidebarController.js
+#       modified:   app/components/task/task.html
+#
+
+上述，将打开一个编辑器来编辑内容，保存后：
+".git/COMMIT_EDITMSG" 23L, 1300C written
+[feat-add-container-console-on-task-details c42aaa7] add console on 'Task details' view; move tasks to the top
+ 4 files changed, 14 insertions(+), 4 deletions(-)
+ 
+[root@dev_08 portainer]# git log -1 --oneline
+c42aaa7 add console on 'Task details' view; move tasks to the top
+[root@dev_08 portainer]# git status
+# On branch feat-add-container-console-on-task-details
+nothing to commit, working directory clean
+
+
+或者，简单的写一行信息并提交：
 git commit -am
 
 
-3、push
+4、push
 简单的push到远端
 git push
 
-4、log
+push到远端分支
+[root@dev_08 portainer]# git push origin feat-add-container-console-on-task-details:feat-add-container-console-on-task-details
+Password for 'https://opera443399@github.com': 
+Counting objects: 23, done.
+Delta compression using up to 4 threads.
+Compressing objects: 100% (8/8), done.
+Writing objects: 100% (12/12), 1.67 KiB | 0 bytes/s, done.
+Total 12 (delta 8), reused 5 (delta 4)
+remote: Resolving deltas: 100% (8/8), completed with 8 local objects.
+To https://opera443399@github.com/opera443399/portainer.git
+ * [new branch]      feat-add-container-console-on-task-details -> feat-add-container-console-on-task-details
+
+
+
+5、log
 查看最近5条日志：
 git log -5
 
