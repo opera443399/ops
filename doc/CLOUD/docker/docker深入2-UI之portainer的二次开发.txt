@@ -1,26 +1,27 @@
 docker深入2-UI之portainer的二次开发
-2017/10/16
+2017/10/18
 
 
 一、准备环境
 依赖：Docker, Node.js >= 0.8.4 和 npm
 
-[root@dev_08 ~] curl --silent --location https://rpm.nodesource.com/setup_7.x | sudo bash -
-[root@dev_08 ~] yum install -y nodejs
-[root@dev_08 ~] npm install -g grunt-cli
+[root@dev_08 ~]# curl --silent --location https://rpm.nodesource.com/setup_7.x | sudo bash -
+[root@dev_08 ~]# yum install -y nodejs
+[root@dev_08 ~]# npm install -g grunt-cli
 
 二、构建
 1、checkout
-[root@dev_08 ~] cd /opt
+[root@dev_08 ~]# cd /opt
 先 fork 一个 portainer的分支，然后 clone 到本地， 然后在 branch 上开发，例如：
-[root@dev_08 opt] git clone https://github.com/opera443399/portainer.git
-[root@dev_08 opt] cd portainer
-[root@dev_08 portainer] git branch feat-add-container-console-on-task-details
+[root@dev_08 opt]# git clone https://github.com/opera443399/portainer.git
+[root@dev_08 opt]# cd portainer
+[root@dev_08 portainer]# git checkout -b feat-add-container-console-on-task-details
+Switched to a new branch 'feat-add-container-console-on-task-details'
 [root@dev_08 portainer]# git branch
-* develop
-  feat-add-container-console-on-task-details
-[root@dev_08 portainer] git checkout feat-add-container-console-on-task-details
-  
+  develop
+* feat-add-container-console-on-task-details
+
+
 2、使用 npm 安装依赖包
 [root@dev_08 portainer]# npm install -g bower && npm install
 
