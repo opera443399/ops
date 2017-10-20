@@ -1,5 +1,5 @@
 初探go-golang语言初体验
-2017/10/16
+2017/10/20
 
 一、初体验
 1、环境
@@ -235,10 +235,10 @@ Receiving objects:   6% (15150/234999), 4.64 MiB | 345.00 KiB/s
 
 
 2、代码示例
-[root@tvm01 go]# cat src/abc.com/demo/http_status/http_status.go
+[root@tvm01 go]# cat src/abc.com/demo/demoHttpHead/app.go
 /*
-# go demo: http_status
-# 2017/3/9
+# demoHttpHead
+# 2017/10/20
 */ 
 
 package main
@@ -256,25 +256,25 @@ import (
 )
 
 
-type taskstat struct {
+type taskState struct {
     v map[string]int
     mux sync.Mutex
 }
 
-func (ts *taskstat) Inc(key string) {
+func (ts *taskState) Inc(key string) {
     ts.mux.Lock()
     ts.v[key]++
     ts.mux.Unlock()
 }
 
-func (ts *taskstat) Value(key string) int {
+func (ts *taskState) Value(key string) int {
     ts.mux.Lock()
     defer ts.mux.Unlock()
     return ts.v[key]
 }
 
 
-func checkError(err error, method string) bool {
+func handleError(err error, method string) bool {
     if err != nil {
         log.Printf("[E] %s : %v", method, err)
         return true
@@ -286,7 +286,7 @@ func checkError(err error, method string) bool {
 func getHosts() ([]string) {
     var hosts []string
     data, err := ioutil.ReadFile("urls.txt")
-    if checkError(err, "ioutil.ReadFile") {
+    if handleError(err, "ioutil.ReadFile") {
         return hosts
     }
 
@@ -300,9 +300,9 @@ func getHosts() ([]string) {
 }
 
 
-func request_url(seq int, url string, ch chan string, stat *taskstat) {
+func handleHttpHeadReq(seq int, url string, ch chan string, stat *taskState) {
     head, err := http.Head(url)
-    if checkError(err, "http.Head") {
+    if handleError(err, "http.Head") {
         stat.Inc("failure")
 
         ch <- "[" + strconv.Itoa(seq)  + "]" + url + " : failed."
@@ -316,16 +316,16 @@ func request_url(seq int, url string, ch chan string, stat *taskstat) {
 
 
 func main() {
-    dt_start := time.Now()
+    dtStart := time.Now()
     cnt := flag.Int("c", 10, "[] set N times to request the http url.")
-    use_conf := flag.Bool("f", false, "[] parse urls from file: [urls.txt] or not?")
+    fromCfg := flag.Bool("f", false, "[] parse urls from file: [urls.txt] or not?")
 
     flag.Parse()
 
-    var stat = taskstat{v: make(map[string]int)}
+    var stat = taskState{v: make(map[string]int)}
     var hosts []string
 
-    if *use_conf == true {
+    if *fromCfg == true {
         hosts = getHosts()
     } else{
         hosts = flag.Args()
@@ -334,15 +334,17 @@ func main() {
     for _, url := range hosts {
         ch := make(chan string)
         for i := 0; i < *cnt; i++ {
-            go request_url(i, url, ch, &stat)
+            go handleHttpHeadReq(i, url, ch, &stat)
         }
 
         for t := 0; t < *cnt; t++ {
             fmt.Println(<-ch)
         }
     }
-    log.Printf("success: %d, failure: %d, Time Cost: %v\n", stat.Value("success"), stat.Value("failure"), time.Since(dt_start))
+    log.Printf("success: %d, failure: %d, Time Cost: %v\n", stat.Value("success"), stat.Value("failure"), time.Since(dtStart))
 }
+
+
 
 
 3、如何运行
@@ -354,38 +356,47 @@ Usage of /tmp/go-build822199343/command-line-arguments/_obj/exe/http_status:
   -f    [] parse urls from file: [urls.txt] or not?
 exit status 2
 
-[root@tvm01 go]# go run src/abc.com/demo/http_status/http_status.go -c 3 http://www.qq.com
-[2]http://www.qq.com : 200 OK
-[0]http://www.qq.com : 200 OK
-[1]http://www.qq.com : 200 OK
-2017/03/09 17:55:50 success: 3, failure: 0, Time Cost: 36.062986ms
+[root@tvm01 go]# go run src/abc.com/demo/demoHttpHead/app.go -c 3 http://www.baidu.com
+[2]http://www.baidu.com : 200 OK
+[0]http://www.baidu.com : 200 OK
+[1]http://www.baidu.com : 200 OK
+2017/10/20 11:12:15 success: 3, failure: 0, Time Cost: 20.514834ms
 
-[root@tvm01 go]# go run src/abc.com/demo/http_status/http_status.go -c 3 http://www.qq.com http://www.360.cn
-[0]http://www.qq.com : 200 OK
-[2]http://www.qq.com : 200 OK
-[1]http://www.qq.com : 200 OK
-[2]http://www.360.cn : 200 OK
-[1]http://www.360.cn : 200 OK
-[0]http://www.360.cn : 200 OK
-2017/03/09 17:56:21 success: 6, failure: 0, Time Cost: 569.670989ms
+[root@tvm01 go]# go run src/abc.com/demo/demoHttpHead/app.go -c 3 http://www.baidu.com http://www.taobao.com
+[2]http://www.baidu.com : 200 OK
+[0]http://www.baidu.com : 200 OK
+[1]http://www.baidu.com : 200 OK
+[2]http://www.taobao.com : 200 OK
+[1]http://www.taobao.com : 200 OK
+[0]http://www.taobao.com : 200 OK
+2017/10/20 11:12:33 success: 6, failure: 0, Time Cost: 131.9136ms
+
 
 
 2）编译
 当前为 linux 环境
-[root@tvm01 go]# go install abc.com/demo/http_status 
+[root@tvm01 go]# go install abc.com/demo/demoHttpHead 
 运行
-[root@tvm01 go]# bin/http_status -c 3 http://www.qq.com
-[1]http://www.qq.com : 200 OK
-[2]http://www.qq.com : 200 OK
-[0]http://www.qq.com : 200 OK
-2017/03/09 17:56:56 success: 3, failure: 0, Time Cost: 23.548995ms
+[root@tvm01 go]# ./bin/demoHttpHead -h
+Usage of ./bin/demoHttpHead:
+  -c int
+    	[] set N times to request the http url. (default 10)
+  -f	[] parse urls from file: [urls.txt] or not?
+  
+[root@tvm01 go]# ./bin/demoHttpHead -c 5 http://www.taobao.com
+[3]http://www.taobao.com : 200 OK
+[2]http://www.taobao.com : 200 OK
+[1]http://www.taobao.com : 200 OK
+[0]http://www.taobao.com : 200 OK
+[4]http://www.taobao.com : 200 OK
+2017/10/20 11:13:37 success: 5, failure: 0, Time Cost: 107.063734ms
 
 
 
 3）交叉编译
 以 windows 平台为例：
-[root@tvm01 go]# GOOS="windows" go install abc.com/demo/http_status
-[root@tvm01 go]# sz bin/windows_amd64/http_status.exe
+[root@tvm01 go]# GOOS="windows" go install abc.com/demo/demoHttpHead
+[root@tvm01 go]# sz bin/windows_amd64/abc.com/demo/demoHttpHead.exe
 下载到windows下执行，符合预期
 
 
