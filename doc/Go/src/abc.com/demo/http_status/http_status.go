@@ -1,6 +1,6 @@
 /*
-# go demo: http_status
-# 2017/3/9
+# demoHttpHead
+# 2017/10/20
 */ 
 
 package main
@@ -18,25 +18,25 @@ import (
 )
 
 
-type taskstat struct {
+type taskState struct {
     v map[string]int
     mux sync.Mutex
 }
 
-func (ts *taskstat) Inc(key string) {
+func (ts *taskState) Inc(key string) {
     ts.mux.Lock()
     ts.v[key]++
     ts.mux.Unlock()
 }
 
-func (ts *taskstat) Value(key string) int {
+func (ts *taskState) Value(key string) int {
     ts.mux.Lock()
     defer ts.mux.Unlock()
     return ts.v[key]
 }
 
 
-func checkError(err error, method string) bool {
+func handleError(err error, method string) bool {
     if err != nil {
         log.Printf("[E] %s : %v", method, err)
         return true
@@ -48,7 +48,7 @@ func checkError(err error, method string) bool {
 func getHosts() ([]string) {
     var hosts []string
     data, err := ioutil.ReadFile("urls.txt")
-    if checkError(err, "ioutil.ReadFile") {
+    if handleError(err, "ioutil.ReadFile") {
         return hosts
     }
 
@@ -62,9 +62,9 @@ func getHosts() ([]string) {
 }
 
 
-func request_url(seq int, url string, ch chan string, stat *taskstat) {
+func handleHttpHeadReq(seq int, url string, ch chan string, stat *taskState) {
     head, err := http.Head(url)
-    if checkError(err, "http.Head") {
+    if handleError(err, "http.Head") {
         stat.Inc("failure")
 
         ch <- "[" + strconv.Itoa(seq)  + "]" + url + " : failed."
@@ -78,16 +78,16 @@ func request_url(seq int, url string, ch chan string, stat *taskstat) {
 
 
 func main() {
-    dt_start := time.Now()
+    dtStart := time.Now()
     cnt := flag.Int("c", 10, "[] set N times to request the http url.")
-    use_conf := flag.Bool("f", false, "[] parse urls from file: [urls.txt] or not?")
+    fromCfg := flag.Bool("f", false, "[] parse urls from file: [urls.txt] or not?")
 
     flag.Parse()
 
-    var stat = taskstat{v: make(map[string]int)}
+    var stat = taskState{v: make(map[string]int)}
     var hosts []string
 
-    if *use_conf == true {
+    if *fromCfg == true {
         hosts = getHosts()
     } else{
         hosts = flag.Args()
@@ -96,12 +96,12 @@ func main() {
     for _, url := range hosts {
         ch := make(chan string)
         for i := 0; i < *cnt; i++ {
-            go request_url(i, url, ch, &stat)
+            go handleHttpHeadReq(i, url, ch, &stat)
         }
 
         for t := 0; t < *cnt; t++ {
             fmt.Println(<-ch)
         }
     }
-    log.Printf("success: %d, failure: %d, Time Cost: %v\n", stat.Value("success"), stat.Value("failure"), time.Since(dt_start))
+    log.Printf("success: %d, failure: %d, Time Cost: %v\n", stat.Value("success"), stat.Value("failure"), time.Since(dtStart))
 }
