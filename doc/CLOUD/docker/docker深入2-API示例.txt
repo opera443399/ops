@@ -1,5 +1,5 @@
 docker深入2-API示例
-2017/10/9
+2017/10/20
 
 
 一、目的
@@ -16,7 +16,7 @@ https://docs.docker.com/engine/api/v1.30
 
 
 go 的示例：
-https://github.com/opera443399/ops/blob/master/doc/Go/src/abc.com/demo/docker_api_exp/app.go
+https://github.com/opera443399/ops/blob/master/doc/Go/src/abc.com/demo/demoDockerAPI/app.go
 
 
 
