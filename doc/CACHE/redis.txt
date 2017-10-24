@@ -1,67 +1,52 @@
-1. ��װredis����
-[root@test1 ~]# cd /home/download
-[root@test1 download]# wget http://download.redis.io/releases/redis-2.8.19.tar.gz
-[root@test1 download]# tar zxvf redis-2.8.19.tar.gz && cd redis-2.8.19  && make
+redis使用小结
+2017/10/24
 
-Hint: It's a good idea to run 'make test' ;)
-
-make[1]: Leaving directory `/home/download/redis-2.8.19/src'
-
-[root@test1 redis-2.8.19]# make test
-cd src && make test
-make[1]: Entering directory `/home/download/redis-2.8.19/src'
-You need tcl 8.5 or newer in order to run the Redis test
-make[1]: *** [test] Error 1
-make[1]: Leaving directory `/home/download/redis-2.8.19/src'
-make: *** [test] Error 2
-
-[root@test1 redis-2.8.19]# yum install -y tcl
-[root@test1 redis-2.8.19]# make test
+1. 安装redis服务
+去这里找最新版：
+http://download.redis.io
 
 
-\o/ All tests passed without errors!
+编译：
+wget http://download.redis.io/releases/redis-4.0.2.tar.gz
+tar zxvf redis-4.0.2.tar.gz
+cd redis-4.0.2
+make
 
-Cleanup: may take some time... OK
-make[1]: Leaving directory `/home/download/redis-2.8.19/src'
+安装编译后的程序：
+make install
 
-[root@test1 redis-2.8.19]# make install
-cd src && make install
-make[1]: Entering directory `/home/download/redis-2.8.19/src'
+当然，可以指定位置安装的，例如：
+make PREFIX=/opt/redis4 install
 
-Hint: It's a good idea to run 'make test' ;)
-
-    INSTALL install
-    INSTALL install
-    INSTALL install
-    INSTALL install
-    INSTALL install
-make[1]: Leaving directory `/home/download/redis-2.8.19/src'
-[root@test1 redis-2.8.19]# whereis redis-cli
-redis-cli: /usr/local/bin/redis-cli
+此时：
+# ls /opt/redis4/bin/
+redis-benchmark  redis-check-aof  redis-check-rdb  redis-cli  redis-sentinel  redis-server
 
 
-2. ��װredisʵ��
-��ʵ��6379��
-[root@test1 redis-2.8.19]# sh utils/install_server.sh 
+注意对引导按照server的影响：
+# sh utils/install_server.sh 
 Welcome to the redis service installer
 This script will help you easily set up a running redis server
 
 Please select the redis port for this instance: [6379] 
 Selecting default: 6379
-Please select the redis config file name [/etc/redis/6379.conf]                     
+Please select the redis config file name [/etc/redis/6379.conf] 
 Selected default - /etc/redis/6379.conf
-Please select the redis log file name [/var/log/redis_6379.log] /home/log/redis/6379.log
-Please select the data directory for this instance [/var/lib/redis/6379] /home/data/redis/6379
-Please select the redis executable path [/usr/local/bin/redis-server] 
+Please select the redis log file name [/var/log/redis_6379.log] 
+Selected default - /var/log/redis_6379.log
+Please select the data directory for this instance [/var/lib/redis/6379] 
+Please select the redis executable path [] 
+Mmmmm...  it seems like you don't have a redis executable. Did you run make install yet?        ####这里要指定 redis-server 的路径，这一条提示是没指定直接回车时的结果，下一条是正确的姿势
+Please select the redis executable path [] /opt/redis4/bin/redis-server
 Selected config:
 Port           : 6379
 Config file    : /etc/redis/6379.conf
-Log file       : /home/log/redis/6379.log
-Data dir       : /home/data/redis/6379
-Executable     : /usr/local/bin/redis-server
-Cli Executable : /usr/local/bin/redis-cli
+Log file       : /var/log/redis_6379.log
+Data dir       : /var/lib/redis/6379
+Executable     : /opt/redis4/bin/redis-server
+Cli Executable : /opt/redis4/bin/redis-cli
 Is this ok? Then press ENTER to go on or Ctrl-C to abort.
-Copied /tmp/6379.conf => /etc/init.d/redis_6379
+Copied /tmp/6379.conf => /etc/init.d/redis_6379                                                 ####这里有一个开机启动项的配置
 Installing service...
 Successfully added to chkconfig!
 Successfully added to runlevels 345!
@@ -69,16 +54,35 @@ Starting Redis server...
 Installation successful!
 
 
-3������С��
-1���漰��redis�����쳣��������oom��redis����ϵͳkill����
-Jan 29 05:59:37 s81 kernel: ecnet.exe invoked oom-killer: gfp_mask=0x201da, order=0, oom_score_adj=0
-Jan 29 05:59:37 s81 kernel: Out of memory: Kill process 751 (redis-server) score 260 or sacrifice child
 
-2������ϵͳ����������vm.overcommit_memory=1����ͼӦ���޷������ڴ���쳣��
-a��һ��Ҫ��������ڴ�
-b������һ���ڴ�
 
-4���ο�
-http://blog.csdn.net/whycold/article/details/21388455
-http://itindex.net/detail/34718-redis-%E6%95%B0%E6%8D%AE
-http://www.searchdatabase.com.cn/showcontent_70423.htm
+
+3、FAQ
+1）如何从阿里云redis实例恢复备份的rdb文件到本地
+恢复过程：
+下载rdb到本地
+→ 停止本地redis服务
+→ 拷贝rdb到本地数据目录
+→ 启动本地redis服务
+
+注1：从经验上而言，要先确认本地的 redis 配置中 maxmemory 的限制，和线上实例的使用量做对比，如果本地redis内存太小，则按照上述步骤恢复数据后，get 指定 key 将没有数据（nil），因为恢复操作根本就没执行完呀，如果 redis 的日志有相关提示就好了，可惜我并未发现。
+
+
+2）集群管理
+推荐使用各种云自带的redis服务，自建需要维护成本。
+
+3）常用指令
+# redis-cli -h xxx -p xxx info                              #### 基础信息
+# redis-cli -h xxx -p xxx dbsize                            #### 大小
+# redis-cli -h xxx -p xxx config get maxmemory              #### 内存上线
+# echo $((150*1024*1024))
+157286400
+# redis-cli -h xxx -p xxx config set maxmemory 157286400    #### 设置内存上线，即时生效，但一定要检查确认这个数值是否正确，别少了个0之类的，最后还得调整 conf 的配置项
+# redis-cli -h xxx -p xxx monitor                           #### 监控
+# redis-cli -h xxx -p xxx slaveof remote_ip remote_port     #### 配置为从库
+# redis-cli -h xxx -p xxx slaveof NO ONE                    #### 取消作为从库的角色
+
+
+
+
+
