@@ -1,0 +1,27 @@
+lsof使用小结
+2017/10/27
+
+
+1、找到删除的文件
+
+[root@dev32 logs]# rm test.log
+发现磁盘空间没有回收，显然是程序占用中。
+
+根据 pid 来找一下 fd
+[root@dev32 logs]# lsof -p 11129 |grep delete
+nutcracke 11129 root    3w      REG        8,2 10894938901    1454199 /usr/local/twemproxy/logs/test.log (deleted)
+
+上述第 4 列指出了 fd
+
+[root@dev32 logs]# ls -l /proc/11129/fd/3
+l-wx------ 1 root root 64 Oct 25 20:48 /proc/11129/fd/3 -> /usr/local/twemproxy/logs/test.log (deleted)
+
+
+清空：
+[root@dev32 logs]# echo >/proc/11129/fd/3
+
+
+小结：回收日志文件的磁盘空间时，如果程序会占用，建议直接清理文件中的内容
+
+
+
