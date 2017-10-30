@@ -1,5 +1,6 @@
 初探go-golang语言初体验
-2017/10/27
+2017/10/30
+
 
 一、初体验
 1、环境
@@ -741,4 +742,5 @@ https://gocn.io/question/362
 http://tonybai.com/2015/03/09/understanding-import-packages/
 http://tonybai.com/2015/07/31/understand-go15-vendor/
 http://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/
+http://tonybai.com/2016/12/21/how-to-use-timer-reset-in-golang-correctly/
 https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/
