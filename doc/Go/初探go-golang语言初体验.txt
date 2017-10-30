@@ -406,9 +406,9 @@ Usage of ./bin/demoHttpHead:
 
 
 三、FAQ
-1、访问 golang.org 异常
-
-注1：引用【docker深入2-UI之portainer的二次开发】文章的实例
+1、当我的本地网络访问 golang.org 异常时，应该如何处理？
+答：
+引用【docker深入2-UI之portainer的二次开发】文章的实例
 
 构建 app
 
@@ -477,6 +477,231 @@ Done, without errors.
 
 
 
+四、在学习的过程中，体验到哪些印象深刻的基础语法？
+答：温故而知新。
+
+【--】 package
+package main
+
+包名main则告诉我们它是一个可独立运行的包，它在编译后会产生可执行文件。
+通常 package 名称和目录同名
+注意vender机制的使用
+
+Go程序会自动调用init()和main()，所以你不需要在任何地方调用这两个函数。每个package中的init函数都是可选的，但package main就必须包含一个main函数。
+
+几个特殊的写法：
+*** 点 操作
+
+我们有时候会看到如下的方式导入包
+
+    import(
+        . "fmt"
+    )
+这个点操作的含义就是这个包导入之后在你调用这个包的函数时，你可以省略前缀的包名，也就是前面你调用的fmt.Println("hello world")可以省略的写成Println("hello world")
+
+*** 别名 操作
+
+别名操作顾名思义我们可以把包命名成另一个我们用起来容易记忆的名字
+
+    import(
+        f "fmt"
+    )
+别名操作的话调用包函数时前缀变成了我们的前缀，即f.Println("hello world")
+
+*** _ 操作
+
+这个操作经常是让很多人费解的一个操作符，请看下面这个import
+
+	import (
+	    "database/sql"
+	    _ "github.com/ziutek/mymysql/godrv"
+	)
+_操作其实是引入该包，而不直接使用包里面的函数，而是调用了该包里面的init函数。
+
+
+
+【--】 声明 var 和 func 时，我应该用大写，还是小写？
+采用驼峰命名
+
+大写字母开头的变量是可导出的，也就是其它包可以读取的，是公有变量；小写字母开头的就是不可导出的，是私有变量。
+大写字母开头的函数也是一样，相当于class中的带public关键词的公有函数；小写字母开头的就是有private关键词的私有函数。
+
+Go里面的面向对象是如此的简单，没有任何的私有、公有关键字，通过大小写来实现(大写开头的为公有，小写开头的为私有)，方法也同样适用这个原则。
+
+
+【--】 申明 var
+一般用var方式来定义全局变量
+var variableName type
+var vname1, vname2, vname3 type
+var variableName type = value
+var vname1, vname2, vname3 type= v1, v2, v3
+var vname1, vname2, vname3 = v1, v2, v3
+
+推荐写法：
+import(
+	"fmt"
+	"os"
+)
+
+const(
+	i = 100
+	pi = 3.1415
+	prefix = "Go_"
+)
+
+var(
+	i int
+	pi float32
+	prefix string
+)
+
+简短声明（仅用于函数内部）
+vname1, vname2, vname3 := v1, v2, v3
+
+对于已声明但未使用的变量会在编译阶段报错
+
+
+
+【--】 申明 func
+注意一下函数返回值的写法
+func funcName(input1 type1, input2 type2) (output1 type1, output2 type2) {
+	//这里是处理逻辑代码
+	return value1, value2
+}
+func SumAndProduct(A, B int) (int, int) {
+    //这里是处理逻辑代码
+	return A+B, A*B
+}
+func max(a, b int) int {
+    //这里是处理逻辑代码
+	return b
+}
+
+
+
+【--】 iota
+Go里面有一个关键字iota，这个关键字用来声明枚举 enum 的时候采用，它默认开始值是0，const中每增加一行加1
+例如：
+const(
+	WHITE = iota
+	BLACK
+	BLUE
+	RED
+	YELLOW
+)
+分别对应
+0
+1
+2
+3
+4
+
+
+【--】 slice
+slice并不是真正意义上的动态数组，而是一个引用类型。slice总是指向一个底层array，slice的声明也可以像array一样，只是不需要长度。
+// 和声明array一样，只是少了长度
+var fslice []int
+
+注意在 range 中使用 array 和 slice 的差异
+
+
+【--】 map
+map和其他基本型别不同，它不是thread-safe，在多个go-routine存取时，必须使用mutex lock机制
+
+
+
+【--】 make
+make用于内建类型（map、slice 和channel）的内存分配
+make返回初始化后的（非零）值。
+a := make(map[string]int)
+b := make(map[string]int){"x":12, "y":25}
+
+
+
+【--】 method
+"A method is a function with an implicit first argument, called a receiver."
+
+func (r ReceiverType) funcName(parameters) (results)
+
+
+注意：
+如果一个method的receiver是*T,你可以在一个T类型的实例变量V上面调用这个method，而不需要&V去调用这个method
+类似的
+
+如果一个method的receiver是T，你可以在一个*T类型的变量P上面调用这个method，而不需要 *P去调用这个method
+所以，你不用担心你是调用的指针的method还是不是指针的method，Go知道你要做的一切，这对于有多年C/C++编程经验的同学来说，真是解决了一个很大的痛苦。
+
+
+
+【--】 struct 
+要理解匿名字段在 override 的时候的用法
+
+~]# cat test.go 
+package main
+
+import "fmt"
+
+type Human struct {
+    name string
+    age int
+    phone string
+}
+
+type Student struct {
+    Human //匿名字段
+    school string
+}
+
+type Employee struct {
+    Human //匿名字段
+    company string
+    phone string  // 雇员的phone字段
+}
+
+//Human定义method
+func (h *Human) SayHi() {
+    fmt.Printf("Hi, I am %s you can call me on %s\n", h.name, h.phone)
+}
+
+//Employee的method重写Human的method
+func (e *Employee) SayHi() {
+    fmt.Printf("Hi, I am %s, I work at %s. Call me on %s\n", e.name,
+		e.company, e.phone) //Yes you can split into 2 lines here.
+}
+
+func main() {
+    Bob := Employee{Human{"Bob", 34, "1111111"}, "Designer", "6666666"}
+    fmt.Println("Bob's work phone is:", Bob.phone)
+    // 如果我们要访问Human的phone字段
+    fmt.Println("Bob's personal phone is:", Bob.Human.phone)
+    
+    Mark := Student{Human{"Mark", 25, "44444444"}, "MIT"}
+    Sam := Employee{Human{"Sam", 45, "5555555"}, "Golang Inc", "999999"}
+
+    Mark.SayHi()
+    Sam.SayHi()
+}
+
+
+~]# go run test.go 
+Bob's work phone is: 6666666
+Bob's personal phone is: 1111111
+Hi, I am Mark you can call me on 44444444
+Hi, I am Sam, I work at Golang Inc. Call me on 999999
+
+
+
+【--】 interface
+通过 interface 来组合一组 method 对外提供服务
+
+
+
+
+
+
+
+
+
 
 
 XYXW、参考
@@ -492,3 +717,9 @@ http://blog.csdn.net/qq_15437667/article/details/59776840
 
 4、国内下载golang.org的包有什么好办法么？
 https://gocn.io/question/362
+
+5、语法基础
+http://tonybai.com/2015/03/09/understanding-import-packages/
+http://tonybai.com/2015/07/31/understand-go15-vendor/
+http://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/
+https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/
