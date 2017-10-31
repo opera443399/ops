@@ -754,8 +754,10 @@ http://blog.csdn.net/qq_15437667/article/details/59776840
 https://gocn.io/question/362
 
 5、语法基础
+https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/
+http://tonybai.com/2014/09/29/a-channel-compendium-for-golang/
 http://tonybai.com/2015/03/09/understanding-import-packages/
 http://tonybai.com/2015/07/31/understand-go15-vendor/
 http://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/
 http://tonybai.com/2016/12/21/how-to-use-timer-reset-in-golang-correctly/
-https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/
+
