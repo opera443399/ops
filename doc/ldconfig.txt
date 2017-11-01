@@ -1,0 +1,189 @@
+ldconfig使用小结
+2017/11/1
+
+
+DESCRIPTION
+       ldconfig  creates  the  necessary  links  and  cache  to  the most recent shared libraries found in the directories specified on the command line, in the file
+       /etc/ld.so.conf, and in the trusted directories (/lib and /usr/lib).  The cache is used by the run-time linker, ld.so or  ld-linux.so.   ldconfig  checks  the
+       header and filenames of the libraries it encounters when determining which versions should have their links updated.
+
+OPTIONS
+       -v     Verbose mode.  Print current version number, the name of each directory as it is scanned, and any links that are created.  Overrides quiet mode.
+
+       -n     Only process directories specified on the  command  line.   Don’t  process  the  trusted  directories  (/lib  and  /usr/lib)  nor  those  specified  in
+              /etc/ld.so.conf.  Implies -N.
+
+       -N     Don’t rebuild the cache.  Unless -X is also specified, links are still updated.
+
+       -X     Don’t update links.  Unless -N is also specified, the cache is still rebuilt.
+
+       -f conf
+              Use conf instead of /etc/ld.so.conf.
+
+       -C cache
+              Use cache instead of /etc/ld.so.cache.
+
+       -r root
+              Change to and use root as the root directory.
+
+       -l     Library mode.  Manually link individual libraries.  Intended for use by experts only.
+
+       -p     Print the lists of directories and candidate libraries stored in the current cache.
+
+
+       
+通常我们要引用第三方库的时候，会执行
+ldconfig
+来更新缓存
+
+
+要注意一个细节：不正确的配置将导致 .so 文件被还原，从而不符合预期。
+
+
+我们的目的：升级 libstdc++.so 到另外一个版本
+
+
+
+下面是一个演示
+
+当前状态
+[root@dev32 ~]# ls /usr/lib64/libstdc++.so.6* -l
+lrwxrwxrwx 1 root root     19 Nov  1 12:00 /usr/lib64/libstdc++.so.6 -> libstdc++.so.6.0.13
+-rwxr-xr-x 1 root root 989840 May 10  2016 /usr/lib64/libstdc++.so.6.0.13
+
+
+计划使用的版本
+[root@dev32 ~]# cp -a /usr/lib64/libstdc++.so.6.0.13 /usr/local/lib64/libstdc++.so.6.111.222
+
+
+[root@dev32 ~]# ls -l /usr/local/lib64/
+total 968
+-rwxr-xr-x 1 root root 989840 May 10  2016 libstdc++.so.6.111.222
+
+
+如果直接做一个软连接：
+[root@dev32 ~]# ln -sfv /usr/local/lib64/libstdc++.so.6.111.222 /usr/lib64/libstdc++.so.6
+`/usr/lib64/libstdc++.so.6' -> `/usr/local/lib64/libstdc++.so.6.111.222'
+
+
+[root@dev32 ~]# ls /usr/lib64/libstdc++.so.6* -l
+lrwxrwxrwx 1 root root     39 Nov  1 12:08 /usr/lib64/libstdc++.so.6 -> /usr/local/lib64/libstdc++.so.6.111.222
+-rwxr-xr-x 1 root root 989840 May 10  2016 /usr/lib64/libstdc++.so.6.0.13
+
+
+看起来是符合预期，对吧，但如果我们执行：
+[root@dev32 ~]# ldconfig -v |grep changed
+ldconfig: Path `/usr/local/lib' given more than once
+ldconfig: Path `/usr/local/lib64' given more than once
+	libstdc++.so.6 -> libstdc++.so.6.111.222 (changed)
+	libstdc++.so.6 -> libstdc++.so.6.0.13 (changed)
+    
+
+结果出乎意外不：
+[root@dev32 ~]# ls /usr/lib64/libstdc++.so.6* -l
+lrwxrwxrwx 1 root root     19 Nov  1 12:09 /usr/lib64/libstdc++.so.6 -> libstdc++.so.6.0.13
+-rwxr-xr-x 1 root root 989840 May 10  2016 /usr/lib64/libstdc++.so.6.0.13
+
+
+[root@dev32 ~]# ls -l /usr/local/lib64
+total 968
+lrwxrwxrwx 1 root root     22 Nov  1 12:09 libstdc++.so.6 -> libstdc++.so.6.111.222
+-rwxr-xr-x 1 root root 989840 May 10  2016 libstdc++.so.6.111.222
+
+
+
+解决方案：
+[root@dev32 ~]# rm /usr/lib64/libstdc++.so.6* -f
+
+
+[root@dev32 ~]# ln -sfv /usr/local/lib64/libstdc++.so.6.111.222 /usr/lib64/libstdc++.so.6
+`/usr/lib64/libstdc++.so.6' -> `/usr/local/lib64/libstdc++.so.6.111.222'
+
+
+[root@dev32 ~]# ls /usr/lib64/libstdc++.so.6* -l
+lrwxrwxrwx 1 root root 39 Nov  1 12:15 /usr/lib64/libstdc++.so.6 -> /usr/local/lib64/libstdc++.so.6.111.222
+
+
+[root@dev32 ~]# ldconfig -v |grep changed
+ldconfig: Path `/usr/local/lib' given more than once
+ldconfig: Path `/usr/local/lib64' given more than once
+
+
+[root@dev32 ~]# ls /usr/lib64/libstdc++.so.6* -l
+lrwxrwxrwx 1 root root 39 Nov  1 12:15 /usr/lib64/libstdc++.so.6 -> /usr/local/lib64/libstdc++.so.6.111.222
+
+
+原因分析：
+[root@dev32 ~]# ls /usr/local/lib64 -l
+total 968
+lrwxrwxrwx 1 root root     22 Nov  1 12:18 libstdc++.so.6 -> libstdc++.so.6.111.222
+-rwxr-xr-x 1 root root 989840 May 10  2016 libstdc++.so.6.111.222
+
+
+[root@dev32 ~]# rm -fv /usr/local/lib64/libstdc++.so.6
+removed `/usr/local/lib64/libstdc++.so.6'
+
+
+[root@dev32 ~]# ls /usr/local/lib64 -l
+total 968
+-rwxr-xr-x 1 root root 989840 May 10  2016 libstdc++.so.6.111.222
+
+
+[root@dev32 ~]# ldconfig -v |grep changed
+ldconfig: Path `/usr/local/lib' given more than once
+ldconfig: Path `/usr/local/lib64' given more than once
+	libstdc++.so.6 -> libstdc++.so.6.111.222 (changed)
+[root@dev32 ~]# 
+
+
+上述操作显示，当执行 ldconfig 时，默认会生成一个 libstdc++.so.6 的软连接来指向具体的库文件
+	libstdc++.so.6 -> libstdc++.so.6.111.222 (changed)
+    
+    
+因而当
+/usr/lib64/
+/usr/local/lib64
+都存在一样的库文件时，将生成对应的软连接文件
+
+
+
+
+注意本文开头的这段话：
+ldconfig checks the header and filenames of the libraries it encounters when determining which versions should have their links updated.
+
+
+个人理解，源于 ldconfig 会检查库文件的 header 和 filenames 来决定做软连接的时候将使用哪个版本。
+
+
+
+OK 让我们再做一次实验：
+[root@dev32 ~]# rm -fv /usr/local/lib64/libstdc++.so.6
+removed `/usr/local/lib64/libstdc++.so.6'
+
+
+[root@dev32 ~]# ls -l /usr/local/lib64/
+total 968
+-rwxr-xr-x 1 root root 989840 Nov  1 11:54 libstdc++.so.6.111.222
+
+
+[root@dev32 ~]# ldconfig -X -v |grep changed
+ldconfig: Path `/usr/local/lib' given more than once
+ldconfig: Path `/usr/local/lib64' given more than once
+
+
+[root@dev32 ~]# ls -l /usr/local/lib64/
+total 968
+-rwxr-xr-x 1 root root 989840 Nov  1 11:54 libstdc++.so.6.111.222
+
+
+符合预期，因为我们使用这个参数
+-X
+来避免更新软连接
+
+看起来，我们找到了问题所在。
+
+
+
+
+
+
