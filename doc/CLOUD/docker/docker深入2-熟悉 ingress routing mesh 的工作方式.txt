@@ -1,5 +1,5 @@
 docker深入2-熟悉 ingress routing mesh 的工作方式
-2017/10/27
+2017/11/2
 
 1、目的
 总所周知，service 通过 ingress load balancing 来发布服务，且 swarm 集群中所有 node 都参与到 ingress 路由网格（ingress routing mesh） 中，访问任意一个 node+PublishedPort 即可访问到服务。
@@ -45,8 +45,8 @@ http://tonybai.com/2016/01/18/understanding-binding-docker-container-ports-to-ho
 《理解Docker跨多主机容器网络》
 http://tonybai.com/2016/02/15/understanding-docker-multi-host-networking/
 
-
-
+理解Docker容器网络之Linux Network Namespace
+http://tonybai.com/2017/01/11/understanding-linux-network-namespace-for-docker-network/
 
 
 
