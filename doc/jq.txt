@@ -1,0 +1,107 @@
+jq使用小结
+2017/11/2
+
+
+说起来，不知不觉也在脚本中频繁用到 jq 这个小工具，还是总结一下，顺带也介绍给不清楚的朋友。
+
+一、本段以翻译官网教程为例来演示如何使用。
+
+来源：
+https://stedolan.github.io/jq/tutorial/
+
+
+教程
+
+1、数据来源
+GitHub 有一个 JSON API 我们用来玩玩作为示范
+
+这个 URL 获取最近的 5 个 commits 
+
+curl -s 'https://api.github.com/repos/stedolan/jq/commits?per_page=5'
+
+
+返回内容：经过格式化的、看起来很舒服的、标准的 JSON
+
+
+
+2、格式化输出
+但，假设返回的一串未经过格式化输出的 JSON 文本呢？来吧，使用 jq 来格式化一下：
+
+jq '.' 是最简单的表达式，处理一下 input 的内容，格式化输出所有内容
+
+curl -s 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' | jq '.'
+
+
+
+3、过滤出第一个 commit
+jq '.[0]' 从 json array 中提取了第一个并输出
+
+curl -s 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' | jq '.[0]'
+
+
+
+4、实际上，我们不想看到一大堆文本，如果能过滤一下，只输出其中 2 个字段就好啦
+jq '.[0] | {message: .commit.message, name: .commit.committer.name}'
+
+curl -s 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' | jq '.[0] | {message: .commit.message, name: .commit.committer.name}'
+
+
+操作符 | 在 jq 中的用法和 linux 管道命令类似，处理上一个 filter 输出的内容，并使用 {...} 来过滤出我们想要的字段来组成一个新的对象，最后输出我们想要的内容
+显然，在一个级联的 json 文本中，咱们可以通过 .commit.message 来获取想要的字段
+
+
+
+5、更进一步，我们要看到 array 中所有的内容，而不只是第一个
+.[] 从 array 中依次提取了所有的 element 并传递给下一个 filter 去处理
+
+curl -s 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' | jq '.[] | {message: .commit.message, name: .commit.committer.name}'
+
+
+
+6、上面的操作，我们实际上得到了多个 json values 的输出，怎样合并成一个 array 呢？
+jq 中的数据表现为 JSON values 的数据流，每一个 js 表达式运行后，输出任意数量的 values
+数据流序列化时通过在 JSON values 中使用空格来分隔开，这对 cat 这样的命令是友好的，可以通过处理来合并数据、格式化后得到一个标准的 JSON 输出
+如果我们想直接得到一个 array 只需要告诉 js 去帮我们处理一下即可。
+
+curl -s 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' | jq '[.[] | {message: .commit.message, name: .commit.committer.name}]'
+
+
+7、最后，试试从别的地方提取点数据过来合并到一起输出
+[.parents[].html_url]}] 从 .parents 这个节点提取了所有的 .html_url 的 values
+
+curl -s 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' | jq '[.[] | {message: .commit.message, name: .commit.committer.name, parents: [.parents[].html_url]}]'
+
+
+
+二、补充实例
+1、解析 docker 的 API
+获取RestartPolicy
+
+# curl -s --unix-socket /var/run/docker.sock http:/v1.30/services |jq '.[].Spec | .Name + "    ->    RestartPolicy.Condition=" + .TaskTemplate.RestartPolicy.Condition'
+"service1    ->    RestartPolicy.Condition=any"
+"service2    ->    RestartPolicy.Condition=none"
+
+
+不妨和下面这个输出对比一下：
+# curl -s --unix-socket /var/run/docker.sock http:/v1.30/services |jq '.[].Spec | {name: .Name, RestartPolicy: .TaskTemplate.RestartPolicy.Condition}'
+{
+  "name": "service1",
+  "RestartPolicy": "any"
+}
+{
+  "name": "service2",
+  "RestartPolicy": "none"
+}
+
+
+
+
+
+
+XYWX、参考
+1、doc
+https://stedolan.github.io/jq/tutorial/
+2、Using jq to parse and display multiple fields in a json serially
+https://stackoverflow.com/questions/28164849/using-jq-to-parse-and-display-multiple-fields-in-a-json-serially
+
+
