@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#2017/9/29
+#2017/11/6
 #set -e
 
 ################################ global settings ################################
@@ -81,6 +81,7 @@ function do_init(){
 function do_build(){
     print_info '[ACTION build]'
     cd ${path_to_image_dir}
+    grep '^HEALTHCHECK' Dockerfile >/dev/null || echo -e "\n\033[1;30;33m[+] Warn: HEALTHCHECK directive not found \n\033[0m"
     print_debug "~]# docker build --rm -t ${image_name_with_prefix} ."
     docker build --rm -t ${image_name_with_prefix} .
     [ $? -eq 0 ] || exit 1
