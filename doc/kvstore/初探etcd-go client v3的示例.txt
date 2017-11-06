@@ -1,0 +1,50 @@
+初探etcd-go client v3的示例
+2017/11/6
+
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/coreos/etcd/clientv3"
+)
+
+var requestTimeout = time.Duration(3) * time.Second
+
+func main() {
+	var cli *clientv3.Client
+
+	cfg := clientv3.Config{
+		Endpoints:   []string{"http://192.168.50.200:2379"},
+		DialTimeout: 5 * time.Second,
+	}
+	cli, err := clientv3.New(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cli.Close()
+
+	_, err = cli.Put(context.TODO(), "/app/upstream/s01", "1001")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = cli.Put(context.TODO(), "/app/upstream/s02", "1002")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	resp, err := cli.Get(ctx, "/app", clientv3.WithPrefix(), clientv3.WithSort(clientv3.SortByKey, clientv3.SortDescend))
+	cancel()
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, ev := range resp.Kvs {
+		fmt.Printf("%s : %s\n", ev.Key, ev.Value)
+	}
+
+}

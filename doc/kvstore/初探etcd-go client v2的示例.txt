@@ -1,0 +1,53 @@
+初探etcd-go client v2的示例
+2017/11/6
+
+
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"sort"
+	"time"
+
+	"github.com/coreos/etcd/client"
+)
+
+func main() {
+	cfg := client.Config{
+		Endpoints:               []string{"http://192.168.50.200:2379"},
+		Transport:               client.DefaultTransport,
+		HeaderTimeoutPerRequest: time.Second,
+	}
+	c, err := client.New(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	kapi := client.NewKeysAPI(c)
+	/*
+		resp, err := kapi.Set(context.Background(), "foo", "bar", nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+	*/
+	respNode, err := kapi.Get(context.Background(), "/docker/node", nil)
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		sort.Sort(respNode.Node.Nodes)
+		for _, n := range respNode.Node.Nodes {
+			fmt.Printf("Key: %q, Value: %q\n", n.Key, n.Value)
+		}
+	}
+
+	respService, err := kapi.Get(context.Background(), "/docker/service", nil)
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		sort.Sort(respService.Node.Nodes)
+		for _, n := range respService.Node.Nodes {
+			fmt.Printf("Key: %q, Value: %q\n", n.Key, n.Value)
+		}
+	}
+}

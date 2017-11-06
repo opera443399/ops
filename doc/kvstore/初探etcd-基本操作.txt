@@ -1,11 +1,18 @@
 初探etcd-基本操作
-2016/12/20
+2017/11/6
 
 一、初识
 1、用途
 etcd是用于共享配置和服务发现的分布式、一致性的KV存储系统。
 
-2、下载
+主要版本：
+v2：restapi，基于目录
+v3：grpc，使用protobuf
+
+2、目标
+本次示例 v3 版本的基本操作，作为初步了解
+
+3、下载
 来自：https://github.com/coreos/etcd/releases
 [root@n218 ~]# wget https://github.com/coreos/etcd/releases/download/v3.0.15/etcd-v3.0.15-linux-amd64.tar.gz
 [root@n218 ~]# tar zxvf etcd-v3.0.15-linux-amd64.tar.gz

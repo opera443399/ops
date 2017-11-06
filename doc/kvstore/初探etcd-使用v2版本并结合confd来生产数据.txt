@@ -1,0 +1,165 @@
+初探etcd-使用v2版本并结合confd来生产数据
+2017/11/6
+
+
+注：目前简单测试了下 confd 对 confd v3 版本的支持，不符合预期（使用 range 生产数据时），因而本文使用 v2 来演示（先达到目的，后续再测试如何使用 v3 版本，可能要自己造轮子，需要时间）
+
+一、准备工作
+1、部署一个测试节点
+
+export HostIP="192.168.50.200"
+docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 -p 2380:2380 -p 2379:2379 \
+ --name etcd quay.io/coreos/etcd:v2.3.8 \
+ -name etcd0 \
+ -advertise-client-urls http://${HostIP}:2379,http://${HostIP}:4001 \
+ -listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001 \
+ -initial-advertise-peer-urls http://${HostIP}:2380 \
+ -listen-peer-urls http://0.0.0.0:2380 \
+ -initial-cluster-token etcd-cluster-1 \
+ -initial-cluster etcd0=http://${HostIP}:2380 \
+ -initial-cluster-state new
+ 
+
+2、测试一下 
+docker exec etcd /etcdctl set '/docker/node/n1' '192.168.50.111'
+docker exec etcd /etcdctl set '/docker/node/n2' '192.168.50.112'
+docker exec etcd /etcdctl set '/docker/node/n3' '192.168.50.113'
+
+docker exec etcd /etcdctl set '/docker/service/s1' '3301'
+docker exec etcd /etcdctl set '/docker/service/s2' '3302'
+
+
+
+二、使用 confd 来生产数据
+1、按照 confd
+git clone https://github.com/kelseyhightower/confd.git $GOPATH/src/github.com/kelseyhightower/confd
+cd $GOPATH/src/github.com/kelseyhightower/confd
+make
+cp bin/confd /usr/local/bin/
+mkdir -p /etc/confd/{conf.d,templates}
+
+
+2、配置文件
+[root@dev200 confd]# tree /etc/confd
+/etc/confd
+├── conf.d
+│   └── nginx.toml
+└── templates
+    └── nginx.tmpl
+
+2 directories, 2 files
+[root@dev200 confd]# cat /etc/confd/conf.d/nginx.toml 
+[template]
+prefix = "/docker"
+src = "nginx.tmpl"
+dest = "/tmp/myapp.conf"
+owner = "nginx"
+mode = "0644"
+keys = [
+  "/node",
+  "/service",
+]
+[root@dev200 confd]# cat /etc/confd/templates/nginx.tmpl 
+{{range gets "/service/*"}}
+upstream backend_{{base .Key}} { {{$port := .Value}} {{range getvs "/node/*"}}
+    server {{.}}:{{$port}}{{end}}
+}
+
+server {
+    server_name {{base .Key}}.example.com;
+    location / {
+        proxy_pass http://backend_{{base .Key}};
+        proxy_redirect    off;
+        proxy_set_header  Host             $host;
+        proxy_set_header  X-Real-IP        $remote_addr;
+        proxy_set_header  X-Forwarded-For  $proxy_add_x_forwarded_for;
+    }
+}
+{{end}}
+
+
+
+3、测试
+
+[root@dev200 confd]# /usr/local/bin/confd -onetime -backend etcd -node http://127.0.0.1:2379 >/dev/null 2>&1 && cat /tmp/myapp.conf
+
+upstream backend_s1 {  
+    server 192.168.50.111:3301
+    server 192.168.50.112:3301
+    server 192.168.50.113:3301
+}
+
+server {
+    server_name s1.example.com;
+    location / {
+        proxy_pass http://backend_s1;
+        proxy_redirect    off;
+        proxy_set_header  Host             $host;
+        proxy_set_header  X-Real-IP        $remote_addr;
+        proxy_set_header  X-Forwarded-For  $proxy_add_x_forwarded_for;
+    }
+}
+
+upstream backend_s2 {  
+    server 192.168.50.111:3302
+    server 192.168.50.112:3302
+    server 192.168.50.113:3302
+}
+
+server {
+    server_name s2.example.com;
+    location / {
+        proxy_pass http://backend_s2;
+        proxy_redirect    off;
+        proxy_set_header  Host             $host;
+        proxy_set_header  X-Real-IP        $remote_addr;
+        proxy_set_header  X-Forwarded-For  $proxy_add_x_forwarded_for;
+    }
+}
+
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ZYXW、参考
+1、etcd doc
+https://github.com/coreos/etcd/blob/master/Documentation/v2/docker_guide.md
+2、confd doc
+https://github.com/kelseyhightower/confd/blob/master/docs/quick-start-guide.md
+https://github.com/kelseyhightower/confd/blob/master/docs/templates.md
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
