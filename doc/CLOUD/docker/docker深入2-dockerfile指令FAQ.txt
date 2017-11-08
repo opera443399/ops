@@ -1,0 +1,80 @@
+docker深入2-dockerfile指令FAQ
+2017/11/8
+
+
+
+1、COPY 和 ADD 的区别
+答：
+COPY 指令从 <src> 拷贝目录、文件到容器中的文件系统的指令路径 <dest>
+ADD 指令从 <src> 拷贝目录、文件、URL类型定义的文件到容器中的文件系统的指令路径 <dest> 
+
+
+合理使用COPY目录的功能
+场景实例：
+
+在使用 svn 管理的源代码的时候，业务只需要提交代码到 svn 来触发构建，但由于每个业务代码的子目录下均包含了 .svn 目录，导致每次提交都会是新的变更，最终结果是：
+使用了以下指令的这一层将无法使用 cache 来构建
+COPY 目录 
+
+解决方案：
+a）增加 .dockerignore
+示例：
+~] cat .dockerignore
+.svn
+*/.svn
+
+
+b）打包目录并使用 ADD xxx.tar.gz
+针对 ADD 当 <src> 是一个 tar 包，且压缩格式可识别(identity, gzip, bzip2 or xz) 将自动完成解压的动作（使用 URL 格式的不会解压）类似 tar -x 的结果。
+
+
+参考：https://docs.docker.com/engine/reference/builder/#add
+
+
+
+2、CMD 和 ENTRYPOINT 的区别
+答：
+两者都指定了容器启动后执行的指令
+首先，注意一下两种格式的差异
+exec form：解析为 JSON array 因而要使用 double-quotes (“) 包含参数而不是 single-quotes (‘)，执行时不会调用 shell 因而环境变量 $PATH 之类的不能直接替换生效
+shell form：指令通过 /bin/sh -c 来执行，sh 将是这个容器的 PID 1 进程，这将导致服务进程不能正常的处理 Unix signals
+
+要特别注意使用不同的格式时，PID 的变化、是否能接收 Unix signals 以及如何处理，例如文档有个典型的示例：
+#!/bin/sh
+# Note: I've written this using sh so it works in the busybox container too
+
+# USE the trap if you need to also do manual cleanup after the service is stopped,
+#     or need to start multiple services in the one container
+trap "echo TRAPed signal" HUP INT QUIT TERM
+
+# start service in background here
+/usr/sbin/apachectl start
+
+echo "[hit enter key to exit] or run 'docker stop <container>'"
+read
+
+# stop service and clean up here
+echo "stopping apache"
+/usr/sbin/apachectl stop
+
+echo "exited $0"
+
+
+Dockerfile 中至少有一个 CMD 或 ENTRYPOINT，注意，如果列出了多个 CMD 或 ENTRYPOINT 则只有最后一个 CMD 或 ENTRYPOINT 是生效的
+容器是可执行的时候，使用 ENTRYPOINT
+CMD 应作为 ENTRYPOINT 的默认参数，可在容器运行时被传入的参数替换掉
+
+
+                            No ENTRYPOINT                   ENTRYPOINT exec_entry p1_entry      ENTRYPOINT [“exec_entry”, “p1_entry”]
+No CMD	                    error, not allowed	            /bin/sh -c exec_entry p1_entry	    exec_entry p1_entry
+CMD [“exec_cmd”, “p1_cmd”]	exec_cmd p1_cmd	                /bin/sh -c exec_entry p1_entry	    exec_entry p1_entry exec_cmd p1_cmd
+CMD [“p1_cmd”, “p2_cmd”]	p1_cmd p2_cmd	                /bin/sh -c exec_entry p1_entry	    exec_entry p1_entry p1_cmd p2_cmd
+CMD exec_cmd p1_cmd	        /bin/sh -c exec_cmd p1_cmd	    /bin/sh -c exec_entry p1_entry	    exec_entry p1_entry /bin/sh -c exec_cmd p1_cmd
+
+
+
+参考：https://docs.docker.com/engine/reference/builder/#understand-how-cmd-and-entrypoint-interact
+
+
+
+
