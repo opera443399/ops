@@ -1,11 +1,34 @@
 awk使用小结
-2017/8/8
+2017/11/9
 
 awk博大精深，本文仅持续更新在工作中频繁使用的方法。
 
 
 
 【AWK】
+使用逻辑判断 if else
+在逻辑处理过程中调用外部指令，并使用 getline 得到输出，最终赋值给变量
+~]$ cat base64_decode.sh 
+#!/bin/bash
+#
+# 2017/11/9
+# decode etcdv3 output k/v with base64
+
+ETCDCTL_API=3 etcdctl get -w json --prefix '/' |jq '.' |awk -F'"' '{
+  if ($2=="key" || $2=="value") {
+    "base64 -d<<< \""$4"\"" |getline $4
+    print $1"\""$2"\""$3"\""$4"\""$5
+  } else {
+    print $0
+  }
+}'
+
+
+在处理数据前，先赋值几个变量
+awk -v dt_a=`date +%s` -v dt_b=`date +%s` 'BEGIN{if(dt_a==dt_b) {print 1} else {print 0}}'
+
+
+
 截取一行数据中指定的2个数字做加减乘除运算：
 请仔细对比下述3种方式的差异
 [root@tvm01 asset]# echo 'aaa 1%, bbb 2%, ccc 3%, ddd 4%' |sed -r 's/.*([0-9]).*([0-9]).*([0-9]).*([0-9]).*/\1+\2/' |bc
@@ -124,3 +147,6 @@ echo `hostname` |cut -d'.' -f1 \
 
 
 
+参考
+1、Getline 
+https://www.gnu.org/software/gawk/manual/html_node/Getline_002fVariable_002fPipe.html#Getline_002fVariable_002fPipe
