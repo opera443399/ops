@@ -1,5 +1,5 @@
 linux bash shell 三言两语
-2017/9/8
+2017/11/9
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -560,3 +560,18 @@ Words of the form $'string' are treated specially. The word expands to string, w
 就是说，字符串前边有个美元符号，意味着可以使用转义符。
 
 
+32、base64编码解码
+echo -n "foo" |base64
+base64 -d <<< "Zm9v"
+while read line; do cnt=$(echo $line |wc -c); [ $cnt -gt 1000 ] && continue; echo $line;echo -e '\n----->\n';echo -n $line |base64 -d; echo -e '\n\n'; done<1.txt
+
+
+33、对比 here document 还有一种 here string 的写法
+<< denotes a here document
+<<< denotes a here string
+
+$ cat <<< 'hi there'
+hi there
+
+read first second <<< "hello world"
+echo $second $first
