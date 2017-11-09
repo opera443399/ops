@@ -1,33 +1,185 @@
 初探etcd-基本操作
-2017/11/6
+2017/11/9
 
 一、初识
 1、用途
-etcd是用于共享配置和服务发现的分布式、一致性的KV存储系统。
+etcd是用于共享配置和服务发现的分布式、一致性的KV存储系统。本文重点是记录最新版本（目前是v3）的 etcd 服务的基本操作，因而将不定时更新本文。
 
-主要版本：
+目前的主要版本：
 v2：restapi，基于目录
-v3：grpc，使用protobuf
+v3：grpc，使用protobuf，兼容了v2的接口，但不能混用（例如，使用v2的接口来获取v3版本保存的数据），使用v3的接口，需申明 ETCDCTL_API=3 
 
 2、目标
 本次示例 v3 版本的基本操作，作为初步了解
 
 3、下载
 来自：https://github.com/coreos/etcd/releases
-[root@n218 ~]# wget https://github.com/coreos/etcd/releases/download/v3.0.15/etcd-v3.0.15-linux-amd64.tar.gz
-[root@n218 ~]# tar zxvf etcd-v3.0.15-linux-amd64.tar.gz
-[root@n218 ~]# cp etcd-v3.0.15-linux-amd64/etcd* /bin/
-[root@n218 ~]# etcd --version
-etcd Version: 3.0.15
-Git SHA: fc00305
-Go Version: go1.6.3
-Go OS/Arch: linux/amd64
-[root@n218 ~]# etcdctl --version
-etcdctl version: 3.0.15
-API version: 2
+wget https://github.com/coreos/etcd/releases/download/v3.2.9/etcd-v3.2.9-linux-amd64.tar.gz
+tar zxvf etcd-v3.2.9-linux-amd64.tar.gz
+cp etcd-v3.2.9-linux-amd64/etcd* /usr/local/bin/
 
 
-二、尝试一下
+
+二、单节点环境
+1、启动服务
+nohup etcd --name etcd_test --data-dir /tmp/etcd_test >>/var/log/etcd_test.log 2>&1 &
+
+
+2、put
+ETCDCTL_API=3 /usr/local/bin/etcdctl put foo bar
+ETCDCTL_API=3 /usr/local/bin/etcdctl put testjson {"PublishedPort":"11111","Labels":[{"com.test.env":"dev"}]}
+
+
+ETCDCTL_API=3 /usr/local/bin/etcdctl put "/docker/node/n01" "192.168.100.111"
+ETCDCTL_API=3 /usr/local/bin/etcdctl put "/docker/node/n02" "192.168.100.112"
+ETCDCTL_API=3 /usr/local/bin/etcdctl put "/docker/node/n03" "192.168.100.113"
+ETCDCTL_API=3 /usr/local/bin/etcdctl put "/docker/service/s01" "1005"
+ETCDCTL_API=3 /usr/local/bin/etcdctl put "/docker/service/s02" "1007"
+
+
+
+3、get
+精确匹配
+~]# ETCDCTL_API=3 /usr/local/bin/etcdctl get foo
+foo
+bar
+
+
+改变输出格式为 json
+~]# ETCDCTL_API=3 /usr/local/bin/etcdctl get -w json foo
+{"header":{"cluster_id":14841639068965178418,"member_id":10276657743932975437,"revision":13,"raft_term":2},"kvs":[{"key":"Zm9v","create_revision":12,"mod_revision":12,"version":1,"value":"YmFy"}],"count":1}
+
+
+注意，在 v3 的版本中 key 和 value 是经过 base64 编码的
+~]# echo -n 'foo' |base64
+Zm9v
+~]# echo -n 'bar' |base64
+YmFy
+
+
+
+前缀匹配
+~]# ETCDCTL_API=3 /usr/local/bin/etcdctl get --prefix /docker
+/docker/node/n01
+192.168.100.111
+/docker/node/n02
+192.168.100.112
+/docker/node/n03
+192.168.100.113
+/docker/service/s01
+1005
+/docker/service/s02
+1007
+
+~]# ETCDCTL_API=3 /usr/local/bin/etcdctl get --prefix /docker/node
+/docker/node/n01
+192.168.100.111
+/docker/node/n02
+192.168.100.112
+/docker/node/n03
+192.168.100.113
+
+~]# ETCDCTL_API=3 /usr/local/bin/etcdctl get --prefix /docker/service
+/docker/service/s01
+1005
+/docker/service/s02
+1007
+
+
+
+4、使用 confd 来生产数据
+1）安装 confd
+git clone https://github.com/kelseyhightower/confd.git $GOPATH/src/github.com/kelseyhightower/confd
+cd $GOPATH/src/github.com/kelseyhightower/confd
+make
+cp bin/confd /usr/local/bin/
+mkdir -p /etc/confd/{conf.d,templates}
+
+
+2）配置文件
+~]# tree /etc/confd
+/etc/confd
+├── conf.d
+│   └── nginx.toml
+└── templates
+    └── nginx.tmpl
+
+2 directories, 2 files
+~]# cat /etc/confd/conf.d/nginx.toml 
+[template]
+prefix = "/docker"
+src = "nginx.tmpl"
+dest = "/tmp/myapp.conf"
+owner = "nginx"
+mode = "0644"
+keys = [
+  "/node",
+  "/service",
+]
+
+
+~]# cat /etc/confd/templates/nginx.tmpl 
+{{range gets "/service/*"}}
+upstream backend_{{base .Key}} { {{$port := .Value}} {{range getvs "/node/*"}}
+    server {{.}}:{{$port}}{{end}}
+}
+
+server {
+    server_name {{base .Key}}.example.com;
+    location / {
+        proxy_pass http://backend_{{base .Key}};
+        proxy_redirect    off;
+        proxy_set_header  Host             $host;
+        proxy_set_header  X-Real-IP        $remote_addr;
+        proxy_set_header  X-Forwarded-For  $proxy_add_x_forwarded_for;
+    }
+}
+{{end}}
+
+
+
+3）测试
+~]# confd -onetime -backend etcdv3 -node http://127.0.0.1:2379 >/dev/null 2>&1 && cat /tmp/myapp.conf
+
+upstream backend_s01 {  
+    server 192.168.100.111:1005
+    server 192.168.100.112:1005
+    server 192.168.100.113:1005
+}
+
+server {
+    server_name s01.example.com;
+    location / {
+        proxy_pass http://backend_s01;
+        proxy_redirect    off;
+        proxy_set_header  Host             $host;
+        proxy_set_header  X-Real-IP        $remote_addr;
+        proxy_set_header  X-Forwarded-For  $proxy_add_x_forwarded_for;
+    }
+}
+
+upstream backend_s02 {  
+    server 192.168.100.111:1007
+    server 192.168.100.112:1007
+    server 192.168.100.113:1007
+}
+
+server {
+    server_name s02.example.com;
+    location / {
+        proxy_pass http://backend_s02;
+        proxy_redirect    off;
+        proxy_set_header  Host             $host;
+        proxy_set_header  X-Real-IP        $remote_addr;
+        proxy_set_header  X-Forwarded-For  $proxy_add_x_forwarded_for;
+    }
+}
+
+
+
+
+三、集群环境
+注：本文可能已经过时（2017年初），写下来的目的仅供参考常用操作，不明之处请参考官网文档。
 1、环境
 NAME	ADDRESS	        HOSTNAME
 infra0	172.20.101.218	infra0.example.com
