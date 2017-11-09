@@ -86,6 +86,24 @@ YmFy
 1007
 
 
+获取所有的key
+~]# ETCDCTL_API=3 /usr/local/bin/etcdctl get --prefix ""
+/docker/node/n01
+192.168.100.111
+/docker/node/n02
+192.168.100.112
+/docker/node/n03
+192.168.100.113
+/docker/service/s01
+1005
+/docker/service/s02
+1007
+foo
+bar
+testjson
+PublishedPort:11111
+
+
 
 4、使用 confd 来生产数据
 1）安装 confd
