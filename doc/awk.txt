@@ -14,14 +14,25 @@ awk博大精深，本文仅持续更新在工作中频繁使用的方法。
 # 2017/11/9
 # decode etcdv3 output k/v with base64
 
+### "key": "foo",
+### "value": "bar",
+
 ETCDCTL_API=3 etcdctl get -w json --prefix '/' |jq '.' |awk -F'"' '{
-  if ($2=="key" || $2=="value") {
-    "base64 -d<<< \""$4"\"" |getline $4
-    print $1"\""$2"\""$3"\""$4"\""$5
-  } else {
-    print $0
-  }
+    if ($2=="key") {
+        "base64 -d<<< \""$4"\"" |getline $4
+        print $1"\""$2"\""$3"\""$4"\""$5
+    } else if ($2=="value") {
+        "base64 -d<<< \""$4"\"" |getline s_decode
+        if (index(s_decode, "{") != 0) {
+            print $1"\""$2"\""$3s_decode$5
+        } else {
+            print $0
+        }
+    } else {
+        print $0
+    }
 }'
+
 
 
 在处理数据前，先赋值几个变量
