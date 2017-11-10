@@ -1,4 +1,5 @@
-linux user 用法记录
+linux用户管理小结
+2017/11/10
 
 
 一、参数
@@ -110,3 +111,18 @@ $1$cephuser$s.kBq3jpmu6NwZhSaIYW11
 [root@vm_1_2 ~]# useradd -p '$1$cephuser$s.kBq3jpmu6NwZhSaIYW11'  cephuser
 参考：
 https://www.openssl.org/docs/manmaster/apps/passwd.html
+
+
+3、请注意 su Jack 和 su - Jack 的差异
+       -, -l, --login
+              make the shell a login shell, clears all envvars except for TERM, initializes HOME, SHELL, USER, LOGNAME and PATH
+       A mere - implies -l.   If USER not given, assume root.
+
+
+
+
+
+
+
+
+
