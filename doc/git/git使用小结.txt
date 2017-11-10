@@ -95,6 +95,23 @@ Deleted branch bbb (was f3a1250).
   remotes/upstream/gh-pages
   remotes/upstream/master
 
+  
+切换到远程分支
+[root@dev_08 confd]# git branch
+* master
+[root@dev_08 confd]# git branch -a
+* master
+  remotes/origin/HEAD -> origin/master
+  remotes/origin/exp-keep-backend-etcd-only
+  remotes/origin/fix-integration-etcd-curl-err
+  remotes/origin/gh-pages
+  remotes/origin/master
+[root@dev_08 confd]# git checkout -b exp-keep-backend-etcd-only origin/exp-keep-backend-etcd-only
+Branch exp-keep-backend-etcd-only set up to track remote branch exp-keep-backend-etcd-only from origin.
+Switched to a new branch 'exp-keep-backend-etcd-only'
+[root@dev_08 confd]# git branch
+* exp-keep-backend-etcd-only
+  master
 
 
 5、remote
@@ -197,7 +214,11 @@ HEAD is now at 730925b fix(containers): fix an issue with filters
 
 
 三、提交变更的常用操作
-1、当前状态
+1、查看当前的状态
+[root@dev_08 confd]# git status
+# On branch exp-keep-backend-etcd-only
+nothing to commit, working directory clean
+
 [root@dev_08 portainer]# git status
 # On branch feat-add-container-console-on-task-details
 # Changes not staged for commit:
