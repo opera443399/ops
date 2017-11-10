@@ -1,3 +1,8 @@
+php模块安装
+2017/11/10
+
+
+
 注：如果没有phpize，这样安装：
 # yum install php-devel
 
@@ -78,4 +83,36 @@ redis:      hiredis-devel
 # ./configure --with-php-config=/usr/local/php/bin/php-config 
 # make && make install
 # cd ..
+
+
+
+三、拷贝安装
+如果有预编译好的，已经在其他服务器上使用的扩展 test111.so 切没有相关文档，然后现在需要临时紧急处理下，在一台新的服务器上也安装上述扩展，则可以这样干：
+
+拷贝到 lib 目录存放 so 的子目录下，然后调整 php.ini 增加对应的 so
+
+脚本测试使用上述扩展；
+~]# cat test.php 
+<?php
+print_r(get_extension_funcs("test111"));
+?>
+
+~]# php test.php
+Array
+(
+    [0] => test111_aaa
+    [1] => test111_bbb
+)
+
+
+
+
+
+
+
+
+
+
+
+
 
