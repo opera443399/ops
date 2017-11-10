@@ -22,8 +22,11 @@ cp etcd-v3.2.9-linux-amd64/etcd* /usr/local/bin/
 
 二、单节点环境
 1、启动服务
-nohup etcd --name etcd_test --data-dir /tmp/etcd_test >>/var/log/etcd_test.log 2>&1 &
-
+nohup etcd --name etcd_test --data-dir /tmp/etcd_test \
+  --listen-client-urls 'http://127.0.0.1:2379,http://127.0.0.1:4001' \
+  --listen-peer-urls 'http://127.0.0.1:2380' \
+  --advertise-client-urls 'http://127.0.0.1:2379,http://127.0.0.1:4001' \
+  >/var/log/etcd_test.log 2>&1 &
 
 2、put
 ETCDCTL_API=3 /usr/local/bin/etcdctl put foo bar
