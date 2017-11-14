@@ -141,3 +141,5 @@ https://neuvector.com/blog/docker-swarm-container-networking/
 https://docs.docker.com/engine/swarm/key-concepts/#load-balancing
 https://docs.docker.com/engine/swarm/networking/#customize-the-docker_gwbridge
 https://docs.docker.com/engine/swarm/ingress/
+4、What are the definitions of addrtype in iptables?
+https://unix.stackexchange.com/questions/130807/what-are-the-definitions-of-addrtype-in-iptables
