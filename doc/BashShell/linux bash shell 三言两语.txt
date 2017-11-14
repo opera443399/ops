@@ -1,5 +1,5 @@
 linux bash shell 三言两语
-2017/11/9
+2017/11/14
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -575,3 +575,16 @@ hi there
 
 read first second <<< "hello world"
 echo $second $first
+
+
+34、进制转换
+16 进制 -> 10 进制
+[root@dev8 run]# echo $((0x13b))
+315
+
+10 进制 -> 16 进制
+[root@dev8 run]# echo "0x$(echo "obase=16;315"|bc |tr 'A-Z' 'a-z')"
+0x13b
+
+
+
