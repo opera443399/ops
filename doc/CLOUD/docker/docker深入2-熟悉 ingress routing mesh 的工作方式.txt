@@ -51,6 +51,86 @@ http://tonybai.com/2017/01/11/understanding-linux-network-namespace-for-docker-n
 
 
 
+
+
+5、个人粗浅理解的 swarm mode 场景下数据的流向
+client -> (a swarm node) ip:port -> firewall -> docker_gwbridge -> (special container) ingress_sbox(ipvs) -> one of the containers behind ipvs 
+
+
+下面是 iptables 的一个实例，我简化了一下
+*nat
+-A PREROUTING -m addrtype --dst-type LOCAL -j DOCKER-INGRESS                （这里的 LOCAL 类型，应对照 ip route 的信息，也就是本机上启动的 ip 都算是 LOCAL，个人浅见）
+-A PREROUTING -m addrtype --dst-type LOCAL -j DOCKER
+-A OUTPUT -m addrtype --dst-type LOCAL -j DOCKER-INGRESS
+-A OUTPUT ! -d 127.0.0.0/8 -m addrtype --dst-type LOCAL -j DOCKER
+-A POSTROUTING -o docker_gwbridge -m addrtype --src-type LOCAL -j MASQUERADE
+-A POSTROUTING -s 172.18.0.0/16 ! -o docker_gwbridge -j MASQUERADE
+-A POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE
+-A POSTROUTING -s 172.17.0.3/32 -d 172.17.0.3/32 -p tcp -m tcp --dport 80 -j MASQUERADE  （使用 host 网络的匹配到这里的规则）
+-A POSTROUTING -s 172.17.0.2/32 -d 172.17.0.2/32 -p tcp -m tcp --dport 8080 -j MASQUERADE
+
+
+-A DOCKER -i docker_gwbridge -j RETURN
+-A DOCKER -i docker0 -j RETURN
+-A DOCKER ! -i docker0 -p tcp -m tcp --dport 11111 -j DNAT --to-destination 172.17.0.2:80  （使用 host 网络的匹配到这里的规则）
+-A DOCKER ! -i docker0 -p tcp -m tcp --dport 11112 -j DNAT --to-destination 172.17.0.3:8080
+
+
+-A DOCKER-INGRESS -p tcp -m tcp --dport 20001 -j DNAT --to-destination 172.18.0.2:20001  （使用 ingress 网络的匹配到这里的规则）
+-A DOCKER-INGRESS -p tcp -m tcp --dport 20002 -j DNAT --to-destination 172.18.0.2:20002
+-A DOCKER-INGRESS -p tcp -m tcp --dport 20003 -j DNAT --to-destination 172.18.0.2:20003
+
+-A DOCKER-INGRESS -j RETURN
+COMMIT
+
+
+*filter
+-A FORWARD -j DOCKER-USER
+-A FORWARD -j DOCKER-INGRESS
+-A FORWARD -j DOCKER-ISOLATION
+
+-A FORWARD -o docker_gwbridge -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+-A FORWARD -o docker_gwbridge -j DOCKER
+-A FORWARD -i docker_gwbridge ! -o docker_gwbridge -j ACCEPT
+
+-A FORWARD -o docker0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+-A FORWARD -o docker0 -j DOCKER
+-A FORWARD -i docker0 ! -o docker0 -j ACCEPT
+-A FORWARD -i docker0 -o docker0 -j ACCEPT
+
+-A FORWARD -i docker_gwbridge -o docker_gwbridge -j DROP
+
+
+
+-A DOCKER -d 172.17.0.2/32 ! -i docker0 -o docker0 -p tcp -m tcp --dport 80 -j ACCEPT  （使用 host 网络的匹配到这里的规则）
+-A DOCKER -d 172.17.0.3/32 ! -i docker0 -o docker0 -p tcp -m tcp --dport 8080 -j ACCEPT
+
+
+-A DOCKER-INGRESS -p tcp -m tcp --dport 20001 -j ACCEPT                                 （使用 ingress 网络的匹配到这里的规则）
+-A DOCKER-INGRESS -p tcp -m state --state RELATED,ESTABLISHED -m tcp --sport 20001 -j ACCEPT
+-A DOCKER-INGRESS -p tcp -m tcp --dport 20002 -j ACCEPT
+-A DOCKER-INGRESS -p tcp -m state --state RELATED,ESTABLISHED -m tcp --sport 20002 -j ACCEPT
+-A DOCKER-INGRESS -p tcp -m tcp --dport 20003 -j ACCEPT
+-A DOCKER-INGRESS -p tcp -m state --state RELATED,ESTABLISHED -m tcp --sport 20003 -j ACCEPT
+
+
+
+-A DOCKER-INGRESS -j RETURN
+-A DOCKER-ISOLATION -i docker0 -o docker_gwbridge -j DROP
+-A DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP
+-A DOCKER-ISOLATION -j RETURN
+-A DOCKER-USER -j RETURN
+COMMIT
+
+
+
+
+
+
+
+
+
+
 ZYXW、参考
 1、数人云工程师手记 | Docker1.12服务发现，负载均衡和Routing Mesh
 http://blog.shurenyun.com/shurenyun-docker-168/
