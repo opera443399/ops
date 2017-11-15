@@ -1,11 +1,11 @@
 初探go-golang语言初体验
-2017/10/31
+2017/11/15
 
 
 一、初体验
 1、环境
-wget https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz
-tar -C /usr/local -xzf go1.8.linux-amd64.tar.gz
+wget https://redirector.gvt1.com/edgedl/go/go1.9.2.linux-amd64.tar.gz
+tar -C /usr/local -xzf go1.9.2.linux-amd64.tar.gz
 
 cat <<'_EOF' >/etc/profile.d/golang.sh
 #golang
