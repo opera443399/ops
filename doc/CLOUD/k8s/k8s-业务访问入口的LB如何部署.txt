@@ -1,0 +1,96 @@
+k8s-业务访问入口的LB如何部署
+2017/11/15
+
+
+一、目标
+1、思考一个问题
+怎样提供服务入口给用户？
+初步的设想：
+上线一个服务后，不用手动更新诸如 SLB 之类的绑定，而是有一个 LB 通过服务发现/k8s API 之类的方式来自动更新服务的状态。
+
+解决方案：
+1）使用开源的 ingress controller 来做
+2）自己开发一个工具，通过 API 甚至是直接解析 etcdv3 的数据并结合 confd 之类的工具，来生产一个 nginx 或者 haproxy 之类的配置文件
+
+
+
+2、原理综述
+
+client -> service -> deployment -> pod
+
+变成：
+
+client -> LB -> service -> deployment -> pod
+
+
+这个 LB 通过以下方式来处理：
+
+新增一个 ingress controller（后续会提到）
+
+client -> ingress_controller -> ingress -> service -> deployment -> pod
+
+
+
+那么问题的关键变成：
+选择哪一个 ingress controller 才能满足需求。
+
+
+可选项如下：
+Ingress controller Catalog
+
+This is a non-comprehensive list of existing ingress controllers.
+
+Dummy controller backend
+HAProxy Ingress controller
+Linkerd
+traefik
+AWS Application Load Balancer Ingress Controller
+kube-ingress-aws-controller
+Voyager: HAProxy Ingress Controller
+External Nginx Ingress Controller
+
+
+
+
+自己测试过的是：
+nginx
+traefik
+
+
+
+主要考虑：
+是否能解决 L4 和 L7 代理的问题？
+是否能高效的运维产品？
+是否能提供良好的服务体验给研发？
+
+
+
+初步印象：
+traefik ：解决 L7 代理的问题，UI初步看上去不错
+nginx ：解决 L7 代理的问题，体验没上面的好，但有提供一个解决 L4 代理的问题，有待尝试
+
+
+
+
+
+
+ZYXW、参考
+1、Ingress controller Catalog
+https://github.com/kubernetes/ingress-nginx/blob/master/docs/catalog.md
+2、Kubernetes Ingress Controller
+https://docs.traefik.io/user-guide/kubernetes/
+3、NGINX Ingress Controller
+https://github.com/kubernetes/ingress-nginx
+4、kubernetes 指南
+https://kubernetes.feisky.xyz/concepts/service.html
+https://kubernetes.feisky.xyz/concepts/ingress.html
+5、kubernetes src
+https://github.com/kubernetes/apiserver/blob/master/pkg/storage/etcd3/store.go
+
+
+
+
+
+
+
+
