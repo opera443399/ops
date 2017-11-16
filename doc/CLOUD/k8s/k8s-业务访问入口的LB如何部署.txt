@@ -1,5 +1,5 @@
 k8s-业务访问入口的LB如何部署
-2017/11/15
+2017/11/16
 
 
 一、目标
@@ -66,8 +66,112 @@ traefik
 
 
 初步印象：
-traefik ：解决 L7 代理的问题，UI初步看上去不错
-nginx ：解决 L7 代理的问题，体验没上面的好，但有提供一个解决 L4 代理的问题，有待尝试
+traefik ：能解决 L7 代理的问题
+nginx ：能解决 L7 和 L4 代理的问题
+
+
+
+
+
+
+二、测试
+1、traefik
+（略过，请参考官方文档）
+
+2、nginx
+（只说一下如果使用 L4 的服务，其他略过，请参考官方文档）
+更新 ConfigMap 来指定 tcp proxy 到后端 service
+[root@k8s_node3 ingress_controller]# cat tcp-services-configmap.yaml 
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: tcp-services
+  namespace: ingress-nginx
+data:
+  "9999": default/s2:80
+  
+  
+更新 service port 映射，通过 nodePort 模式暴露请求到外部
+[root@k8s_node3 ingress_controller]# cat service-nodeport.yaml 
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-nginx
+  namespace: ingress-nginx
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+    nodePort: 31780
+  - name: https
+    port: 443
+    targetPort: 443
+    nodePort: 31781
+    protocol: TCP
+  - name: tcp31770
+    port: 9999
+    targetPort: 9999
+    nodePort: 31770
+    protocol: TCP
+  selector:
+    app: ingress-nginx
+
+
+
+
+
+测试结果：
+1）使用 nginx http 代理
+
+~]$ curl -H "Host: s2.pctest" http://${k8s_node3_wan_ip}:31780
+Hostname: s2-59f46b7c5c-9zzvd
+
+---- Http Request Headers ----
+
+GET / HTTP/1.1
+Host: s2.pctest
+User-Agent: curl/7.29.0
+Connection: close
+Accept: */*
+Connection: close
+X-Forwarded-For: 10.233.88.1
+X-Forwarded-Host: s2.pctest
+X-Forwarded-Port: 80
+X-Forwarded-Proto: http
+X-Original-Uri: /
+X-Real-Ip: 10.233.88.1
+X-Scheme: http
+
+
+---- Active Endpoint ----
+
+[howto] version: 0.9 
+    curl 127.0.0.1/ 
+    curl 127.0.0.1/?wait=2s 
+    curl 127.0.0.1/test 
+    curl 127.0.0.1/api 
+    curl 127.0.0.1/health 
+    curl 127.0.0.1/health -d '302' 
+ 
+
+2）使用 nginx tcp 代理
+~]$ (sleep 1; echo "HEAD / HTTP/1.1"; echo "Host: ${k8s_node3_wan_ip}:31770"; echo;echo;sleep 2) | telnet ${k8s_node3_wan_ip} 31770
+Trying ${k8s_node3_wan_ip}...
+Connected to ${k8s_node3_wan_ip}.
+Escape character is '^]'.
+HTTP/1.1 200 OK
+Connection: close
+Date: Thu, 16 Nov 2017 03:59:30 GMT
+Content-Length: 356
+Content-Type: text/plain; charset=utf-8
+
+Connection closed by foreign host.
+~]$ 
+
+
 
 
 
