@@ -1,0 +1,49 @@
+k8s-从后端存储etcd3直接取出可读的kv
+2017/11/23
+
+
+一、前言
+1、在 k8s 中有一个比较有意思的细节是，数据是经过序列化后存入后端的（目前是 etcd3 为主） 中的。
+2、目标
+好啦，现在我们有个需求，要从 etcd3 中直接拿出数据，怎么办？
+
+3、意义
+借此熟悉一下 k8s 的源码，有一个笼统的了解，毕竟，有实际的需求才有动力去啃源码中，找到相关内容，你说是不？
+
+4、有2个方向
+1）通过 k8s 的 client-go 来读出来
+2）自己看源码是怎样实现 encode 和 decode 的，然后自己引用并写一个符合自己需求的。
+
+初略看了下源码，k8s的api要指定一些 groupversion ，type ，codecs的信息，然后 encode 或者 decode时才能根据对应的信息采取合适的serializer
+
+
+5、准备工作
+从 k8s 的 api 拿到一些数据，然后写入一个 etcdv3 的测试环境
+
+
+~]# nohup etcd --name etcd_test --data-dir /tmp/etcd_test \
+  --listen-client-urls 'http://0.0.0.0:2379,http://0.0.0.0:4001' \
+  --listen-peer-urls 'http://0.0.0.0:2380' \
+  --advertise-client-urls 'http://0.0.0.0:2379,http://0.0.0.0:4001' \
+  >/var/log/etcd_test.log 2>&1 &
+  
+  
+  
+测试数据可以通过下述方式拿到，但如何写到上面的测试环境的 etcd 中呢？（待研究）
+ETCDCTL_API=3 etcdctl get --prefix '/registry/pods/default/s2' -w fields
+ETCDCTL_API=3 etcdctl get --prefix '/registry/pods/default/s2' -w json |jq '.'
+
+
+目前先采取直接在 k8s 环境中测试代码的执行结果。
+
+
+
+ZYXW、参考
+1、how to perform a protobuf deserialization in etcd v3 with kubernetes 1.6?
+https://stackoverflow.com/questions/46954609/how-to-perform-a-protobuf-deserialization-in-etcd-v3-with-kubernetes-1-6
+
+2、how to get pod/service data in etcd v3 human readable ?
+https://github.com/kubernetes/kubernetes/issues/55850
+
+3、etcdhelper
+https://github.com/openshift/origin/blob/master/tools/etcdhelper/etcdhelper.go#L119
