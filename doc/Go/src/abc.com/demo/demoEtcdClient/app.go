@@ -1,5 +1,7 @@
-//depends on the specific pkg version
-
+/*
+ * read data from k8s/etcd
+ * depends on k8s related pkgs around version v1.8
+*/
 package main
 
 import (
@@ -22,7 +24,7 @@ var requestTimeout = time.Duration(3) * time.Second
 
 func init() {
 	flag.StringVar(&endpoint, "endpoint", "http://127.0.0.1:2379", "Etcd endpoint.")
-	flag.StringVar(&prefix, "prefix", "/k8s", "Etcd prefix")
+	flag.StringVar(&prefix, "prefix", "/registry/pods/default", "Etcd prefix")
 }
 
 func main() {
