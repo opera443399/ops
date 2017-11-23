@@ -1,3 +1,5 @@
+//depends on the specific pkg version
+
 package main
 
 import (
@@ -8,9 +10,10 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
+	"k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	_ "k8s.io/kubernetes/pkg/api/install"
 )
 
 var endpoint string
@@ -44,23 +47,22 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	d := api.Codecs.UniversalDeserializer()
-	fmt.Printf("d: %T\n", d)
-	mediaType := "application/vnd.kubernetes.protobuf"
-	info, ok := runtime.SerializerInfoForMediaType(api.Codecs.SupportedMediaTypes(), mediaType)
-	if !ok {
-		log.Fatal(mediaType)
-	}
-	fmt.Printf("info: %T\n", info)
 
+	// try to decode
+	decoder := api.Codecs.UniversalDeserializer()
 	for _, kv := range resp.Kvs {
-		fmt.Printf("Value: %T\n", kv.Value)
-		obj, _, err := d.Decode(kv.Value, &schema.GroupVersionKind{Kind: "Server", Version: "v1"}, nil)
-		fmt.Printf("obj: %T\n", obj)
-        	if err != nil {
-                	log.Fatal(err)
-	        }
+		fmt.Printf("kv.Key: %s \t kv.Value: %T\n", kv.Key, kv.Value)
+		fmt.Printf("kv.Value: %v\n\n", kv.Value)
 
+		obj, _, err := decoder.Decode(kv.Value, nil, nil)
+		if err != nil {
+			fmt.Printf("test")
+			log.Fatal(err)
+		}
+		fmt.Printf("obj: %T\n", obj)
+
+		objV1, _ := obj.(*v1.Pod)
+		fmt.Printf("objV1: %T\n", objV1)
 	}
 
 }
