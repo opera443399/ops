@@ -1,5 +1,5 @@
 初探go-dep使用小结
-2017/11/17
+2017/11/24
 
 
 一、前言
@@ -7,8 +7,7 @@
 dep 是用来解决 go 的依赖问题的
 
 2、准备工作
-go get -u -v github.com/golang/dep/cmd/dep
-cp $GOPATH/bin/dep /usr/bin/
+go get -v github.com/golang/dep/cmd/dep
 
 
 二、操作示例

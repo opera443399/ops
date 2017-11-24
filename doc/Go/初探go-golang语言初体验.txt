@@ -1,5 +1,5 @@
 初探go-golang语言初体验
-2017/11/15
+2017/11/24
 
 
 一、初体验
@@ -11,7 +11,7 @@ cat <<'_EOF' >/etc/profile.d/golang.sh
 #golang
 export GOPATH=/opt/go
 export GOROOT=/usr/local/go
-export PATH=$PATH:$GOROOT/bin
+export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 _EOF
 
 source /etc/profile
