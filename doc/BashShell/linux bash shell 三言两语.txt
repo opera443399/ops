@@ -589,6 +589,17 @@ echo $second $first
 
 
 35、在 bash 中使用代理
+先使用 ssh 转发一个 socks 端口出来：
+$ ssh -CN -f -D 127.0.0.1:8888 user@remote_host
+参数含义：（主要使用 -D 来转发）
+-C      Requests compression of all data
+-N      Do not execute a remote command.  This is useful for just forwarding ports.
+-f      Requests ssh to go to background just before command execution.
+-D [bind_address:]port
+             Specifies a local ``dynamic'' application-level port forwarding.
+
 以 socks5 代理为例：
 export http_proxy=socks5://127.0.0.1:8888
 export https_proxy=socks5://127.0.0.1:8888
+
+注意，上述 export 的变量，如果切换来 shell 则会失效，不过这也难不倒熟悉 bash 的童鞋，这里记录下来，仅作为提醒。
