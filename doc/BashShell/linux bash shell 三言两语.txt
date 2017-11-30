@@ -1,5 +1,5 @@
 linux bash shell 三言两语
-2017/11/14
+2017/11/30
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -22,38 +22,38 @@ else
 fi
 
 注意下面这2种判断方式：
-1）test， && 和 || 的用法 
+1）test， && 和 || 的用法
 [root@tvm01 ~]# a=3
 [root@tvm01 ~]# test $a -eq 3 && echo 'a' || echo 'b'
 a
-[root@tvm01 ~]# test $a -eq 4 && echo 'a' || echo 'b' 
+[root@tvm01 ~]# test $a -eq 4 && echo 'a' || echo 'b'
 b
 [root@tvm01 ~]# test $a -eq 4 && echo 'a' || echo 'b' && echo 'c'
 b
 c
-[root@tvm01 ~]# test $a -eq 3 && echo 'a' || echo 'b' && echo 'c' 
+[root@tvm01 ~]# test $a -eq 3 && echo 'a' || echo 'b' && echo 'c'
 a
 c
 2）不加if，也不用 test
 [ -d '/tmp/aaa' ] || mkdir -p /tmp/aaa
 
 3）整数比较：
--eq 等于,如:if [ "$a" -eq "$b" ]   
--ne 不等于,如:if [ "$a" -ne "$b" ]   
--gt 大于,如:if [ "$a" -gt "$b" ]   
--ge 大于等于,如:if [ "$a" -ge "$b" ]   
--lt 小于,如:if [ "$a" -lt "$b" ]   
--le 小于等于,如:if [ "$a" -le "$b" ]   
-<   小于(需要双括号),如:(("$a" < "$b"))   
-<=  小于等于(需要双括号),如:(("$a" <= "$b"))   
->   大于(需要双括号),如:(("$a" > "$b"))   
->=  大于等于(需要双括号),如:(("$a" >= "$b")) 
+-eq 等于,如:if [ "$a" -eq "$b" ]
+-ne 不等于,如:if [ "$a" -ne "$b" ]
+-gt 大于,如:if [ "$a" -gt "$b" ]
+-ge 大于等于,如:if [ "$a" -ge "$b" ]
+-lt 小于,如:if [ "$a" -lt "$b" ]
+-le 小于等于,如:if [ "$a" -le "$b" ]
+<   小于(需要双括号),如:(("$a" < "$b"))
+<=  小于等于(需要双括号),如:(("$a" <= "$b"))
+>   大于(需要双括号),如:(("$a" > "$b"))
+>=  大于等于(需要双括号),如:(("$a" >= "$b"))
 
 4）字符串比较：
 通常是这样做的：
 if [ X"$test" = X"test" ]
 
-= 等于,如:if [ "$a" = "$b" ]   
+= 等于,如:if [ "$a" = "$b" ]
 
 -d 目录
 -e 存在
@@ -86,7 +86,7 @@ for pkg in rpm yum python curl; do
     dep_check "$pkg"
 done
 
- 
+
 
 3. for的用法
 array1=("d.com" "e.com" "f.com")
@@ -146,27 +146,27 @@ echo -e $s
 
 
 和read ignore结合的用法：
-# echo 'a b c d e' |while read ignore args; do echo $args; done        
+# echo 'a b c d e' |while read ignore args; do echo $args; done
 b c d e
 # echo 'a b c d e' |while read ignore ignore args; do echo $args; done
 c d e
-# cat /etc/init.d/network |grep static-routes --color -A 3                    
+# cat /etc/init.d/network |grep static-routes --color -A 3
         # Add non interface-specific static-routes.
         if [ -f /etc/sysconfig/static-routes ]; then
            grep "^any" /etc/sysconfig/static-routes | while read ignore args ; do
               /sbin/route add -$args
            done
-        fi 
+        fi
 其实，这里的ignore也是一个变量：
-# echo 'a b c d e' |while read ignore args; do echo "$ignore $args"; done 
+# echo 'a b c d e' |while read ignore args; do echo "$ignore $args"; done
 a b c d e
-# echo 'a b c d e' |while read ignore ignore args; do echo "$ignore $args"; done 
+# echo 'a b c d e' |while read ignore ignore args; do echo "$ignore $args"; done
 b c d e
 
 read后可以跟多个变量，依次接收传递过来的值。
 
 6. 参数
-[root@test t]# cat t.sh 
+[root@test t]# cat t.sh
 #!/bin/bash
 #
 #  $0 是这个bash文件的名称；
@@ -205,7 +205,7 @@ $$ -> 30383
 
 7. 正则
  正则表达式匹配"=~"
- [[ $XX =~ ^$XXX ]] 
+ [[ $XX =~ ^$XXX ]]
 The =~ Regular Expression matching operator within a double brackets test expression.
 
 $ [[ "# test2" =~ ^# ]] && echo yes || echo no
@@ -220,11 +220,11 @@ f="/a/b/c/d/e.name.ext"
 则：
 # basename $f
 e.name.ext
-# dirname $f    
+# dirname $f
 /a/b/c/d
 
 特殊用法：利用${}中的#,%,*来输出指定的内容
-1）去掉第一个/，以及左边的字符串 
+1）去掉第一个/，以及左边的字符串
 # echo ${f#*/}
 a/b/c/d/e.name.ext
 
@@ -233,19 +233,19 @@ a/b/c/d/e.name.ext
 e.name.ext
 
 3）去掉最后一个/，以及右边的字符串
-# echo ${f%/*} 
+# echo ${f%/*}
 /a/b/c/d
 
 4）去掉第一个/，以及右边的字符串
-# echo ${f%%/*} 
+# echo ${f%%/*}
 （空）
 
 上面，是根据“/”来做分割，也可以用“."来分隔，不妨一试。
-# echo ${f#*.} 
+# echo ${f#*.}
 name.ext
 # echo ${f##*.}
 ext
-# echo ${f%.*} 
+# echo ${f%.*}
 /a/b/c/d/e.name
 # echo ${f%%.*}
 /a/b/c/d/e
@@ -290,13 +290,13 @@ Ctrl + z 转入后台运行
 
 
 13. 在shell中调用python的方法
-# python <<'_EOF'        
+# python <<'_EOF'
 import sys
 
-print(sys.version)  
+print(sys.version)
 _EOF
 
-2.6.6 (r266:84292, Jan 22 2014, 09:42:36) 
+2.6.6 (r266:84292, Jan 22 2014, 09:42:36)
 [GCC 4.4.7 20120313 (Red Hat 4.4.7-4)]
 
 shell传递中文到python出现异常时：
@@ -315,11 +315,11 @@ man date查看：
 man cut查看：
 ?-c, --characters=LIST
               select only these characters
- 
+
 16. 简单ping一下C段的IP
-subnet=192.168.1; for i in {1..254}; 
-do 
-    ping -c 1 -w 1 ${subnet}.${i} >/dev/null && echo "${subnet}.${i}: up" || echo "${subnet}.${i}: down"; 
+subnet=192.168.1; for i in {1..254};
+do
+    ping -c 1 -w 1 ${subnet}.${i} >/dev/null && echo "${subnet}.${i}: up" || echo "${subnet}.${i}: down";
 done
 
 17. 字符串反转
@@ -358,7 +358,7 @@ python -c "import time;d='a'*1024*10**6;time.sleep(3600)" &
 
 
 21. 排序的疑问
-[root@tvm01 ~]# cat a.test 
+[root@tvm01 ~]# cat a.test
 a
 b
 c
@@ -380,7 +380,7 @@ e
 2
 3
 3
-[root@tvm01 ~]# cat a.test |uniq |sort      
+[root@tvm01 ~]# cat a.test |uniq |sort
 1
 1
 2
@@ -399,7 +399,7 @@ d
 d
 e
 e
-[root@tvm01 ~]# cat a.test |sort |uniq |sort      
+[root@tvm01 ~]# cat a.test |sort |uniq |sort
 1
 2
 3
@@ -428,7 +428,7 @@ echo "AA:BB:`od /dev/urandom -w4 -tx1 -An |sed -e 's/ //' -e 's/ /:/g' |head -n 
 
 24、在shell中使用递归的一个小示例
 需求：下载一个小说的文字内容。
-~]# cat test.sh 
+~]# cat test.sh
 #!/bin/bash
 #
 
@@ -475,7 +475,7 @@ do_rewrite $1
 25、set的用途
 1）设置参数
 在脚本中：
-# cat t.sh 
+# cat t.sh
 set z1 y1 x1 w1
 echo '$1 -> '$1
 echo '$2 -> '$2
@@ -490,7 +490,7 @@ $# -> 4
 
 在命令行：
 [root@ttt ~]# set z y x w
-[root@ttt ~]# echo $#    
+[root@ttt ~]# echo $#
 4
 [root@ttt ~]# echo $@
 z y x w
@@ -588,3 +588,7 @@ echo $second $first
 
 
 
+35、在 bash 中使用代理
+以 socks5 代理为例：
+export http_proxy=socks5://127.0.0.1:8888
+export https_proxy=socks5://127.0.0.1:8888
