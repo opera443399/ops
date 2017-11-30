@@ -1,31 +1,31 @@
-±¾ÎÄ×÷Õß ËÙ¹È¸è
+æœ¬æ–‡ä½œè€… é€Ÿè°·æ­Œ
 
-Ò»)¿Í»§¶ËÓë·şÎñ¶ËµÄÍ¨Ñ¶ÈÏÖ¤Á÷³Ì:
-µÚÒ»½×¶Î:
-Ë«·½Ğ­ÉÌSSH°æ±¾ºÅºÍĞ­Òé,Ğ­ÉÌ¹ı³ÌÊı¾İ²»¼ÓÃÜ.
-SSH-<Ö÷Ğ­Òé°æ±¾ºÅ>.<´ÎĞ­Òé°æ±¾ºÅ>-<Èí¼ş°æ±¾ºÅ>
-¶ÔÓ³ÈçÏÂ:
-SSH-2.0-OpenSSH_5.3(ÎÒÃÇ¿ÉÒÔÍ¨¹ıtelnet localhost 22µÃµ½SSHµÄ°æ±¾ºÅ)
-
-
-µÚ¶ş½×¶Î:
-Ë«·½Ğ­ÉÌRSA/DSAÖ÷»úÃÜÔ¿,Êı¾İ¼ÓÃÜËã·¨,ÏûÏ¢ÕªÒª.
-ÆäÖĞÖ÷»úÃÜÔ¿ÓÃÓÚÈ·ÈÏ·şÎñ¶ËµÄÉí·İ,Êı¾İ¼ÓÃÜËã·¨ÓÃÓÚ¼ÓÃÜÍ¨ĞÅÊı¾İ,ÏûÏ¢ÕªÒªÓÃÓÚĞ£ÑéÊı¾İµÄÍêÕûĞÔ,µÇÂ¼ÈÏÖ¤·½Ê½.
-Ö÷ÒªË¼ÏëÊÇ·şÎñ¶ËÌá¹©¸÷ÖÖ¼ÓÃÜ/ÈÏÖ¤·½Ê½,¿Í»§¶ËÔÚÕâÖĞ¼äÑ¡Ôñ¼ÓÃÜ/ÈÏÖ¤·½Ê½.
+ä¸€)å®¢æˆ·ç«¯ä¸æœåŠ¡ç«¯çš„é€šè®¯è®¤è¯æµç¨‹:
+ç¬¬ä¸€é˜¶æ®µ:
+åŒæ–¹åå•†SSHç‰ˆæœ¬å·å’Œåè®®,åå•†è¿‡ç¨‹æ•°æ®ä¸åŠ å¯†.
+SSH-<ä¸»åè®®ç‰ˆæœ¬å·>.<æ¬¡åè®®ç‰ˆæœ¬å·>-<è½¯ä»¶ç‰ˆæœ¬å·>
+å¯¹æ˜ å¦‚ä¸‹:
+SSH-2.0-OpenSSH_5.3(æˆ‘ä»¬å¯ä»¥é€šè¿‡telnet localhost 22å¾—åˆ°SSHçš„ç‰ˆæœ¬å·)
 
 
-µÚÈı½×¶Î:
-ÓÉÓÚË«·½ÒÑ¾­È·ÈÏÁË¿ÉÒÔÊ¹ÓÃµÄ¼ÓÃÜËã·¨,ÏûÏ¢ÕªÒª,Ğ­Òé°æ±¾ºÅ,Ö÷»úÃÜÔ¿µÈĞÅÏ¢,Õâ½×¶ÎÓÉ¿Í»§¶Ë¸ù¾İÑ¡ÔñµÄÈÏÖ¤·½Ê½·¢ÆğµÇÂ¼ÑéÖ¤ÉêÇë.
-·şÎñ¶Ë¶Ô¿Í»§¶ËÌá¹©µÄÃÜÂëµÈĞÅÏ¢½øĞĞĞ£Ñé.ÈçÈÏÖ¤²»Í¨¹ı,ÔòÊÔÍ¼½øĞĞÏÂÒ»ÖÖÈÏÖ¤·½Ê½µÄÉêºË,Ö±µ½³É¹¦/Ê§°Ü,»òÕß³¬Ê±.
+ç¬¬äºŒé˜¶æ®µ:
+åŒæ–¹åå•†RSA/DSAä¸»æœºå¯†é’¥,æ•°æ®åŠ å¯†ç®—æ³•,æ¶ˆæ¯æ‘˜è¦.
+å…¶ä¸­ä¸»æœºå¯†é’¥ç”¨äºç¡®è®¤æœåŠ¡ç«¯çš„èº«ä»½,æ•°æ®åŠ å¯†ç®—æ³•ç”¨äºåŠ å¯†é€šä¿¡æ•°æ®,æ¶ˆæ¯æ‘˜è¦ç”¨äºæ ¡éªŒæ•°æ®çš„å®Œæ•´æ€§,ç™»å½•è®¤è¯æ–¹å¼.
+ä¸»è¦æ€æƒ³æ˜¯æœåŠ¡ç«¯æä¾›å„ç§åŠ å¯†/è®¤è¯æ–¹å¼,å®¢æˆ·ç«¯åœ¨è¿™ä¸­é—´é€‰æ‹©åŠ å¯†/è®¤è¯æ–¹å¼.
 
 
-µÚËÄ½×¶Î:
-¿Í»§¶ËÈç¹ûĞ£Ñé³É¹¦,Ôò·şÎñ¶Ë»á´´½¨Ò»¸ö¿Í»§¶ËµÄsession(½ø³Ì),Í¬Ê±»á×ªËÍ»·¾³±äÁ¿,×îºó¸ø¿Í»§¶ËÒ»¸öbashµÄ»ú»á.
+ç¬¬ä¸‰é˜¶æ®µ:
+ç”±äºåŒæ–¹å·²ç»ç¡®è®¤äº†å¯ä»¥ä½¿ç”¨çš„åŠ å¯†ç®—æ³•,æ¶ˆæ¯æ‘˜è¦,åè®®ç‰ˆæœ¬å·,ä¸»æœºå¯†é’¥ç­‰ä¿¡æ¯,è¿™é˜¶æ®µç”±å®¢æˆ·ç«¯æ ¹æ®é€‰æ‹©çš„è®¤è¯æ–¹å¼å‘èµ·ç™»å½•éªŒè¯ç”³è¯·.
+æœåŠ¡ç«¯å¯¹å®¢æˆ·ç«¯æä¾›çš„å¯†ç ç­‰ä¿¡æ¯è¿›è¡Œæ ¡éªŒ.å¦‚è®¤è¯ä¸é€šè¿‡,åˆ™è¯•å›¾è¿›è¡Œä¸‹ä¸€ç§è®¤è¯æ–¹å¼çš„ç”³æ ¸,ç›´åˆ°æˆåŠŸ/å¤±è´¥,æˆ–è€…è¶…æ—¶.
 
 
-ÎÒÃÇÔÚ¿Í»§¶ËÓÃdebugµÄ·½Ê½½øĞĞµÇÂ¼,×¢ÒâÕâÀïÖ»ÓÃÁËdebug1.
-ssh -v 192.168.27.142   
-OpenSSH_5.3p1, OpenSSL 1.0.0-fips 29 Mar 2010                #µÚÒ»½×¶Î,Ë«·½È·ÈÏĞ­Òé°æ±¾ºÅºÍssh°æ±¾ºÅ
+ç¬¬å››é˜¶æ®µ:
+å®¢æˆ·ç«¯å¦‚æœæ ¡éªŒæˆåŠŸ,åˆ™æœåŠ¡ç«¯ä¼šåˆ›å»ºä¸€ä¸ªå®¢æˆ·ç«¯çš„session(è¿›ç¨‹),åŒæ—¶ä¼šè½¬é€ç¯å¢ƒå˜é‡,æœ€åç»™å®¢æˆ·ç«¯ä¸€ä¸ªbashçš„æœºä¼š.
+
+
+æˆ‘ä»¬åœ¨å®¢æˆ·ç«¯ç”¨debugçš„æ–¹å¼è¿›è¡Œç™»å½•,æ³¨æ„è¿™é‡Œåªç”¨äº†debug1.
+ssh -v 192.168.27.142
+OpenSSH_5.3p1, OpenSSL 1.0.0-fips 29 Mar 2010                #ç¬¬ä¸€é˜¶æ®µ,åŒæ–¹ç¡®è®¤åè®®ç‰ˆæœ¬å·å’Œsshç‰ˆæœ¬å·
 debug1: Reading configuration data /etc/ssh/ssh_config
 debug1: Applying options for *
 debug1: Connecting to 192.168.27.142 [192.168.27.142] port 22.
@@ -38,7 +38,7 @@ debug1: Remote protocol version 2.0, remote software version OpenSSH_5.3
 debug1: match: OpenSSH_5.3 pat OpenSSH*
 debug1: Enabling compatibility mode for protocol 2.0
 debug1: Local version string SSH-2.0-OpenSSH_5.3
-debug1: SSH2_MSG_KEXINIT sent                                #µÚ¶ş½×¶Î,Ë«·½È·ÈÏ/Ö§³ÖÊ¹ÓÃµÄÊı¾İ¼ÓÃÜËã·¨,ÏûÏ¢ÕªÒªËã·¨,Ö÷»ú¹«Ô¿µÈĞÅÏ¢.
+debug1: SSH2_MSG_KEXINIT sent                                #ç¬¬äºŒé˜¶æ®µ,åŒæ–¹ç¡®è®¤/æ”¯æŒä½¿ç”¨çš„æ•°æ®åŠ å¯†ç®—æ³•,æ¶ˆæ¯æ‘˜è¦ç®—æ³•,ä¸»æœºå…¬é’¥ç­‰ä¿¡æ¯.
 debug1: SSH2_MSG_KEXINIT received
 debug1: kex: server->client aes128-ctr hmac-md5 none
 debug1: kex: client->server aes128-ctr hmac-md5 none
@@ -55,10 +55,10 @@ debug1: SSH2_MSG_NEWKEYS received
 debug1: SSH2_MSG_SERVICE_REQUEST sent
 debug1: SSH2_MSG_SERVICE_ACCEPT received
 debug1: Authentications that can continue: gssapi-keyex,gssapi-with-mic,password,hostbased
-debug1: Next authentication method: password                 #µÚÈı½×¶Î,½øÈëÉí·İÑéÖ¤µÄ¹ı³Ì
-root@192.168.27.142's password: 
+debug1: Next authentication method: password                 #ç¬¬ä¸‰é˜¶æ®µ,è¿›å…¥èº«ä»½éªŒè¯çš„è¿‡ç¨‹
+root@192.168.27.142's password:
 debug1: Authentication succeeded (password).
-debug1: channel 0: new [client-session]                      #µÚËÄ½×¶Î,ÑéÖ¤³É¹¦ºóµÈµ½Ò»¸öĞÂµÄsession,¼°ÉèÖÃ»·¾³±äÁ¿µÈ,×îºóµÃµ½Ò»¸öshell.
+debug1: channel 0: new [client-session]                      #ç¬¬å››é˜¶æ®µ,éªŒè¯æˆåŠŸåç­‰åˆ°ä¸€ä¸ªæ–°çš„session,åŠè®¾ç½®ç¯å¢ƒå˜é‡ç­‰,æœ€åå¾—åˆ°ä¸€ä¸ªshell.
 debug1: Requesting no-more-sessions@openssh.com
 debug1: Entering interactive session.
 debug1: Sending environment.
@@ -67,36 +67,36 @@ Last login: Sun Jun 19 12:42:24 2011 from ssh-hacker
 
 
 
-¶ş)SSH·şÎñ¶ËµÄ¸÷ÅäÖÃÏî
+äºŒ)SSHæœåŠ¡ç«¯çš„å„é…ç½®é¡¹
 
 
-ÏÂÃæµÄÊÔÑé»·¾³Îª:
+ä¸‹é¢çš„è¯•éªŒç¯å¢ƒä¸º:
 ssh client:192.168.27.143
 ssh server:192.168.27.142
 
 
-1)GSSAPIÉí·İÑéÖ¤.
-GSSAPIAuthentication ÊÇ·ñÔÊĞíÊ¹ÓÃ»ùÓÚ GSSAPI µÄÓÃ»§ÈÏÖ¤.Ä¬ÈÏÖµÎª"no".½öÓÃÓÚSSH-2.
-GSSAPICleanupCredentials ÊÇ·ñÔÚÓÃ»§ÍË³öµÇÂ¼ºó×Ô¶¯Ïú»ÙÓÃ»§Æ¾Ö¤»º´æ¡£Ä¬ÈÏÖµÊÇ"yes".½öÓÃÓÚSSH-2.
-×¢:
-GSSAPIÊÇ¹«¹²°²È«ÊÂÎñÓ¦ÓÃ³ÌĞò½Ó¿Ú(GSS-API)
-¹«¹²°²È«ÊÂÎñÓ¦ÓÃ³ÌĞò½Ó¿ÚÒÔÒ»ÖÖÍ³Ò»µÄÄ£Ê½ÎªÊ¹ÓÃÕßÌá¹©°²È«ÊÂÎñ,ÓÉÓÚËüÖ§³Ö×î»ù±¾µÄ»úÖÆºÍ¼¼Êõ,ËùÒÔ±£Ö¤²»Í¬µÄÓ¦ÓÃ»·¾³ÏÂµÄ¿ÉÒÆÖ²ĞÔ.
-¸Ã¹æ·¶¶¨ÒåÁËGSS-APIÊÂÎñºÍ»ù±¾ÔªËØ,²¢¶ÀÁ¢ÓÚ»ù±¾µÄ»úÖÆºÍ³ÌĞòÉè¼ÆÓïÑÔ»·¾³,²¢½èÖúÓÚÆäËüÏà¹ØµÄÎÄµµ¹æ·¶ÊµÏÖ.
+1)GSSAPIèº«ä»½éªŒè¯.
+GSSAPIAuthentication æ˜¯å¦å…è®¸ä½¿ç”¨åŸºäº GSSAPI çš„ç”¨æˆ·è®¤è¯.é»˜è®¤å€¼ä¸º"no".ä»…ç”¨äºSSH-2.
+GSSAPICleanupCredentials æ˜¯å¦åœ¨ç”¨æˆ·é€€å‡ºç™»å½•åè‡ªåŠ¨é”€æ¯ç”¨æˆ·å‡­è¯ç¼“å­˜ã€‚é»˜è®¤å€¼æ˜¯"yes".ä»…ç”¨äºSSH-2.
+æ³¨:
+GSSAPIæ˜¯å…¬å…±å®‰å…¨äº‹åŠ¡åº”ç”¨ç¨‹åºæ¥å£(GSS-API)
+å…¬å…±å®‰å…¨äº‹åŠ¡åº”ç”¨ç¨‹åºæ¥å£ä»¥ä¸€ç§ç»Ÿä¸€çš„æ¨¡å¼ä¸ºä½¿ç”¨è€…æä¾›å®‰å…¨äº‹åŠ¡,ç”±äºå®ƒæ”¯æŒæœ€åŸºæœ¬çš„æœºåˆ¶å’ŒæŠ€æœ¯,æ‰€ä»¥ä¿è¯ä¸åŒçš„åº”ç”¨ç¯å¢ƒä¸‹çš„å¯ç§»æ¤æ€§.
+è¯¥è§„èŒƒå®šä¹‰äº†GSS-APIäº‹åŠ¡å’ŒåŸºæœ¬å…ƒç´ ,å¹¶ç‹¬ç«‹äºåŸºæœ¬çš„æœºåˆ¶å’Œç¨‹åºè®¾è®¡è¯­è¨€ç¯å¢ƒ,å¹¶å€ŸåŠ©äºå…¶å®ƒç›¸å…³çš„æ–‡æ¡£è§„èŒƒå®ç°.
 
-Èç¹ûÎÒÃÇÔÚ·şÎñ¶Ë´ò¿ªGSSAPIAuthenticationÅäÖÃÏî,ÈçÏÂ:
+å¦‚æœæˆ‘ä»¬åœ¨æœåŠ¡ç«¯æ‰“å¼€GSSAPIAuthenticationé…ç½®é¡¹,å¦‚ä¸‹:
 vi /etc/ssh/sshd_config
 
 # GSSAPI options
 GSSAPIAuthentication yes
 GSSAPICleanupCredentials yes
 
-ÔÚ¿Í»§¶ËµÇÂ¼·şÎñ¶Ë»áÓÃgssapi-keyex,gssapi-with-mic½øĞĞÉí·İĞ£Ñé,Í¬Ñù¿Í»§¶ËÒ²ÒªÖ§³ÖÕâÖÖÉí·İÑéÖ¤,ÈçÏÂ:
- 
+åœ¨å®¢æˆ·ç«¯ç™»å½•æœåŠ¡ç«¯ä¼šç”¨gssapi-keyex,gssapi-with-micè¿›è¡Œèº«ä»½æ ¡éªŒ,åŒæ ·å®¢æˆ·ç«¯ä¹Ÿè¦æ”¯æŒè¿™ç§èº«ä»½éªŒè¯,å¦‚ä¸‹:
+
 vi /etc/ssh/ssh_config
 GSSAPIAuthentication yes
 GSSAPIDelegateCredentials yes
 
-ÎÒÃÇÔÚ¿Í»§¶ËÁ¬½ÓSSH·şÎñ¶Ë,ÈçÏÂ:
+æˆ‘ä»¬åœ¨å®¢æˆ·ç«¯è¿æ¥SSHæœåŠ¡ç«¯,å¦‚ä¸‹:
 ssh -v 192.168.27.142
 OpenSSH_4.3p2 Debian-9, OpenSSL 0.9.8g 19 Oct 2007
 debug1: Reading configuration data /etc/ssh/ssh_config
@@ -147,47 +147,47 @@ debug1: Authentications that can continue: publickey,gssapi-keyex,gssapi-with-mi
 debug1: Authentications that can continue: publickey,gssapi-keyex,gssapi-with-mic,password
 debug1: Authentications that can continue: publickey,gssapi-keyex,gssapi-with-mic,password
 
-ÎÒÃÇ¿´µ½ÈçÏÂµÄĞÅÏ¢:
+æˆ‘ä»¬çœ‹åˆ°å¦‚ä¸‹çš„ä¿¡æ¯:
 debug1: Unspecified GSS failure.  Minor code may provide more information
 No credentials cache found
 debug1: Authentications that can continue: publickey,gssapi-keyex,gssapi-with-mic,password
 debug1: Next authentication method: gssapi-keyex
 debug1: No valid Key exchange context
-ËµÃ÷SSHµÇÂ¼Ê±²ÉÓÃGSSAPIµÄ·½Ê½½øĞĞÉí·İÑéÖ¤,µ«ÎÒÃÇµÄÏµÍ³²»Ö§³Ö.
+è¯´æ˜SSHç™»å½•æ—¶é‡‡ç”¨GSSAPIçš„æ–¹å¼è¿›è¡Œèº«ä»½éªŒè¯,ä½†æˆ‘ä»¬çš„ç³»ç»Ÿä¸æ”¯æŒ.
 
-×îºóÈç¹ûÎÒÃÇ²»ÓÃÕâÖÖ·½Ê½½øĞĞÉí·İÑéÖ¤µÄ»°,½¨Òé¹Ø±ÕÕâ¸öÑ¡Ïî,ÕâÑù¿ÉÒÔÌá¸ßÑéÖ¤Ê±µÄËÙ¶È.
-
-
+æœ€åå¦‚æœæˆ‘ä»¬ä¸ç”¨è¿™ç§æ–¹å¼è¿›è¡Œèº«ä»½éªŒè¯çš„è¯,å»ºè®®å…³é—­è¿™ä¸ªé€‰é¡¹,è¿™æ ·å¯ä»¥æé«˜éªŒè¯æ—¶çš„é€Ÿåº¦.
 
 
-2)RSA/DSAÃÜÔ¿ÈÏÖ¤
 
-ÎÒÃÇ³ıÁË¿ÉÒÔÓÃUNIXÃÜÂë(unix passwd/shadow)·½Ê½µÇÂ¼ÏµÍ³Íâ,»¹¿ÉÒÔÑ¡ÔñRSA/DSAÃÜÔ¿ÈÏÖ¤·½Ê½µÇÂ¼ÏµÍ³.
 
-×¢:
-RSA:ÓÉRSA¹«Ë¾·¢Ã÷,ÊÇÒ»¸öÖ§³Ö±ä³¤ÃÜÔ¿µÄ¹«¹²ÃÜÔ¿Ëã·¨,ĞèÒª¼ÓÃÜµÄÎÄ¼ş¿éµÄ³¤¶ÈÒ²ÊÇ¿É±äµÄ;
-DSA(Digital Signature Algorithm):Êı×ÖÇ©ÃûËã·¨,ÊÇÒ»ÖÖ±ê×¼µÄ DSS(Êı×ÖÇ©Ãû±ê×¼);
-Í¬Ê±ÕâÁ½ÖÖ¼ÓÃÜËã·¨¶¼ÊÇ·Ç¶Ô³Æ¼ÓÃÜËã·¨.
+2)RSA/DSAå¯†é’¥è®¤è¯
 
-2.1)RSAÃÜÔ¿ÈÏÖ¤ÊÔÑé
-Ê×ÏÈÓÃssh-keygenÉú³ÉÒ»¶ÔRSA(¹«/Ë½Ô¿),ÓÃssh-copy-id½«¹«Ô¿COPYµ½SSH·şÎñ¶Ë.×îºóµÇÂ¼SSH·şÎñ¶Ë½øĞĞ²âÊÔ:
+æˆ‘ä»¬é™¤äº†å¯ä»¥ç”¨UNIXå¯†ç (unix passwd/shadow)æ–¹å¼ç™»å½•ç³»ç»Ÿå¤–,è¿˜å¯ä»¥é€‰æ‹©RSA/DSAå¯†é’¥è®¤è¯æ–¹å¼ç™»å½•ç³»ç»Ÿ.
 
-ÓÃrsaµÄÈÏÖ¤·½Ê½Éú³É¹«/Ë½Ô¿,ÈçÏÂ:
-ssh-keygen -t rsa 
+æ³¨:
+RSA:ç”±RSAå…¬å¸å‘æ˜,æ˜¯ä¸€ä¸ªæ”¯æŒå˜é•¿å¯†é’¥çš„å…¬å…±å¯†é’¥ç®—æ³•,éœ€è¦åŠ å¯†çš„æ–‡ä»¶å—çš„é•¿åº¦ä¹Ÿæ˜¯å¯å˜çš„;
+DSA(Digital Signature Algorithm):æ•°å­—ç­¾åç®—æ³•,æ˜¯ä¸€ç§æ ‡å‡†çš„ DSS(æ•°å­—ç­¾åæ ‡å‡†);
+åŒæ—¶è¿™ä¸¤ç§åŠ å¯†ç®—æ³•éƒ½æ˜¯éå¯¹ç§°åŠ å¯†ç®—æ³•.
+
+2.1)RSAå¯†é’¥è®¤è¯è¯•éªŒ
+é¦–å…ˆç”¨ssh-keygenç”Ÿæˆä¸€å¯¹RSA(å…¬/ç§é’¥),ç”¨ssh-copy-idå°†å…¬é’¥COPYåˆ°SSHæœåŠ¡ç«¯.æœ€åç™»å½•SSHæœåŠ¡ç«¯è¿›è¡Œæµ‹è¯•:
+
+ç”¨rsaçš„è®¤è¯æ–¹å¼ç”Ÿæˆå…¬/ç§é’¥,å¦‚ä¸‹:
+ssh-keygen -t rsa
 Generating public/private rsa key pair.
-Enter file in which to save the key (/home/chenkuo/.ssh/id_rsa): 
-Enter passphrase (empty for no passphrase): 
-Enter same passphrase again: 
+Enter file in which to save the key (/home/chenkuo/.ssh/id_rsa):
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
 Your identification has been saved in /home/chenkuo/.ssh/id_rsa.
 Your public key has been saved in /home/chenkuo/.ssh/id_rsa.pub.
 The key fingerprint is:
 c3:8c:17:ad:95:cb:95:82:8b:eb:f1:a4:28:52:0e:f2 chenkuo@test2
 
 
-ÓÃssh-copy-id½«id_rsa.pub(¹«Ô¿)COPYµ½SSH·şÎñ¶Ë,ÈçÏÂ:
+ç”¨ssh-copy-idå°†id_rsa.pub(å…¬é’¥)COPYåˆ°SSHæœåŠ¡ç«¯,å¦‚ä¸‹:
 ssh-copy-id -i .ssh/id_rsa.pub chenkuo@192.168.27.142
 15
-chenkuo@192.168.27.142's password: 
+chenkuo@192.168.27.142's password:
 Now try logging into the machine, with "ssh 'chenkuo@192.168.27.142'", and check in:
 
   .ssh/authorized_keys
@@ -195,9 +195,9 @@ Now try logging into the machine, with "ssh 'chenkuo@192.168.27.142'", and check
 to make sure we haven't added extra keys that you weren't expecting.
 
 
-ÔÙ´ÎµÇÂ¼,ÎÒÃÇ·¢ÏÖ,ÏµÍ³ÒªÇóÊäÈëid_rsaÃÜÂë,ÈçÏÂ:
+å†æ¬¡ç™»å½•,æˆ‘ä»¬å‘ç°,ç³»ç»Ÿè¦æ±‚è¾“å…¥id_rsaå¯†ç ,å¦‚ä¸‹:
 ssh chenkuo@192.168.27.142
-Enter passphrase for key '/home/chenkuo/.ssh/id_rsa': 
+Enter passphrase for key '/home/chenkuo/.ssh/id_rsa':
 Linux test2 2.6.18-4-k7 #1 SMP Mon Mar 26 17:57:15 UTC 2007 i686
 
 The programs included with the Debian GNU/Linux system are free software;
@@ -209,40 +209,40 @@ permitted by applicable law.
 You have new mail.
 Last login: Sat May 28 19:19:32 2011 from 192.168.27.134
 
-×¢:
-ÊÂÊµÉÏÎÒÃÇÓÃssh-keygenÉú³ÉÒ»Ö»¹«Ô¿ºÍË½Ô¿,½«¹«Ô¿×ªµ½Ô¶³Ì´ıµÇÂ¼µÄ·şÎñÆ÷,ÒªÓÃRSAµÇÂ¼µÄÊ±ºò,ÎÒÃÇÖ»ÒªÔÚ±¾µØµÄ¿ØÖÆÌ¨¼üÈë ssh chenkuo@remotehost,¾ÍÏóÎÒÃÇ³£×öµÄÒ»Ñù.
-¿ÉÕâÒ»´Î,ssh ¸æËß remotehost µÄ sshd ËüÏëÊ¹ÓÃ RSA ÈÏÖ¤Ğ­Òé,½ÓÏÂÀ´·¢ÉúµÄÊÂÇé·Ç³£ÓĞÈ¤.Remotehost µÄ sshd »áÉú³ÉÒ»¸öËæ»úÊı,²¢ÓÃÎÒÃÇÏÈÇ°¿½±´¹ıÈ¥µÄ¹«Ô¿¶ÔÕâ¸öËæ»úÊı½øĞĞ¼ÓÃÜ.
-È»ºó,sshd °Ñ¼ÓÃÜÁËµÄËæ»úÊı·¢»Ø¸øÕıÔÚ clienthost µÄ ssh¿Í»§¶Ë³ÌĞò.½ÓÏÂÀ´,ÂÖµ½ÎÒÃÇµÄ ssh ÓÃÃÜÔ¿¶ÔÕâ¸öËæ»úÊı½øĞĞ½âÃÜºó,ÔÙ°ÑËü·¢»Ø¸ø remotehost,Êµ¼ÊÉÏµÈÓÚÔÚËµ:ÇÆ,ÎÒÈ·ÊµÓĞÆ¥ÅäµÄ×¨ÓÃÃÜÔ¿,ÎÒÄÜ³É¹¦µÄ¶ÔÄúµÄÏûÏ¢½øĞĞ½âÃÜ!"
-×îºó,sshd µÃ³ö½áÂÛ,¼ÈÈ»ÎÒÃÇ³ÖÓĞÆ¥ÅäµÄ×¨ÓÃÃÜÔ¿,¾ÍÓ¦µ±ÔÊĞíÎÒÃÇµÇÂ¼.Òò´Ë,ÎÒÃÇÓĞÆ¥ÅäµÄ×¨ÓÃÃÜÔ¿ÕâÒ»ÊÂÊµÊÚÈ¨ÎÒÃÇ·ÃÎÊ remotehost.
+æ³¨:
+äº‹å®ä¸Šæˆ‘ä»¬ç”¨ssh-keygenç”Ÿæˆä¸€åªå…¬é’¥å’Œç§é’¥,å°†å…¬é’¥è½¬åˆ°è¿œç¨‹å¾…ç™»å½•çš„æœåŠ¡å™¨,è¦ç”¨RSAç™»å½•çš„æ—¶å€™,æˆ‘ä»¬åªè¦åœ¨æœ¬åœ°çš„æ§åˆ¶å°é”®å…¥ ssh chenkuo@remotehost,å°±è±¡æˆ‘ä»¬å¸¸åšçš„ä¸€æ ·.
+å¯è¿™ä¸€æ¬¡,ssh å‘Šè¯‰ remotehost çš„ sshd å®ƒæƒ³ä½¿ç”¨ RSA è®¤è¯åè®®,æ¥ä¸‹æ¥å‘ç”Ÿçš„äº‹æƒ…éå¸¸æœ‰è¶£.Remotehost çš„ sshd ä¼šç”Ÿæˆä¸€ä¸ªéšæœºæ•°,å¹¶ç”¨æˆ‘ä»¬å…ˆå‰æ‹·è´è¿‡å»çš„å…¬é’¥å¯¹è¿™ä¸ªéšæœºæ•°è¿›è¡ŒåŠ å¯†.
+ç„¶å,sshd æŠŠåŠ å¯†äº†çš„éšæœºæ•°å‘å›ç»™æ­£åœ¨ clienthost çš„ sshå®¢æˆ·ç«¯ç¨‹åº.æ¥ä¸‹æ¥,è½®åˆ°æˆ‘ä»¬çš„ ssh ç”¨å¯†é’¥å¯¹è¿™ä¸ªéšæœºæ•°è¿›è¡Œè§£å¯†å,å†æŠŠå®ƒå‘å›ç»™ remotehost,å®é™…ä¸Šç­‰äºåœ¨è¯´:ç§,æˆ‘ç¡®å®æœ‰åŒ¹é…çš„ä¸“ç”¨å¯†é’¥,æˆ‘èƒ½æˆåŠŸçš„å¯¹æ‚¨çš„æ¶ˆæ¯è¿›è¡Œè§£å¯†!"
+æœ€å,sshd å¾—å‡ºç»“è®º,æ—¢ç„¶æˆ‘ä»¬æŒæœ‰åŒ¹é…çš„ä¸“ç”¨å¯†é’¥,å°±åº”å½“å…è®¸æˆ‘ä»¬ç™»å½•.å› æ­¤,æˆ‘ä»¬æœ‰åŒ¹é…çš„ä¸“ç”¨å¯†é’¥è¿™ä¸€äº‹å®æˆæƒæˆ‘ä»¬è®¿é—® remotehost.
 
-·şÎñ¶ËÍ¨¹ıÏÂÃæÁ½¸öÑ¡ÏîÀ´¿ØÖÆÊÇ·ñ²ÉÓÃ¹«/ÃÜÔ¿µÄ·½Ê½½øĞĞÉí·İÑéÖ¤
+æœåŠ¡ç«¯é€šè¿‡ä¸‹é¢ä¸¤ä¸ªé€‰é¡¹æ¥æ§åˆ¶æ˜¯å¦é‡‡ç”¨å…¬/å¯†é’¥çš„æ–¹å¼è¿›è¡Œèº«ä»½éªŒè¯
 PubkeyAuthentication yes
 #AuthorizedKeysFile     %h/.ssh/authorized_keys
-¸Ä³ÉPubkeyAuthentication noÔò¹Ø±Õ¹«/Ë½Ô¿ÈÏÖ¤
+æ”¹æˆPubkeyAuthentication noåˆ™å…³é—­å…¬/ç§é’¥è®¤è¯
 
 
-2.2)ÎÒÃÇÓÃÀàËÆµÄ·½·¨Éú³Édsa¹«/Ë½Ô¿.
-ssh-keygen -t dsa 
+2.2)æˆ‘ä»¬ç”¨ç±»ä¼¼çš„æ–¹æ³•ç”Ÿæˆdsaå…¬/ç§é’¥.
+ssh-keygen -t dsa
 Generating public/private dsa key pair.
-Enter file in which to save the key (/home/chenkuo/.ssh/id_dsa): 
-Enter passphrase (empty for no passphrase): 
-Enter same passphrase again: 
+Enter file in which to save the key (/home/chenkuo/.ssh/id_dsa):
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
 Your identification has been saved in /home/chenkuo/.ssh/id_dsa.
 Your public key has been saved in /home/chenkuo/.ssh/id_dsa.pub.
 The key fingerprint is:
 79:ea:d5:a8:49:7b:81:6c:17:d1:a4:43:f1:ac:29:29 chenkuo@test2
 
-Í¬Ñù½«id_dsa.pub(¹«Ô¿)COPYµ½Ô¶³Ì·şÎñÆ÷,ÈçÉÏ:
+åŒæ ·å°†id_dsa.pub(å…¬é’¥)COPYåˆ°è¿œç¨‹æœåŠ¡å™¨,å¦‚ä¸Š:
 ssh-copy-id -i .ssh/id_dsa.pub chenkuo@192.168.27.142
 15
-chenkuo@192.168.27.142's password: 
+chenkuo@192.168.27.142's password:
 Now try logging into the machine, with "ssh 'chenkuo@192.168.27.142'", and check in:
 
   .ssh/authorized_keys
 
 to make sure we haven't added extra keys that you weren't expecting.
 
-ÎÒÃÇÔÙ´ÎµÇÂ¼,ÕâÀïÎÒÃÇÓÃssh -vµÄ·½Ê½´òÓ¡¸üÏêÏ¸µÄĞÅÏ¢,ÈçÏÂ:
+æˆ‘ä»¬å†æ¬¡ç™»å½•,è¿™é‡Œæˆ‘ä»¬ç”¨ssh -vçš„æ–¹å¼æ‰“å°æ›´è¯¦ç»†çš„ä¿¡æ¯,å¦‚ä¸‹:
 
 ssh -v chenkuo@192.168.27.142
 OpenSSH_4.3p2 Debian-9, OpenSSL 0.9.8g 19 Oct 2007
@@ -281,7 +281,7 @@ debug1: Offering public key: /home/chenkuo/.ssh/id_dsa
 debug1: Server accepts key: pkalg ssh-dss blen 434
 debug1: PEM_read_PrivateKey failed
 debug1: read PEM private key done: type <unknown>
-Enter passphrase for key '/home/chenkuo/.ssh/id_dsa': 
+Enter passphrase for key '/home/chenkuo/.ssh/id_dsa':
 debug1: read PEM private key done: type DSA
 debug1: Authentication succeeded (publickey).
 debug1: channel 0: new [client-session]
@@ -298,15 +298,15 @@ Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
 permitted by applicable law.
 You have new mail.
 Last login: Sun May 29 05:21:04 2011 from 192.168.27.134
-×¢:
-Èç¹ûÒª¹Ø±ÕÓÃDSA¹«ÃÜÔ¿ÈÏÖ¤µÄ·½Ê½,Ò²Òª½«PubkeyAuthentication¸Ä³Éno.
-¶øDSAÓ¦ÓÃÓÚssh v2,¶øRSAÔÚssh v1ÉÏÒ²µÃµ½Ö§³Ö.
+æ³¨:
+å¦‚æœè¦å…³é—­ç”¨DSAå…¬å¯†é’¥è®¤è¯çš„æ–¹å¼,ä¹Ÿè¦å°†PubkeyAuthenticationæ”¹æˆno.
+è€ŒDSAåº”ç”¨äºssh v2,è€ŒRSAåœ¨ssh v1ä¸Šä¹Ÿå¾—åˆ°æ”¯æŒ.
 
-ÁíÍâÎÒÃÇ¿ÉÒÔÔÚsshÅäÖÃÎÄ¼şÖĞ¶¨ÒåÓÃÓÚ¹«/Ë½Ô¿ÈÏÖ¤µÄ¹«Ô¿ÎÄ¼şÎïÀíÎ»ÖÃ,Ä¬ÈÏÊÇ:
+å¦å¤–æˆ‘ä»¬å¯ä»¥åœ¨sshé…ç½®æ–‡ä»¶ä¸­å®šä¹‰ç”¨äºå…¬/ç§é’¥è®¤è¯çš„å…¬é’¥æ–‡ä»¶ç‰©ç†ä½ç½®,é»˜è®¤æ˜¯:
 AuthorizedKeysFile      .ssh/authorized_keys
-Èç¹û²ÉÓÃRSA/DSAÕâÖÖ¹«/Ë½Ô¿ÈÏÖ¤·½Ê½,ÎÒÃÇ½¨ÒéÕâ¸ö²ÉÓÃÄ¬ÈÏÅäÖÃ,¶ø²»È¥¸ü¸ÄËü,ÒòÎªssh-copy-idµÈÃüÁî´«Êäµ½±»µÇÂ¼·şÎñÆ÷µÄ¹«Ô¿ÎÄ¼ş¾ÍÊÇ~/.ssh/authorized_keys,ÀıÈç:
+å¦‚æœé‡‡ç”¨RSA/DSAè¿™ç§å…¬/ç§é’¥è®¤è¯æ–¹å¼,æˆ‘ä»¬å»ºè®®è¿™ä¸ªé‡‡ç”¨é»˜è®¤é…ç½®,è€Œä¸å»æ›´æ”¹å®ƒ,å› ä¸ºssh-copy-idç­‰å‘½ä»¤ä¼ è¾“åˆ°è¢«ç™»å½•æœåŠ¡å™¨çš„å…¬é’¥æ–‡ä»¶å°±æ˜¯~/.ssh/authorized_keys,ä¾‹å¦‚:
 ssh-copy-id -i /root/.ssh/id_rsa.pub test@192.168.27.142
-test@192.168.27.142's password: 
+test@192.168.27.142's password:
 Now try logging into the machine, with "ssh 'test@192.168.27.142'", and check in:
 
   .ssh/authorized_keys
@@ -315,34 +315,34 @@ to make sure we haven't added extra keys that you weren't expecting.
 
 
 
-3)¹ØÓÚÃâÃÜÂëµÄµÇÈë
+3)å…³äºå…å¯†ç çš„ç™»å…¥
 
-ÔÚRSA/DSAÉú³ÉÃÜÔ¿¶ÔµÄÊ±ºò,²»ÊäÈë¿ÚÁî,Ö±½Ó»Ø³µ,ÒÔÕâÑùµÄÃÜÔ¿¶Ô½øĞĞµÇÂ¼,½«²»»áÌáÊ¾ÓÃ»§ÊäÈëÃÜÂë.
+åœ¨RSA/DSAç”Ÿæˆå¯†é’¥å¯¹çš„æ—¶å€™,ä¸è¾“å…¥å£ä»¤,ç›´æ¥å›è½¦,ä»¥è¿™æ ·çš„å¯†é’¥å¯¹è¿›è¡Œç™»å½•,å°†ä¸ä¼šæç¤ºç”¨æˆ·è¾“å…¥å¯†ç .
 
-ÎÒÃÇÏÈÉú³ÉRSAÃÜÔ¿¶Ô,¶ÔÏÂ:
+æˆ‘ä»¬å…ˆç”ŸæˆRSAå¯†é’¥å¯¹,å¯¹ä¸‹:
 ssh-keygen -t rsa
 Generating public/private rsa key pair.
-Enter file in which to save the key (/home/chenkuo/.ssh/id_rsa): 
+Enter file in which to save the key (/home/chenkuo/.ssh/id_rsa):
 /home/chenkuo/.ssh/id_rsa already exists.
 Overwrite (y/n)? y
-Enter passphrase (empty for no passphrase):              ×¢ÒâÕâÀï²»ÒªÊäÈëÃÜÂë,Ö±½Ó»Ø³µÍ¨¹ı 
-Enter same passphrase again:                             Í¬ÑùÊäÈë»Ø³µ
+Enter passphrase (empty for no passphrase):              æ³¨æ„è¿™é‡Œä¸è¦è¾“å…¥å¯†ç ,ç›´æ¥å›è½¦é€šè¿‡
+Enter same passphrase again:                             åŒæ ·è¾“å…¥å›è½¦
 Your identification has been saved in /home/chenkuo/.ssh/id_rsa.
 Your public key has been saved in /home/chenkuo/.ssh/id_rsa.pub.
 The key fingerprint is:
 27:f4:4d:61:5b:02:3f:d3:fc:a3:5b:d4:9b:08:81:64 chenkuo@test2
 
-½«id_rsa.pub´«Êäµ½ssh·şÎñ¶Ë,ÈçÏÂ:
+å°†id_rsa.pubä¼ è¾“åˆ°sshæœåŠ¡ç«¯,å¦‚ä¸‹:
 chenkuo@test2:~$ ssh-copy-id -i /home/chenkuo/.ssh/id_rsa.pub chenkuo@192.168.27.142
 29
-chenkuo@192.168.27.142's password: 
+chenkuo@192.168.27.142's password:
 Now try logging into the machine, with "ssh 'chenkuo@192.168.27.142'", and check in:
 
   .ssh/authorized_keys
 
 to make sure we haven't added extra keys that you weren't expecting.
 
-ÔÙ´ÎµÇÂ¼ssh·şÎñ¶Ë,ÕâÀï²»ÓÃÊäÈëÃÜÂë,ÈçÏÂ:
+å†æ¬¡ç™»å½•sshæœåŠ¡ç«¯,è¿™é‡Œä¸ç”¨è¾“å…¥å¯†ç ,å¦‚ä¸‹:
 ssh chenkuo@192.168.27.142
 Linux test2 2.6.18-4-k7 #1 SMP Mon Mar 26 17:57:15 UTC 2007 i686
 
@@ -358,20 +358,20 @@ chenkuo@test2:~$
 
 
 
-4)¾Ü¾øÓÃUNIX/passwordµÄ·½Ê½µÇÂ¼ÏµÍ³
+4)æ‹’ç»ç”¨UNIX/passwordçš„æ–¹å¼ç™»å½•ç³»ç»Ÿ
 
-UNIX/passwordÊÇ´«Í³µÄÈÏÖ¤·½Ê½,ÎÒÃÇ¿ÉÒÔÍ¨¹ısshÅäÖÃ²ÎÊı¾Ü¾øÒÔÕâÖÖ·½Ê½µÇÂ¼·şÎñÆ÷.
-¿ØÖÆUNIX/passwordµÄµÇÂ¼·½Ê½µÄÅäÖÃÑ¡ÏîÊÇ:
+UNIX/passwordæ˜¯ä¼ ç»Ÿçš„è®¤è¯æ–¹å¼,æˆ‘ä»¬å¯ä»¥é€šè¿‡sshé…ç½®å‚æ•°æ‹’ç»ä»¥è¿™ç§æ–¹å¼ç™»å½•æœåŠ¡å™¨.
+æ§åˆ¶UNIX/passwordçš„ç™»å½•æ–¹å¼çš„é…ç½®é€‰é¡¹æ˜¯:
 PasswordAuthentication yes
-Ä¬ÈÏÊÇUNIX/passwordµÇÂ¼·½Ê½ÊÇ¿ªÆôµÄ,Èç¹û¹Ø±ÕUNIX/passwordµÇÂ¼·½Ê½½«yes¸Ä³Éno¼´¿É,ÈçÏÂ:
+é»˜è®¤æ˜¯UNIX/passwordç™»å½•æ–¹å¼æ˜¯å¼€å¯çš„,å¦‚æœå…³é—­UNIX/passwordç™»å½•æ–¹å¼å°†yesæ”¹æˆnoå³å¯,å¦‚ä¸‹:
 vi /etc/ssh/sshd_config
 PasswordAuthentication no
 
-´æÅÌÍË³ö
-ÖØÆôssh·şÎñ:
+å­˜ç›˜é€€å‡º
+é‡å¯sshæœåŠ¡:
 /etc/init.d/ssh restart
 
-ÔÚ¿Í»§¶ËÔÙ´ÎµÇÂ¼,·¢ÏÖÃ»ÓĞpasswordµÇÂ¼·½Ê½,ÈçÏÂ:
+åœ¨å®¢æˆ·ç«¯å†æ¬¡ç™»å½•,å‘ç°æ²¡æœ‰passwordç™»å½•æ–¹å¼,å¦‚ä¸‹:
 ssh -v chenkuo@192.168.27.142
 OpenSSH_4.3p2 Debian-9, OpenSSL 0.9.8g 19 Oct 2007
 debug1: Reading configuration data /etc/ssh/ssh_config
@@ -401,7 +401,7 @@ debug1: expecting SSH2_MSG_NEWKEYS
 debug1: SSH2_MSG_NEWKEYS received
 debug1: SSH2_MSG_SERVICE_REQUEST sent
 debug1: SSH2_MSG_SERVICE_ACCEPT received
-debug1: Authentications that can continue: publickey        ×¢Òâ:ÕâÀïÃ»ÓĞpasswordµÄµÇÂ¼·½Ê½ÁË.
+debug1: Authentications that can continue: publickey        æ³¨æ„:è¿™é‡Œæ²¡æœ‰passwordçš„ç™»å½•æ–¹å¼äº†.
 debug1: Next authentication method: publickey
 debug1: Trying private key: /home/chenkuo/.ssh/identity
 debug1: Offering public key: /home/chenkuo/.ssh/id_rsa
@@ -413,94 +413,94 @@ Permission denied (publickey).
 
 
 
-5)X11×ª·¢
+5)X11è½¬å‘
 
-X11×ª·¢ÔÊĞíÔÚ SSH ¿Í»§¶ËÉÏÏÔÊ¾Ó¦ÓÃ³ÌĞòµÄÍ¼ĞÎ²¿·Ö,¶ø³ÌĞòÂß¼­ÒÀÈ»ÔÚÔ¶³Ì·şÎñÆ÷ÉÏÖ´ĞĞ.Í¨¹ıÊ¹ÓÃÕâÖÖ·½·¨,ÓÃ»§¿ÉÒÔ±ÜÃâÍ¨¹ıÁ¬½Ó×ª·¢Õû¸ö×ÀÃæ´øÀ´µÄÍøÂç¿ªÏú,²¢ÇÒ½ö½ÓÊÕµ½ÓĞ¹ØÏÔÊ¾²¿·ÖµÄÄÚÈİ.
-ÎÒÃÇĞèÒªSSH¿Í»§¶ËÓĞX·şÎñÆ÷ºÍSSH¿Í»§¶Ë(Èç Cygwin-X,XmanagerEnterprise»òÕßÊÇÒ»¸öXwindows),¶øSSH·şÎñ¶ËÒª°²×°ssh·şÎñ¶ËÒÔ¼°ÈÎºÎÒªÖ´ĞĞµÄx³ÌĞò,Èçxclock»ògnome-terminalµÈµÈ.
+X11è½¬å‘å…è®¸åœ¨ SSH å®¢æˆ·ç«¯ä¸Šæ˜¾ç¤ºåº”ç”¨ç¨‹åºçš„å›¾å½¢éƒ¨åˆ†,è€Œç¨‹åºé€»è¾‘ä¾ç„¶åœ¨è¿œç¨‹æœåŠ¡å™¨ä¸Šæ‰§è¡Œ.é€šè¿‡ä½¿ç”¨è¿™ç§æ–¹æ³•,ç”¨æˆ·å¯ä»¥é¿å…é€šè¿‡è¿æ¥è½¬å‘æ•´ä¸ªæ¡Œé¢å¸¦æ¥çš„ç½‘ç»œå¼€é”€,å¹¶ä¸”ä»…æ¥æ”¶åˆ°æœ‰å…³æ˜¾ç¤ºéƒ¨åˆ†çš„å†…å®¹.
+æˆ‘ä»¬éœ€è¦SSHå®¢æˆ·ç«¯æœ‰XæœåŠ¡å™¨å’ŒSSHå®¢æˆ·ç«¯(å¦‚ Cygwin-X,XmanagerEnterpriseæˆ–è€…æ˜¯ä¸€ä¸ªXwindows),è€ŒSSHæœåŠ¡ç«¯è¦å®‰è£…sshæœåŠ¡ç«¯ä»¥åŠä»»ä½•è¦æ‰§è¡Œçš„xç¨‹åº,å¦‚xclockæˆ–gnome-terminalç­‰ç­‰.
 
-ÎÒÃÇssh¿Í»§¶ËÖ´ĞĞ:
+æˆ‘ä»¬sshå®¢æˆ·ç«¯æ‰§è¡Œ:
 ssh -X root@192.168.27.142 gnome-terminal
-´ËÊ±¿Í»§¶ËÉÏ»áµ¯³öÒ»¸ögnome-terminal,ÔÚgnome-terminalÖ´ĞĞÃüÁîÆäÊµ¾ÍÊÇÔÚ192.168.27.142(·şÎñ¶Ë)ÉÏÖ´ĞĞ.
+æ­¤æ—¶å®¢æˆ·ç«¯ä¸Šä¼šå¼¹å‡ºä¸€ä¸ªgnome-terminal,åœ¨gnome-terminalæ‰§è¡Œå‘½ä»¤å…¶å®å°±æ˜¯åœ¨192.168.27.142(æœåŠ¡ç«¯)ä¸Šæ‰§è¡Œ.
 
-×¢Òâ:
-·şÎñ¶Ë²»Ò»¶¨Òª½øÈëµ½x-windowsÀïÃæ,µ«ËüÒ»¶¨ÒªÓĞx¿Í»§¶Ë³ÌĞò.
+æ³¨æ„:
+æœåŠ¡ç«¯ä¸ä¸€å®šè¦è¿›å…¥åˆ°x-windowsé‡Œé¢,ä½†å®ƒä¸€å®šè¦æœ‰xå®¢æˆ·ç«¯ç¨‹åº.
 
-¶øÒªÍê³ÉÉÏÃæµÄ¹¦ÄÜ,ÎÒÃÇ¾ÍÒª±£Ö¤X11ForwardingÑ¡ÏîÊÇyes,ÈçÏÂ:
+è€Œè¦å®Œæˆä¸Šé¢çš„åŠŸèƒ½,æˆ‘ä»¬å°±è¦ä¿è¯X11Forwardingé€‰é¡¹æ˜¯yes,å¦‚ä¸‹:
 X11Forwarding yes
 
-Èç¹ûÊÇX11ForwardingÑ¡ÏîÊÇno,×ª·¢X11³ÌĞòÔò²»»á³É¹¦.
+å¦‚æœæ˜¯X11Forwardingé€‰é¡¹æ˜¯no,è½¬å‘X11ç¨‹åºåˆ™ä¸ä¼šæˆåŠŸ.
 
-Èç¹û²»ĞèÒªÕâ¸ö¹¦ÄÜ,½¨Òé¹Ø±Õ¸ÃÑ¡Ïî
-
-
-
-6)SSHµÄÈÕÖ¾¼¶±ğ
+å¦‚æœä¸éœ€è¦è¿™ä¸ªåŠŸèƒ½,å»ºè®®å…³é—­è¯¥é€‰é¡¹
 
 
-SSHÓĞÈçÏÂ9¸öÈÕÖ¾¼¶±ğ:
+
+6)SSHçš„æ—¥å¿—çº§åˆ«
+
+
+SSHæœ‰å¦‚ä¸‹9ä¸ªæ—¥å¿—çº§åˆ«:
 QUIET, FATAL, ERROR, INFO, VERBOSE, DEBUG, DEBUG1, DEBUG2, and DEBUG3.
-Ä¬ÈÏÊÇINFO,DEBUGºÍDEBUG1ÊÇµÈ¼ÛµÄ,DEBUG¼¶±ğÒ»°ãÓÃÓÚµ÷ÊÔ.
+é»˜è®¤æ˜¯INFO,DEBUGå’ŒDEBUG1æ˜¯ç­‰ä»·çš„,DEBUGçº§åˆ«ä¸€èˆ¬ç”¨äºè°ƒè¯•.
 
-ÎÒÃÇ½«ÈÕÖ¾¼¶±ğ¸ü¸ÄÎªVERBOSE,ÔÙÓÃssh¿Í»§¶ËÁ¬½Ó·şÎñ¶Ë,²é¿´·şÎñ¶ËµÄsshÈÕÖ¾,¿´ÏÂINFOºÍVERBOSEµÄÇø±ğ:
+æˆ‘ä»¬å°†æ—¥å¿—çº§åˆ«æ›´æ”¹ä¸ºVERBOSE,å†ç”¨sshå®¢æˆ·ç«¯è¿æ¥æœåŠ¡ç«¯,æŸ¥çœ‹æœåŠ¡ç«¯çš„sshæ—¥å¿—,çœ‹ä¸‹INFOå’ŒVERBOSEçš„åŒºåˆ«:
 
-·şÎñ¶Ë:
+æœåŠ¡ç«¯:
 vi /etc/ssh/sshd_config
 LogLevel VERBOSE
 /etc/init.d/ssh restart
 
-¿Í»§¶Ë:
+å®¢æˆ·ç«¯:
 ssh 192.168.27.143
 The authenticity of host '192.168.27.143 (192.168.27.143)' can't be established.
 RSA key fingerprint is 49:35:e5:fe:1e:f4:cd:e2:50:d6:2e:57:35:cb:45:42.
 Are you sure you want to continue connecting (yes/no)? yes
 Warning: Permanently added '192.168.27.143' (RSA) to the list of known hosts.
-root@192.168.27.143's password: 
+root@192.168.27.143's password:
 Last login: Fri Jun  3 06:49:50 2011 from 192.168.27.1
 
-²é¿´·şÎñ¶ËµÄÈÕÖ¾:
+æŸ¥çœ‹æœåŠ¡ç«¯çš„æ—¥å¿—:
 tail -f /var/log/secure
 Jun  3 07:57:58 localhost sshd[2242]: Connection from 192.168.27.143 port 52632
 Jun  3 07:58:00 localhost sshd[2242]: Accepted password for root from 192.168.27.143 port 52632 ssh2
 Jun  3 07:58:00 localhost sshd[2242]: pam_unix(sshd:session): session opened for user root by (uid=0)
 
-½«ÈÕÖ¾¼¶±ğ¸ü¸ÄÎªINFO,½«²»»á¿´µ½:Connection from 192.168.27.143 port 52632
-ÈçÏÂ:
+å°†æ—¥å¿—çº§åˆ«æ›´æ”¹ä¸ºINFO,å°†ä¸ä¼šçœ‹åˆ°:Connection from 192.168.27.143 port 52632
+å¦‚ä¸‹:
 Jun  3 07:57:03 localhost sshd[1787]: pam_unix(sshd:session): session closed for user root
 Jun  3 07:57:07 localhost sshd[2202]: pam_unix(sshd:session): session opened for user root by (uid=0)
 
 
-ÕâÀïÎÒÃÇ½¨Òé½«ÈÕÖ¾¼¶±ğµ÷ÕûÎªVERBOSE,ÕâÑù¿ÉÒÔ¼ì²â¶ÔSSH·şÎñµÄÌ½²â.
+è¿™é‡Œæˆ‘ä»¬å»ºè®®å°†æ—¥å¿—çº§åˆ«è°ƒæ•´ä¸ºVERBOSE,è¿™æ ·å¯ä»¥æ£€æµ‹å¯¹SSHæœåŠ¡çš„æ¢æµ‹.
 
 
 
-7)¿Í»§¶ËÓë·şÎñ¶ËµÄ»·¾³±äÁ¿´«µİ
+7)å®¢æˆ·ç«¯ä¸æœåŠ¡ç«¯çš„ç¯å¢ƒå˜é‡ä¼ é€’
 
-AcceptEnvÖ¸¶¨¿Í»§¶Ë·¢ËÍµÄÄÄĞ©»·¾³±äÁ¿½«»á±»´«µİµ½»á»°»·¾³ÖĞ,µ«Ö»ÓĞSSH-2Ğ­ÒéÖ§³Ö»·¾³±äÁ¿µÄ´«µİ.
-ÎÒÃÇ¿ÉÒÔÊ¹ÓÃ*ºÍ?×öÎªÍ¨Åä·û,ÀıÈç:
+AcceptEnvæŒ‡å®šå®¢æˆ·ç«¯å‘é€çš„å“ªäº›ç¯å¢ƒå˜é‡å°†ä¼šè¢«ä¼ é€’åˆ°ä¼šè¯ç¯å¢ƒä¸­,ä½†åªæœ‰SSH-2åè®®æ”¯æŒç¯å¢ƒå˜é‡çš„ä¼ é€’.
+æˆ‘ä»¬å¯ä»¥ä½¿ç”¨*å’Œ?åšä¸ºé€šé…ç¬¦,ä¾‹å¦‚:
 AcceptEnv LC*
-ÕâÑù¾Í¿ÉÒÔ½ÓÊÜËùÓĞÒÔLC¿ªÍ·µÄ»·¾³±äÁ¿
-Ä¬ÈÏÊÇ²»´«µİÈÎºÎ»·¾³±äÁ¿.
+è¿™æ ·å°±å¯ä»¥æ¥å—æ‰€æœ‰ä»¥LCå¼€å¤´çš„ç¯å¢ƒå˜é‡
+é»˜è®¤æ˜¯ä¸ä¼ é€’ä»»ä½•ç¯å¢ƒå˜é‡.
 
-ÈôÒªÖ§³Ö»·¾³±äÁ¿´«µİ,ÎÒÃÇÒªÔÚ¿Í»§¶ËºÍ·şÎñ¶Ë¶¼Òª×öÏà¹ØµÄÅäÖÃ,ÀıÈçÎÒÃÇÒª´«µİ»·¾³±äÁ¿CMD,ÈçÏÂ:
-¿Í»§¶Ë:
-1)¶¨Òå»·¾³±äÁ¿CMD
+è‹¥è¦æ”¯æŒç¯å¢ƒå˜é‡ä¼ é€’,æˆ‘ä»¬è¦åœ¨å®¢æˆ·ç«¯å’ŒæœåŠ¡ç«¯éƒ½è¦åšç›¸å…³çš„é…ç½®,ä¾‹å¦‚æˆ‘ä»¬è¦ä¼ é€’ç¯å¢ƒå˜é‡CMD,å¦‚ä¸‹:
+å®¢æˆ·ç«¯:
+1)å®šä¹‰ç¯å¢ƒå˜é‡CMD
 declare -x CMD="hostname"
 
-2)ÔÚssh¿Í»§¶ËÅäÖÃÎÄ¼şÖĞÔö¼Ó·¢ËÍ»·¾³±äÁ¿µÄÅäÖÃÏî,ÈçÏÂ:
+2)åœ¨sshå®¢æˆ·ç«¯é…ç½®æ–‡ä»¶ä¸­å¢åŠ å‘é€ç¯å¢ƒå˜é‡çš„é…ç½®é¡¹,å¦‚ä¸‹:
 vi /etc/ssh/ssh_config
         SendEnv CMD
-´æÅÌÍË³ö
+å­˜ç›˜é€€å‡º
 
-·şÎñ¶Ë:
-1)ÔÚssh·şÎñ¶ËÅäÖÃÎÄ¼şsshd_configÖĞÔö¼Ó½ÓÊÕ»·¾³±äÁ¿µÄÅäÖÃ,ÈçÏÂ:
+æœåŠ¡ç«¯:
+1)åœ¨sshæœåŠ¡ç«¯é…ç½®æ–‡ä»¶sshd_configä¸­å¢åŠ æ¥æ”¶ç¯å¢ƒå˜é‡çš„é…ç½®,å¦‚ä¸‹:
 vi /etc/ssh/sshd_config
 AcceptEnv CMD
-´æÅÌÍË³ö
+å­˜ç›˜é€€å‡º
 
-2)ÖØÆôssh·şÎñ,ÈçÏÂ:
+2)é‡å¯sshæœåŠ¡,å¦‚ä¸‹:
 /etc/init.d/ssh restart
 
-²âÊÔ:
+æµ‹è¯•:
 ssh -v 192.168.27.142
 OpenSSH_5.3p1, OpenSSL 1.0.0-fips 29 Mar 2010
 debug1: Reading configuration data /etc/ssh/ssh_config
@@ -547,100 +547,100 @@ debug1: Trying private key: /root/.ssh/identity
 debug1: Trying private key: /root/.ssh/id_rsa
 debug1: Trying private key: /root/.ssh/id_dsa
 debug1: Next authentication method: password
-root@192.168.27.142's password: 
+root@192.168.27.142's password:
 debug1: Authentication succeeded (password).
 debug1: channel 0: new [client-session]
 debug1: Requesting no-more-sessions@openssh.com
 debug1: Entering interactive session.
 debug1: Sending environment.
-debug1: Sending env CMD = hostname          /*×¢ÒâÕâÀïssh¿Í»§¶Ë·¢ËÍ»·¾³±äÁ¿CMD¸øssh·şÎñ¶Ë*/
+debug1: Sending env CMD = hostname          /*æ³¨æ„è¿™é‡Œsshå®¢æˆ·ç«¯å‘é€ç¯å¢ƒå˜é‡CMDç»™sshæœåŠ¡ç«¯*/
 debug1: Sending env LANG = en_US.UTF-8
 Last login: Fri Jun  3 22:32:56 2011 from 192.168.27.143
 
-ÎÒÃÇµÇÂ¼µ½192.168.27.142(ssh·şÎñ¶Ë),²é¿´»·¾³±äÁ¿ÊÇ·ñ´«µİ³É¹¦,ÈçÏÂ:
+æˆ‘ä»¬ç™»å½•åˆ°192.168.27.142(sshæœåŠ¡ç«¯),æŸ¥çœ‹ç¯å¢ƒå˜é‡æ˜¯å¦ä¼ é€’æˆåŠŸ,å¦‚ä¸‹:
 echo $CMD
 hostname
 $CMD
 ssh-server
 
-ÎÒÃÇ¿´µ½»·¾³±äÁ¿CMDÒÑ¾­´«µİ³É¹¦.
-µ«×îºóÎÒÃÇÒª²¹³äËµÃ÷µÄÊÇ,²¢²»ÊÇËùÓĞµÄ»·¾³±äÁ¿¶¼»áÈçÎÒÃÇËùÏ£ÍûµÄÄÇÑù´«µİ,±ÈÈçPATH,Ô­ÒòÊÇÔÚsshµÇÂ¼µÄÊ±ºò,ÏµÍ³Ò²»á×öÒ»Ğ©»·¾³±äÁ¿µÄÉèÖÃ,ÕâÊ±PATH»á±»¸Ä±ä,¶ø²»»áÊÇÎÒÃÇ·¢ËÍ½ÓÊÜµÄ±äÁ¿.
+æˆ‘ä»¬çœ‹åˆ°ç¯å¢ƒå˜é‡CMDå·²ç»ä¼ é€’æˆåŠŸ.
+ä½†æœ€åæˆ‘ä»¬è¦è¡¥å……è¯´æ˜çš„æ˜¯,å¹¶ä¸æ˜¯æ‰€æœ‰çš„ç¯å¢ƒå˜é‡éƒ½ä¼šå¦‚æˆ‘ä»¬æ‰€å¸Œæœ›çš„é‚£æ ·ä¼ é€’,æ¯”å¦‚PATH,åŸå› æ˜¯åœ¨sshç™»å½•çš„æ—¶å€™,ç³»ç»Ÿä¹Ÿä¼šåšä¸€äº›ç¯å¢ƒå˜é‡çš„è®¾ç½®,è¿™æ—¶PATHä¼šè¢«æ”¹å˜,è€Œä¸ä¼šæ˜¯æˆ‘ä»¬å‘é€æ¥å—çš„å˜é‡.
 
 
-8)AllowUsers/AllowGroupsÓëDenyUsers/DenyGroups
+8)AllowUsers/AllowGroupsä¸DenyUsers/DenyGroups
 
-AllowUsersÔÊĞíÖ¸¶¨µÄÓÃ»§¿ÉÒÔÍ¨¹ıssh·şÎñµÇÂ¼¸Ã·şÎñÆ÷,Èç¹ûÊ¹ÓÃÁËAllowUsers,ÔòÖ»ÓĞAllowUsersµÄÓÃ»§¿ÉÒÔµÇÂ¼·şÎñÆ÷,ÆäËüÓÃ»§²»ÄÜµÇÂ¼·şÎñÆ÷.
-×¢Òâ:
-1)Èç¹ûÎÒÃÇÊ¹ÓÃPermitRootLogin no(×èÖ¹RootÓÃ»§µÇÂ¼),ÄÇÑùAllowUsers rootÊÇ²»»áÉúĞ§µÄ.
-2)Èç¹ûÎÒÃÇÊ¹ÓÃDenyUsers×èÖ¹Ä³ÓÃ»§µÇÂ¼,¶øAllowUsers¿ª·ÅÄ³ÓÃ»§µÇÂ¼,ÔòÒÔDenyUsersÎª×¼.
-3)Èç¹ûÎÒÃÇÊ¹ÓÃDenyGroups×èÖ¹Ä³ÓÃ»§×éµÇÂ¼,¶øAllowUsers¿ª·ÅÄ³ÓÃ»§µÇÂ¼,Ò²ÒÔDenyGroupsÎª×¼.
-4)Èç¹ûÔö¼Ó¶à¸öÓÃ»§,¸÷ÓÃ»§ÃûÖ®¼äÓÃ¿Õ¸ñ·Ö¸ô,ÀıÈç:AllowUsers root test test1
-×îºóÎÒÃÇ¶ÔAllowUsers½øĞĞ²âÊÔ:
+AllowUserså…è®¸æŒ‡å®šçš„ç”¨æˆ·å¯ä»¥é€šè¿‡sshæœåŠ¡ç™»å½•è¯¥æœåŠ¡å™¨,å¦‚æœä½¿ç”¨äº†AllowUsers,åˆ™åªæœ‰AllowUsersçš„ç”¨æˆ·å¯ä»¥ç™»å½•æœåŠ¡å™¨,å…¶å®ƒç”¨æˆ·ä¸èƒ½ç™»å½•æœåŠ¡å™¨.
+æ³¨æ„:
+1)å¦‚æœæˆ‘ä»¬ä½¿ç”¨PermitRootLogin no(é˜»æ­¢Rootç”¨æˆ·ç™»å½•),é‚£æ ·AllowUsers rootæ˜¯ä¸ä¼šç”Ÿæ•ˆçš„.
+2)å¦‚æœæˆ‘ä»¬ä½¿ç”¨DenyUsersé˜»æ­¢æŸç”¨æˆ·ç™»å½•,è€ŒAllowUserså¼€æ”¾æŸç”¨æˆ·ç™»å½•,åˆ™ä»¥DenyUsersä¸ºå‡†.
+3)å¦‚æœæˆ‘ä»¬ä½¿ç”¨DenyGroupsé˜»æ­¢æŸç”¨æˆ·ç»„ç™»å½•,è€ŒAllowUserså¼€æ”¾æŸç”¨æˆ·ç™»å½•,ä¹Ÿä»¥DenyGroupsä¸ºå‡†.
+4)å¦‚æœå¢åŠ å¤šä¸ªç”¨æˆ·,å„ç”¨æˆ·åä¹‹é—´ç”¨ç©ºæ ¼åˆ†éš”,ä¾‹å¦‚:AllowUsers root test test1
+æœ€åæˆ‘ä»¬å¯¹AllowUsersè¿›è¡Œæµ‹è¯•:
 
-ssh·şÎñ¶Ë:
+sshæœåŠ¡ç«¯:
 vi /etc/ssh/sshd_config
-AllowUsers test 
-´æÅÌÍË³ö,²¢ÖØÆôsshd·şÎñ
+AllowUsers test
+å­˜ç›˜é€€å‡º,å¹¶é‡å¯sshdæœåŠ¡
 /etc/init.d/sshd restart
 
-ssh¿Í»§¶Ë:
-´ËÊ±ÎÒÃÇÊ¹ÓÃÓÃ»§test1µÇÂ¼ÏµÍ³,·¢ÏÖÎŞ·¨µÇÂ¼,ÈçÏÂ:
-ssh  test1@192.168.27.142   
-test1@192.168.27.142's password: 
+sshå®¢æˆ·ç«¯:
+æ­¤æ—¶æˆ‘ä»¬ä½¿ç”¨ç”¨æˆ·test1ç™»å½•ç³»ç»Ÿ,å‘ç°æ— æ³•ç™»å½•,å¦‚ä¸‹:
+ssh  test1@192.168.27.142
+test1@192.168.27.142's password:
 Permission denied, please try again.
 
-×ªÎªÊ¹ÓÃtestÓÃ»§,µÇÂ¼³É¹¦,ËµÃ÷AllowUsersÊÇÆğ×÷ÓÃµÄ,ÈçÏÂ:
-ssh  test@192.168.27.142  
-test@192.168.27.142's password: 
+è½¬ä¸ºä½¿ç”¨testç”¨æˆ·,ç™»å½•æˆåŠŸ,è¯´æ˜AllowUsersæ˜¯èµ·ä½œç”¨çš„,å¦‚ä¸‹:
+ssh  test@192.168.27.142
+test@192.168.27.142's password:
 Last login: Sat Jun  4 18:50:52 2011 from 192.168.27.143
 
-AllowGroups/DenyUsers/DenyGroupsµÄÓÃ·¨¶¼±È½Ï¼òµ¥,ÎÒÃÇÔÚ´Ë²»Ò»Ò»¾ÙÀı.
+AllowGroups/DenyUsers/DenyGroupsçš„ç”¨æ³•éƒ½æ¯”è¾ƒç®€å•,æˆ‘ä»¬åœ¨æ­¤ä¸ä¸€ä¸€ä¸¾ä¾‹.
 
 
-9)¶Ë¿Ú×ª·¢
+9)ç«¯å£è½¬å‘
 AllowTcpForwarding
 
-SSHÓĞÁ½ÖÖ¶Ë¿Ú×ª·¢·½Ê½,·Ö±ğÊÇ±¾µØ×ª·¢ºÍÔ¶¶Ë×ª·¢.
+SSHæœ‰ä¸¤ç§ç«¯å£è½¬å‘æ–¹å¼,åˆ†åˆ«æ˜¯æœ¬åœ°è½¬å‘å’Œè¿œç«¯è½¬å‘.
 
-±¾µØ×ª·¢:
-ssh±¾µØ×ª·¢¿ÉÒÔ½«Á¬½Ó±¾µØ¶Ë¿ÚµÄSOCKETÊı¾İ×ª·¢µ½Ô¶³ÌSSH·şÎñ¶Ë.
-ÕâÊÇÊ¹ÓÃ±¾µØ×ª·¢µÄÀı×Ó:
-Ò»Ì¨SSH·şÎñ¶ËÌá¹©ftp·şÎñ,ÒòÎªftp´«ÊäÊÇÃ÷ÎÄÃÜÂë,Èç¹û²»×össh¶Ë¿ÚÖ®Ç°,ÎÒÃÇ¿ÉÒÔÍ¨¹ıtcpdumpÃüÁîºÜÈİÒ×µÄ²¶×½µ½Ã÷ÎÄĞÅÏ¢.
-ËùÒÔÎÒÃÇÒª¶Ô21¶Ë¿Ú½øĞĞ×ª·¢£º
-SSH¿Í»§¶Ë:
+æœ¬åœ°è½¬å‘:
+sshæœ¬åœ°è½¬å‘å¯ä»¥å°†è¿æ¥æœ¬åœ°ç«¯å£çš„SOCKETæ•°æ®è½¬å‘åˆ°è¿œç¨‹SSHæœåŠ¡ç«¯.
+è¿™æ˜¯ä½¿ç”¨æœ¬åœ°è½¬å‘çš„ä¾‹å­:
+ä¸€å°SSHæœåŠ¡ç«¯æä¾›ftpæœåŠ¡,å› ä¸ºftpä¼ è¾“æ˜¯æ˜æ–‡å¯†ç ,å¦‚æœä¸åšsshç«¯å£ä¹‹å‰,æˆ‘ä»¬å¯ä»¥é€šè¿‡tcpdumpå‘½ä»¤å¾ˆå®¹æ˜“çš„æ•æ‰åˆ°æ˜æ–‡ä¿¡æ¯.
+æ‰€ä»¥æˆ‘ä»¬è¦å¯¹21ç«¯å£è¿›è¡Œè½¬å‘ï¼š
+SSHå®¢æˆ·ç«¯:
 ssh -CNf -L 2001:localhost:21 root@192.168.27.142
-root@192.168.27.142's password: 
+root@192.168.27.142's password:
 bind: Address already in use
-×¢:
--C Ñ¹ËõÊı¾İ´«Êä.
--N ²»Ö´ĞĞ½Å±¾»òÃüÁî.Í¨³£Óë-fÁ¬ÓÃ.
--f ºóÌ¨ÈÏÖ¤ÓÃ»§/ÃÜÂë,Í¨³£ºÍ-NÁ¬ÓÃ,²»ÓÃµÇÂ¼µ½Ô¶³ÌÖ÷»ú.
-ÎÒÃÇÔÚ¿Í»§¶Ë¿ÉÒÔ¿´µ½ÏàÓ¦µÄ¶Ë¿ÚÈçÏÂ:
-netstat -tnp  
+æ³¨:
+-C å‹ç¼©æ•°æ®ä¼ è¾“.
+-N ä¸æ‰§è¡Œè„šæœ¬æˆ–å‘½ä»¤.é€šå¸¸ä¸-fè¿ç”¨.
+-f åå°è®¤è¯ç”¨æˆ·/å¯†ç ,é€šå¸¸å’Œ-Nè¿ç”¨,ä¸ç”¨ç™»å½•åˆ°è¿œç¨‹ä¸»æœº.
+æˆ‘ä»¬åœ¨å®¢æˆ·ç«¯å¯ä»¥çœ‹åˆ°ç›¸åº”çš„ç«¯å£å¦‚ä¸‹:
+netstat -tnp
 Active Internet connections (w/o servers)
-Proto Recv-Q Send-Q Local Address               Foreign Address             State       PID/Program name   
-tcp        0     52 192.168.27.143:22           192.168.27.1:2275           ESTABLISHED 1520/0              
-tcp        0      0 192.168.27.143:36373        192.168.27.142:22           ESTABLISHED 1547/ssh            
-×¢:
-ÆäÖĞ192.168.27.143:36373        192.168.27.142:22ÕâÒ»Ìõ¾ÍÊÇSSHÓ³ÉäËù²úÉúµÄ.
-Í¬Ê±ÎÒÃÇ¿ÉÒÔ¿´µ½sshÓ³ÉäµÄ½ø³Ì,ÈçÏÂ:
+Proto Recv-Q Send-Q Local Address               Foreign Address             State       PID/Program name
+tcp        0     52 192.168.27.143:22           192.168.27.1:2275           ESTABLISHED 1520/0
+tcp        0      0 192.168.27.143:36373        192.168.27.142:22           ESTABLISHED 1547/ssh
+æ³¨:
+å…¶ä¸­192.168.27.143:36373        192.168.27.142:22è¿™ä¸€æ¡å°±æ˜¯SSHæ˜ å°„æ‰€äº§ç”Ÿçš„.
+åŒæ—¶æˆ‘ä»¬å¯ä»¥çœ‹åˆ°sshæ˜ å°„çš„è¿›ç¨‹,å¦‚ä¸‹:
 ps -ef|grep ssh
 avahi     1111     1  0 11:37 ?        00:00:00 avahi-daemon: running [ssh-client.local]
 root      1280     1  0 11:37 ?        00:00:00 /usr/sbin/sshd
-root      1520  1280  0 11:43 ?        00:00:00 sshd: root@pts/0 
+root      1520  1280  0 11:43 ?        00:00:00 sshd: root@pts/0
 root      1547     1  0 11:45 ?        00:00:00 ssh -CNf -L 2001:localhost:21 root@192.168.27.142
 root      1554  1523  0 11:47 pts/0    00:00:00 grep ssh
 
-SSH·şÎñ¶Ë:
-netstat -tnp  
+SSHæœåŠ¡ç«¯:
+netstat -tnp
 Active Internet connections (w/o servers)
-Proto Recv-Q Send-Q Local Address               Foreign Address             State       PID/Program name   
-tcp        0      0 192.168.27.142:22           192.168.27.1:2990           ESTABLISHED 1708/0              
-tcp        0      0 192.168.27.142:22           192.168.27.143:51581        ESTABLISHED 1767/sshd: root 
-×¢:ÎÒÃÇ¿´µ½192.168.27.142:22           192.168.27.143:51581ÕâÒ»Ìõ¾ÍÊÇSSH±¾µØÓ³Éä²úÉúµÄ.
- 
-´ËÊ±ÎÒÃÇÔÚ¿Í»§¶ËÁ¬½ÓlocalhostµÄ2001¶Ë¿Ú,ssh¼´½«Êı¾İ×ª·¢µ½192.168.27.142(ssh·şÎñ¶Ë)µÄ21¶Ë¿Ú,ÈçÏÂ:
-[root@ssh-client ~]#ftp 
+Proto Recv-Q Send-Q Local Address               Foreign Address             State       PID/Program name
+tcp        0      0 192.168.27.142:22           192.168.27.1:2990           ESTABLISHED 1708/0
+tcp        0      0 192.168.27.142:22           192.168.27.143:51581        ESTABLISHED 1767/sshd: root
+æ³¨:æˆ‘ä»¬çœ‹åˆ°192.168.27.142:22           192.168.27.143:51581è¿™ä¸€æ¡å°±æ˜¯SSHæœ¬åœ°æ˜ å°„äº§ç”Ÿçš„.
+
+æ­¤æ—¶æˆ‘ä»¬åœ¨å®¢æˆ·ç«¯è¿æ¥localhostçš„2001ç«¯å£,sshå³å°†æ•°æ®è½¬å‘åˆ°192.168.27.142(sshæœåŠ¡ç«¯)çš„21ç«¯å£,å¦‚ä¸‹:
+[root@ssh-client ~]#ftp
 ftp> open localhost 2001
 Connected to localhost (127.0.0.1).
 220 (vsFTPd 2.2.2)
@@ -650,16 +650,16 @@ Password:
 230 Login successful.
 Remote system type is UNIX.
 Using binary mode to transfer files.
-ftp> 
+ftp>
 
-ÎÒÃÇÔÚ·şÎñ¶Ë¿´µ½ÁË¼àÌıµ½µÄÊı¾İ,ÈçÏÂ:
+æˆ‘ä»¬åœ¨æœåŠ¡ç«¯çœ‹åˆ°äº†ç›‘å¬åˆ°çš„æ•°æ®,å¦‚ä¸‹:
 tcpdump -X -n -i eth1 'host 192.168.27.143'
 tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
 listening on eth1, link-type EN10MB (Ethernet), capture size 65535 bytes
 20:35:56.392261 IP 192.168.27.1.mgcp-callagent > 192.168.27.143.ssh: Flags [P.], seq 1685371148:1685371200, ack 2463559151, win 15280, length 52
-ÏÂÃæ¶¼ÊÇÍ¨¹ıSSH¼ÓÃÜºóµÄÊı¾İ,½á¹ûÂÔ.
+ä¸‹é¢éƒ½æ˜¯é€šè¿‡SSHåŠ å¯†åçš„æ•°æ®,ç»“æœç•¥.
 
-¶øÈç¹ûÎÒÃÇÃ»ÓĞÊ¹ÓÃSSHÓ³ÉäµÄ·½Ê½½øĞĞFTPÁ¬½Ó,Ôò»á²úÉúÃ÷ÎÄÊı¾İ(PASS.123456).
+è€Œå¦‚æœæˆ‘ä»¬æ²¡æœ‰ä½¿ç”¨SSHæ˜ å°„çš„æ–¹å¼è¿›è¡ŒFTPè¿æ¥,åˆ™ä¼šäº§ç”Ÿæ˜æ–‡æ•°æ®(PASS.123456).
 20:30:16.091389 IP 192.168.27.143.43867 > 192.168.27.142.ftp: Flags [P.], seq 11:24, ack 35, win 183, options [nop,nop,TS val 3656782 ecr 9909216], length 13
         0x0000:  4510 0041 a4de 4000 4006 dd5a c0a8 1b8f  E..A..@.@..Z....
         0x0010:  c0a8 1b8e ab5b 0015 40ff 06e5 551a 542c  .....[..@...U.T,
@@ -668,27 +668,27 @@ listening on eth1, link-type EN10MB (Ethernet), capture size 65535 bytes
         0x0040:  0a                                       .
 
 
-Ô¶³Ì×ª·¢:
-½«Ô¶³ÌÖ÷»ú(·şÎñÆ÷)µÄÄ³¸ö¶Ë¿Ú×ª·¢µ½±¾µØ¶ËÖ¸¶¨»úÆ÷µÄÖ¸¶¨¶Ë¿Ú.
-ÏÂÃæÊÇÒ»¸öÔ¶³Ì×ª·¢µÄÓ¦ÓÃ:
+è¿œç¨‹è½¬å‘:
+å°†è¿œç¨‹ä¸»æœº(æœåŠ¡å™¨)çš„æŸä¸ªç«¯å£è½¬å‘åˆ°æœ¬åœ°ç«¯æŒ‡å®šæœºå™¨çš„æŒ‡å®šç«¯å£.
+ä¸‹é¢æ˜¯ä¸€ä¸ªè¿œç¨‹è½¬å‘çš„åº”ç”¨:
 
-ÔÚSSH·şÎñ¶ËÖ´ĞĞÏÂÃæÔ¶³Ì×ª·¢µÄÃüÁî,ÆäÖĞ192.168.27.143Îªssh¿Í»§¶Ë,ÈçÏÂ:
+åœ¨SSHæœåŠ¡ç«¯æ‰§è¡Œä¸‹é¢è¿œç¨‹è½¬å‘çš„å‘½ä»¤,å…¶ä¸­192.168.27.143ä¸ºsshå®¢æˆ·ç«¯,å¦‚ä¸‹:
 ssh -CNf -R 2001:localhost:21 root@192.168.27.143
 
-´ËÊ±ÓÉÓÚsshÔ¶³Ì×ª·¢ÎÒÃÇ»áÓĞÏÂÃæµÄ¶Ë¿Ú,ÈçÏÂ:
-netstat -tnp  
+æ­¤æ—¶ç”±äºsshè¿œç¨‹è½¬å‘æˆ‘ä»¬ä¼šæœ‰ä¸‹é¢çš„ç«¯å£,å¦‚ä¸‹:
+netstat -tnp
 Active Internet connections (w/o servers)
-Proto Recv-Q Send-Q Local Address               Foreign Address             State       PID/Program name   
-tcp        0      0 192.168.27.142:48413        192.168.27.143:22           ESTABLISHED 1875/ssh            
-tcp        0     52 192.168.27.142:22           192.168.27.1:2279           ESTABLISHED 1714/0              
+Proto Recv-Q Send-Q Local Address               Foreign Address             State       PID/Program name
+tcp        0      0 192.168.27.142:48413        192.168.27.143:22           ESTABLISHED 1875/ssh
+tcp        0     52 192.168.27.142:22           192.168.27.1:2279           ESTABLISHED 1714/0
 
-ÎÒÃÇÔÚ¿Í»§¶ËÉÏ¿´ÏÂÈçÏÂµÄ¶Ë¿Ú:
+æˆ‘ä»¬åœ¨å®¢æˆ·ç«¯ä¸Šçœ‹ä¸‹å¦‚ä¸‹çš„ç«¯å£:
 netstat -tulnp|grep 2001
-tcp        0      0 127.0.0.1:2001              0.0.0.0:*                   LISTEN      1651/sshd: root     
-tcp        0      0 ::1:2001                    :::*                        LISTEN      1651/sshd: root     
+tcp        0      0 127.0.0.1:2001              0.0.0.0:*                   LISTEN      1651/sshd: root
+tcp        0      0 ::1:2001                    :::*                        LISTEN      1651/sshd: root
 
-´ËÊ±ÎÒÃÇ¿ÉÒÔÔÚ¿Í»§¶ËÉÏÁ¬½Ó±¾µØµØÖ·¼°¶Ë¿Ú,ÈçÏÂ:
-[root@ssh-client ~]# ftp         
+æ­¤æ—¶æˆ‘ä»¬å¯ä»¥åœ¨å®¢æˆ·ç«¯ä¸Šè¿æ¥æœ¬åœ°åœ°å€åŠç«¯å£,å¦‚ä¸‹:
+[root@ssh-client ~]# ftp
 ftp> open localhost 2001
 Connected to localhost (127.0.0.1).
 220 (vsFTPd 2.2.2)
@@ -698,27 +698,27 @@ Password:
 230 Login successful.
 Remote system type is UNIX.
 Using binary mode to transfer files.
-ftp> 
-×¢:
-ÎÒÃÇ¿ÉÒÔÑ¡ÔñÔ¶³Ì¶Ë¿Ú×ª·¢µÄ·½Ê½À´ÈÆ¹ı·À»ğÇ½.
+ftp>
+æ³¨:
+æˆ‘ä»¬å¯ä»¥é€‰æ‹©è¿œç¨‹ç«¯å£è½¬å‘çš„æ–¹å¼æ¥ç»•è¿‡é˜²ç«å¢™.
 
-×îºóÎÒÃÇÑÔ¹éÕı×ª,À´¿´Ò»ÏÂAllowTcpForwardingÑ¡Ïî.
+æœ€åæˆ‘ä»¬è¨€å½’æ­£è½¬,æ¥çœ‹ä¸€ä¸‹AllowTcpForwardingé€‰é¡¹.
 
-Èç¹û²ÉÓÃ±¾µØ×ª·¢·½Ê½,ÀıÈçÔÚ¿Í»§¶ËÖ´ĞĞ:ssh -CNf -L 2001:localhost:21 root@192.168.27.142,´ËÊ±·şÎñ¶Ë(192.168.27.142)Èç¹ûAllowTcpForwardingÑ¡ÏîÊÇno,Ôò²»ÔÊĞí×ª·¢.
-Èç¹û²ÉÓÃÔ¶³Ì×ª·¢·½Ê½,ÀıÈçÔÚ·şÎñ¶ËÖ´ĞĞ:ssh -CNf -R 2001:localhost:21 root@192.168.27.143,´ËÊ±¿Í»§¶Ë(192.168.27.143)Èç¹ûAllowTcpForwardingÑ¡ÏîÊÇno,Ôò²»ÔÊĞí×ª·¢.
+å¦‚æœé‡‡ç”¨æœ¬åœ°è½¬å‘æ–¹å¼,ä¾‹å¦‚åœ¨å®¢æˆ·ç«¯æ‰§è¡Œ:ssh -CNf -L 2001:localhost:21 root@192.168.27.142,æ­¤æ—¶æœåŠ¡ç«¯(192.168.27.142)å¦‚æœAllowTcpForwardingé€‰é¡¹æ˜¯no,åˆ™ä¸å…è®¸è½¬å‘.
+å¦‚æœé‡‡ç”¨è¿œç¨‹è½¬å‘æ–¹å¼,ä¾‹å¦‚åœ¨æœåŠ¡ç«¯æ‰§è¡Œ:ssh -CNf -R 2001:localhost:21 root@192.168.27.143,æ­¤æ—¶å®¢æˆ·ç«¯(192.168.27.143)å¦‚æœAllowTcpForwardingé€‰é¡¹æ˜¯no,åˆ™ä¸å…è®¸è½¬å‘.
 
 
-10)Ô¶³ÌÖ÷»úÁ¬½Ó±¾µØ×ª·¢¶Ë¿Ú
-GatewayPortsÊÇ·ñÔÊĞíÔ¶³ÌÖ÷»úÁ¬½Ó±¾µØµÄ×ª·¢¶Ë¿Ú.Ä¬ÈÏÖµÊÇ"no".
-sshd Ä¬ÈÏ½«Ô¶³Ì¶Ë¿Ú×ª·¢°ó¶¨µ½loopbackµØÖ·.ÕâÑù½«×èÖ¹ÆäËüÔ¶³ÌÖ÷»úÁ¬½Óµ½×ª·¢¶Ë¿Ú¡£
-GatewayPorts Ö¸Áî¿ÉÒÔÈÃ sshd ½«Ô¶³Ì¶Ë¿Ú×ª·¢°ó¶¨µ½·ÇloopbackµØÖ·£¬ÕâÑù¾Í¿ÉÒÔÔÊĞíÔ¶³ÌÖ÷»úÁ¬½ÓÁË¡£
-"no"±íÊ¾½öÔÊĞí±¾µØÁ¬½Ó£¬"yes"±íÊ¾Ç¿ÖÆ½«Ô¶³Ì¶Ë¿Ú×ª·¢°ó¶¨µ½Í³ÅäµØÖ·(wildcard address)£¬
+10)è¿œç¨‹ä¸»æœºè¿æ¥æœ¬åœ°è½¬å‘ç«¯å£
+GatewayPortsæ˜¯å¦å…è®¸è¿œç¨‹ä¸»æœºè¿æ¥æœ¬åœ°çš„è½¬å‘ç«¯å£.é»˜è®¤å€¼æ˜¯"no".
+sshd é»˜è®¤å°†è¿œç¨‹ç«¯å£è½¬å‘ç»‘å®šåˆ°loopbackåœ°å€.è¿™æ ·å°†é˜»æ­¢å…¶å®ƒè¿œç¨‹ä¸»æœºè¿æ¥åˆ°è½¬å‘ç«¯å£ã€‚
+GatewayPorts æŒ‡ä»¤å¯ä»¥è®© sshd å°†è¿œç¨‹ç«¯å£è½¬å‘ç»‘å®šåˆ°éloopbackåœ°å€ï¼Œè¿™æ ·å°±å¯ä»¥å…è®¸è¿œç¨‹ä¸»æœºè¿æ¥äº†ã€‚
+"no"è¡¨ç¤ºä»…å…è®¸æœ¬åœ°è¿æ¥ï¼Œ"yes"è¡¨ç¤ºå¼ºåˆ¶å°†è¿œç¨‹ç«¯å£è½¬å‘ç»‘å®šåˆ°ç»Ÿé…åœ°å€(wildcard address)ï¼Œ
 
-Õâ¸öÅäÖÃÏîÊÇÒªĞŞ¸Ä±¾µØ×ª·¢»úµÄsshÅäÖÃ,ÈçÏÂ:
+è¿™ä¸ªé…ç½®é¡¹æ˜¯è¦ä¿®æ”¹æœ¬åœ°è½¬å‘æœºçš„sshé…ç½®,å¦‚ä¸‹:
 vi /etc/ssh/ssh_config
 GatewayPorts yes
 
-ssh -v -CNf -L 2001:192.168.27.142:22 root@192.168.27.143 /*×¢Òâ:192.168.27.143Îªµ±Ç°¿Í»§¶ËµÄIP,¶ø192.168.27.142ÊÇÔ¶³ÌSSH·şÎñ¶Ë*/
+ssh -v -CNf -L 2001:192.168.27.142:22 root@192.168.27.143 /*æ³¨æ„:192.168.27.143ä¸ºå½“å‰å®¢æˆ·ç«¯çš„IP,è€Œ192.168.27.142æ˜¯è¿œç¨‹SSHæœåŠ¡ç«¯*/
 OpenSSH_5.3p1, OpenSSL 1.0.0-fips 29 Mar 2010
 debug1: Reading configuration data /etc/ssh/ssh_config
 debug1: Applying options for *
@@ -756,7 +756,7 @@ debug1: Authentications that can continue: publickey,gssapi-keyex,gssapi-with-mi
 debug1: Offering public key: /root/.ssh/id_dsa
 debug1: Authentications that can continue: publickey,gssapi-keyex,gssapi-with-mic,password,hostbased
 debug1: Next authentication method: password
-root@192.168.27.143's password: 
+root@192.168.27.143's password:
 debug1: Enabling compression at level 6.
 debug1: Authentication succeeded (password).
 debug1: Local connections to *:2001 forwarded to remote address 192.168.27.142:22
@@ -767,19 +767,19 @@ bind: Address already in use
 debug1: Requesting no-more-sessions@openssh.com
 debug1: Entering interactive session.
 
-´ËÊ±Á¬½Ó±¾µØµÄeth1Íø¿¨µØÖ·:
+æ­¤æ—¶è¿æ¥æœ¬åœ°çš„eth1ç½‘å¡åœ°å€:
 ssh -p 2001 192.168.27.143
 debug1: Connection to port 2001 forwarding to 192.168.27.142 port 22 requested.
 debug1: channel 1: new [direct-tcpip]
-root@192.168.27.143's password: 
+root@192.168.27.143's password:
 Last login: Sat Jun 18 13:23:04 2011 from localhost.localdomain
 
 
 
         Welcome to
          _  _
-        | ||_|                 
-        | | _ ____  _   _  _  _ 
+        | ||_|
+        | | _ ____  _   _  _  _
         | || |  _ \| | | |\ \/ /
         | || | | | | |_| |/    \
         |_||_|_| |_|\____|\_/\_/
@@ -796,10 +796,10 @@ Last login: Sat Jun 18 13:23:04 2011 from localhost.localdomain
 logout
 Connection to 192.168.27.143 closed.
 [root@ssh-client ~]# debug1: channel 1: free: direct-tcpip: listening port 2001 for 192.168.27.142 port 22, connect from 192.168.27.143 port 43295, nchannels 2
-×¢:
-ÎÒÃÇÍ¨¹ı´ò¿ªGatewayPortsÑ¡Ïî,Ê¹ÓÃÎÒÃÇ¼´¿ÉÒÔÓÃ»Ø»·µØÖ·×ª·¢,Ò²¿ÉÒÔÓÃÆäËüIPµØÖ·×ª·¢,ÕâÑù¾ÍÊ¹ÎÒÃÇ¿ÉÒÔÍ¨¹ıssh½«¸Ã·şÎñÆ÷×ö³ÉÒ»¸ö×ª·¢»ú.
+æ³¨:
+æˆ‘ä»¬é€šè¿‡æ‰“å¼€GatewayPortsé€‰é¡¹,ä½¿ç”¨æˆ‘ä»¬å³å¯ä»¥ç”¨å›ç¯åœ°å€è½¬å‘,ä¹Ÿå¯ä»¥ç”¨å…¶å®ƒIPåœ°å€è½¬å‘,è¿™æ ·å°±ä½¿æˆ‘ä»¬å¯ä»¥é€šè¿‡sshå°†è¯¥æœåŠ¡å™¨åšæˆä¸€ä¸ªè½¬å‘æœº.
 
-ÎÒÃÇ¹Ø±ÕGatewayPortsÑ¡Ïîºó,Ö»ÄÜÊ¹ÓÃ±¾µØÁ¬½Ó,ÈçÏÂ:
+æˆ‘ä»¬å…³é—­GatewayPortsé€‰é¡¹å,åªèƒ½ä½¿ç”¨æœ¬åœ°è¿æ¥,å¦‚ä¸‹:
 vi /etc/ssh/ssh_config
 GatewayPorts no
 
@@ -841,11 +841,11 @@ debug1: Authentications that can continue: publickey,gssapi-keyex,gssapi-with-mi
 debug1: Offering public key: /root/.ssh/id_dsa
 debug1: Authentications that can continue: publickey,gssapi-keyex,gssapi-with-mic,password,hostbased
 debug1: Next authentication method: password
-root@192.168.27.143's password: 
-debug1: Authentications that can continue: publickey,gssapi-keyex,gssapi-with-mic,password,hostbased 
+root@192.168.27.143's password:
+debug1: Authentications that can continue: publickey,gssapi-keyex,gssapi-with-mic,password,hostbased
 debug1: Enabling compression at level 6.
 debug1: Authentication succeeded (password).
-debug1: Local connections to LOCALHOST:2001 forwarded to remote address 192.168.27.142:22 /*ÎÒÃÇ¿´µ½ÕâÀïÖ»×öÁË½«±¾µØlocalhost:2001×ª·¢µ½192.168.27.142:22*/
+debug1: Local connections to LOCALHOST:2001 forwarded to remote address 192.168.27.142:22 /*æˆ‘ä»¬çœ‹åˆ°è¿™é‡Œåªåšäº†å°†æœ¬åœ°localhost:2001è½¬å‘åˆ°192.168.27.142:22*/
 debug1: Local forwarding listening on ::1 port 2001.
 debug1: channel 0: new [port listener]
 debug1: Local forwarding listening on 127.0.0.1 port 2001.
@@ -856,12 +856,12 @@ debug1: Requesting no-more-sessions@openssh.com
 
 
 
-11)µÇÂ¼Ê±ÏÔÊ¾µÄĞÅÏ¢
-ÓĞÈçÏÂµÄÑ¡Ïî¿ÉÒÔ¿ØÖÆµÇÂ¼sshÊ±ÏÔÊ¾µÄĞÅÏ¢
+11)ç™»å½•æ—¶æ˜¾ç¤ºçš„ä¿¡æ¯
+æœ‰å¦‚ä¸‹çš„é€‰é¡¹å¯ä»¥æ§åˆ¶ç™»å½•sshæ—¶æ˜¾ç¤ºçš„ä¿¡æ¯
 
 
 11.1)Banner
-BannerÓÃÓÚÔÚµÇÂ¼Ö®Ç°ÏÔÊ¾ÔÚÓÃ»§ÆÁÄ»ÉÏ,Èç¹û¶¨ÒåÎªnone,Ôò²»ÏÔÊ¾ÈÎºÎĞÅÏ¢,ÎÒÃÇ¿ÉÒÔÖ¸¶¨BannerÎªÏàÓ¦µÄÎÄ¼ş,ÈçÏÂ:
+Bannerç”¨äºåœ¨ç™»å½•ä¹‹å‰æ˜¾ç¤ºåœ¨ç”¨æˆ·å±å¹•ä¸Š,å¦‚æœå®šä¹‰ä¸ºnone,åˆ™ä¸æ˜¾ç¤ºä»»ä½•ä¿¡æ¯,æˆ‘ä»¬å¯ä»¥æŒ‡å®šBannerä¸ºç›¸åº”çš„æ–‡ä»¶,å¦‚ä¸‹:
 Banner /etc/issue
 
 cat /etc/issue
@@ -872,8 +872,8 @@ cat /etc/issue
         #       All activities are monitored.                                       #
         #############################################################################
 
-ÕâÑùÔÚÎÒÃÇµÇÂ¼µÄÊ±ºò,¿ÉÒÔ¿´µ½/etc/issueÖĞµÄĞÅÏ¢,ÈçÏÂ:
-ssh 192.168.27.142      
+è¿™æ ·åœ¨æˆ‘ä»¬ç™»å½•çš„æ—¶å€™,å¯ä»¥çœ‹åˆ°/etc/issueä¸­çš„ä¿¡æ¯,å¦‚ä¸‹:
+ssh 192.168.27.142
 
         #############################################################################
         #       Warning: Unauthorized access to this system is strictly prohibited. #
@@ -882,18 +882,18 @@ ssh 192.168.27.142
         #############################################################################
 
 
-root@192.168.27.142's password: 
+root@192.168.27.142's password:
 
 11.2)PrintLastLog
-PrintLastLogÓÃÓÚÏÔÊ¾ÔÚÃ¿Ò»´Î³É¹¦µÇÂ¼ºóÏÔÊ¾×îºóÒ»Î»ÓÃ»§µÄµÇÂ¼ĞÅÏ¢,ÈçÏÂ:
+PrintLastLogç”¨äºæ˜¾ç¤ºåœ¨æ¯ä¸€æ¬¡æˆåŠŸç™»å½•åæ˜¾ç¤ºæœ€åä¸€ä½ç”¨æˆ·çš„ç™»å½•ä¿¡æ¯,å¦‚ä¸‹:
 PrintLastLog yes
 
 ssh 192.168.27.142
-root@192.168.27.142's password: 
+root@192.168.27.142's password:
 Last login: Mon Jun  6 14:23:24 2011 from 192.168.27.143
 
 11.3)PrintMotd
-PrintMotdÓÃÓÚÏÔÊ¾ÔÚÃ¿Ò»´Î³É¹¦µÇÂ¼ºóÏÔÊ¾/etc/motdÖĞµÄĞÅÏ¢,ÈçÏÂ:
+PrintMotdç”¨äºæ˜¾ç¤ºåœ¨æ¯ä¸€æ¬¡æˆåŠŸç™»å½•åæ˜¾ç¤º/etc/motdä¸­çš„ä¿¡æ¯,å¦‚ä¸‹:
 
 cat /etc/motd
 
@@ -901,8 +901,8 @@ cat /etc/motd
 
         Welcome to
          _  _
-        | ||_|                 
-        | | _ ____  _   _  _  _ 
+        | ||_|
+        | | _ ____  _   _  _  _
         | || |  _ \| | | |\ \/ /
         | || | | | | |_| |/    \
         |_||_|_| |_|\____|\_/\_/
@@ -914,14 +914,14 @@ cat /etc/motd
 
 
 ssh 192.168.27.142
-root@192.168.27.142's password: 
+root@192.168.27.142's password:
 
 
 
         Welcome to
          _  _
-        | ||_|                 
-        | | _ ____  _   _  _  _ 
+        | ||_|
+        | | _ ____  _   _  _  _
         | || |  _ \| | | |\ \/ /
         | || | | | | |_| |/    \
         |_||_|_| |_|\____|\_/\_/
@@ -932,7 +932,7 @@ root@192.168.27.142's password:
 
 
 11.4)ShowPatchLevel
-ShowPatchLevelÓÃÓÚÔÚÁ¬½Óssh¶Ë¿ÚÊ±,ÊÇ·ñ·µ»ØSSHµÄ²¹¶¡°æ±¾ĞÅÏ¢,ÈçÏÂ:
+ShowPatchLevelç”¨äºåœ¨è¿æ¥sshç«¯å£æ—¶,æ˜¯å¦è¿”å›SSHçš„è¡¥ä¸ç‰ˆæœ¬ä¿¡æ¯,å¦‚ä¸‹:
 telnet 192.168.27.142 22
 Trying 192.168.27.142...
 Connected to 192.168.27.142.
@@ -941,7 +941,7 @@ SSH-2.0-OpenSSH_5.3p1-FC-0.9-20.el6
 ^]
 telnet> quit
 Connection closed.
-ÒÔÉÏÊÇÖ¸¶¨ShowPatchLevel yesµÄ½á¹û.
+ä»¥ä¸Šæ˜¯æŒ‡å®šShowPatchLevel yesçš„ç»“æœ.
 
 [root@ssh-client ~]# telnet 192.168.27.142 22
 Trying 192.168.27.142...
@@ -951,28 +951,28 @@ SSH-2.0-OpenSSH_5.3
 ^]
 telnet> quit
 Connection closed.
-ÒÔÉÏÊÇÖ¸¶¨ShowPatchLevel noµÄ½á¹û.
+ä»¥ä¸Šæ˜¯æŒ‡å®šShowPatchLevel noçš„ç»“æœ.
 
-ÎÒÃÇ½¨ÒéÈçÏÂµÄÉèÖÃ:
-Banner /etc/issue,/etc/issue·ÅÈë¾¯¸æĞÅÏ¢.
-PrintMotd yes,ÔÚ/etc/motd·ÅÈëµÇÂ¼ºóµÄ»¶Ó­ĞÅÏ¢.
-ShowPatchLevel no,²»ÏÔÊ¾sshµÄ²¹¶¡ĞÅÏ¢.
-PrintLastLog no,²»ÏÔÊ¾×îºóÒ»´ÎµÄµÇÂ¼ĞÅÏ¢.
+æˆ‘ä»¬å»ºè®®å¦‚ä¸‹çš„è®¾ç½®:
+Banner /etc/issue,/etc/issueæ”¾å…¥è­¦å‘Šä¿¡æ¯.
+PrintMotd yes,åœ¨/etc/motdæ”¾å…¥ç™»å½•åçš„æ¬¢è¿ä¿¡æ¯.
+ShowPatchLevel no,ä¸æ˜¾ç¤ºsshçš„è¡¥ä¸ä¿¡æ¯.
+PrintLastLog no,ä¸æ˜¾ç¤ºæœ€åä¸€æ¬¡çš„ç™»å½•ä¿¡æ¯.
 
 
 
-12)Êı¾İ¼ÓÃÜËã·¨
+12)æ•°æ®åŠ å¯†ç®—æ³•
 
-ÎÒÃÇ¿ÉÒÔÍ¨¹ıCiphersÅäÖÃÏîÀ´Ñ¡ÔñÊı¾İ¼ÓÃÜËã·¨,Èç¹û·şÎñ¶Ë½öÖ§³Öaes128-cbc,¶ø¿Í»§¶ËÖ¸¶¨ÓÃarcfour¼ÓÃÜËã·¨Á¬½ÓµÇÂ¼·şÎñ¶ËÔò²»»á³É¹¦.
-sshv2Ö§³ÖÈçÏÂµÄ¼ÓÃÜËã·¨,ÏàÍ¬Ä¬ÈÏÖµÒ²ÊÇÈçÏÂµÄËã·¨:
+æˆ‘ä»¬å¯ä»¥é€šè¿‡Ciphersé…ç½®é¡¹æ¥é€‰æ‹©æ•°æ®åŠ å¯†ç®—æ³•,å¦‚æœæœåŠ¡ç«¯ä»…æ”¯æŒaes128-cbc,è€Œå®¢æˆ·ç«¯æŒ‡å®šç”¨arcfouråŠ å¯†ç®—æ³•è¿æ¥ç™»å½•æœåŠ¡ç«¯åˆ™ä¸ä¼šæˆåŠŸ.
+sshv2æ”¯æŒå¦‚ä¸‹çš„åŠ å¯†ç®—æ³•,ç›¸åŒé»˜è®¤å€¼ä¹Ÿæ˜¯å¦‚ä¸‹çš„ç®—æ³•:
 aes128-cbc,aes192-cbc,aes256-cbc,aes128-ctr,aes192-ctr,aes256-ctr,3des-cbc,arcfour128,arcfour256,arcfour,blowfish-cbc,cast128-cbc
-ÉÏÃæµÄÕâĞ©Ëã·¨¶¼ÊÇ¶Ô³Æ¼ÓÃÜËã·¨,¶øarcfourÊÇ×î¿ìµÄ,ÕâÀïµÄarcfourËã·¨Ò²¾ÍÊÇrc4.
+ä¸Šé¢çš„è¿™äº›ç®—æ³•éƒ½æ˜¯å¯¹ç§°åŠ å¯†ç®—æ³•,è€Œarcfouræ˜¯æœ€å¿«çš„,è¿™é‡Œçš„arcfourç®—æ³•ä¹Ÿå°±æ˜¯rc4.
 
-ÏÂÃæÊÇarcfour(rc4)¶Ô³Æ¼ÓÃÜËã·¨µÄËµÃ÷:
-»á»°ÃÜÔ¿µÄÇ°16¸ö×Ö½Ú±»·şÎñÆ÷ÓÃ×÷¼ÓÃÜÃÜÔ¿,½ô½Ó×ÅµÄÏÂÒ»¸ö16×Ö½Ú±»¿Í»§¶ËÓÃ×÷¼ÓÃÜÃÜÔ¿.½á¹ûÊÇÁ½¸öÊı¾İÁ÷·½ÏòÉÏÓĞÁ½¸ö¶ÀÁ¢µÄ129Î»ÃÜÔ¿.ÕâÖÖ¼ÓÃÜËã·¨·Ç³£¿ì
+ä¸‹é¢æ˜¯arcfour(rc4)å¯¹ç§°åŠ å¯†ç®—æ³•çš„è¯´æ˜:
+ä¼šè¯å¯†é’¥çš„å‰16ä¸ªå­—èŠ‚è¢«æœåŠ¡å™¨ç”¨ä½œåŠ å¯†å¯†é’¥,ç´§æ¥ç€çš„ä¸‹ä¸€ä¸ª16å­—èŠ‚è¢«å®¢æˆ·ç«¯ç”¨ä½œåŠ å¯†å¯†é’¥.ç»“æœæ˜¯ä¸¤ä¸ªæ•°æ®æµæ–¹å‘ä¸Šæœ‰ä¸¤ä¸ªç‹¬ç«‹çš„129ä½å¯†é’¥.è¿™ç§åŠ å¯†ç®—æ³•éå¸¸å¿«
 
 
-ÎÒÃÇ¿ÉÒÔÍ¨¹ıopenssl speed¶Ô¼ÓÃÜËã·¨½øĞĞ²âÊÔ,Ò²¿ÉÒÔÖ¸¶¨¼¸ÖÖ¼ÓÃÜËã·¨½øĞĞ²âÊÔ,ÈçÏÂ:
+æˆ‘ä»¬å¯ä»¥é€šè¿‡openssl speedå¯¹åŠ å¯†ç®—æ³•è¿›è¡Œæµ‹è¯•,ä¹Ÿå¯ä»¥æŒ‡å®šå‡ ç§åŠ å¯†ç®—æ³•è¿›è¡Œæµ‹è¯•,å¦‚ä¸‹:
 openssl speed aes rc4 blowfish
 Doing rc4 for 3s on 16 size blocks: 40757592 rc4's in 1.28s
 Doing rc4 for 3s on 64 size blocks: 11500211 rc4's in 1.23s
@@ -1001,7 +1001,7 @@ Doing blowfish cbc for 3s on 1024 size blocks: 248679 blowfish cbc's in 1.34s
 Doing blowfish cbc for 3s on 8192 size blocks: 30867 blowfish cbc's in 1.46s
 OpenSSL 1.0.0-fips 29 Mar 2010
 built on: Wed Jun 30 08:58:02 EDT 2010
-options:bn(64,32) md2(int) rc4(4x,int) des(ptr,risc1,16,long) aes(partial) blowfish(idx) 
+options:bn(64,32) md2(int) rc4(4x,int) des(ptr,risc1,16,long) aes(partial) blowfish(idx)
 compiler: gcc -fPIC -DOPENSSL_PIC -DZLIB -DOPENSSL_THREADS -D_REENTRANT -DDSO_DLFCN -DHAVE_DLFCN_H -DKRB5_MIT -DL_ENDIAN -DTERMIO -Wall -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=4 -m32 -march=i686 -mtune=atom -fasynchronous-unwind-tables -Wa,--noexecstack -DOPENSSL_BN_ASM_PART_WORDS -DOPENSSL_IA32_SSE2 -DOPENSSL_BN_ASM_MONT -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DMD5_ASM -DRMD160_ASM -DAES_ASM -DWHIRLPOOL_ASM
 The 'numbers' are in 1000s of bytes per second processed.
 type             16 bytes     64 bytes    256 bytes   1024 bytes   8192 bytes
@@ -1012,12 +1012,12 @@ aes-192 cbc      74384.25k    84831.75k    79503.65k   203096.57k   170728.73k
 aes-256 cbc      54944.58k    62960.38k    55670.78k   146223.13k   161192.93k
 
 
-ÎÒÃÇÉú³ÉÒ»¸ö100MBµÄÊı¾İÎÄ¼ş½øĞĞ²âÊÔ,ÈçÏÂ:
+æˆ‘ä»¬ç”Ÿæˆä¸€ä¸ª100MBçš„æ•°æ®æ–‡ä»¶è¿›è¡Œæµ‹è¯•,å¦‚ä¸‹:
 dd if=/dev/zero of=/tmp/bigfile.dat bs=1M count=100; shred -v -n3 /tmp/bigfile.dat
 
-ÎÒÃÇÖ¸¶¨ÓÃarcfour¶Ô³Æ¼ÓÃÜËã·¨½øĞĞ¼ÓÃÜ´«Êä,ÕâÀïÓÃÁË2·Ö10Ãë
-rsync -apur --stats --progress -e "ssh -c arcfour" bigfile.dat root@192.168.27.142:/tmp/      
-root@192.168.27.142's password: 
+æˆ‘ä»¬æŒ‡å®šç”¨arcfourå¯¹ç§°åŠ å¯†ç®—æ³•è¿›è¡ŒåŠ å¯†ä¼ è¾“,è¿™é‡Œç”¨äº†2åˆ†10ç§’
+rsync -apur --stats --progress -e "ssh -c arcfour" bigfile.dat root@192.168.27.142:/tmp/
+root@192.168.27.142's password:
 sending incremental file list
 bigfile.dat
   1048576000 100%    7.66MB/s    0:02:10 (xfer#1, to-check=0/1)
@@ -1038,9 +1038,9 @@ sent 1048704076 bytes  received 31 bytes  7464086.17 bytes/sec
 total size is 1048576000  speedup is 1.00
 
 
-ÎÒÃÇÖ¸¶¨ÓÃblowfish-cbc¶Ô³Æ¼ÓÃÜËã·¨½øĞĞ¼ÓÃÜ´«Êä,ÕâÀïÓÃÁË2·Ö17Ãë
-rsync -apur --stats --progress -e "ssh -c blowfish-cbc" bigfile.dat root@192.168.27.142:/tmp/ 
-root@192.168.27.142's password: 
+æˆ‘ä»¬æŒ‡å®šç”¨blowfish-cbcå¯¹ç§°åŠ å¯†ç®—æ³•è¿›è¡ŒåŠ å¯†ä¼ è¾“,è¿™é‡Œç”¨äº†2åˆ†17ç§’
+rsync -apur --stats --progress -e "ssh -c blowfish-cbc" bigfile.dat root@192.168.27.142:/tmp/
+root@192.168.27.142's password:
 sending incremental file list
 bigfile.dat
   1048576000 100%    7.26MB/s    0:02:17 (xfer#1, to-check=0/1)
@@ -1061,9 +1061,9 @@ sent 1048704076 bytes  received 31 bytes  7464086.17 bytes/sec
 total size is 1048576000  speedup is 1.00
 
 
-ÎÒÃÇÖ¸¶¨ÓÃaes128-ctr¶Ô³Æ¼ÓÃÜËã·¨½øĞĞ¼ÓÃÜ´«Êä,ÕâÀïÓÃÁË2Ãë55Ãë
-rsync -apur --stats --progress -e "ssh -c aes128-ctr" bigfile.dat root@192.168.27.142:/tmp/ 
-root@192.168.27.142's password: 
+æˆ‘ä»¬æŒ‡å®šç”¨aes128-ctrå¯¹ç§°åŠ å¯†ç®—æ³•è¿›è¡ŒåŠ å¯†ä¼ è¾“,è¿™é‡Œç”¨äº†2ç§’55ç§’
+rsync -apur --stats --progress -e "ssh -c aes128-ctr" bigfile.dat root@192.168.27.142:/tmp/
+root@192.168.27.142's password:
 sending incremental file list
 bigfile.dat
   1048576000 100%    5.71MB/s    0:02:55 (xfer#1, to-check=0/1)
@@ -1083,60 +1083,56 @@ Total bytes received: 31
 sent 1048704076 bytes  received 31 bytes  5941666.33 bytes/sec
 total size is 1048576000  speedup is 1.00
 
-×¢:
-1)Èç¹ûÎÒÃÇÃ»ÓĞÖ¸Ciphers,½«Ö§³ÖËùÓĞµÄ¼ÓÃÜËã·¨,¶ø¿Í»§¶ËÃ»ÓĞÖ¸¶¨¼ÓÃÜËã·¨µÄ»°,ÎÒÃÇÊ×ÏÈÊ¹ÓÃµÄ½«ÊÇaes128-ctr¶Ô³Æ¼ÓÃÜËã·¨.
-2)Èç¹ûÎÒÃÇÔÚ·şÎñ¶ËÍ¬Ê±Ö¸¶¨Ciphers arcfour,blowfish-cbc,aes128-ctr,¶øÓÅÏÈÊ¹ÓÃaes128-ctrÆä´ÎÊÇblowfish-cbc,×îºóÊÇarcfour.
+æ³¨:
+1)å¦‚æœæˆ‘ä»¬æ²¡æœ‰æŒ‡Ciphers,å°†æ”¯æŒæ‰€æœ‰çš„åŠ å¯†ç®—æ³•,è€Œå®¢æˆ·ç«¯æ²¡æœ‰æŒ‡å®šåŠ å¯†ç®—æ³•çš„è¯,æˆ‘ä»¬é¦–å…ˆä½¿ç”¨çš„å°†æ˜¯aes128-ctrå¯¹ç§°åŠ å¯†ç®—æ³•.
+2)å¦‚æœæˆ‘ä»¬åœ¨æœåŠ¡ç«¯åŒæ—¶æŒ‡å®šCiphers arcfour,blowfish-cbc,aes128-ctr,è€Œä¼˜å…ˆä½¿ç”¨aes128-ctrå…¶æ¬¡æ˜¯blowfish-cbc,æœ€åæ˜¯arcfour.
 
-×îºóÎÒÃÇ½¨ÒéÔÚ·şÎñ¶ËµÄciphersÑ¡ÏîÉÏ½öÖ¸¶¨arcfourËã·¨.ÕâÑùÄÜ×îÓÅ»¯µÄ½øĞĞÊı¾İ¼ÓÃÜ´«Êä.
+æœ€åæˆ‘ä»¬å»ºè®®åœ¨æœåŠ¡ç«¯çš„ciphersé€‰é¡¹ä¸Šä»…æŒ‡å®šarcfourç®—æ³•.è¿™æ ·èƒ½æœ€ä¼˜åŒ–çš„è¿›è¡Œæ•°æ®åŠ å¯†ä¼ è¾“.
 
 
 
-13)Ê¹ÓÃlogin³ÌĞòµÇÂ¼
+13)ä½¿ç”¨loginç¨‹åºç™»å½•
 
-UseLoginÄ¬ÈÏÖµÊÇ"no",Èç¹ûÖ¸¶¨UseLoginÎªyes,ÎÒÃÇ½«ÔÚµÇÂ¼µÄ¹ı³ÌÖĞÊ¹ÓÃssh·şÎñ¶ËµÄlogin³ÌĞò½øĞĞµÇÂ¼ÑéÖ¤.
+UseLoginé»˜è®¤å€¼æ˜¯"no",å¦‚æœæŒ‡å®šUseLoginä¸ºyes,æˆ‘ä»¬å°†åœ¨ç™»å½•çš„è¿‡ç¨‹ä¸­ä½¿ç”¨sshæœåŠ¡ç«¯çš„loginç¨‹åºè¿›è¡Œç™»å½•éªŒè¯.
 
-ÎÒÃÇ¶ÔÊ¹ÓÃlogin³ÌĞò½øĞĞ²âÊÔÈçÏÂ:
+æˆ‘ä»¬å¯¹ä½¿ç”¨loginç¨‹åºè¿›è¡Œæµ‹è¯•å¦‚ä¸‹:
 
-½«UseLoginĞŞ¸ÄÎªyes,ÈçÏÂ:
+å°†UseLoginä¿®æ”¹ä¸ºyes,å¦‚ä¸‹:
 vi /etc/ssh/sshd_config
 UseLogin yes
-±£´æÍË³ö
+ä¿å­˜é€€å‡º
 
-ÖØÆôsshd·şÎñ
+é‡å¯sshdæœåŠ¡
 /etc/init.d/sshd
 restart
 
-ÓÃ¿Í»§¶ËÁ¬½Ósshd·şÎñ¶Ë,ÈçÏÂ:
-ssh  192.168.27.142 
+ç”¨å®¢æˆ·ç«¯è¿æ¥sshdæœåŠ¡ç«¯,å¦‚ä¸‹:
+ssh  192.168.27.142
 
-²é¿´ÊÇ·ñÊ¹ÓÃlogin³ÌĞò,ÈçÏÂ:
+æŸ¥çœ‹æ˜¯å¦ä½¿ç”¨loginç¨‹åº,å¦‚ä¸‹:
 ps -ef|grep login
 test      1717     1  0 03:59 ?        00:00:00 /usr/bin/gnome-keyring-daemon --daemonize --login
-root      2711  2709  0 05:25 ?        00:00:00 login -- root                        
+root      2711  2709  0 05:25 ?        00:00:00 login -- root
 root      2732  2712  0 05:25 pts/2    00:00:00 grep login
 
-×¢:Èç¹û½«login³ÌĞòÒÆ×ß»òÉ¾³ı,ÎÒÃÇÈç¹ûÊ¹ÓÃUseLogin yes,´ËÊ±½«ÎŞ·¨µÇÂ¼ssh·şÎñ¶Ë.
+æ³¨:å¦‚æœå°†loginç¨‹åºç§»èµ°æˆ–åˆ é™¤,æˆ‘ä»¬å¦‚æœä½¿ç”¨UseLogin yes,æ­¤æ—¶å°†æ— æ³•ç™»å½•sshæœåŠ¡ç«¯.
 
-ÎÒÃÇ¿ÉÒÔÊ¹ÓÃpam(»ùÓÚLinuxµÄ²åÈëÊ½ÑéÖ¤Ä£¿é)¼ÓÈëÒ»Ğ©loginµÄÈÏÖ¤¹¦ÄÜ.
-ÎÒÃÇÔÚ/etc/pam.d/remoteÎÄ¼şÖĞ¼ÓÈëpam_access.soÄ£¿é,ÈçÏÂ:
+æˆ‘ä»¬å¯ä»¥ä½¿ç”¨pam(åŸºäºLinuxçš„æ’å…¥å¼éªŒè¯æ¨¡å—)åŠ å…¥ä¸€äº›loginçš„è®¤è¯åŠŸèƒ½.
+æˆ‘ä»¬åœ¨/etc/pam.d/remoteæ–‡ä»¶ä¸­åŠ å…¥pam_access.soæ¨¡å—,å¦‚ä¸‹:
 vi /etc/pam.d/remote
 account    required     pam_access.so
-±£´æÍË³ö
+ä¿å­˜é€€å‡º
 
-ĞŞ¸Ä/etc/security/access.confÎÄ¼ş,ÈçÏÂ:
-vi /etc/security/access.conf 
-¼ÓÈë:
+ä¿®æ”¹/etc/security/access.confæ–‡ä»¶,å¦‚ä¸‹:
+vi /etc/security/access.conf
+åŠ å…¥:
 - : ALL : ALL
-±£´æÍË³ö. 
-×¢:
-ÏÖÔÚÎÒÃÇ¾Ü¾øËùÓĞÍ¨¹ıssh¿Í»§¶ËµÄÁ¬½Ó,µ«ÎÒÃÇÃ»ÓĞĞŞ¸Ä/etc/pam.d/login,ËùÒÔÎÒÃÇ±¾µØÎÒÃÇ»¹¿ÉÒÔÓÃlogin½øĞĞµÇÂ¼.
-Í¨¹ıssh¿Í»§¶ËÁ¬½Ó±¨´íÈçÏÂ:
-[root@ssh-client ~]# ssh  192.168.27.142 
-root@192.168.27.142's password: 
+ä¿å­˜é€€å‡º.
+æ³¨:
+ç°åœ¨æˆ‘ä»¬æ‹’ç»æ‰€æœ‰é€šè¿‡sshå®¢æˆ·ç«¯çš„è¿æ¥,ä½†æˆ‘ä»¬æ²¡æœ‰ä¿®æ”¹/etc/pam.d/login,æ‰€ä»¥æˆ‘ä»¬æœ¬åœ°æˆ‘ä»¬è¿˜å¯ä»¥ç”¨loginè¿›è¡Œç™»å½•.
+é€šè¿‡sshå®¢æˆ·ç«¯è¿æ¥æŠ¥é”™å¦‚ä¸‹:
+[root@ssh-client ~]# ssh  192.168.27.142
+root@192.168.27.142's password:
 
 Permission denied
 Connection to 192.168.27.142 closed.
-
-
-
-

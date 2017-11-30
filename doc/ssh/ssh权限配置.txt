@@ -1,28 +1,28 @@
-1£©ÓÃ»§AÉú²úÒ»¶Ôkey£¬£¬AºÍA.pub
-2£©°ÑA.pubµÄÄÚÈİ·¢¸øadmin
-3£©admin°ÑA.pubµÄÄÚÈİ¶ÔÓ¦µÄÓÃ»§ÖĞ
-4£©ÓÃ»§A£¬Ê¹ÓÃË½Ô¿ÎÄ¼şAÀ´µÇÂ¼·şÎñÆ÷£¬£¬ÆäÖĞ£¬Ê¹ÓÃwinscpÖ®Àà¹¤¾ßµÄ£¬ÒòÎªÊÇÊ¹ÓÃµÄputtyÀ´µÇÂ¼linux£¬ÕâÖÖÊÇputtyË½ÓĞ¸ñÊ½µÄ£¬ÓÃËüÌá¹©µÄ¹¤¾ß£¬°ÑA¼ÓÔØ½øÈ¥£¬Áí´æÎªA.ppk
+1ï¼‰ç”¨æˆ·Aç”Ÿäº§ä¸€å¯¹keyï¼Œï¼ŒAå’ŒA.pub
+2ï¼‰æŠŠA.pubçš„å†…å®¹å‘ç»™admin
+3ï¼‰adminæŠŠA.pubçš„å†…å®¹å¯¹åº”çš„ç”¨æˆ·ä¸­
+4ï¼‰ç”¨æˆ·Aï¼Œä½¿ç”¨ç§é’¥æ–‡ä»¶Aæ¥ç™»å½•æœåŠ¡å™¨ï¼Œï¼Œå…¶ä¸­ï¼Œä½¿ç”¨winscpä¹‹ç±»å·¥å…·çš„ï¼Œå› ä¸ºæ˜¯ä½¿ç”¨çš„puttyæ¥ç™»å½•linuxï¼Œè¿™ç§æ˜¯puttyç§æœ‰æ ¼å¼çš„ï¼Œç”¨å®ƒæä¾›çš„å·¥å…·ï¼ŒæŠŠAåŠ è½½è¿›å»ï¼Œå¦å­˜ä¸ºA.ppk
 
 
 
-¡¾´´½¨key¡¿
+ã€åˆ›å»ºkeyã€‘
 $ ssh-keygen -t rsa -b 2048 -C you_comment_here -f filename
 
 
-ÈçºÎÉú³Ékey£¬Ê¾Àı£º
+å¦‚ä½•ç”Ÿæˆkeyï¼Œç¤ºä¾‹ï¼š
 $ ssh-keygen -t rsa -b 2048 -C test@office -f test
-Enter passphrase (empty for no passphrase): ¡¾ÊäÈëÄãÊ¹ÓÃkeyµÄÊ±ºòµÄÃÜÂë£¬ÀıÈçabcde¡¿
-Éú³ÉÁË2¸öÎÄ¼ş£º
+Enter passphrase (empty for no passphrase): ã€è¾“å…¥ä½ ä½¿ç”¨keyçš„æ—¶å€™çš„å¯†ç ï¼Œä¾‹å¦‚abcdeã€‘
+ç”Ÿæˆäº†2ä¸ªæ–‡ä»¶ï¼š
 $ ls
 test  test.pub
-ÎÒĞèÒªµÄÊÇtest.pubÖĞµÄÄÚÈİ£¬¿ÉÒÔÍ¨¹ı×îºóµÄ×¢ÊÍÅĞ¶ÏÊÇÄÄÎ»µÄkey
-$ cat test.pub 
+æˆ‘éœ€è¦çš„æ˜¯test.pubä¸­çš„å†…å®¹ï¼Œå¯ä»¥é€šè¿‡æœ€åçš„æ³¨é‡Šåˆ¤æ–­æ˜¯å“ªä½çš„key
+$ cat test.pub
 ssh-rsa testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest test@office
 
-ÄãÊ¹ÓÃkeyµÇÂ¼Ê±£¬»áÌáÊ¾ÊäÈëpassphrase£¬Ò²¾ÍÊÇÉÏÃæµÄabcde
+ä½ ä½¿ç”¨keyç™»å½•æ—¶ï¼Œä¼šæç¤ºè¾“å…¥passphraseï¼Œä¹Ÿå°±æ˜¯ä¸Šé¢çš„abcde
 
-¸ü»»passphrase
-$ ssh-keygen -p 
+æ›´æ¢passphrase
+$ ssh-keygen -p
 Enter file in which the key is (/home/test/.ssh/id_rsa): /home/user1/test
 Enter old passphrase: abcde
 Key has comment '/home/user1/test'
@@ -30,19 +30,19 @@ Enter new passphrase (empty for no passphrase): 11112222
 Enter same passphrase again: 11112222
 Your identification has been saved with the new passphrase.
 
-ssh¸ñÊ½×ª»»ÎªopensshµÄkey£º
+sshæ ¼å¼è½¬æ¢ä¸ºopensshçš„keyï¼š
 $ ssh-keygen -i -f Identity.pub >> authorized_keys
 
 
 
-¹ØÓÚÈ¨ÏŞ£º
+å…³äºæƒé™ï¼š
 700 /home/user1
-700 /home/user1/.ssh 
-600 /home/user1/.ssh/authorized_keys 
+700 /home/user1/.ssh
+600 /home/user1/.ssh/authorized_keys
 
 
 
-½Å±¾£º
+è„šæœ¬ï¼š
 ------------------------------------------------------------------------------------
 username='Jack'
 useradd ${username}
@@ -61,11 +61,4 @@ chown -R ${username}:${username} /home/${username}/.ssh
 cat /home/${username}/.ssh/authorized_keys
 ------------------------------------------------------------------------------------
 
-×¢3£ºÓÃ»§³É¹¦µÇÂ¼ºó£¬¿ÉÒÔ×ÔĞĞ¸üĞÂ/home/${username}/.ssh/authorized_keysÕâ¸öÎÄ¼şÖĞ´æ·ÅµÄ¸öÈËµÄpublic keyĞÅÏ¢
-
-
-
-
-
-
-
+æ³¨3ï¼šç”¨æˆ·æˆåŠŸç™»å½•åï¼Œå¯ä»¥è‡ªè¡Œæ›´æ–°/home/${username}/.ssh/authorized_keysè¿™ä¸ªæ–‡ä»¶ä¸­å­˜æ”¾çš„ä¸ªäººçš„public keyä¿¡æ¯

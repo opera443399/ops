@@ -1,75 +1,68 @@
-���˿�ת����
+【端口转发】
 http://www.ibm.com/developerworks/cn/linux/l-cn-sshforward/
 
--C    �ǽ�������ѹ����
--f    �Ǻ�̨������ֻ�е���ʾ�û��������ʱ���ת��ǰ̨��
--N    �ǲ�ִ��Զ�������ֻ�Ƕ˿�ת��ʱ������������ô���
--g    ������Զ���������ӱ���ת���˿ڡ�
-      ������ SSH ʵ���У����ض˿�ת���󶨵��� lookback �ӿڣ�����ζ��ֻ�� localhost ���� 127.0.0.1 ����ʹ�ñ����Ķ˿�ת�� , �����������������ֻ��õ��� connection refused. �������� SSH ͬʱ�ṩ�� GatewayPorts �ؼ��֣����ǿ���ͨ��ָ������������������������ض˿�ת����
+-C    是进行数据压缩，
+-f    是后台操作，只有当提示用户名密码的时候才转向前台。
+-N    是不执行远端命令，在只是端口转发时这条命令很有用处。
+-g    是允许远端主机连接本地转发端口。
+      在主流 SSH 实现中，本地端口转发绑定的是 lookback 接口，这意味着只有 localhost 或者 127.0.0.1 才能使用本机的端口转发 , 其他机器发起的连接只会得到“ connection refused. ”。好在 SSH 同时提供了 GatewayPorts 关键字，我们可以通过指定它与其他机器共享这个本地端口转发。
       ssh -g -L <local port>:<remote host>:<remote port> <SSH hostname>
--R    �ǽ�Զ�������˿�ӳ�䵽���ض˿ڡ�
--L    �ǽ����ض˿�ӳ�䵽Զ�������˿ڡ�
--D    �Ƕ�̬ת������ʵ������ SSH �Ǵ�����һ�� SOCKS ��������
+-R    是将远端主机端口映射到本地端口。
+-L    是将本地端口映射到远端主机端口。
+-D    是动态转发，其实在这里 SSH 是创建了一个 SOCKS 代理服务。
       ssh -D <local port> <SSH Server>
 
 
 server
-A: IP��192.168.2.10��PORT��500��SSH�˿ڣ�322
+A: IP：192.168.2.10，PORT：500，SSH端口：322
 client
-B: IP��192.168.2.20��PORT��7000
+B: IP：192.168.2.20，PORT：7000
 
-��A������ssh key��passphraseΪ�ա�
+在A上生成ssh key，passphrase为空。
 $ ssh-copy-id user1@192.168.2.20
 
-��B������ssh key��passphraseΪ�ա�
+在B上生成ssh key，passphrase为空。
 $ ssh-copy-id user1@192.168.2.10
 
 
-SSH �˿�ת����Ȼ��Ҫ SSH ���ӣ��� SSH �������з���ģ��� SSH Client �� SSH Server �������ǵ�Ӧ��Ҳ���з���ģ�������Ҫ���� LDAP Server ʱ��LDAP Server ��Ȼ���� Server �ˣ�����Ӧ�����ӵķ���Ҳ�Ǵ�Ӧ�õ� Client �����ӵ�Ӧ�õ� Server �ˡ�������������ӵķ���һ�£������Ǿ�˵���Ǳ���ת�����������������һ�£����Ǿ�˵����Զ��ת����
+SSH 端口转发自然需要 SSH 连接，而 SSH 连接是有方向的，从 SSH Client 到 SSH Server 。而我们的应用也是有方向的，比如需要连接 LDAP Server 时，LDAP Server 自然就是 Server 端，我们应用连接的方向也是从应用的 Client 端连接到应用的 Server 端。如果这两个连接的方向一致，那我们就说它是本地转发。而如果两个方向不一致，我们就说它是远程转发。
 
 
-1��������������ӵķ���һ�£������Ǿ�˵���Ǳ���ת��
+1）如果这两个连接的方向一致，那我们就说它是本地转发
 ssh -L <local-port>:<remote-host>:<remote-port>
-����ת���ڱ�����̨�����ϼ���һ���˿ڣ�Ȼ�����з�������˿ڵ����ݶ���ͨ��ssh �������䵽Զ�˵Ķ�Ӧ�˿���
+本地转发在本地这台机器上监听一个端口，然后所有访问这个端口的数据都会通过ssh 隧道传输到远端的对应端口上
 
-��B��ִ�У�
+在B上执行：
 ssh -p 322 -N -f -L 7000:127.0.0.1:500 user1@192.168.2.10
-����B�ϵ�Ӧ�÷������ݵ�����7000�˿�->
-����B�ϵ�SSH Client��7000�˿��յ������ݼ��ܲ�ת��������A�ϵ�SSH Server��192.168.2.10����->
-����A�ϵ�SSH Server�������ݲ�ת�������ص�500�˿�
+主机B上的应用发送数据到本地7000端口->
+主机B上的SSH Client将7000端口收到的数据加密并转发到主机A上的SSH Server（192.168.2.10）上->
+主机A上的SSH Server解密数据并转发到本地的500端口
 
 
-2���������������һ�£����Ǿ�˵����Զ��ת�������������ӣ�
+2）而如果两个方向不一致，我们就说它是远程转发。（反向连接）
 ssh -R listen-port:host:port
-Զ��ת���뱾��ת�������෴����ssh�����Ժ���Զ�˷���������һ���˿ڣ����з���Զ�˷�����ָ���˿ڶ���ͨ���������䵽���صĶ�Ӧ�˿���
+远程转发与本地转发正好相反，打开ssh隧道以后，在远端服务器监听一个端口，所有访问远端服务器指定端口都会通过隧道传输到本地的对应端口上
 
-��A��ִ�У�
+在A上执行：
 ssh -p 322 -N -f -R 7000:127.0.0.1:500 user1@192.168.2.20
-����B�ϵ�Ӧ�÷������ݵ�����7000�˿�->
-����B�ϵ�SSH Server��7000�˿��յ������ݼ��ܲ�ת��������A�ϵ�SSH Client��192.168.2.10����->
-����A�ϵ�SSH Client�������ݲ�ת�������ص�500�˿�
+主机B上的应用发送数据到本地7000端口->
+主机B上的SSH Server将7000端口收到的数据加密并转发到主机A上的SSH Client（192.168.2.10）上->
+主机A上的SSH Client解密数据并转发到本地的500端口
 
 
-���磺
-��A��ִ�У�
+例如：
+在A上执行：
 ssh -NfR 10065:127.0.0.1:10050 zabbix@192.168.2.20
 
-����B�ϵ�zabbix server��������10065�˿�����zabbix����->
-����B�ϵ�SSH Server��10065�˿��յ������ݼ��ܲ�ת��������A�ϵ�SSH Client��192.168.2.10����
-����A�ϵ�SSH Client�������ݲ�ת�������ص�10050�˿�
+主机B上的zabbix server发到本地10065端口请求zabbix数据->
+主机B上的SSH Server将10065端口收到的数据加密并转发到主机A上的SSH Client（192.168.2.10）上
+主机A上的SSH Client解密数据并转发到本地的10050端口
 
 
-3��������ת��
-APP Client(A) ->���Ǽ��ܣ�-> SSH Client(C) ->�����ܣ�->  SSH Server(D) ->���Ǽ��ܣ�->  APP Server(B)
+3）多主机转发
+APP Client(A) ->（非加密）-> SSH Client(C) ->（加密）->  SSH Server(D) ->（非加密）->  APP Server(B)
 
-��C����ִ�У�
+在C上面执行：
 ssh -g -L 7000:<B>:500 <D>
 
-��A�������C��7000�˿ڼ���
-
-
-
-
-
-
-
+在A上面访问C的7000端口即可
