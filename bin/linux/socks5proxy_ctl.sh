@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#2017/12/1
+#2017/12/3
 
 #local proxy endpoint
 s_local='127.0.0.1:8888'
@@ -24,19 +24,19 @@ function do_status(){
 }
 
 function do_on(){
-  echo "[+] TURN ON proxy"
+	echo "[+] TURN ON proxy"
 	ssh -CN -f -D ${s_local} ${s_remote}
 	do_status
 }
 
 function do_off(){
-  echo "[+] TURN OFF proxy"
+	echo "[+] TURN OFF proxy"
 	do_status
 	s_pid=$(ps -ef |grep 'ssh -CN -f -D' |grep "${s_local} ${s_remote}" |awk '{print $2}')
 	kill ${s_pid}
-  echo "[-] check:"
+	echo "[-] check:"
 	ps -ef |grep 'ssh -CN -f -D' |grep "${s_local} ${s_remote}"
-	[ $? -eq 1 ] && echo -n 'PASS'
+	[ $? -eq 1 ] && echo 'PASS'
 }
 
 function usage(){
