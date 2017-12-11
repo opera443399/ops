@@ -1,0 +1,73 @@
+pipeline {
+  agent {
+    node {
+      # 这个 label 是在 jenkins 系统管理中针对某个 node 设置的标签
+      label 'pipeline'
+      # 执行 job 时，代码在这个路径下
+      customWorkspace '/var/jenkins_home/workspace/CICD_DEMO_build/src/freego.com'
+    }
+  }
+
+  parameters {
+    # 定义参数
+    string(name: 'svrName', defaultValue: 'empty', description: '')
+    string(name: 'svrVar', defaultValue: 'empty', description: '')
+  }
+
+  tools {
+    # type 为 go，别名为 go plugin 在 global tools configuration 下增加的一个 go tool 的别名
+    go 'go19'
+  }
+
+  environment {
+    # 定义环境变量
+    GOPATH = "/var/jenkins_home/workspace/CICD_DEMO_build"
+  }
+
+  stages {
+    # 定义每一个步骤，步骤的名称将显示在 blue ocean 的 pipeline 任务界面上作为流程节点
+    stage('Prepare') {
+      steps {
+        # 本步骤中执行的具体操作，可以输出文字（echo xxx），也可以执行shell指令（sh xxx）
+        echo '[+] Preparing..'
+        echo '[@] Jenkinsfile for jenkins(current ver.2.73.3) pipeline'
+        echo "[-] --> INFO Job: ${env.BUILD_URL}"
+        echo "[-] --> CHECK workspace"
+        sh 'ls -l ${WORKSPACE}'
+        echo "[-] --> CHECK golang"
+        sh 'go version'
+        sh 'go env'
+        echo "[-] --> LIST GOPATH"
+        sh 'ls -l ${GOPATH}/*'
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
+    stage('Build') {
+      steps {
+        echo '[+] Building..'
+        echo "[-] --> CHECK params.svrName = ${params.svrName}"
+        echo "[-] --> CHECK params.svrVar = ${params.svrVar}"
+        echo "[-] --> RUN script build.sh"
+        sh 'bash ./jenkins/scripts/build.sh'
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
+    stage('Test') {
+      steps {
+        echo '[+] Testing..'
+        echo '[-] --> (omitted)'
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
+    stage('Deploy') {
+      steps {
+        echo '[+] Deploying..'
+        echo '[-] --> envTest Delivering..'
+        # 可通过一个弹窗来中断，等待用户继续操作
+        input 'Continue? (Click "Proceed" to continue(deploy to envProd, rollback or anything you want)'
+        echo '[-] --> envProd Deploying..(for example)'
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
+  }
+}
