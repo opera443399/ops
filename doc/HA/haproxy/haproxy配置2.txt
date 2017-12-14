@@ -4,45 +4,45 @@ global
     uid 500
     gid 500
     daemon
-    #quiet  
-    nbproc 2  #½ø³ÌÊı  
+    #quiet
+    nbproc 2  #è¿›ç¨‹æ•°
     pidfile /usr/local/haproxy/logs/haproxy.pid
 
 defaults
-        mode http #Ä¬ÈÏµÄÄ£Ê½mode { tcp|http|health }£¬tcpÊÇ4²ã£¬httpÊÇ7²ã£¬healthÖ»»á·µ»ØOK  
-        retries 3 #3´ÎÁ¬½ÓÊ§°Ü¾ÍÈÏÎªÊÇ·şÎñÆ÷²»¿ÉÓÃ£¬Ò²¿ÉÒÔÍ¨¹ıºóÃæÉèÖÃ  
-        option redispatch #µ±serverId¶ÔÓ¦µÄ·şÎñÆ÷¹Òµôºó£¬Ç¿ÖÆ¶¨Ïòµ½ÆäËû½¡¿µµÄ·şÎñÆ÷  
-        option abortonclose #µ±·şÎñÆ÷¸ºÔØºÜ¸ßµÄÊ±ºò£¬×Ô¶¯½áÊøµôµ±Ç°¶ÓÁĞ´¦Àí±È½Ï¾ÃµÄÁ´½Ó  
-        timeout connect 2000ms #Á¬½Ó³¬Ê±  
-        timeout client 5000ms #¿Í»§¶Ë³¬Ê±  
-        timeout server 2000ms #·şÎñÆ÷³¬Ê±  
-        timeout check 2000ms #=ĞÄÌø¼ì²â³¬Ê±  
-        log 127.0.0.1 local0 info #[err warning info debug]  
-        balance roundrobin                     #¸ºÔØ¾ùºâËã·¨  
-#        option  httplog                        #ÈÕÖ¾Àà±ğ,²ÉÓÃhttplog  
-#        option  httpclose   #Ã¿´ÎÇëÇóÍê±ÏºóÖ÷¶¯¹Ø±ÕhttpÍ¨µÀ,ha-proxy²»Ö§³Ökeep-alive,Ö»ÄÜÄ£ÄâÕâÖÖÄ£Ê½µÄÊµÏÖ  
-#        option  dontlognull  
-#        option  forwardfor  #Èç¹ûºó¶Ë·şÎñÆ÷ĞèÒª»ñµÃ¿Í»§¶ËÕæÊµipĞèÒªÅäÖÃµÄ²ÎÊı£¬¿ÉÒÔ´ÓHttp HeaderÖĞ»ñµÃ¿Í»§¶Ëip  
+        mode http #é»˜è®¤çš„æ¨¡å¼mode { tcp|http|health }ï¼Œtcpæ˜¯4å±‚ï¼Œhttpæ˜¯7å±‚ï¼Œhealthåªä¼šè¿”å›OK
+        retries 3 #3æ¬¡è¿æ¥å¤±è´¥å°±è®¤ä¸ºæ˜¯æœåŠ¡å™¨ä¸å¯ç”¨ï¼Œä¹Ÿå¯ä»¥é€šè¿‡åé¢è®¾ç½®
+        option redispatch #å½“serverIdå¯¹åº”çš„æœåŠ¡å™¨æŒ‚æ‰åï¼Œå¼ºåˆ¶å®šå‘åˆ°å…¶ä»–å¥åº·çš„æœåŠ¡å™¨
+        option abortonclose #å½“æœåŠ¡å™¨è´Ÿè½½å¾ˆé«˜çš„æ—¶å€™ï¼Œè‡ªåŠ¨ç»“æŸæ‰å½“å‰é˜Ÿåˆ—å¤„ç†æ¯”è¾ƒä¹…çš„é“¾æ¥
+        timeout connect 2000ms #è¿æ¥è¶…æ—¶
+        timeout client 5000ms #å®¢æˆ·ç«¯è¶…æ—¶
+        timeout server 2000ms #æœåŠ¡å™¨è¶…æ—¶
+        timeout check 2000ms #=å¿ƒè·³æ£€æµ‹è¶…æ—¶
+        log 127.0.0.1 local0 info #[err warning info debug]
+        balance roundrobin                     #è´Ÿè½½å‡è¡¡ç®—æ³•
+#        option  httplog                        #æ—¥å¿—ç±»åˆ«,é‡‡ç”¨httplog
+#        option  httpclose   #æ¯æ¬¡è¯·æ±‚å®Œæ¯•åä¸»åŠ¨å…³é—­httpé€šé“,ha-proxyä¸æ”¯æŒkeep-alive,åªèƒ½æ¨¡æ‹Ÿè¿™ç§æ¨¡å¼çš„å®ç°
+#        option  dontlognull
+#        option  forwardfor  #å¦‚æœåç«¯æœåŠ¡å™¨éœ€è¦è·å¾—å®¢æˆ·ç«¯çœŸå®ipéœ€è¦é…ç½®çš„å‚æ•°ï¼Œå¯ä»¥ä»Http Headerä¸­è·å¾—å®¢æˆ·ç«¯ip
 
 listen admin_stats
-        bind 0.0.0.0:8888 #¼àÌı¶Ë¿Ú  
-        option httplog #²ÉÓÃhttpÈÕÖ¾¸ñÊ½  
-        stats refresh 30s #Í³¼ÆÒ³Ãæ×Ô¶¯Ë¢ĞÂÊ±¼ä  
-        stats uri /stats #Í³¼ÆÒ³Ãæurl  
-        stats realm Haproxy Manager #Í³¼ÆÒ³ÃæÃÜÂë¿òÉÏÌáÊ¾ÎÄ±¾  
-        stats auth admin:ecadmin2015 #Í³¼ÆÒ³ÃæÓÃ»§ÃûºÍÃÜÂëÉèÖÃ  
-        #stats hide-version #Òş²ØÍ³¼ÆÒ³ÃæÉÏHAProxyµÄ°æ±¾ĞÅÏ¢  
+        bind 0.0.0.0:8888 #ç›‘å¬ç«¯å£
+        option httplog #é‡‡ç”¨httpæ—¥å¿—æ ¼å¼
+        stats refresh 30s #ç»Ÿè®¡é¡µé¢è‡ªåŠ¨åˆ·æ–°æ—¶é—´
+        stats uri /stats #ç»Ÿè®¡é¡µé¢url
+        stats realm Haproxy Manager #ç»Ÿè®¡é¡µé¢å¯†ç æ¡†ä¸Šæç¤ºæ–‡æœ¬
+        stats auth admin:ecadmin2015 #ç»Ÿè®¡é¡µé¢ç”¨æˆ·åå’Œå¯†ç è®¾ç½®
+        #stats hide-version #éšè—ç»Ÿè®¡é¡µé¢ä¸ŠHAProxyçš„ç‰ˆæœ¬ä¿¡æ¯
 
 
 
 listen proxy_nsq_tcp
-        bind 0.0.0.0:6767             #¼àÌıµØÖ·
+        bind 0.0.0.0:6767             #ç›‘å¬åœ°å€
         mode tcp
-        balance roundrobin             #¶¨Òå¸ºÔØ·½Ê½£¬´Ë´¦ÎªÂÖÑ¯
-        #balance leastconn #×îĞ¡Á´½Ó
+        balance roundrobin             #å®šä¹‰è´Ÿè½½æ–¹å¼ï¼Œæ­¤å¤„ä¸ºè½®è¯¢
+        #balance leastconn #æœ€å°é“¾æ¥
 
-        log 127.0.0.1 local0 info       #¶¨ÒåÈÕÖ¾ÀàĞÍ
-        #rise 3Èı´ÎÕıÈ·±íÊ¾·şÎñÆ÷¿ÉÓÃ£¬fall 3±íÊ¾3´ÎÊ§°Ü±íÊ¾·şÎñÆ÷²»¿ÉÓÃ
+        log 127.0.0.1 local0 info       #å®šä¹‰æ—¥å¿—ç±»å‹
+        #rise 3ä¸‰æ¬¡æ­£ç¡®è¡¨ç¤ºæœåŠ¡å™¨å¯ç”¨ï¼Œfall 3è¡¨ç¤º3æ¬¡å¤±è´¥è¡¨ç¤ºæœåŠ¡å™¨ä¸å¯ç”¨
         server nsq_05_101_1  10.10.20.2:1161  check inter 1200 rise 2 fall 3 weight 1
         server nsq_05_101_2  10.10.20.2:1162  check inter 1200 rise 2 fall 3 weight 1
         server nsq_05_102_1  10.10.20.3:1166  check inter 1200 rise 2 fall 3 weight 1
@@ -50,15 +50,15 @@ listen proxy_nsq_tcp
 
 
 listen proxy_nsq_http
-        bind 0.0.0.0:6769             #¼àÌıµØÖ·
+        bind 0.0.0.0:6769             #ç›‘å¬åœ°å€
         mode http
-        balance roundrobin             #¶¨Òå¸ºÔØ·½Ê½£¬´Ë´¦ÎªÂÖÑ¯
-        #balance leastconn #×îĞ¡Á´½Ó
+        balance roundrobin             #å®šä¹‰è´Ÿè½½æ–¹å¼ï¼Œæ­¤å¤„ä¸ºè½®è¯¢
+        #balance leastconn #æœ€å°é“¾æ¥
         option httpclose
         option forwardfor
 
-        log 127.0.0.1 local0 info       #¶¨ÒåÈÕÖ¾ÀàĞÍ
-        #rise 3Èı´ÎÕıÈ·±íÊ¾·şÎñÆ÷¿ÉÓÃ£¬fall 3±íÊ¾3´ÎÊ§°Ü±íÊ¾·şÎñÆ÷²»¿ÉÓÃ
+        log 127.0.0.1 local0 info       #å®šä¹‰æ—¥å¿—ç±»å‹
+        #rise 3ä¸‰æ¬¡æ­£ç¡®è¡¨ç¤ºæœåŠ¡å™¨å¯ç”¨ï¼Œfall 3è¡¨ç¤º3æ¬¡å¤±è´¥è¡¨ç¤ºæœåŠ¡å™¨ä¸å¯ç”¨
         server nsq_http_05_101_1  10.10.20.2:1171  check inter 1200 rise 2 fall 3 weight 1
         server nsq_http_05_101_2  10.10.20.2:1172  check inter 1200 rise 2 fall 3 weight 1
         server nsq_http_05_102_1  10.10.20.3:1176  check inter 1200 rise 2 fall 3 weight 1
@@ -66,14 +66,14 @@ listen proxy_nsq_http
 
 
 listen proxy_nsqdlookup_http
-        bind 0.0.0.0:6768             #¼àÌıµØÖ·
+        bind 0.0.0.0:6768             #ç›‘å¬åœ°å€
         mode http
         option httpclose
         option forwardfor
-        balance roundrobin             #¶¨Òå¸ºÔØ·½Ê½£¬´Ë´¦ÎªÂÖÑ¯
-        #balance leastconn #×îĞ¡Á´½Ó
+        balance roundrobin             #å®šä¹‰è´Ÿè½½æ–¹å¼ï¼Œæ­¤å¤„ä¸ºè½®è¯¢
+        #balance leastconn #æœ€å°é“¾æ¥
 
-        log 127.0.0.1 local0 info       #¶¨ÒåÈÕÖ¾ÀàĞÍ
-        #rise 3Èı´ÎÕıÈ·±íÊ¾·şÎñÆ÷¿ÉÓÃ£¬fall 3±íÊ¾3´ÎÊ§°Ü±íÊ¾·şÎñÆ÷²»¿ÉÓÃ
+        log 127.0.0.1 local0 info       #å®šä¹‰æ—¥å¿—ç±»å‹
+        #rise 3ä¸‰æ¬¡æ­£ç¡®è¡¨ç¤ºæœåŠ¡å™¨å¯ç”¨ï¼Œfall 3è¡¨ç¤º3æ¬¡å¤±è´¥è¡¨ç¤ºæœåŠ¡å™¨ä¸å¯ç”¨
         server nsqdlookup_05_101   10.10.20.2:1170  check inter 1200 rise 2 fall 3 weight 1
         server nsqdlookup_05_102   10.10.20.3:1175  check inter 1200 rise 2 fall 3 weight 1
