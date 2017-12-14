@@ -3,8 +3,8 @@ pipeline {
     node {
       // 这个 label 是在 jenkins 系统管理中针对某个 node 设置的标签
       label 'pipeline'
-      // 执行 job 时，代码在这个路径下
-      customWorkspace '/var/jenkins_home/workspace/CICD_DEMO_build/src/freego.com'
+      // 执行本 job 时，约束工作目录，则源代码将 clone 到这个指定的路径下
+      customWorkspace '/var/jenkins_home/workspace/CICD_DEMO_build/src/abc.com'
     }
   }
 
