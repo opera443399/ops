@@ -1,23 +1,48 @@
+vncæœåŠ¡å°ç»“
+2017/12/21
 
-ÅäÖÃvnc·şÎñ
+centos6
 
-1. °²×°°ü
+1. å®‰è£…åŒ…
 # yum install tigervnc-server
 # yum groupinstall "Desktop"
 
-2. ÅäÖÃvncÃÜÂë£º
+2. é…ç½®vncå¯†ç ï¼š
 # vncpasswd
 
-3. ¸üĞÂvncÅäÖÃ£º
+3. æ›´æ–°vncé…ç½®ï¼š
 # vim /etc/sysconfig/vncservers
-ĞÂÔöÄÚÈİÈçÏÂ£º
+æ–°å¢å†…å®¹å¦‚ä¸‹ï¼š
 VNCSERVERS="1:root"
 VNCSERVERARGS[1]="-geometry 1280x960"
 
-4. Æô¶¯·şÎñ
+4. å¯åŠ¨æœåŠ¡
 # service vncserver start
 
-5. µ÷Õû·À»ğÇ½ÅäÖÃ£¬·ÅĞĞ¶Ë¿Ú£º5901
+5. è°ƒæ•´é˜²ç«å¢™é…ç½®ï¼Œæ”¾è¡Œç«¯å£ï¼š5901
 
-6. Èç¹ûÔÚwinÏÂÊ¹ÓÃvncviewerÁ¬½ÓÒì³££¬Ò»Ö±ºÚÆÁ£¬µ÷ÕûÏÂÃæµÄ²ÎÊı£º
+6. å¦‚æœåœ¨winä¸‹ä½¿ç”¨vncviewerè¿æ¥å¼‚å¸¸ï¼Œä¸€ç›´é»‘å±ï¼Œè°ƒæ•´ä¸‹é¢çš„å‚æ•°ï¼š
 options->Expert->ColorLevel,value=full
+
+
+centos7ä¸»è¦å·®å¼‚å¦‚ä¸‹ï¼š
+# yum install tigervnc-server
+# yum groupinstall "GNOME Desktop"
+# vncpasswd
+
+[root@qa-proxy ~]# cat /etc/sysconfig/vncservers
+# THIS FILE HAS BEEN REPLACED BY /lib/systemd/system/vncserver@.service
+å¦‚ä¸Šï¼Œå»è¯»ä¸€ä¸‹è¿™ä¸ªé…ç½®æ–‡ä»¶ï¼Œé‡Œè¾¹æœ‰ howto
+
+å¤§æ¦‚æ“ä½œå¦‚ä¸‹ï¼š
+# cp /lib/systemd/system/vncserver@.service /etc/systemd/system/vncserver@:1.service
+# vim /etc/systemd/system/vncserver@:1.service
+æ›¿æ¢ <USER> æˆè‡ªå·±çš„ç”¨æˆ·åï¼ˆä¸»è¦æ˜¯ä¸‹è¿°2ä¸ªåœ°æ–¹ï¼‰
+ ("User=<USER>" and "/home/<USER>/.vnc/%H%i.pid")
+
+# systemctl daemon-reload
+# systemctl enable vncserver@:1.service
+# systemctl enable vncserver@:1.service
+
+æ³¨æ„ï¼š
+è¦å…ˆå®‰è£…æ¡Œé¢ï¼Œå¦‚æœå…ˆå¯åŠ¨äº† vnc æœåŠ¡ï¼Œç„¶åæ‰å®‰è£…æ¡Œé¢ï¼Œåˆ™è¦é‡å¯ä¸€ä¸‹ vnc æœåŠ¡
