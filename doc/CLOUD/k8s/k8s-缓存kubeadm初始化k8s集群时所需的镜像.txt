@@ -1,0 +1,69 @@
+缓存kubeadm初始化k8s集群时所需的镜像
+2017/12/21
+
+【在国外节点上操作】
+镜像来自：
+https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/#running-kubeadm-without-an-internet-connection
+
+针对下述镜像：
+gcr.io/google_containers/kube-apiserver-amd64:v1.9.0
+gcr.io/google_containers/kube-controller-manager-amd64:v1.9.0
+gcr.io/google_containers/kube-scheduler-amd64:v1.9.0
+gcr.io/google_containers/kube-proxy-amd64:v1.9.0
+gcr.io/google_containers/etcd-amd64:3.1.10
+gcr.io/google_containers/pause-amd64:3.0
+gcr.io/google_containers/k8s-dns-sidecar-amd64:1.14.7
+gcr.io/google_containers/k8s-dns-kube-dns-amd64:1.14.7
+gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64:1.14.7
+
+
+先 pull 下来：
+
+docker pull gcr.io/google_containers/kube-apiserver-amd64:v1.9.0
+docker pull gcr.io/google_containers/kube-controller-manager-amd64:v1.9.0
+docker pull gcr.io/google_containers/kube-scheduler-amd64:v1.9.0
+docker pull gcr.io/google_containers/kube-proxy-amd64:v1.9.0
+docker pull gcr.io/google_containers/etcd-amd64:3.1.10
+docker pull gcr.io/google_containers/pause-amd64:3.0
+docker pull gcr.io/google_containers/k8s-dns-sidecar-amd64:1.14.7
+docker pull gcr.io/google_containers/k8s-dns-kube-dns-amd64:1.14.7
+docker pull gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64:1.14.7
+
+
+修改 tag 为新的仓库/命名空间：
+
+docker tag gcr.io/google_containers/kube-apiserver-amd64:v1.9.0 opera443399/kube-apiserver-amd64:v1.9.0
+docker tag gcr.io/google_containers/kube-controller-manager-amd64:v1.9.0 opera443399/kube-controller-manager-amd64:v1.9.0
+docker tag gcr.io/google_containers/kube-scheduler-amd64:v1.9.0 opera443399/kube-scheduler-amd64:v1.9.0
+docker tag gcr.io/google_containers/kube-proxy-amd64:v1.9.0 opera443399/kube-proxy-amd64:v1.9.0
+docker tag gcr.io/google_containers/etcd-amd64:3.1.10 opera443399/etcd-amd64:3.1.10
+docker tag gcr.io/google_containers/pause-amd64:3.0 opera443399/pause-amd64:3.0
+docker tag gcr.io/google_containers/k8s-dns-sidecar-amd64:1.14.7 opera443399/k8s-dns-sidecar-amd64:1.14.7
+docker tag gcr.io/google_containers/k8s-dns-kube-dns-amd64:1.14.7 opera443399/k8s-dns-kube-dns-amd64:1.14.7
+docker tag gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64:1.14.7 opera443399/k8s-dns-dnsmasq-nanny-amd64:1.14.7
+
+
+再 push 到新的仓库/命名空间中：
+
+docker pull opera443399/kube-apiserver-amd64:v1.9.0
+docker pull opera443399/kube-controller-manager-amd64:v1.9.0
+docker pull opera443399/kube-scheduler-amd64:v1.9.0
+docker pull opera443399/kube-proxy-amd64:v1.9.0
+docker pull opera443399/etcd-amd64:3.1.10
+docker pull opera443399/pause-amd64:3.0
+docker pull opera443399/k8s-dns-sidecar-amd64:1.14.7
+docker pull opera443399/k8s-dns-kube-dns-amd64:1.14.7
+docker pull opera443399/k8s-dns-dnsmasq-nanny-amd64:1.14.7
+
+
+在目标机器上 pull 下来：
+
+docker pull opera443399/kube-apiserver-amd64:v1.9.0
+docker pull opera443399/kube-controller-manager-amd64:v1.9.0
+docker pull opera443399/kube-scheduler-amd64:v1.9.0
+docker pull opera443399/kube-proxy-amd64:v1.9.0
+docker pull opera443399/etcd-amd64:3.1.10
+docker pull opera443399/pause-amd64:3.0
+docker pull opera443399/k8s-dns-sidecar-amd64:1.14.7
+docker pull opera443399/k8s-dns-kube-dns-amd64:1.14.7
+docker pull opera443399/k8s-dns-dnsmasq-nanny-amd64:1.14.7
