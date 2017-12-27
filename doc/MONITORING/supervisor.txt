@@ -101,3 +101,5 @@ uwsgi_asset                      RUNNING   pid 26247, uptime 5:13:25
 ZYXW、参考
 1、doc
 http://www.supervisord.org/running.html#supervisorctl-actions
+2、Supervisor not loading new configuration files
+https://serverfault.com/questions/211525/supervisor-not-loading-new-configuration-files
