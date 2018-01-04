@@ -1,15 +1,17 @@
 jenkins-基础操作
-2017/9/20
+2017/12/28
 
 一、安装
 1、准备工作
 请先安装jdk
 
 默认由于版权问题，centos 默认的yum源未加入 oracle jdk 的包，默认将安装开源版本的oepnjdk，请根据需要自行下载缓存后安装对应的jdk包。
-实例：
-wget -O jdk-8u131-linux-x64.rpm http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.rpm?AuthParam=1499769869_9f4e068e95446a4ea88c2fb85485e17d
+实例1：
+~]# wget -O jdk-8u151-linux-x64.rpm http://download.oracle.com/otn-pub/java/jdk/8u151-b12/e758a0de34e24606bca991d704f6dcbf/jdk-8u151-linux-x64.rpm?AuthParam=1514462045_a4e4f32327fd3543815d60fa94e4cb9f
+~]# yum localinstall jdk-8u151-linux-x64.rpm
 
-例如，本例所需jdk已经从 oracle 网站下载并缓存到本地yum源，可以直接安装：
+实例2：
+本例所需jdk已经从 oracle 网站下载并缓存到本地yum源，此时可以直接安装：
 ~]# yum install jdk1.8.0_60
 
 
@@ -96,7 +98,7 @@ jenkins_api_token='admin:xxxxxx'
 
 则：
     jenkins_token='test_build_token'
-    
+
 最终使用curl来调用：
     curl -s \
 -H "${jenkins_crumb}" \
@@ -104,11 +106,11 @@ jenkins_api_token='admin:xxxxxx'
 {
     \"parameter\": [
         {
-            \"name\": \"string_key_1\", 
+            \"name\": \"string_key_1\",
             \"value\": \"${string_key_1}\"
         },
         {
-            \"name\": \"string_key_2\", 
+            \"name\": \"string_key_2\",
             \"value\": \"${string_key_2}\"
         }
     ]
@@ -131,7 +133,7 @@ jenkins_api_token='admin:xxxxxx'
     Host:                    172.17.0.1
     Credentials:             （可选 ssh password 或 key 认证）
 保存
-------------------------------------------------------------------------------  
+------------------------------------------------------------------------------
 
 
 2、创建一个任务
@@ -139,25 +141,25 @@ jenkins_api_token='admin:xxxxxx'
 ------------------------------------------------------------------------------
     Item名称:                job1
     （勾选）构建一个自由风格的软件项目
-    
+
 确定
 
     项目名称:                job1
     （勾选）Restrict where this project can be run
-                Label Expression: n32 
-                            
-    构建:                    
+                Label Expression: n32
+
+    构建:
     （选择）Execute shell
-                Command:    
+                Command:
                     echo "[`date`] execute shell from jenkins." >>test.log
 
-保存 
+保存
 ------------------------------------------------------------------------------
 
 3、执行任务
 选择菜单：“立即构建”
 页面变成：
------------------------------------------------------------------------------- 
+------------------------------------------------------------------------------
 Project job1
 
 添加说明
@@ -180,7 +182,7 @@ Workspace of job1 on n32
 	test.log	59 B	查看
  (打包下载全部文件)
 ------------------------------------------------------------------------------
- 
+
 继续查看 test.log
 ------------------------------------------------------------------------------
 [Thu Jun 30 11:18:43 CST 2016] execute shell from jenkins.
@@ -240,7 +242,7 @@ display-url-api.jpi            gitlab-hook.jpi                 matrix-auth.jpi  
 ------------------------------------------------------------------------------
     Item名称:                asset
     （勾选）构建一个自由风格的软件项目
-    
+
 确定
 
     项目名称:                asset
@@ -248,16 +250,16 @@ display-url-api.jpi            gitlab-hook.jpi                 matrix-auth.jpi  
                 Label Expression: n32
                 （注：本例中这个 slave 节点 n32 是使用 linux 帐号 jenkins 通过 ssh 连接到该 salve 节点，因而运行 job 时，也是使用的 jenkins 这个帐号，请合理的使用权限，例如配置sudo来执行命令）
     源码管理:
-    Git:	
+    Git:
         Repositories
             Repository URL: http://your_gitlab_server/user01/asset.git
             Credentials: gitlab-user01(ADD新增一个相关的帐号密码)
     	Branches to build
             Branch Specifier (blank for 'any'): */master
         源码库浏览器: 自动
-    
-                            
-    构建:                    
+
+
+    构建:
     （选择）Execute shell
                 Command:
 
@@ -284,7 +286,7 @@ display-url-api.jpi            gitlab-hook.jpi                 matrix-auth.jpi  
                     echo "[-] List dir again:"
                     sudo ls -l ${d_root}
 
-保存 
+保存
 ------------------------------------------------------------------------------
 
 3）执行任务
@@ -330,7 +332,7 @@ Push Events
     String parameter
         名字: key01
         默认值: default_not_exist
-        
+
 【源码管理】
 在源码管理模块选择Subversion。
 Repository URL中填入svn repo地址。【特别注意：注1】
@@ -341,8 +343,8 @@ Credentials中添加svn服务器的用户名和密码。
 重点：为了避免Jenkins master时区和SVN服务器时区不一致，请在repo地址末尾添加 @HEAD，例如：http://svn_server/repo_name@HEAD
 否则 jenkins 构建时 update svn 仓库是根据 jenkins 服务器当前的时间来拉取的，极可能拉取到的是一个旧的 svn 版本，从而引发错误。
 jenkins 上的相关说明：
-Specify the subversion repository URL to check out, such as "http://svn.apache.org/repos/asf/ant/". You can also add "@NNN" at the end of the URL to check out a specific revision number, if that's desirable. This works for Subversion Revision Keywords and Dates like e.g. "HEAD", too. 
-When you enter URL, Jenkins automatically checks if Jenkins can connect to it. If access requires authentication, it will ask you the necessary credential. If you already have a working credential but would like to change it for other reasons, click this link and specify different credential. 
+Specify the subversion repository URL to check out, such as "http://svn.apache.org/repos/asf/ant/". You can also add "@NNN" at the end of the URL to check out a specific revision number, if that's desirable. This works for Subversion Revision Keywords and Dates like e.g. "HEAD", too.
+When you enter URL, Jenkins automatically checks if Jenkins can connect to it. If access requires authentication, it will ask you the necessary credential. If you already have a working credential but would like to change it for other reasons, click this link and specify different credential.
 During the build, revision number of the module that was checked out is available through the environment variable SVN_REVISION, provided that you are only checking out one module. If you have multiple modules checked out, use the svnversion command. If you have multiple modules checked out, you can use the svnversion command to get the revision information, or you can use the SVN_REVISION_<n> environment variables, where <n> is a 1-based index matching the locations configured. The URLs are available through similar SVN_URL_<n> environment variables.
 
 svn的文档参考：
@@ -376,11 +378,11 @@ Updating http://svn_server/repo_name at revision '2017-09-20T15:52:45.978 +0800'
 ✔触发远程构建 (例如,使用脚本)
     身份验证令牌：test_build_token
 
-    
+
 【构建】
 选择：Execute shell
     Command: （脚本略）
-    
+
 【构建后操作】
 选择：Editable Email Notification
 
@@ -392,7 +394,7 @@ Updating http://svn_server/repo_name at revision '2017-09-20T15:52:45.978 +0800'
 
 
 注1：目前jenkins未接入ldap，当svn用户提交后，jenkins会自动记录该用户，但svn提交的信息中只有用户名，没有邮箱信息（这点和git不一样），且该用户并未激活，需要激活（在jenkins中给该用户设置密码）后才能给该用户发送邮件，默认使用系统全局设置中的邮件后缀。
-    
+
 
 2）svn 仓库增加一个 hook 用来传递参数，并调用远程api
 首先，通过 svnlook changed -r ${svn_repository_revision} ${svn_repository} 来获取提交的内容，解析参数传递出去
