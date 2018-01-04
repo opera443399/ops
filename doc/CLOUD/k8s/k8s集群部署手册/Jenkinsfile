@@ -1,0 +1,63 @@
+pipeline {
+  agent {
+    node {
+      label 'pipeline_only'
+      customWorkspace '/data/jenkins_node_home/workspace/pipeline_only/demo-project/src/demo.com'
+    }
+  }
+
+  tools {
+    go 'demogo'
+  }
+
+  environment {
+    GOPATH = '/data/jenkins_node_home/workspace/pipeline_only/demo-project'
+  }
+
+  stages {
+    stage('Pre-build') {
+      steps {
+        echo '[+] 准备环境'
+        echo '[@] Jenkinsfile for jenkins(current ver.2.73.3) pipeline'
+        echo "[-] --> 任务链接：${BUILD_URL}"
+        // workspace
+        echo '[-] --> 检查 WORKSPACE 是否正确'
+        sh 'echo "pwd = $(pwd)"'
+        // golang
+        echo '[-] --> 检查 golang 环境'
+        sh 'go version'
+        sh 'go env'
+        echo '[-] --> 列出 GOPATH'
+        sh 'tree -L 1 ${GOPATH}'
+        sh 'sh /data/jenkins_node_home/workspace/cicd/demo-project/ci.sh fix'
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
+
+    stage('Checkout') {
+      steps {
+        echo '[+] 准备代码'
+        echo '[-] --> git 签出'
+        checkout([$class: 'GitSCM', branches: [[name: '*/branch-name']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'ae17f2b8-f62e-4b18-bdb0-641eca220c4a', url: 'git@ofordcode.ofo.so:freego/gofreego.git']]])
+        echo '[-] --> git 变更日志（最近3条）'
+        sh 'git log -3 --oneline'
+        //sh 'git whatchanged -3'
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
+
+    stage('Build') {
+      steps {
+        echo '[+] 构建 golang binary'
+        echo "[-] --> 检查参数 params.SVC_NAMES = ${params.SVC_NAMES}"
+        echo "[-] --> 检查参数 params.SVC_VERSION = ${params.SVC_VERSION}"
+        echo "[-] --> 检查参数 params.K8S_NAMESPACE = ${params.K8S_NAMESPACE}"
+        echo "[-] --> 检查参数 params.FIX_BLOCKED_PKGS = ${params.FIX_BLOCKED_PKGS}"
+        echo "[-] --> 检查参数 params.LOG_LEVEL_DEBUG = ${params.LOG_LEVEL_DEBUG}"
+
+        sh 'sh /data/jenkins_node_home/workspace/cicd/demo-project/ci.sh build'
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
+  }
+}
