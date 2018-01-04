@@ -1,12 +1,12 @@
 docker深入2-dockerfile指令FAQ
-2017/11/8
+2018/1/4
 
 
 
 1、COPY 和 ADD 的区别
 答：
-COPY 指令从 <src> 拷贝目录、文件到容器中的文件系统的指令路径 <dest>
-ADD 指令从 <src> 拷贝目录、文件、URL类型定义的文件到容器中的文件系统的指令路径 <dest> 
+COPY 指令从 <src> 拷贝目录、文件到容器中的文件系统的指定路径 <dest>
+ADD 指令从 <src> 拷贝目录、文件、URL类型定义的文件到容器中的文件系统的指定路径 <dest>
 
 
 合理使用COPY目录的功能
@@ -14,7 +14,7 @@ ADD 指令从 <src> 拷贝目录、文件、URL类型定义的文件到容器中
 
 在使用 svn 管理的源代码的时候，业务只需要提交代码到 svn 来触发构建，但由于每个业务代码的子目录下均包含了 .svn 目录，导致每次提交都会是新的变更，最终结果是：
 使用了以下指令的这一层将无法使用 cache 来构建
-COPY 目录 
+COPY 目录
 
 解决方案：
 a）增加 .dockerignore
@@ -74,7 +74,3 @@ CMD exec_cmd p1_cmd	        /bin/sh -c exec_cmd p1_cmd	    /bin/sh -c exec_entry
 
 
 参考：https://docs.docker.com/engine/reference/builder/#understand-how-cmd-and-entrypoint-interact
-
-
-
-
