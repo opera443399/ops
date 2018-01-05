@@ -18,7 +18,7 @@
       - run script
 
 ```mermaid
-graph LR;
+graph TB;
   开始-->Dev;
 
   subgraph CI-构建
