@@ -1,5 +1,5 @@
 # k8s基本概念-如何使用Deployments
-2017/12/29
+2018/1/5
 
 
 ### Deployments 使用示例
@@ -49,10 +49,10 @@ spec:
         app: whoami
     spec:
       containers:
-      - name: whoami
-        image: opera443399/whoami:0.9
-        ports:
-        - containerPort: 80
+        - name: whoami
+          image: opera443399/whoami:0.9
+          ports:
+            - containerPort: 80
 ```
 
 - 运行 app

@@ -1,5 +1,5 @@
 # k8s基本概念-如何使用Services
-2017/12/28
+2018/1/5
 
 
 ### Services 使用示例
@@ -159,10 +159,10 @@ spec:
         app: whoami
     spec:
       containers:
-      - name: whoami
-        image: opera443399/whoami:0.9
-        ports:
-        - containerPort: 80
+        - name: whoami
+          image: opera443399/whoami:0.9
+          ports:
+            - containerPort: 80
 
 ---
 apiVersion: v1
@@ -175,10 +175,10 @@ spec:
   selector:
     app: whoami
   ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 80
-    nodePort: 30080
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30080
   type: NodePort
 
 ```
