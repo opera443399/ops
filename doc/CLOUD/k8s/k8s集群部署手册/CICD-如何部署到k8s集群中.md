@@ -1,8 +1,8 @@
 # CICD-如何部署到k8s集群中
-2018/1/4
+2018/1/5
 
 
-### 私有 regsitry 使用示例
+### 如何部署到k8s集群中
   - CI
     - 结合 jenkins pipeline
     - 输出
@@ -16,6 +16,42 @@
       - confd watch etcd key
       - create k8s deploy script
       - run script
+
+```mermaid
+graph LR;
+  开始-->Dev;
+
+  subgraph CI-构建
+    Dev -- 触发任务 --> CI操作(("构建：demo-app"))
+
+    CI操作 -- 推送 --> E02("docker 镜像仓库")
+    CI操作 -- 更新 --> E03("demo-app 的 k8s yaml")
+    CI操作 -- 更新 --> E04("etcd")
+    E04 -- put --> E05("/k8s_deploy/reload/demo-project")
+  end
+
+  subgraph demo-project
+    E11("demo-app") --> CI操作
+  end
+
+  subgraph k8s-cluster
+    E21("k8s master")
+  end
+
+  subgraph CD-首次部署
+    E03 -- 同步 yaml --> E31("发布")
+    E31("发布") -- apply --> E21
+  end
+
+  subgraph CD-更新
+    E41("confd") -- watch --> E05
+    E41 -- create --> E42("临时脚本")
+    E42 -- reload --> E43("控制脚本")
+    E43 -- set image --> E21
+  end
+
+  E21 --> 结束
+```
 
 
 ##### 服务初次部署
