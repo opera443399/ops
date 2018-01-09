@@ -1,5 +1,5 @@
 # k8s基本概念-如何使用私有regsitry
-2018/1/4
+2018/1/9
 
 
 ### 私有 regsitry 使用示例
@@ -18,11 +18,11 @@
 [root@tvm-00 k8s]# docker login --username=xxx registry.cn-hangzhou.aliyuncs.com
 
 ### 准备一个 secret
-[root@tvm-00 k8s]# cat secrets/ns-dev.hub-aliyun-demo-project.yaml
+[root@tvm-00 k8s]# cat secrets/hub-aliyun-demo-project-ns-dev.yaml
 apiVersion: v1
 kind: Secret
 metadata:
-  name: hub-aliyun-demo-project
+  name: hub-aliyun-demo-project-ns-dev
   namespace: ns-dev
 data:
   .dockerconfigjson: {base64 -w 0 ~/.docker/config.json}
@@ -33,11 +33,11 @@ type: kubernetes.io/dockerconfigjson
 
 
 ### 创建 secret
-[root@tvm-00 k8s]# kubectl apply -f secrets/ns-dev.hub-aliyun-demo-project.yaml
+[root@tvm-00 k8s]# kubectl apply -f secrets/hub-aliyun-demo-project-ns-dev.yaml
 [root@tvm-00 k8s]# kubectl -n ns-dev get secrets
-NAME                        TYPE                                  DATA      AGE
-default-token-xb8lp         kubernetes.io/service-account-token   3         4d
-hub-aliyun-demo-project     kubernetes.io/dockerconfigjson        1         6m
+NAME                               TYPE                                  DATA      AGE
+default-token-xb8lp                kubernetes.io/service-account-token   3         4d
+hub-aliyun-demo-project-ns-dev     kubernetes.io/dockerconfigjson        1         6m
 
 ```
 
@@ -58,14 +58,14 @@ Tokens:              default-token-xb8lp
 Events:              <none>
 
 ### 关联
-[root@tvm-00 ns-dev]# kubectl -n ns-dev patch serviceaccount default -p '{"imagePullSecrets": [{"name": "hub-aliyun-demo-project"}]}'
+[root@tvm-00 ns-dev]# kubectl -n ns-dev patch serviceaccount default -p '{"imagePullSecrets": [{"name": "hub-aliyun-demo-project-ns-dev"}]}'
 serviceaccount "default" patched
 [root@tvm-00 ns-dev]# kubectl -n ns-dev describe serviceAccounts/default
 Name:                default
 Namespace:           ns-dev
 Labels:              <none>
 Annotations:         <none>
-Image pull secrets:  hub-aliyun-demo-project
+Image pull secrets:  hub-aliyun-demo-project-ns-dev
 Mountable secrets:   default-token-xb8lp
 Tokens:              default-token-xb8lp
 Events:              <none>
