@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#2018/1/4
+#2018/1/9
 #set -e
 
 # docker template path on the worker node
@@ -44,14 +44,14 @@ do_etcd_put() {
 do_build_golang_and_docker_image() {
   if [ "X${SVC_VERSION}"=="XEMPTY" ]; then
     print_debug '由于版本号参数 "VERSION" 为 "EMPTY" ，提取 "git rev" 来作为版本号'
-    s_version="$(git rev-parse --short HEAD)"
+    local s_version="$(git rev-parse --short HEAD)"
   fi
 
   print_debug  "GO GET on dir: $(pwd)"
   go get -v ...
 
-  f_log_successful="/tmp/ci.successful.log"
-  f_log_failed="/tmp/ci.failed.log"
+  local f_log_successful="/tmp/ci.successful.log"
+  local f_log_failed="/tmp/ci.failed.log"
   echo >${f_log_successful}
   echo >${f_log_failed}
 
@@ -91,12 +91,13 @@ do_build_golang_and_docker_image() {
           ### TODO
 
           ### k8s config
-          if [ -f "k8s.default.yaml" ]; then
-            echo "[-] 当前 k8s 配置：k8s.default.yaml 的 image 为：" >>${f_log_successful}
-            grep image "k8s.default.yaml" >>${f_log_successful}
+          local f_k8s_yaml="k8s.${K8S_NAMESPACE}.yaml"
+          if [ -f ${f_k8s_yaml} ]; then
+            echo "[-] 当前 k8s 配置 ${f_k8s_yaml} 的 image 为：" >>${f_log_successful}
+            grep image ${f_k8s_yaml} >>${f_log_successful}
             sed -e "s#TPL_REPLACE_NS_HERE#${K8S_NAMESPACE}#" \
                 -e "s#TPL_REPLACE_IMAGE_HERE#${s_tag_remote}#" \
-                "k8s.default.yaml" >"${K8S_YAML_ROOT}/${K8S_NAMESPACE}/${s_name}.yaml"
+                ${f_k8s_yaml} >"${K8S_YAML_ROOT}/${K8S_NAMESPACE}/${s_name}.yaml"
             echo "[-] 更新后的 image 为：" >>${f_log_successful}
             grep image "${K8S_YAML_ROOT}/${K8S_NAMESPACE}/${s_name}.yaml" >>${f_log_successful}
           fi
