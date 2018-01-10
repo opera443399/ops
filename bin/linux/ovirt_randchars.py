@@ -1,7 +1,7 @@
-# -*- coding:utf-8 -*-
 #!/bin/env python
-# 
-# 2015/10/23
+# -*- coding:utf-8 -*-
+#
+# 2017/1/10
 
 import random
 
@@ -17,7 +17,7 @@ class RandChars(object):
     #pools += '~!@#$%^&*()_+'
     # pool size
     pool_size = len(pools)
-    
+
     def __init__(self, length=12):
         self.length = length
 
