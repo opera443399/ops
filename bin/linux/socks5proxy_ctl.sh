@@ -55,8 +55,8 @@ export http_proxy=socks5://${s_local}
 export https_proxy=socks5://${s_local}
 
 ### 取消proxy
-export http_proxy=
-export https_proxy=
+unset http_proxy=
+unset https_proxy=
 
 #--------------- 使用方法2: 长期使用 ---------------#
 ### 2. 在配置文件中增加上述2个指令
