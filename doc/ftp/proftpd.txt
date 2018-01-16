@@ -1,29 +1,29 @@
-1£©ÏÂÔØ°²×°
+1ï¼‰ä¸‹è½½å®‰è£…
 wget ftp://ftp.proftpd.org/distrib/source/proftpd-1.3.4c.tar.gz
 tar zxvf proftpd-1.3.4c.tar.gz
 cd proftpd-1.3.4c
 
-(ÆôÓÃÅä¶îÄ£¿é£¬ÏŞÖÆÉÏ´«´óĞ¡£¬Èç¹ûÖØĞÂconfigure£¬ÔòĞèÒªÏÈmake distclean)
+(å¯ç”¨é…é¢æ¨¡å—ï¼Œé™åˆ¶ä¸Šä¼ å¤§å°ï¼Œå¦‚æœé‡æ–°configureï¼Œåˆ™éœ€è¦å…ˆmake distclean)
 ./configure --with-modules=mod_quotatab:mod_quotatab_file
 make
 make install
 
-Ä¬ÈÏ½«°²×°ÔÚ/usr/local/sbin ºÍ/usr/local/binÄ¿Â¼ÏÂ¡£
+é»˜è®¤å°†å®‰è£…åœ¨/usr/local/sbin å’Œ/usr/local/binç›®å½•ä¸‹ã€‚
 
-2£©ÅäÖÃ
-¿ª»úÆô¶¯£º
+2ï¼‰é…ç½®
+å¼€æœºå¯åŠ¨ï¼š
 
 cp contrib/dist/rpm/proftpd.init.d /etc/rc.d/init.d/proftpd
 
 vim /etc/init.d/proftpd
-ÕÒµ½ÏÂÁĞÄÚÈİ£º
+æ‰¾åˆ°ä¸‹åˆ—å†…å®¹ï¼š
 # Make sure the binary is present.
 [ -x /usr/sbin/proftpd ] || exit 5
 
-¸ü»»Îª£º
+æ›´æ¢ä¸ºï¼š
 [ -x /usr/local/sbin/proftpd ] || exit 5
 
-Ôö¼ÓÈ¨ÏŞ£º
+å¢åŠ æƒé™ï¼š
 chmod 755 /etc/init.d/proftpd
 
 chkconfig --add proftpd
@@ -32,19 +32,19 @@ chkconfig proftpd on
 
 
 
-Ôö¼ÓÓÃ»§ºÍ×é£º
+å¢åŠ ç”¨æˆ·å’Œç»„ï¼š
 groupadd ftpuser1
 useradd ftpuser1 -g ftpuser1 -d /home/ftpuser1 -s /sbin/nologin
 passwd ftpuser1
 
-Ôö¼ÓÉÏ´«Ä¿Â¼£º
+å¢åŠ ä¸Šä¼ ç›®å½•ï¼š
 mkdir -p /home/ftpuser1/upload
 chown ftpuser1:ftpuser1 /home/ftpuser1/upload
 
-¼ì²éIPTABLESÊÇ·ñ¿ª·ÅFTP¶Ë¿Ú
+æ£€æŸ¥IPTABLESæ˜¯å¦å¼€æ”¾FTPç«¯å£
 
-ĞŞ¸ÄÅäÖÃÎÄ¼ş£º
-vi /usr/local/etc/proftpd.conf 
+ä¿®æ”¹é…ç½®æ–‡ä»¶ï¼š
+vi /usr/local/etc/proftpd.conf
 [root@test120 ~]# cat /usr/local/etc/proftpd.conf
 
 ServerName                      "ec-ftp-server"
@@ -67,7 +67,7 @@ AllowOverwrite                  on
 MaxInstances                    30
 #MAXConnectionRate              4
 #MaxClients                     10 "Sorry, the maximum number of clients (%m) are already connected."
-#MaxClientsPerUser              1 "Sorry, the maximum number of clients (%m) for this user are already connected." 
+#MaxClientsPerUser              1 "Sorry, the maximum number of clients (%m) for this user are already connected."
 #MaxClientsPerHost              1 "Sorry, one client per host, please."
 #MaxHostsPerUser                1
 
@@ -113,7 +113,7 @@ SystemLog                       /var/log/proftpd.log
 <Directory "/home/ftpuser1/upload">
      <Limit ALL>
         DenyAll
-    </Limit>   
+    </Limit>
     <Limit STOR>
         AllowUser ftpuser1
         DenyAll
@@ -122,26 +122,26 @@ SystemLog                       /var/log/proftpd.log
 
 
 
-ÓÃ»§ÉÏ´«ÎÄ¼şÅä¶îÉèÖÃ£¨ÏŞ¶î5GB£©£º
+ç”¨æˆ·ä¸Šä¼ æ–‡ä»¶é…é¢è®¾ç½®ï¼ˆé™é¢5GBï¼‰ï¼š
 ftpquota -create -type=tally -table-path=/usr/local/etc/ftpquota.tallytab
 ftpquota -create -type=limit -table-path=/usr/local/etc/ftpquota.limittab
 ftpquota --type=limit --table-path=/usr/local/etc/ftpquota.limittab --add-record --quota-type=user --name=ftpuser1 --units=Gb --bytes-upload=5
 
 
 
-Æô¶¯proftpd£º
+å¯åŠ¨proftpdï¼š
 
 service proftpd start
-£¨Èç¹ûÊÇÖØĞÂ±àÒëÄ£¿éÔÙ°²×°£¬ÔòÒªÖØÆô¸Ã·şÎñÒÔ»ñµÃĞÂ¹¦ÄÜ£¬service proftpd restart£©
+ï¼ˆå¦‚æœæ˜¯é‡æ–°ç¼–è¯‘æ¨¡å—å†å®‰è£…ï¼Œåˆ™è¦é‡å¯è¯¥æœåŠ¡ä»¥è·å¾—æ–°åŠŸèƒ½ï¼Œservice proftpd restartï¼‰
 
 
-3. ²âÊÔ
+3. æµ‹è¯•
 ftp> open 1.2.3.4
-Á¬½Óµ½ 1.2.3.4¡£
+è¿æ¥åˆ° 1.2.3.4ã€‚
 220 1.2.3.4 FTP server ready
-ÓÃ»§(1.2.3.4:(none)): ftpuser1
+ç”¨æˆ·(1.2.3.4:(none)): ftpuser1
 331 Password required for ftpuser1
-ÃÜÂë:
+å¯†ç :
 230 User ftpuser1 logged in
 ftp> quote SITE QUOTA
 200-The current quota for this session are [current/limit]:
@@ -158,4 +158,4 @@ ftp> quote SITE QUOTA
 200 Please contact root@2.3.4.5 if these entries are inaccurate
 ftp>
 
-ÈÎÎñÍê³É¡£
+ä»»åŠ¡å®Œæˆã€‚

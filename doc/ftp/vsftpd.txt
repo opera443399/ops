@@ -10,7 +10,7 @@ passwd ftp_public
 passwd ftp_RD
 
 2. 在启动vsftpd服务之前，修改配置文件，将匿名登录禁用掉。
-[root@test240 ~]# cat /etc/vsftpd/vsftpd.conf |grep ^[^#] 
+[root@test240 ~]# cat /etc/vsftpd/vsftpd.conf |grep ^[^#]
 anonymous_enable=NO
 local_enable=YES
 write_enable=YES
