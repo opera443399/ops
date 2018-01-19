@@ -1,5 +1,5 @@
 # 使用kubeadm部署k8s集群01-初始化
-2018/1/3
+2018/1/19
 
 ### 节点配置
   - master x3
@@ -100,7 +100,7 @@ gcr.io-all.tar  gcr.io-worker.tar
 
 ### 同步到目标节点后，导入镜像：
 [root@tvm-00 ~]# docker load -i gcr.io-all.tar
-root@tvm-00 ~]# docker load -i gcr.io-worker.tar
+[root@tvm-00 ~]# docker load -i gcr.io-worker.tar
 ```
 
 ##### private registry
