@@ -1,5 +1,5 @@
 docker深入2-API示例
-2017/10/20
+2018/1/19
 
 
 一、目的
@@ -20,7 +20,7 @@ https://github.com/opera443399/ops/blob/master/doc/Go/src/abc.com/demo/demoDocke
 
 
 
-题外话：如果要完成任务，其实可以考虑最简单的 API 调用，即利用 docker ckuebt 来做（而不是自己去写 shell/go/python 来达到目的）：
+题外话：如果要完成任务，其实可以考虑最简单的 API 调用，即利用 docker client 来做（而不是自己去写 shell/go/python 来达到目的）：
 ~] docker -H your_remote_docker_node_ip version
 
 
@@ -60,7 +60,7 @@ docker service create --name t001 --publish 22222:80 --detach=true opera443399/w
 service_image_latest="opera443399/whoami:0.7"
 service_name="t001"
 
-2) 获取当前服务的版本            
+2) 获取当前服务的版本
 service_version_index=$(curl -s -g \
     --unix-socket /var/run/docker.sock \
     http:/v1.30/services?filters='{"name":["'${service_name}'"]}' \
@@ -83,17 +83,17 @@ curl -s \
         }
     }
     " |jq '.'
-    
+
 
 4) 查看服务现状
 curl -s -g \
     --unix-socket /var/run/docker.sock \
     http:/services?filters='{"name":["'${service_name}'"]}' \
     |jq '.'
-   
 
 
-   
+
+
 三、问题
 1、如果创建 service 时，使用自定义的网络，怎么办？
 状态：未解决
@@ -211,9 +211,9 @@ ID                  NAME                MODE                REPLICAS            
 5a8nps5pssho        t002                global              0/4                 nginx:latest        *:10008->80/tcp
 ~]# docker service ps t002
 ID              NAME                    IMAGE           NODE                DESIRED STATE       CURRENT STATE        ERROR   PORTS
-4vr4ehhj17l3    t002.node1_id_here      nginx:latest    node1.test.com      Running             New 21 minutes ago                       
-0k2ttjveis6t    t002.node2_id_here      nginx:latest    node2.test.com      Running             New 21 minutes ago                       
-wwopgjy8pfxj    t002.node3_id_here      nginx:latest    node3.test.com      Running             New 21 minutes ago                                     
+4vr4ehhj17l3    t002.node1_id_here      nginx:latest    node1.test.com      Running             New 21 minutes ago
+0k2ttjveis6t    t002.node2_id_here      nginx:latest    node2.test.com      Running             New 21 minutes ago
+wwopgjy8pfxj    t002.node3_id_here      nginx:latest    node3.test.com      Running             New 21 minutes ago
 
 果然，没有端口映射，服务还没上线：
 ~]# docker service inspect --pretty t002
@@ -289,8 +289,8 @@ curl -s --unix-socket /var/run/docker.sock http:/tasks |jq '.' >tmp.1
 
 
 
-    
-    
+
+
 ZYXW、参考
 1、API
 https://docs.docker.com/engine/api/
@@ -302,4 +302,3 @@ https://github.com/moby/moby/blob/master/api/types/swarm/service.go
 
 3、portainer src
 https://github.com/portainer/portainer/blob/04ea81e7cd8401690058c4b4264452bf9d7a05eb/app/components/service/serviceController.js
-
