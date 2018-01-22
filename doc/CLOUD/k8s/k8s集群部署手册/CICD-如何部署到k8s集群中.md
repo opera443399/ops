@@ -100,7 +100,7 @@ mode = "0644"
 keys = [
   "/demo-project",
 ]
-reload_cmd = "/bin/bash /usr/local/bin/k8s_deploy_ctl.sh /data/server/k8s-deploy/reload/auto.create.cmd"
+reload_cmd = "cd /data/server/k8s-deploy && /bin/bash bin/confd_reload_cmd.sh reload/auto.create.cmd"
 
 ##### 模版文件
 [root@tvm-00 confd]# cat templates/reload.tmpl
@@ -109,10 +109,10 @@ reload_cmd = "/bin/bash /usr/local/bin/k8s_deploy_ctl.sh /data/server/k8s-deploy
 kubectl -n {{$data.k8sNamespace}} set image deployments/{{$data.appParent}}-{{$data.appName}} {{$data.appName}}={{$data.imageLatest}}
 
 ##### 控制脚本
-[root@tvm-00 confd]# cat /usr/local/bin/k8s_deploy_ctl.sh
+[root@tvm-00 confd]# cat /data/server/k8s-deploy/bin/confd_reload_cmd.sh
 #!bin/bash
 #
-#2018/1/4
+#2018/1/22
 
 f_log="/data/server/k8s-deploy/logs/$(date +%F).log"
 
@@ -125,7 +125,8 @@ do_reload() {
   echo -e "[-] -----------------> code: $?"
 }
 
-do_reload $1 >>${f_log}
+do_reload $1 >>${f_log} 2>&1 &
+
 
 ### 单次运行，来测试配置是否符合预期
 [root@tvm-00 confd]# /usr/local/bin/confd -log-level debug -onetime -backend etcdv3 -node http://10.10.9.111:2379
