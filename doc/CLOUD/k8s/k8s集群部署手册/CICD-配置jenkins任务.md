@@ -1,5 +1,5 @@
 # CICD-配置jenkins任务
-2018/1/4
+2018/1/23
 
 
 ### General
@@ -15,8 +15,6 @@
   - git
     - location
       - xxx.git
-    - branch
-      - */branch-name
   - 触发 build 方式
     - 手动
   - 输出
@@ -38,7 +36,7 @@
       - Parameter Type
         - Check Boxes
       - Number of Visible Items
-        - 50
+        - 20
       - Delimiter
         - ,
     - Choose Source for Value
@@ -54,12 +52,20 @@
       - 指定版本后，将作为 docker image 的 tag 值，默认将提取 "git rev" 来作为版本号
   - Choice Parameter
     - Name
+      - GIT_BRANCH_NAME
+    - Default Value
+      - master
+      - feature1
+    - Description
+      - 请选择 git 分支
+  - Choice Parameter
+    - Name
       - K8S_NAMESPACE
     - Default Value
       - ns-dev
       - ns-test
     - Description
-      - k8s的namespace选项
+      - 请选择部署至 k8s 的哪一个 namespace 中
         - ns-dev -> 开发环境
         - ns-test -> 测试环境
   - Boolean Parameter

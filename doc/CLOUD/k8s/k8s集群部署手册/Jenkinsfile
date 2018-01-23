@@ -38,7 +38,7 @@ pipeline {
       steps {
         echo '[+] 准备代码'
         echo '[-] --> git 签出'
-        checkout([$class: 'GitSCM', branches: [[name: '*/branch-name']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: '11223344-1111-2222-3333-444444555555', url: 'xxx.git']]])
+        checkout([$class: 'GitSCM', branches: [[name: "*/${params.GIT_BRANCH_NAME}"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: '11223344-1111-2222-3333-444444555555', url: 'xxx.git']]])
         echo '[-] --> git 变更日志（最近3条）'
         sh 'git log -3 --oneline'
         //sh 'git whatchanged -3'
@@ -51,6 +51,7 @@ pipeline {
         echo '[+] 构建 golang binary'
         echo "[-] --> 检查参数 params.SVC_NAMES = ${params.SVC_NAMES}"
         echo "[-] --> 检查参数 params.SVC_VERSION = ${params.SVC_VERSION}"
+        echo "[-] --> 检查参数 params.GIT_BRANCH_NAME = ${params.GIT_BRANCH_NAME}"
         echo "[-] --> 检查参数 params.K8S_NAMESPACE = ${params.K8S_NAMESPACE}"
         echo "[-] --> 检查参数 params.FIX_BLOCKED_PKGS = ${params.FIX_BLOCKED_PKGS}"
         echo "[-] --> 检查参数 params.LOG_LEVEL_DEBUG = ${params.LOG_LEVEL_DEBUG}"
