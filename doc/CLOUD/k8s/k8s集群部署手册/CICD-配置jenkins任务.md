@@ -54,8 +54,9 @@
     - Name
       - GIT_BRANCH_NAME
     - Default Value
-      - master
-      - feature1
+      - refs/heads/master
+      - refs/heads/feature1
+      - refs/tags/release1
     - Description
       - 请选择 git 分支
   - Choice Parameter
