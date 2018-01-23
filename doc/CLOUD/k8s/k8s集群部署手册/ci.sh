@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#2018/1/9
+#2018/1/23
 #set -e
 
 # docker template path on the worker node
@@ -9,7 +9,7 @@ APP_PARENT='demo-project'
 APP_CI_ROOT="/data/jenkins_node_home/workspace/cicd/${APP_PARENT}"
 DOCKER_TPL_ROOT="${APP_CI_ROOT}/tpl.docker.d"
 K8S_YAML_ROOT="${APP_CI_ROOT}/k8s.yaml.d"
-DOCKER_IMAGE_NS="ns-${APP_PARENT}"
+DOCKER_IMAGE_NS="ns-my-company"
 DOCKER_REGISTRY_URL='registry.cn-hangzhou.aliyuncs.com'
 ETCD_ENDPOINTS='http://10.10.9.111:2379'
 #DOCKER_REGISTRY_USERNAME='xxx'
@@ -47,8 +47,10 @@ do_build_golang_and_docker_image() {
     local s_version="$(git rev-parse --short HEAD)"
   fi
 
-  print_debug  "GO GET on dir: $(pwd)"
-  go get -v ...
+  #print_debug  "GET dep on dir: $(pwd)"
+  #go get -v github.com/golang/dep/cmd/dep
+  #$GOPATH/bin/dep ensure -v
+  #$GOPATH/bin/dep status -v
 
   local f_log_successful="/tmp/ci.successful.log"
   local f_log_failed="/tmp/ci.failed.log"
@@ -76,7 +78,7 @@ do_build_golang_and_docker_image() {
         print_info "准备构建 docker image"
         if [ -e "./Dockerfile" ]; then
           ### docker build
-          local s_tag_local="${DOCKER_IMAGE_NS}/${s_name}:${s_version}"
+          local s_tag_local="${DOCKER_IMAGE_NS}/${APP_PARENT}-${s_name}:${s_version}"
           local s_tag_remote="${DOCKER_REGISTRY_URL}/${s_tag_local}"
           docker build -q -t "${s_tag_local}" .
 
