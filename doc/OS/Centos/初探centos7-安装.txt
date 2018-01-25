@@ -1,5 +1,5 @@
 初探centos7-安装
-2017/8/29
+2018/1/25
 
 一、安装
 1、新的安装界面
@@ -21,7 +21,7 @@ CentOS Linux release 7.2.1511 (Core)
 lrwxrwxrwx. 1 root root 37 Dec 29 15:19 /etc/systemd/system/default.target -> /lib/systemd/system/multi-user.target
 
 4、hostname配置变化
-[root@local ~]# cat /etc/hostname 
+[root@local ~]# cat /etc/hostname
 local.centos7.test
 [root@local ~]# hostnamectl status
    Static hostname: local.centos7.test
@@ -37,9 +37,9 @@ local.centos7.test
 
 如何更改hostname？
 hostnamectl --static set-hostname VM_200_5_centos.test.com
-      
+
 5、/bin,/sbin,/lib,/lib64 的路径改变
-[root@local ~]# ls / -l |sort |grep -E 'bin|lib'    
+[root@local ~]# ls / -l |sort |grep -E 'bin|lib'
 lrwxrwxrwx.   1 root root    7 Dec 29 15:12 bin -> usr/bin
 lrwxrwxrwx.   1 root root    7 Dec 29 15:12 lib -> usr/lib
 lrwxrwxrwx.   1 root root    8 Dec 29 15:12 sbin -> usr/sbin
@@ -52,7 +52,7 @@ lrwxrwxrwx.   1 root root    9 Dec 29 15:12 lib64 -> usr/lib64
 Mem:           1838         105        1172           8         560        1564
 Swap:          2047           0        2047
 
-      
+
 7、用户id从1000开始
 [root@local ~]# useradd Jack
 [root@local ~]# id Jack
@@ -62,7 +62,7 @@ uid=1000(Jack) gid=1000(Jack) groups=1000(Jack)
 先看看Jack能否su root：
 [root@sz-local-vm41 ~]# su Jack
 [Jack@local root]$ su
-Password: 
+Password:
 [root@local ~]# exit
 exit
 [Jack@local root]$ exit
@@ -72,9 +72,9 @@ exit
 # Uncomment the following line to require a user to be in the "wheel" group.
 auth            required        pam_wheel.so use_uid
 启用上面这行配置，再次测试
-[root@sz-local-vm41 ~]# su Jack          
+[root@sz-local-vm41 ~]# su Jack
 [Jack@local root]$ su
-Password: 
+Password:
 su: Permission denied
 被拒绝，，符合预期
 [Jack@local root]$ exit
@@ -140,14 +140,14 @@ chkconfig --list                systemctl list-dependencies --before            
 abrt-ccpp.service  abrt-oops.service    abrt-xorg.service  crond.service       kdump.service           postfix.service   rsyslog.service  tuned.service
 abrtd.service      abrt-vmcore.service  auditd.service     irqbalance.service  NetworkManager.service  remote-fs.target  sshd.service
 
-[root@local ~]# systemctl disable postfix.service 
+[root@local ~]# systemctl disable postfix.service
 Removed symlink /etc/systemd/system/multi-user.target.wants/postfix.service.
 
 [root@local ~]# ls /etc/systemd/system/multi-user.target.wants/
 abrt-ccpp.service  abrt-oops.service    abrt-xorg.service  crond.service       kdump.service           remote-fs.target  sshd.service
 abrtd.service      abrt-vmcore.service  auditd.service     irqbalance.service  NetworkManager.service  rsyslog.service   tuned.service
 
-[root@local ~]# systemctl enable postfix.service                     
+[root@local ~]# systemctl enable postfix.service
 Created symlink from /etc/systemd/system/multi-user.target.wants/postfix.service to /usr/lib/systemd/system/postfix.service.
 
 
@@ -171,7 +171,7 @@ multi-user.target
 
 
 5、服务配置
-[root@local ~]# cat /usr/lib/systemd/system/postfix.service 
+[root@local ~]# cat /usr/lib/systemd/system/postfix.service
 [Unit]
 Description=Postfix Mail Transport Agent
 After=syslog.target network.target
@@ -212,7 +212,7 @@ touch /var/lock/subsys/local
 
 
 
-注意这一句： 
+注意这一句：
 # Please note that you must run 'chmod +x /etc/rc.d/rc.local' to ensure
 # that this script will be executed during boot.
 
@@ -253,7 +253,7 @@ vncpasswd
 [root@local ~]# firewall-cmd --zone=public --add-port=5900/tcp --permanent
 [root@local ~]# firewall-cmd --zone=public --remove-port=5900/tcp --permanent
 查看配置：
-[root@local ~]# cat /etc/firewalld/zones/public.xml 
+[root@local ~]# cat /etc/firewalld/zones/public.xml
 
 
 
@@ -264,7 +264,7 @@ vncpasswd
 [root@local ~]# systemctl enable httpd.service
 2）虚拟主机
 [root@local ~]# cp /usr/share/doc/httpd-2.4.6/httpd-vhosts.conf /etc/httpd/conf.d/vhosts.conf
-[root@local ~]# grep ^[^#] /etc/httpd/conf.d/vhosts.conf 
+[root@local ~]# grep ^[^#] /etc/httpd/conf.d/vhosts.conf
 <VirtualHost *:80>
     ServerAdmin webmaster@office.test
     DocumentRoot "/var/www/html/office.test"
@@ -337,9 +337,9 @@ abc
 1）启动Chrony
 [root@local ~]# yum install chrony
 编辑配置，注释掉其他的server，增加一个本地server来测试
-[root@local ~]# vim /etc/chrony.conf 
+[root@local ~]# vim /etc/chrony.conf
 
-[root@local ~]# systemctl start chronyd 
+[root@local ~]# systemctl start chronyd
 [root@local ~]# systemctl status chronyd
 [root@local ~]# systemctl enable chronyd
 
@@ -351,13 +351,13 @@ abc
 
 3）同步
 启动服务时，将生成一个key，这里会用到：
-[root@local ~]# cat /etc/chrony.keys    
+[root@local ~]# cat /etc/chrony.keys
 #1 a_key
 
 1 SHA1 HEX:0981828C41097692E12DCBE377D3CAF06EE7A2CD
 
 手动：
-[root@local ~]# chronyc              
+[root@local ~]# chronyc
 chrony version 2.1.1
 Copyright (C) 1997-2003, 2007, 2009-2015 Richard P. Curnow and others
 chrony comes with ABSOLUTELY NO WARRANTY.  This is free software, and
@@ -380,7 +380,7 @@ chronyc> exit
 5）查看clocksource
 [root@local ~]# cd /sys/devices/system/clocksource/clocksource0/
 [root@local clocksource0]# cat available_clocksource
-kvm-clock tsc acpi_pm 
+kvm-clock tsc acpi_pm
 [root@local clocksource0]# cat current_clocksource
 kvm-clock
 
@@ -448,7 +448,7 @@ systemctl restart tog-pegasus.service
 校验：
 [root@local ~]# sha1sum /etc/Pegasus/server.pem
 26de58c7027a8a7177711d9fd4353ceafc545b57  /etc/Pegasus/server.pem
-[root@local ~]# sha1sum /etc/pki/ca-trust/source/anchors/pegasus-local.centos7.test.pem 
+[root@local ~]# sha1sum /etc/pki/ca-trust/source/anchors/pegasus-local.centos7.test.pem
 26de58c7027a8a7177711d9fd4353ceafc545b57  /etc/pki/ca-trust/source/anchors/pegasus-local.centos7.test.pem
 更新证书存储库
 [root@local ~]# update-ca-trust extract
@@ -456,7 +456,7 @@ systemctl restart tog-pegasus.service
 5）使用 LMISHELL
 [root@local ~]# lmishell
 > c = connect("local.centos7.test", "pegasus")
-password: 
+password:
 > quit()
 可以用 tab 键补齐命令。
 
@@ -480,7 +480,7 @@ False
 新的版本使用了 RainerScript 语法
 包括 input() 和 ruleset() 语句
 示例-配置服务端
-[root@local ~]# cat /etc/rsyslog.d/test.conf 
+[root@local ~]# cat /etc/rsyslog.d/test.conf
 template(name="TmplAuthpriv" type="string"
          string="/var/log/remote/auth/%HOSTNAME%/%PROGRAMNAME:::secpath-replace%.log"
         )
@@ -504,7 +504,7 @@ systemctl restart rsyslog.service
 
 示例-配置客户端
 [root@tvm02 ~]# cat /etc/rsyslog.d/test.conf
-# udp => @ip:port tcp => @@ip:port, default port=514 
+# udp => @ip:port tcp => @@ip:port, default port=514
 *.* @@server_ip
 #使用&连接另一个action来丢弃(~)上面过滤的消息(不保存到本地的syslog中)
 & ~
@@ -513,7 +513,7 @@ systemctl restart rsyslog.service
 示例-测试
 [root@tvm02 ~]# logger 'hellllllllllllllllllllllllllllo'
 [root@tvm02 ~]# logger 'hellllllllllllllllllllllllllllllo'
-[root@local ~]# cat /var/log/remote/msg/tvm02/root.log 
+[root@local ~]# cat /var/log/remote/msg/tvm02/root.log
 Jan  7 13:49:11 tvm02 root: hellllllllllllllllllllllllllllo
 Jan  7 14:01:58 tvm02 root: hellllllllllllllllllllllllllllllo
 
@@ -533,7 +533,8 @@ Jan  7 14:01:58 tvm02 root: hellllllllllllllllllllllllllllllo
 [root@local ~]# journalctl -p warning --since="2016-1-6 23:59:59"
 根据指定的key=value来筛选
 [root@local ~]# journalctl _SYSTEMD_UNIT=crond.service
-
+根据指定模块和时间来筛选
+[root@local ~]# journalctl -u kubelet -S '2018-01-25 09:0'
 
 默认journal日志保存在内存或缓冲区中，如果要持久化保存，则：
 [root@local ~]# mkdir -p /var/log/journal
@@ -558,7 +559,7 @@ Jan  7 14:01:58 tvm02 root: hellllllllllllllllllllllllllllllo
 ZYXW、参考
 1、rhel7 doc
 https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/System_Administrators_Guide
-2、This page would list out some of the major differences between RHEL 7 and 6 variants and key features in RHEL 7 . 
+2、This page would list out some of the major differences between RHEL 7 and 6 variants and key features in RHEL 7 .
 http://simplylinuxfaq.blogspot.com/p/major-difference-between-rhel-7-and-6.html
 3、apache http ssl
 http://httpd.apache.org/docs/2.4/ssl/ssl_howto.html
