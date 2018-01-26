@@ -70,7 +70,7 @@
   "rows": [
     {
       "collapse": false,
-      "height": "100px",
+      "height": 44,
       "panels": [
         {
           "cacheTimeout": null,
@@ -558,12 +558,12 @@
       "repeatIteration": null,
       "repeatRowId": null,
       "showTitle": false,
-      "title": "TOP",
+      "title": "row1",
       "titleSize": "h6"
     },
     {
       "collapse": false,
-      "height": 291,
+      "height": 306,
       "panels": [
         {
           "aliasColors": {},
@@ -822,8 +822,9 @@
               "step": 10
             },
             {
-              "expr": "node_memory_MemTotal{job=\"node_exporter\", instance=~\"$node:.*\"} - node_memory_MemFree{job=\"node\", instance=~\"$node:.*\"} - node_memory_Cached{job=\"node\", instance=~\"$node:.*\"} - node_memory_Buffers{job=\"node\", instance=~\"$node:.*\"}",
+              "expr": "node_memory_MemTotal{job=\"node_exporter\", instance=~\"$node:.*\"} - node_memory_MemFree{job=\"node_exporter\", instance=~\"$node:.*\"} - node_memory_Cached{job=\"node_exporter\", instance=~\"$node:.*\"} - node_memory_Buffers{job=\"node_exporter\", instance=~\"$node:.*\"}",
               "format": "time_series",
+              "hide": false,
               "interval": "",
               "intervalFactor": 2,
               "legendFormat": "used",
@@ -872,7 +873,7 @@
       "repeatIteration": null,
       "repeatRowId": null,
       "showTitle": false,
-      "title": "SYSTEM",
+      "title": "row2",
       "titleSize": "h6"
     },
     {
@@ -1071,7 +1072,7 @@
       "repeatIteration": null,
       "repeatRowId": null,
       "showTitle": false,
-      "title": "NETWORK",
+      "title": "row3",
       "titleSize": "h6"
     },
     {
@@ -1365,8 +1366,8 @@
       "repeat": null,
       "repeatIteration": null,
       "repeatRowId": null,
-      "showTitle": true,
-      "title": "CPU",
+      "showTitle": false,
+      "title": "row4",
       "titleSize": "h6"
     },
     {
@@ -1483,8 +1484,8 @@
       "repeat": null,
       "repeatIteration": null,
       "repeatRowId": null,
-      "showTitle": true,
-      "title": "DISK",
+      "showTitle": false,
+      "title": "row5",
       "titleSize": "h6"
     }
   ],
@@ -1632,5 +1633,5 @@
   },
   "timezone": "browser",
   "title": "k8s-dev",
-  "version": 16
+  "version": 17
 }
