@@ -1,13 +1,13 @@
-1.¹Ø±Õnuma
-  /boot/grub/grub.conf 
- ¼ÓÈënuma=off
-2.ioµ÷¶ÈËã·¨
+1.å…³é—­numa
+  /boot/grub/grub.conf
+ åŠ å…¥numa=off
+2.ioè°ƒåº¦ç®—æ³•
 echo deadline > /sys/block/sda/queue/scheduler
-3.¿ÉÒÔ¿¼ÂÇÊ¹ÓÃXFSÎÄ¼şÏµÍ³,×¢ÒâÔ¤Áô¿Õ¼äÉèÖÃ¡£
-4.ÕóÁĞ¿¨WB²ßÂÔ£¬½ûÓÃ´ÅÅÌ×ÔÉí»º´æ£¬×¢Òâ¼à¿Øµç³Ø¡£
-/opt/MegaCli64 -AdpAllInfo -aALL ²éraid¿¨ĞÅÏ¢
+3.å¯ä»¥è€ƒè™‘ä½¿ç”¨XFSæ–‡ä»¶ç³»ç»Ÿ,æ³¨æ„é¢„ç•™ç©ºé—´è®¾ç½®ã€‚
+4.é˜µåˆ—å¡WBç­–ç•¥ï¼Œç¦ç”¨ç£ç›˜è‡ªèº«ç¼“å­˜ï¼Œæ³¨æ„ç›‘æ§ç”µæ± ã€‚
+/opt/MegaCli64 -AdpAllInfo -aALL æŸ¥raidå¡ä¿¡æ¯
 http://wenku.baidu.com/link?url=u1zFgkHA25V-0xailv4WECDUyiEbPswbhUw2285uIZp5GZlocA31Utq9rZhKkRrKwvEAGhro7buertfPkokSf56tTwHZC3yZ9A_bWo2o06y
-MegaCli64 -cfgdsply -aALL | grep "Error"              ¡¾Õı³£¶¼ÊÇ0¡¿¡£
-5.io ÃÜ¼¯£¬Ê¹ÓÃ¶à¿éĞ¡ÈİÁ¿disk£¬À´ÌáÉıiops,¿ÉÒÔ¿¼ÂÇÊ¹ÓÃssd,¼°pcie¿¨¡£
-6.sql ÉóºË¹¤¾ß¡£
+MegaCli64 -cfgdsply -aALL | grep "Error"              ã€æ­£å¸¸éƒ½æ˜¯0ã€‘ã€‚
+5.io å¯†é›†ï¼Œä½¿ç”¨å¤šå—å°å®¹é‡diskï¼Œæ¥æå‡iops,å¯ä»¥è€ƒè™‘ä½¿ç”¨ssd,åŠpcieå¡ã€‚
+6.sql å®¡æ ¸å·¥å…·ã€‚
 http://tencentdba.com/blog/sqlparse/

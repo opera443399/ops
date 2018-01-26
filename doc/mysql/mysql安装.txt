@@ -1,13 +1,13 @@
-mysql°²×°
+mysqlå®‰è£…
 2016/12/22
 
-Ò»¡¢¿Í»§¶Ë°²×°Ê¹ÓÃmysqlÀ´Á¬½Ómysql server
+ä¸€ã€å®¢æˆ·ç«¯å®‰è£…ä½¿ç”¨mysqlæ¥è¿žæŽ¥mysql server
 # yum install mysql
 
 
-¶þ¡¢·þÎñ¶Ëmysql°²×°
-1¡¢×¢Òâ¹Ø±Õselinux
-2¡¢±àÒë°²×°server
+äºŒã€æœåŠ¡ç«¯mysqlå®‰è£…
+1ã€æ³¨æ„å…³é—­selinux
+2ã€ç¼–è¯‘å®‰è£…server
 [root@tvm-mysql ~]# yum groupinstall "development tools"
 [root@tvm-mysql ~]# yum install cmake libaio-devel ncurses-devel
 [root@tvm-mysql ~]# cd /data/download
@@ -22,15 +22,15 @@ mysql°²×°
 [root@tvm-mysql download]# chown -R mysql:mysql /data/svr/mariadb-5.5.33a
 
 
-3¡¢°²×°ºó³õÊ¼»¯db£º
+3ã€å®‰è£…åŽåˆå§‹åŒ–dbï¼š
 
 [root@test230 download]# ./scripts/mysql_install_db --user=mysql --group=mysql --datadir=/data/mysql_data/3306  --basedir=/data/svr/mariadb-5.5.33a
 [root@test230 download]# service mysql start
 [root@test230 download]# mysqladmin -uroot password 'xxxxxx'
 
-Í¨³£µÄÅäÖÃÖÐ£¬»¹¿ÉÒÔÐÞ¸ÄºÍÖ¸¶¨ÒÔÏÂ²ÎÊý£º
-port        = 
-socket      = 
+é€šå¸¸çš„é…ç½®ä¸­ï¼Œè¿˜å¯ä»¥ä¿®æ”¹å’ŒæŒ‡å®šä»¥ä¸‹å‚æ•°ï¼š
+port        =
+socket      =
 datadir     =
 slow_query_log_file=
 
@@ -40,21 +40,21 @@ max-binlog-size=
 replicate-ignore-db=
 
 
-4¡¢mysqlÕËºÅÉèÖÃ
-rootÓÃ»§
+4ã€mysqlè´¦å·è®¾ç½®
+rootç”¨æˆ·
 grant all on *.* to 'root'@'localhost' IDENTIFIED BY 'password';
 grant all on *.* to 'root'@'127.0.0.1' IDENTIFIED BY 'password';
 delete from mysql.user where user='' or password='';
 
-´´½¨Ö¸¶¨µÄdb²¢ÊÚÈ¨ÓÃ»§
+åˆ›å»ºæŒ‡å®šçš„dbå¹¶æŽˆæƒç”¨æˆ·
 create database abc;
 grant all on abc.* to 'abc_user'@'10.10.%.%' IDENTIFIED BY 'abcpass';
 
 
 
 
-Èý¡¢·þÎñ¶ËÀûÓÃmysqld_multi¹ÜÀí¶à¸ömysqlÊµÀý
-1¡¢°²×°
+ä¸‰ã€æœåŠ¡ç«¯åˆ©ç”¨mysqld_multiç®¡ç†å¤šä¸ªmysqlå®žä¾‹
+1ã€å®‰è£…
 [root@tvm-mysql ~]# yum install mysql mysql-server
 [root@tvm-mysql ~]# mysql_install_db --datadir=/data/mysql/3306 --user=mysql
 [root@tvm-mysql ~]# mysql_install_db --datadir=/data/mysql/3307 --user=mysql
@@ -79,9 +79,9 @@ drwx------ 2 mysql root 4096 Jul 27 15:08 mysql
 drwx------ 2 mysql root 4096 Jul 27 15:08 test
 
 
-2¡¢ÅäÖÃmysqld_multiÆô¶¯¶à¸ömysqlÊµÀý
+2ã€é…ç½®mysqld_multiå¯åŠ¨å¤šä¸ªmysqlå®žä¾‹
 [root@tvm-mysql ~]# mysqld_multi --example
-ÅäÖÃÎÄ¼þÊ¾Àý£º
+é…ç½®æ–‡ä»¶ç¤ºä¾‹ï¼š
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 [root@tvm-mysql ~]# cat /etc/my.cnf
 [mysqld_multi]
@@ -89,7 +89,7 @@ mysqld     = /usr/bin/mysqld_safe
 mysqladmin = /usr/bin/mysqladmin
 user       = multi_admin
 password   = multi321
-log        = /var/log/mysqld_multi.log 
+log        = /var/log/mysqld_multi.log
 
 [mysqld3306]
 socket     = /tmp/mysql.3306.sock
@@ -119,32 +119,32 @@ MySQL server from group: mysqld3307 is running
 /tmp/mysql.3306.pid  /tmp/mysql.3306.sock  /tmp/mysql.3307.pid  /tmp/mysql.3307.sock
 
 
-3¡¢ÅäÖÃ¹ÜÀíÕÊºÅ
-1£©rootÃÜÂë£º
+3ã€é…ç½®ç®¡ç†å¸å·
+1ï¼‰rootå¯†ç ï¼š
 [root@tvm-mysql ~]# mysqladmin -u root -S /tmp/mysql.3306.sock password 'toortoor'
-¡¾3307µÄ²Ù×÷ÀàËÆ£¬ÏÂÊöÂÔ¹ý¡¿
+ã€3307çš„æ“ä½œç±»ä¼¼ï¼Œä¸‹è¿°ç•¥è¿‡ã€‘
 
-2£©mysql_multiµÄ¹ÜÀíÕÊºÅ
-×¢£ºÔÚmy.cnfÖÐÊ¹ÓÃÕâ¸öÕÊºÅÀ´¿ØÖÆËùÓÐµÄÊµÀý£¬Òò´Ë½¨ÒéÔÚÃ¿¸öÊµÀýÖÐ½¨Á¢Ò»¸öÍ¨ÓÃµÄÕÊºÅ¡£
+2ï¼‰mysql_multiçš„ç®¡ç†å¸å·
+æ³¨ï¼šåœ¨my.cnfä¸­ä½¿ç”¨è¿™ä¸ªå¸å·æ¥æŽ§åˆ¶æ‰€æœ‰çš„å®žä¾‹ï¼Œå› æ­¤å»ºè®®åœ¨æ¯ä¸ªå®žä¾‹ä¸­å»ºç«‹ä¸€ä¸ªé€šç”¨çš„å¸å·ã€‚
 
 [root@tvm-mysql ~]# mysql -u root -S /tmp/mysql.3306.sock -p
-Enter password: 
+Enter password:
 mysql> GRANT SHUTDOWN ON *.* TO multi_admin@localhost IDENTIFIED BY 'multi321';
 Query OK, 0 rows affected (0.00 sec)
 
 mysql> exit
 Bye
 
-²âÊÔ£ºÊ¹ÓÃmysqladminÀ´¹Ø±ÕÊµÀý¡£
+æµ‹è¯•ï¼šä½¿ç”¨mysqladminæ¥å…³é—­å®žä¾‹ã€‚
 [root@tvm-mysql ~]# mysqladmin -u multi_admin -S /tmp/mysql.3306.sock -p shutdown
-Enter password: 
+Enter password:
 [root@tvm-mysql ~]# tail /data/mysql/3306/tvm-mysql.err -n 3
 150727 15:49:33 [Note] /usr/libexec/mysqld: Shutdown complete
 
 150727 15:49:33 mysqld_safe mysqld from pid file /tmp/mysql.3306.pid ended
 
 
-²âÊÔ£ºÊ¹ÓÃmysqld_multiÀ´¹Ø±ÕÊµÀý¡£
+æµ‹è¯•ï¼šä½¿ç”¨mysqld_multiæ¥å…³é—­å®žä¾‹ã€‚
 [root@tvm-mysql ~]# mysqld_multi report
 Reporting MySQL servers
 MySQL server from group: mysqld3306 is not running
@@ -155,8 +155,8 @@ Reporting MySQL servers
 MySQL server from group: mysqld3306 is not running
 MySQL server from group: mysqld3307 is not running
 
-3£©Æô¶¯ºÍ¹Ø±Õµ¥¸öÊµÀý£º
-[root@tvm-mysql ~]# echo >/data/mysql/3306/tvm-mysql.err 
+3ï¼‰å¯åŠ¨å’Œå…³é—­å•ä¸ªå®žä¾‹ï¼š
+[root@tvm-mysql ~]# echo >/data/mysql/3306/tvm-mysql.err
 [root@tvm-mysql ~]# mysqld_multi start 3306
 [root@tvm-mysql ~]# mysqld_multi report
 Reporting MySQL servers
@@ -164,12 +164,12 @@ MySQL server from group: mysqld3306 is running
 MySQL server from group: mysqld3307 is not running
 
 [root@tvm-mysql ~]# mysqld_multi stop 3306
-[root@tvm-mysql ~]# mysqld_multi report   
+[root@tvm-mysql ~]# mysqld_multi report
 Reporting MySQL servers
 MySQL server from group: mysqld3306 is not running
 MySQL server from group: mysqld3307 is not running
 
-²é¿´ÈÕÖ¾£º
+æŸ¥çœ‹æ—¥å¿—ï¼š
 [root@tvm-mysql ~]# cat /data/mysql/3306/tvm-mysql.err
 
 
@@ -188,23 +188,3 @@ Version: '5.1.73'  socket: '/tmp/mysql.3306.sock'  port: 3306  Source distributi
 150727 16:00:19 [Note] /usr/libexec/mysqld: Shutdown complete
 
 150727 16:00:19 mysqld_safe mysqld from pid file /tmp/mysql.3306.pid ended
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
