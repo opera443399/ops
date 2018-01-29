@@ -1,27 +1,27 @@
 
 ================================= xtrabackup ===================================
-°²×°Êı¾İ¿â±¸·İ¹¤¾ßpercona-xtrabackup
+å®‰è£…æ•°æ®åº“å¤‡ä»½å·¥å…·percona-xtrabackup
 # yum -y install perl-DBD-MySQL perl-Time-HiRes
 # wget -c http://www.percona.com/downloads/XtraBackup/XtraBackup-2.2.6/binary/redhat/6/x86_64/percona-xtrabackup-2.2.6-5042.el6.x86_64.rpm
-# rpm -ivh percona-xtrabackup-2.2.6-5042.el6.x86_64.rpm 
+# rpm -ivh percona-xtrabackup-2.2.6-5042.el6.x86_64.rpm
 
 
-¡¾slave¡¿
+ã€slaveã€‘
 innobackupex --defaults-file=${f_my_cnf} --host=127.0.0.1 --port=${s_port} --user=root --password=${s_password} --slave-info ${d_bak_tmp}
 innobackupex --incremental --defaults-file=${f_my_cnf} --host=127.0.0.1 --port=${s_port} --user=root --password=${s_password} --slave-info --safe-slave-backup ${d_bak_tmp}
 
-¡¾master¡¿
+ã€masterã€‘
 innobackupex --defaults-file=${f_my_cnf} --host=127.0.0.1 --port=${s_port} --user=root --password=${s_password} ${d_bak_tmp}
 innobackupex --incremental --defaults-file=${f_my_cnf} --host=127.0.0.1 --port=${s_port} --user=root --password=${s_password} ${d_bak_tmp}
 
 
 
-²âÊÔ»Ö¸´
-¡¾ÍêÕû±¸·İfull¡¿
+æµ‹è¯•æ¢å¤
+ã€å®Œæ•´å¤‡ä»½fullã€‘
 innobackupex --apply-log /path/to/BACKUP-DIR
 
 
-¡¾ÔöÁ¿±¸·İincr¡¿£¨--incremental-dir=È«Â·¾¶£¬·ñÔò»áÕÒ²»µ½ÎÄ¼ş¶ø±¨´í£©
+ã€å¢é‡å¤‡ä»½incrã€‘ï¼ˆ--incremental-dir=å…¨è·¯å¾„ï¼Œå¦åˆ™ä¼šæ‰¾ä¸åˆ°æ–‡ä»¶è€ŒæŠ¥é”™ï¼‰
 innobackupex --apply-log --redo-only /path/to/BASE-DIR
 innobackupex --apply-log --redo-only /path/to/BASE-DIR --incremental-dir=/path/to/INCREMENTAL-DIR-1
 innobackupex --apply-log --redo-only /path/to/BASE-DIR --incremental-dir=/path/to/INCREMENTAL-DIR-2
@@ -31,8 +31,8 @@ innobackupex --apply-log /path/to/BASE-DIR
 
 
 
-¡¾ÊµÀı¡¿
-È«±¸£º
+ã€å®ä¾‹ã€‘
+å…¨å¤‡ï¼š
 xtrabackup: Transaction log of lsn (43508598110) to (43508607243) was copied.
 
 innobackupex: Backup created in directory '/home/backup/mysql/13306/tmp/2014-11-12_12-13-41'
@@ -40,7 +40,7 @@ innobackupex: MySQL binlog position: filename 'mysql-bin.000020', position 88435
 innobackupex: MySQL slave binlog position: master host '192.168.1.222', gtid_slave_pos 0-1-28647308
 
 
-ÔöÁ¿1£º
+å¢é‡1ï¼š
 xtrabackup: Transaction log of lsn (43509563347) to (43509693292) was copied.
 
 innobackupex: Backup created in directory '/home/backup/mysql/13306/tmp/2014-11-12_13-55-48'
@@ -48,7 +48,7 @@ innobackupex: MySQL binlog position: filename 'mysql-bin.000020', position 88780
 innobackupex: MySQL slave binlog position: master host '192.168.1.222', gtid_slave_pos 0-1-28648210
 
 
-ÔöÁ¿2£º
+å¢é‡2ï¼š
 xtrabackup: Transaction log of lsn (43510107705) to (43510312989) was copied.
 
 innobackupex: Backup created in directory '/home/backup/mysql/13306/tmp/2014-11-12_14-09-09'
@@ -58,19 +58,19 @@ innobackupex: MySQL slave binlog position: master host '192.168.1.222', gtid_sla
 
 
 +----------------------------------------+
-[root@test228 tmp]# more 2014-11-12_12-13-41/xtrabackup_checkpoints 
+[root@test228 tmp]# more 2014-11-12_12-13-41/xtrabackup_checkpoints
 backup_type = full-backuped
 from_lsn = 0
 to_lsn = 43508607243
 last_lsn = 43508607243
 compact = 0
-[root@test228 tmp]# more 2014-11-12_13-55-48/xtrabackup_checkpoints 
+[root@test228 tmp]# more 2014-11-12_13-55-48/xtrabackup_checkpoints
 backup_type = incremental
 from_lsn = 43508607243
 to_lsn = 43509693292
 last_lsn = 43509693292
 compact = 0
-[root@test228 tmp]# more 2014-11-12_14-09-09/xtrabackup_checkpoints 
+[root@test228 tmp]# more 2014-11-12_14-09-09/xtrabackup_checkpoints
 backup_type = incremental
 from_lsn = 43509693292
 to_lsn = 43510311166
@@ -78,7 +78,7 @@ last_lsn = 43510312989
 compact = 0
 +----------------------------------------+
 
-+----------------------------------------+µÚ1²½£¬»Ö¸´full±¸·İ£º
++----------------------------------------+ç¬¬1æ­¥ï¼Œæ¢å¤fullå¤‡ä»½ï¼š
 # innobackupex --apply-log --redo-only /home/backup/mysql/13306/tmp/2014-11-12_12-13-41/
 xtrabackup: starting shutdown with innodb_fast_shutdown = 1
 InnoDB: Starting shutdown...
@@ -86,18 +86,18 @@ InnoDB: Shutdown completed; log sequence number 43508607243
 141112 14:25:24  innobackupex: completed OK!
 
 
-+----------------------------------------+µÚ2²½£¬»Ö¸´incr±¸·İ1£º
++----------------------------------------+ç¬¬2æ­¥ï¼Œæ¢å¤incrå¤‡ä»½1ï¼š
 # innobackupex --apply-log --redo-only /home/backup/mysql/13306/tmp/2014-11-12_12-13-41/ --incremental-dir=/home/backup/mysql/13306/tmp/2014-11-12_13-55-48/
 
 
-+----------------------------------------+µÚ3²½£¬»Ö¸´incr±¸·İ2£º
++----------------------------------------+ç¬¬3æ­¥ï¼Œæ¢å¤incrå¤‡ä»½2ï¼š
 # innobackupex --apply-log /home/backup/mysql/13306/tmp/2014-11-12_12-13-41/ --incremental-dir=/home/backup/mysql/13306/tmp/2014-11-12_14-09-09/
 
 #########################################
-×¢Òâ£º --redo-only ÔÚºÏ²¢³ıÁË×îºóÒ»¸öÖ®ÍâµÄËùÓĞincrementalsÊ±ÒªÌí¼ÓÕâ¸ö²ÎÊı£¬ÉÏÊöµÚ3²½ÊÇ×îºóÒ»¸ö£¬Òò´Ë²»ÓÃÕâ¸ö²ÎÊı¡£¼´Ê±×îºóÒ»²½ÓÃÁËÕâ¸ö²ÎÊı£¬Êı¾İÒ²ÊÇÍêÕûµÄ£¬Ö»ÊÇserver¶Ë»áÖ´ĞĞrollback½×¶Î¡£
+æ³¨æ„ï¼š --redo-only åœ¨åˆå¹¶é™¤äº†æœ€åä¸€ä¸ªä¹‹å¤–çš„æ‰€æœ‰incrementalsæ—¶è¦æ·»åŠ è¿™ä¸ªå‚æ•°ï¼Œä¸Šè¿°ç¬¬3æ­¥æ˜¯æœ€åä¸€ä¸ªï¼Œå› æ­¤ä¸ç”¨è¿™ä¸ªå‚æ•°ã€‚å³æ—¶æœ€åä¸€æ­¥ç”¨äº†è¿™ä¸ªå‚æ•°ï¼Œæ•°æ®ä¹Ÿæ˜¯å®Œæ•´çš„ï¼Œåªæ˜¯serverç«¯ä¼šæ‰§è¡Œrollbacké˜¶æ®µã€‚
 
-´ËÊ±²é¿´xtrabackup_checkpoints£º
-[root@test228 tmp]# more 2014-11-12_12-13-41/xtrabackup_checkpoints 
+æ­¤æ—¶æŸ¥çœ‹xtrabackup_checkpointsï¼š
+[root@test228 tmp]# more 2014-11-12_12-13-41/xtrabackup_checkpoints
 backup_type = full-prepared
 from_lsn = 0
 to_lsn = 43510311166
@@ -106,7 +106,7 @@ compact = 0
 #########################################
 
 
-+----------------------------------------+µÚ4²½£¬ºÏ²¢ËùÓĞÔöÁ¿µ½È«±¸ºó£¬×¼±¸Ö´ĞĞrollback½×¶Î¡£
++----------------------------------------+ç¬¬4æ­¥ï¼Œåˆå¹¶æ‰€æœ‰å¢é‡åˆ°å…¨å¤‡åï¼Œå‡†å¤‡æ‰§è¡Œrollbacké˜¶æ®µã€‚
 # innobackupex --apply-log /home/backup/mysql/13306/tmp/2014-11-12_12-13-41/
 
 
@@ -120,11 +120,10 @@ InnoDB: Shutdown completed; log sequence number 43510321607
 
 
 
-¡¾½áÂÛ¡¿
-·ûºÏÔ¤ÆÚ¡£
-È«²¿»Ö¸´ºó£º
+ã€ç»“è®ºã€‘
+ç¬¦åˆé¢„æœŸã€‚
+å…¨éƒ¨æ¢å¤åï¼š
 InnoDB: Last MySQL binlog file position 0 8883984, file name ./mysql-bin.000020
 
-¶Ô±ÈÔöÁ¿2±¸·İÍê³ÉÊ±£º
+å¯¹æ¯”å¢é‡2å¤‡ä»½å®Œæˆæ—¶ï¼š
 innobackupex: MySQL binlog position: filename 'mysql-bin.000020', position 8883984, GTID of the last change '0-1-28648832'
-
