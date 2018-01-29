@@ -1,5 +1,5 @@
 linux bash shell 三言两语
-2017/11/30
+2018/1/29
 
 linux bash shell的使用博大精深，，本人梳理基础知识，整理一下简单的用法，细节请根据需求自行研究。
 
@@ -89,6 +89,23 @@ done
 
 
 3. for的用法
+### exp1
+# cat /tmp/t.sh
+s=(
+aaa
+bbb
+ccc
+)
+for i in ${s[@]}; do
+  echo "[I] ---> ${i}"
+done
+
+# sh /tmp/t.log
+[I] ---> aaa
+[I] ---> bbb
+[I] ---> ccc
+
+### exp2
 array1=("d.com" "e.com" "f.com")
 len=${#array1[@]}
 
@@ -97,6 +114,7 @@ do
     echo ${array1[$i]}
 done
 
+### exp3
 for a in $(seq 1 100);do
     echo $a
     sleep 1s
