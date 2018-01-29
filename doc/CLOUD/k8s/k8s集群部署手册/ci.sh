@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#2018/1/23
+#2018/1/29
 #set -e
 
 # docker template path on the worker node
@@ -64,6 +64,8 @@ do_build_golang_and_docker_image() {
     ### go build
     if [ -d "${WORKSPACE}/${s_name}/" ]; then
       cd "${WORKSPACE}/${s_name}/"
+      print_debug  "清理：上次构建的 binary"
+      rm -fv ./${s_name}
       print_info  "执行：GO BUILD 来构建 binary"
       go build -v
       print_info  "查看 binary 目录：$(pwd)"
