@@ -1,5 +1,5 @@
 # CICD-配置jenkins任务
-2018/1/23
+2018/1/29
 
 
 ### General
@@ -21,6 +21,8 @@
     - docker image
     - k8s yaml
     - update etcd key
+- Do not allow concurrent builds
+  - 勾选
 - 丢弃旧的构建
   - Strategy
     - Log Rotation
