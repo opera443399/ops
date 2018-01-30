@@ -1,5 +1,5 @@
 openssl证书制作小结
-2017/4/26
+2018/1/30
 
 
 配置证书：请参考：https://docs.docker.com/engine/security/https/
@@ -11,3 +11,9 @@ openssl证书制作小结
 | server-key.pem->server.csr |           ↓            | key.pem->client.csr |
               ↓                      <------->                  ↓
 |       server-cert.pem      |                        |      cert.pem       |
+
+
+
+建议使用 cfssl 这套工具来生成证书，具体操作请参考 k8s 部署 etcd 集群时的示例
+查看证书：
+openssl x509 -noout -text -in xxx.crt
