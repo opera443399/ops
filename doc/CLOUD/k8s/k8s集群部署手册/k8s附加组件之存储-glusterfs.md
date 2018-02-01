@@ -1,5 +1,5 @@
 # k8s附加组件之存储-glusterfs
-2018/1/16
+2018/2/1
 
 ### 部署 glusterfs 集群
   - 初始化 glusterfs 集群
@@ -48,6 +48,18 @@ echo '### glusterfs data for k8s-dev only!' >/data1/glusterfs_data/README.md
 10.10.9.69:/data1/glusterfs_data/gv0
 ~]# gluster volume start gv0
 ~]# gluster volume info gv0
+
+##### 配置参数，特别是 quorum 相关的，用于预防脑裂问题
+gluster volume set gv0 diagnostics.count-fop-hits on
+gluster volume set gv0 diagnostics.latency-measurement on
+gluster volume set gv0 cluster.server-quorum-type server
+gluster volume set gv0 cluster.quorum-type auto
+gluster volume set gv0 network.remote-dio enable
+gluster volume set gv0 cluster.eager-lock enable
+gluster volume set gv0 performance.stat-prefetch off
+gluster volume set gv0 performance.io-cache off
+gluster volume set gv0 performance.read-ahead off
+gluster volume set gv0 performance.quick-read off
 
 ##### 在客户端上配置 glusterfs 环境并挂载测试
 ~]# yum install centos-release-gluster310 -y
