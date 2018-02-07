@@ -1,5 +1,5 @@
 # 再探使用kubeadm部署高可用的k8s集群-01引言
-2018/1/26
+2018/2/7
 
 
 ### 提示
@@ -11,23 +11,32 @@
 
 ### 资源
 * k8s node
-  - master0, 10.222.0.100
-  - master1, 10.222.0.101
-  - master2, 10.222.0.102
+  - master-100, 10.222.0.100
+  - master-101, 10.222.0.101
+  - master-102, 10.222.0.102
   - LB, 10.222.0.88
-    - master0, master1, master2
+    - master-100, master-101, master-102
 * k8s version
   - v1.9.0
 * 步骤
+  - 配置 hosts, docker, k8s 服务
   - 部署 etcd 集群
   - 配置 k8s master
   - 配置 k8s worker
+
+* 附加
+  - 网络
+  - 在 master 上更新 kube-proxy（注明：未完成，下述内容待验证）
 
 
 ### 部署 etcd 集群
 * 有2种方式可供选择
   - 在 3 个独立的 vm 上部署
   - 复用 3 个 k8s master 节点（本文）
+    - 配置 hosts
+    - 配置 docker 访问
+    - 安装 k8s 服务
+
 
 * 基本步骤
   - 准备工作
@@ -35,30 +44,38 @@
   - 创建 etcd client 证书
   - 同步 ca 和 client 的证书相关文件到另外 2 个节点
   - 创建 server 和 peer 证书（所有节点上操作）
-  - 创建 etcd 服务（所有节点上操作）
+  - 创建 etcd 服务对应到 systemd 配置（所有节点上操作）
 
 
 ##### 准备工作
 ```bash
 ##### 配置节点之间的 ssh 登录（略）
-##### 准备工具 cfssl 和 cfssljson
+##### 准备 docker, k8s 相关的 rpm 包 和镜像（略）
+> 使用kubeadm部署k8s集群00-缓存gcr.io镜像
+> 使用kubeadm部署k8s集群01-初始化
+
+##### 准备工具 cfssl, cfssljson, etcd, etcdctl（所有节点上需要）
 curl -o /usr/local/bin/cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
 curl -o /usr/local/bin/cfssljson https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
 chmod +x /usr/local/bin/cfssl*
 
-##### 后续将用到的变量
-export PEER_NAME=$(hostname)
-export PRIVATE_IP=$(ip addr show eth0 | grep -Po 'inet \K[\d.]+')
+##### 下载 etcd 和 etcdctl
+export ETCD_VERSION=v3.1.10
+curl -sSL https://github.com/coreos/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz | tar -xzv --strip-components=1 -C /usr/local/bin/
+rm -rf etcd-$ETCD_VERSION-linux-amd64*
 
+##### 同步到另外2个节点
+rsync -avzP /usr/local/bin/* 10.222.0.101:/usr/local/bin/
+rsync -avzP /usr/local/bin/* 10.222.0.102:/usr/local/bin/
 
 ```
 
 
 ##### 创建 etcd CA 证书
 ```bash
-##### 在 master0 上操作
+##### 在 master-100 上操作
 mkdir -p /etc/kubernetes/pki/etcd
-cd !$
+cd /etc/kubernetes/pki/etcd/
 
 cat >ca-config.json <<EOL
 {
@@ -141,22 +158,18 @@ client-key.pem
 
 ##### 同步 ca 和 client 的证书相关文件到另外 2 个节点
 ```bash
-mkdir -p /etc/kubernetes/pki/etcd
-cd !$
+rsync -avzP /etc/kubernetes/pki 10.222.0.101:/etc/kubernetes/
+rsync -avzP /etc/kubernetes/pki 10.222.0.102:/etc/kubernetes/
 
-scp root@10.222.0.100:/etc/kubernetes/pki/etcd/ca.pem .
-scp root@10.222.0.100:/etc/kubernetes/pki/etcd/ca-key.pem .
-scp root@10.222.0.100:/etc/kubernetes/pki/etcd/ca-config.json .
-scp root@10.222.0.100:/etc/kubernetes/pki/etcd/client.pem .
-scp root@10.222.0.100:/etc/kubernetes/pki/etcd/client-key.pem .
-
-
-
-scp root@10.222.0.100:/usr/local/bin/cfssl* /usr/local/bin/
 ```
 
 ##### 创建 server 和 peer 证书（所有节点上操作）
 ```bash
+##### 设置环境变量
+export PEER_NAME=$(ip addr show eth0 | grep -Po 'inet \K[\d.]+' |awk -F'.' '{print "master-"$4}')
+export PRIVATE_IP=$(ip addr show eth0 | grep -Po 'inet \K[\d.]+')
+
+
 cfssl print-defaults csr > config.json
 sed -i '0,/CN/{s/example\.net/'"$PEER_NAME"'/}' config.json
 sed -i 's/www\.example\.net/'"$PRIVATE_IP"'/' config.json
@@ -167,16 +180,12 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer
 
 ```
 
-#### 创建 etcd 服务（所有节点上操作）
+#### 创建 etcd 服务对应到 systemd 配置（所有节点上操作）
 ```bash
-##### 下载 etcd 和 etcdctl
-export ETCD_VERSION=v3.1.10
-curl -sSL https://github.com/coreos/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz | tar -xzv --strip-components=1 -C /usr/local/bin/
-rm -rf etcd-$ETCD_VERSION-linux-amd64*
+
 
 ##### 准备 etcd 服务依赖的环境变量
-touch /etc/etcd.env
-echo "PEER_NAME=$PEER_NAME" >> /etc/etcd.env
+echo "PEER_NAME=$PEER_NAME" > /etc/etcd.env
 echo "PRIVATE_IP=$PRIVATE_IP" >> /etc/etcd.env
 
 ##### 准备 etcd 服务的配置文件
@@ -209,7 +218,7 @@ ExecStart=/usr/local/bin/etcd --name ${PEER_NAME} \
     --peer-key-file=/etc/kubernetes/pki/etcd/peer-key.pem \
     --peer-client-cert-auth \
     --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.pem \
-    --initial-cluster master0=https://10.222.0.100:2380,master1=https://10.222.0.101:2380,master2=https://10.222.0.102:2380 \
+    --initial-cluster master-100=https://10.222.0.100:2380,master-101=https://10.222.0.101:2380,master-102=https://10.222.0.102:2380 \
     --initial-cluster-token my-etcd-token \
     --initial-cluster-state new
 
@@ -226,22 +235,31 @@ systemctl enable etcd
 systemctl start etcd
 systemctl status etcd
 
-##### 备份证书
-mkdir ~/k8s_install/master/init
-cd !$
-cp -a /etc/kubernetes/pki/etcd .
+##### 测试
+etcdctl --endpoints="https://10.222.0.100:2379" --ca-file=/etc/kubernetes/pki/etcd/ca.pem --cert-file=/etc/kubernetes/pki/etcd/client.pem --key-file=/etc/kubernetes/pki/etcd/client-key.pem member list
+
 
 ```
 
 ### 配置 k8s master
 
-##### 初始化 master0
+##### 初始化 master-100
 ```bash
+mkdir -p ~/k8s_install/master/init
+cd ~/k8s_install/master/init
+
+##### 备份 etcd 证书
+cp -a /etc/kubernetes/pki/etcd ~/k8s_install/master/init/
+##### 后续如果 kubeadm reset 将导致 pki 目录被清空，此时可以恢复证书
+cp -a ~/k8s_install/master/init/etcd /etc/kubernetes/pki/
+
+export PRIVATE_IP=$(ip addr show eth0 | grep -Po 'inet \K[\d.]+')
+
 cat >config.yaml <<EOL
 apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
 api:
-  advertiseAddress: 10.222.0.100
+  advertiseAddress: ${PRIVATE_IP}
 etcd:
   endpoints:
   - https://10.222.0.100:2379
@@ -261,101 +279,57 @@ EOL
 
 
 kubeadm init --config=config.yaml
+
+##### 使用 kubectl
+mkdir -p $HOME/.kube
 cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+
+##### 查看集群节点
+[root@master-100 init]# kubectl get nodes
+NAME         STATUS     ROLES     AGE       VERSION
+master-100   NotReady   master    1m        v1.9.0
 
 ```
 
 
 
-##### 初始化 master1 master2
+##### 初始化 master-101 master-102
 ```bash
-##### 同步在 master0 上生成的 ca.crt 和 ca.key 文件
-scp /etc/kubernetes/pki/ca.* 10.222.0.101:/etc/kubernetes/pki/
-scp /etc/kubernetes/pki/ca.* 10.222.0.102:/etc/kubernetes/pki/
+##### 将 master-101 加入集群
+##### 首先、同步在 master-100 上生成的 ca.crt 和 ca.key 文件
+scp 10.222.0.100:/etc/kubernetes/pki/ca.* /etc/kubernetes/pki
 
-##### 参考初始化 master0 时的操作来初始化 master1 和 master2
+##### 重复上一步（初始化 master-100）的操作即可
+##### master-102 的操作一致，操作完毕后，查看集群节点
+[root@master-100 init]# kubectl get nodes
+NAME         STATUS     ROLES     AGE       VERSION
+master-100   NotReady   master    2m        v1.9.0
+master-101   NotReady   master    3m        v1.9.0
+master-102   NotReady   master    20s       v1.9.0
 
 ```
 
 
 ### 配置 k8s worker
-
-##### 初始化 worker（此步骤开始遇到异常！节点未加入集群，提示未授权访问 apiserver 服务，可能需要新的 kubeadm 版本？姿势不对？待后续实验后继续更新，懒得去 github 上讨论了，路过的有心人不妨试试）
 ```bash
-##### 如果是重复操作，请先 reset
-[root@worker01 ~]# kubeadm reset
-[preflight] Running pre-flight checks.
-[reset] Stopping the kubelet service.
-[reset] Unmounting mounted directories in "/var/lib/kubelet"
-[reset] Removing kubernetes-managed containers.
-[reset] No etcd manifest found in "/etc/kubernetes/manifests/etcd.yaml". Assuming external etcd.
-[reset] Deleting contents of stateful directories: [/var/lib/kubelet /etc/cni/net.d /var/lib/dockershim /var/run/kubernetes]
-[reset] Deleting contents of config directories: [/etc/kubernetes/manifests /etc/kubernetes/pki]
-[reset] Deleting files: [/etc/kubernetes/admin.conf /etc/kubernetes/kubelet.conf /etc/kubernetes/controller-manager.conf /etc/kubernetes/scheduler.conf]
-[root@worker01 ~]#
+##### 加入集群
+kubeadm join --token xxx.xxxxxxx 10.2.18.67:6443 --discovery-token-ca-cert-hash sha256:xxx
 
-##### 将 worker 节点加入集群：
-[root@worker01 ~]# kubeadm join --token xxx 10.222.0.102:6443 --discovery-token-ca-cert-hash sha256:xxx
-[preflight] Running pre-flight checks.
-        [WARNING SystemVerification]: docker version is greater than the most recently validated version. Docker version: 17.09.1-ce. Max validated version: 17.03
-        [WARNING FileExisting-crictl]: crictl not found in system path
-[preflight] Starting the kubelet service
-[discovery] Trying to connect to API Server "10.222.0.102:6443"
-[discovery] Created cluster-info discovery client, requesting info from "https://10.222.0.102:6443"
-[discovery] Requesting info from "https://10.222.0.102:6443" again to validate TLS against the pinned public key
-[discovery] Cluster info signature and contents are valid and TLS certificate validates against pinned roots, will use API Server "10.222.0.102:6443"
-[discovery] Successfully established connection with API Server "10.222.0.102:6443"
-
-This node has joined the cluster:
-* Certificate signing request was sent to master and a response
-  was received.
-* The Kubelet was informed of the new secure connection details.
-
-Run 'kubectl get nodes' on the master to see this node join the cluster.
-
-
-##### 通常看到上述输出，会以为没问题来，实际上，在 master 上 kubectl get nodes 时，却看不到 worker 节点加入到集群中，此时去查看日志：
-[root@worker01 ~]# date
-Thu Jan 25 09:09:12 CST 2018
-[root@worker01 ~]# journalctl -u kubelet -S '2018-01-25 09:0'
--- Logs begin at Tue 2017-10-31 23:40:50 CST, end at Thu 2018-01-25 09:09:27 CST. --
-Jan 25 09:09:03 worker01 systemd[1]: Started kubelet: The Kubernetes Node Agent.
-Jan 25 09:09:03 worker01 systemd[1]: Starting kubelet: The Kubernetes Node Agent...
-Jan 25 09:09:03 worker01 kubelet[4808]: I0125 09:09:03.693518    4808 feature_gate.go:220] feature gates: &{{} map[]}
-Jan 25 09:09:03 worker01 kubelet[4808]: I0125 09:09:03.693607    4808 controller.go:114] kubelet config controller: starting controller
-Jan 25 09:09:03 worker01 kubelet[4808]: I0125 09:09:03.693622    4808 controller.go:118] kubelet config controller: validating combination of defaults and flags
-Jan 25 09:09:04 worker01 kubelet[4808]: W0125 09:09:04.012780    4808 cni.go:171] Unable to update cni config: No networks found in /etc/cni/net.d
-Jan 25 09:09:04 worker01 kubelet[4808]: I0125 09:09:04.016411    4808 server.go:182] Version: v1.9.0
-Jan 25 09:09:04 worker01 kubelet[4808]: I0125 09:09:04.016467    4808 feature_gate.go:220] feature gates: &{{} map[]}
-Jan 25 09:09:04 worker01 kubelet[4808]: I0125 09:09:04.016603    4808 plugins.go:101] No cloud provider specified.
-Jan 25 09:09:04 worker01 kubelet[4808]: I0125 09:09:04.072301    4808 certificate_store.go:130] Loading cert/key pair from ("/var/lib/kubelet/pki/kubelet-client.crt", "/var/lib/kubelet/pki/kubelet-clie
-Jan 25 09:09:04 worker01 kubelet[4808]: I0125 09:09:04.170082    4808 server.go:428] --cgroups-per-qos enabled, but --cgroup-root was not specified.  defaulting to /
-Jan 25 09:09:04 worker01 kubelet[4808]: I0125 09:09:04.170355    4808 container_manager_linux.go:242] container manager verified user specified cgroup-root exists: /
-Jan 25 09:09:04 worker01 kubelet[4808]: I0125 09:09:04.170368    4808 container_manager_linux.go:247] Creating Container Manager object based on Node Config: {RuntimeCgroupsName: SystemCgroupsName: Kub
-Jan 25 09:09:04 worker01 kubelet[4808]: I0125 09:09:04.170489    4808 container_manager_linux.go:266] Creating device plugin manager: false
-Jan 25 09:09:04 worker01 kubelet[4808]: I0125 09:09:04.170575    4808 kubelet.go:290] Adding manifest path: /etc/kubernetes/manifests
-Jan 25 09:09:04 worker01 kubelet[4808]: I0125 09:09:04.170602    4808 kubelet.go:313] Watching apiserver
-Jan 25 09:09:04 worker01 kubelet[4808]: E0125 09:09:04.172499    4808 file.go:76] Unable to read manifest path "/etc/kubernetes/manifests": path does not exist, ignoring
-Jan 25 09:09:04 worker01 kubelet[4808]: W0125 09:09:04.174534    4808 kubelet_network.go:139] Hairpin mode set to "promiscuous-bridge" but kubenet is not enabled, falling back to "hairpin-veth"
-Jan 25 09:09:04 worker01 kubelet[4808]: I0125 09:09:04.174567    4808 kubelet.go:571] Hairpin mode set to "hairpin-veth"
-Jan 25 09:09:04 worker01 kubelet[4808]: W0125 09:09:04.174646    4808 cni.go:171] Unable to update cni config: No networks found in /etc/cni/net.d
-Jan 25 09:09:04 worker01 kubelet[4808]: I0125 09:09:04.174691    4808 client.go:80] Connecting to docker on unix:///var/run/docker.sock
-Jan 25 09:09:04 worker01 kubelet[4808]: I0125 09:09:04.174704    4808 client.go:109] Start docker client with request timeout=2m0s
-Jan 25 09:09:04 worker01 kubelet[4808]: W0125 09:09:04.176446    4808 cni.go:171] Unable to update cni config: No networks found in /etc/cni/net.d
-Jan 25 09:09:04 worker01 kubelet[4808]: W0125 09:09:04.178886    4808 cni.go:171] Unable to update cni config: No networks found in /etc/cni/net.d
-Jan 25 09:09:04 worker01 kubelet[4808]: I0125 09:09:04.178938    4808 docker_service.go:232] Docker cri networking managed by cni
-Jan 25 09:09:04 worker01 kubelet[4808]: E0125 09:09:04.191260    4808 reflector.go:205] k8s.io/kubernetes/pkg/kubelet/kubelet.go:465: Failed to list *v1.Service: Unauthorized
-Jan 25 09:09:04 worker01 kubelet[4808]: E0125 09:09:04.191347    4808 reflector.go:205] k8s.io/kubernetes/pkg/kubelet/kubelet.go:474: Failed to list *v1.Node: Unauthorized
-Jan 25 09:09:04 worker01 kubelet[4808]: E0125 09:09:04.191438    4808 reflector.go:205] k8s.io/kubernetes/pkg/kubelet/config/apiserver.go:47: Failed to list *v1.Pod: Unauthorized
-
-
-
-##### 注意到没：Unauthorized
-##### 未找到解决办法
+##### 查看集群节点
+[root@master-100 init]# kubectl get nodes
+NAME         STATUS     ROLES     AGE       VERSION
+master-100   NotReady   master    15m       v1.9.0
+master-101   NotReady   master    17m       v1.9.0
+master-102   NotReady   master    6m        v1.9.0
+worker-200   NotReady   <none>    7s        v1.9.0
 
 ```
 
-##### 在 master 上更新 kube-proxy（注明：上一个步骤未完成，下述内容待验证）
+
+### 附加
+##### 网络（略过，取决于个人或者组织熟悉的网络插件）
+
+##### 配置 worker 使用 kube-proxy 时通过 LB 来访问后端高可用的 apiserver 服务（注明：未完成，下述内容待验证）
 ```bash
 kubectl get configmap -n kube-system kube-proxy -o yaml > kube-proxy.yaml
 sed -i 's#server:.*#server: https://10.222.0.88:6443#g' kube-proxy.yaml
@@ -366,34 +340,30 @@ kubectl delete pod -n kube-system -l k8s-app=kube-proxy
 ##### 更新 worker 上 kubelet 服务
 sed -i 's#server:.*#server: https://10.222.0.88:6443#g' /etc/kubernetes/kubelet.conf
 systemctl restart kubelet
+```
 
+上述 kube-proxy 是一个 daemonset 类型的服务，也就是说 master节点上也会有该服务，此时思考下述数据流向是否会有异常：
+```
+kube-proxy(on master-100) -> LB(backend to master-100)
+```
 
-##### 思考一个 LB 相关的问题：
-当前状态：
-LB -> k8s_master(m0,m1,m2)
-kube-proxy -> m0
-
-如果将 kube-proxy 的 apiserver 切到 LB 则：
-kube-proxy -> LB
-
-此时 client 访问 k8s 中的容器时，数据流量可能场景：
-client(xx) -> m1_ip_port -> kube-proxy(m0) -> container
-                            -> apiserver(LB/m0)
-也就是说：
-kube-proxy(m0) -> apiserver(m0)
-
-上述场景，如果是 LVS/DR 模式的 LB 则会有异常
+上述场景，如果是 LVS/DR 模式的 LB 则意味着
+```
 RS1 -> LB1 -> RS1
 导致：
 RS1 -> RS1
-
-此时可以考虑在中间增加一层 LB
-RS2 -> LB2 -> HAProxy -> RS2
-变成：
-RS2 -> HAProxy -> RS2
-
 ```
+
+引用来自阿里云 SLB 的文档片段（实际遇到的一个坑）
+> 5. 后端ECS实例为什么访问不了负载均衡服务？
+> 这和负载均衡TCP的实现机制有关。在四层TCP协议服务中，不支持后端ECS实例既作为Real Server又作为客户端向所在的负载均衡实例发送请求。因为返回的数据包只在云服务器内部转发，不经过负载均衡，所以在后端ECS实例上去访问负载均衡的服务地址是不通的。
+
+结论：如果从 master 节点的 IP 来访问 k8s 中的访问，可能出现异常。
+
+
+
 
 
 ### ZYXW、参考
 1. [Creating HA clusters with kubeadm](https://kubernetes.io/docs/setup/independent/high-availability/)
+2. [阿里云-SLB-后端服务器常见问题-后端ECS实例为什么访问不了负载均衡服务？](https://help.aliyun.com/knowledge_detail/55198.html)
