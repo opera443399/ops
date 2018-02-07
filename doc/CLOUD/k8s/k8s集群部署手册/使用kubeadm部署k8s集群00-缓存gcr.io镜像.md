@@ -7,7 +7,7 @@
 
 ### 【在国外节点上操作】
 * [镜像来源](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/#running-kubeadm-without-an-internet-connection)
-*
+
 ```bash
 针对下述镜像：
 
