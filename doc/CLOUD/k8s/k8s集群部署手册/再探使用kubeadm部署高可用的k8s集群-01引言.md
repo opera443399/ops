@@ -253,6 +253,7 @@ cp -a /etc/kubernetes/pki/etcd ~/k8s_install/master/init/
 ##### 后续如果 kubeadm reset 将导致 pki 目录被清空，此时可以恢复证书
 cp -a ~/k8s_install/master/init/etcd /etc/kubernetes/pki/
 
+##### 准备配置用于初始化
 export PRIVATE_IP=$(ip addr show eth0 | grep -Po 'inet \K[\d.]+')
 
 cat >config.yaml <<EOL
@@ -277,7 +278,7 @@ apiServerExtraArgs:
   endpoint-reconciler-type: lease
 EOL
 
-
+##### 开始初始化 master
 kubeadm init --config=config.yaml
 
 ##### 使用 kubectl
@@ -313,7 +314,7 @@ master-102   NotReady   master    20s       v1.9.0
 ### 配置 k8s worker
 ```bash
 ##### 加入集群
-kubeadm join --token xxx.xxxxxxx 10.2.18.67:6443 --discovery-token-ca-cert-hash sha256:xxx
+kubeadm join --token xxx.xxxxxxx 10.222.0.100:6443 --discovery-token-ca-cert-hash sha256:xxx
 
 ##### 查看集群节点
 [root@master-100 init]# kubectl get nodes
