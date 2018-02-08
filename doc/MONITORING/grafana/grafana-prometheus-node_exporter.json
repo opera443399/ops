@@ -324,6 +324,7 @@
             "rgba(245, 54, 54, 0.9)"
           ],
           "datasource": "${DS_K8S-DEV}",
+          "decimals": 2,
           "editable": true,
           "error": false,
           "format": "bytes",
@@ -403,6 +404,7 @@
             "rgba(245, 54, 54, 0.9)"
           ],
           "datasource": "${DS_K8S-DEV}",
+          "decimals": 2,
           "editable": true,
           "error": false,
           "format": "bytes",
@@ -483,6 +485,7 @@
             "rgba(245, 54, 54, 0.9)"
           ],
           "datasource": "${DS_K8S-DEV}",
+          "decimals": 1,
           "editable": true,
           "error": false,
           "format": "s",
@@ -1603,7 +1606,7 @@
     ]
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {
@@ -1633,5 +1636,5 @@
   },
   "timezone": "browser",
   "title": "k8s-dev",
-  "version": 17
+  "version": 18
 }
