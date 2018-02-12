@@ -236,8 +236,13 @@ systemctl start etcd
 systemctl status etcd
 
 ##### 测试
-etcdctl --endpoints="https://10.222.0.100:2379" --ca-file=/etc/kubernetes/pki/etcd/ca.pem --cert-file=/etc/kubernetes/pki/etcd/client.pem --key-file=/etc/kubernetes/pki/etcd/client-key.pem member list
-
+ETCDCTL_API=3 etcdctl \
+--endpoints="https://10.222.0.100:2379,https://10.222.0.101:2379,https://10.222.0.102:2379" \
+--cacert=/etc/kubernetes/pki/etcd/ca.pem \
+--cert=/etc/kubernetes/pki/etcd/client.pem \
+--key=/etc/kubernetes/pki/etcd/client-key.pem \
+-w table \
+endpoint status
 
 ```
 
