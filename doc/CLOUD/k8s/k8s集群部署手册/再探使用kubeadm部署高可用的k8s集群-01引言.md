@@ -1,5 +1,5 @@
 # 再探使用kubeadm部署高可用的k8s集群-01引言
-2018/2/12
+2018/2/23
 
 
 ### 提示
@@ -290,28 +290,28 @@ kubeadm init --config=config.yaml
 mkdir -p $HOME/.kube
 cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 
-##### 查看集群节点
-[root@master-100 init]# kubectl get nodes
-NAME         STATUS     ROLES     AGE       VERSION
-master-100   NotReady   master    1m        v1.9.0
+```
+
+### 初始化 网络插件之 calico
+```bash
+##### 关于 calico 的更多内容，请参考笔记：使用kubeadm部署k8s集群01-初始化
+mkdir -p ~/k8s_install/network/calico
+cd ~/k8s_install/network/calico
+curl -so calico-v2.6.yaml  https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
+##### 注意 CALICO_IPV4POOL_CIDR 是否和 podSubnet 一致，默认的需要替换：
+sed -i 's#192.168.0.0/16#172.30.0.0/16#' calico-v2.6.yaml
+##### 启用
+kubectl apply -f calico-v2.6.yaml
 
 ```
 
-
-
-##### 初始化 master-101 master-102
+### 初始化 master-101 master-102
 ```bash
-##### 将 master-101 加入集群
-##### 首先、同步在 master-100 上生成的 ca.crt 和 ca.key 文件
+##### 将 master-101 加入集群（ 因 master-102 的操作同理，略过）
+##### 同步在 master-100 上生成的 ca.crt 和 ca.key 文件
 scp 10.222.0.100:/etc/kubernetes/pki/ca.* /etc/kubernetes/pki
 
-##### 重复上一步（初始化 master-100）的操作即可
-##### master-102 的操作一致，操作完毕后，查看集群节点
-[root@master-100 init]# kubectl get nodes
-NAME         STATUS     ROLES     AGE       VERSION
-master-100   NotReady   master    2m        v1.9.0
-master-101   NotReady   master    3m        v1.9.0
-master-102   NotReady   master    20s       v1.9.0
+##### 重复 初始化 master-100 的操作即可
 
 ```
 
@@ -321,21 +321,18 @@ master-102   NotReady   master    20s       v1.9.0
 ##### 加入集群
 kubeadm join --token xxx.xxxxxxx 10.222.0.100:6443 --discovery-token-ca-cert-hash sha256:xxx
 
-##### 查看集群节点
-[root@master-100 init]# kubectl get nodes
-NAME         STATUS     ROLES     AGE       VERSION
-master-100   NotReady   master    15m       v1.9.0
-master-101   NotReady   master    17m       v1.9.0
-master-102   NotReady   master    6m        v1.9.0
-worker-200   NotReady   <none>    7s        v1.9.0
+```
+
+
+### 查看状态
+```bash
+kubectl get ds,deploy,svc,pods --all-namespaces
+kubectl get nodes
 
 ```
 
 
-### 附加
-##### 网络（略过，取决于个人或者组织熟悉的网络插件）
-
-##### 配置 worker 使用 kube-proxy 时通过 LB 来访问后端高可用的 apiserver 服务（注明：未完成，下述内容待验证）
+### 配置 worker 使用 kube-proxy 时通过 LB 来访问后端高可用的 apiserver 服务（注明：未完成，下述内容待验证）
 ```bash
 kubectl get configmap -n kube-system kube-proxy -o yaml > kube-proxy.yaml
 sed -i 's#server:.*#server: https://10.222.0.88:6443#g' kube-proxy.yaml
