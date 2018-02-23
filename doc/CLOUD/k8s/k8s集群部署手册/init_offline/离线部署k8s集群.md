@@ -1,29 +1,54 @@
 # 离线部署k8s集群
-2018/2/7
+2018/2/23
 
 ### 目录结构
 ```bash
-[root@master-100 init_offline]# pwd
-/root/k8s_install/init_offline
-[root@master-100 init_offline]# tree .
+[root@master-100 k8s_install]# pwd
+/root/k8s_install
+[root@master-100 k8s_install]# tree .
 .
-├── etcd-server-init.sh
-├── etcd-server-key-init.sh
-├── gcr.io
-│   ├── gcr.io-all.tar
-│   └── gcr.io-worker.tar
-├── init-hosts.sh
-├── init-master.sh
-├── init-worker.sh
-└── k8s_rpms_1.9
-    ├── kubeadm-1.9.0-0.x86_64.rpm
-    ├── kubectl-1.9.0-0.x86_64.rpm
-    ├── kubelet-1.9.0-0.x86_64.rpm
-    ├── kubernetes-cni-0.6.0-0.x86_64.rpm
-    ├── README.md
-    └── socat-1.7.3.2-2.el7.x86_64.rpm
+├── init_offline
+│   ├── etcd-server-init.sh
+│   ├── etcd-server-key-init.sh
+│   ├── gcr.io
+│   │   ├── gcr.io-all.tar
+│   │   └── gcr.io-worker.tar
+│   ├── init-hosts.sh
+│   ├── init-master.sh
+│   ├── init-worker.sh
+│   └── k8s_rpms_1.9
+│       ├── kubeadm-1.9.0-0.x86_64.rpm
+│       ├── kubectl-1.9.0-0.x86_64.rpm
+│       ├── kubelet-1.9.0-0.x86_64.rpm
+│       ├── kubernetes-cni-0.6.0-0.x86_64.rpm
+│       ├── README.md
+│       └── socat-1.7.3.2-2.el7.x86_64.rpm
+├── master
+│   └── init
+│       ├── config.yaml
+│       └── etcd
+│           ├── ca-config.json
+│           ├── ca.csr
+│           ├── ca-csr.json
+│           ├── ca-key.pem
+│           ├── ca.pem
+│           ├── client.csr
+│           ├── client.json
+│           ├── client-key.pem
+│           ├── client.pem
+│           ├── config.json
+│           ├── peer.csr
+│           ├── peer-key.pem
+│           ├── peer.pem
+│           ├── server.csr
+│           ├── server-key.pem
+│           └── server.pem
+└── network
+    └── calico
+        ├── calico-v2.6.tar
+        └── calico-v2.6.yaml
 
-2 directories, 13 files
+8 directories, 32 files
 
 ```
 
@@ -101,14 +126,28 @@ cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 
 ```
 
-##### 初始化 master-101 master-102
+### 初始化 网络插件之 calico
 ```bash
-##### 将 master-101 加入集群
-##### 首先、同步在 master-100 上生成的 ca.crt 和 ca.key 文件
+##### 关于 calico 的更多内容，请参考笔记：使用kubeadm部署k8s集群01-初始化
+mkdir -p ~/k8s_install/network/calico
+cd ~/k8s_install/network/calico
+##### 导入提前准备好的镜像
+docker load -i calico-v2.6.tar
+##### 注意 CALICO_IPV4POOL_CIDR 是否和 podSubnet 一致，默认的需要替换：
+sed -i 's#192.168.0.0/16#172.30.0.0/16#' calico-v2.6.yaml
+##### 启用
+kubectl apply -f calico-v2.6.yaml
+
+```
+
+### 初始化 master-101 master-102
+```bash
+##### 将 master-101 加入集群（ 因 master-102 的操作同理，略过）
+##### 同步在 master-100 上生成的 ca.crt 和 ca.key 文件
 scp 10.222.0.100:/etc/kubernetes/pki/ca.* /etc/kubernetes/pki
 
-##### 重复上一步（初始化 master-100）的操作即可
-##### master-102 的操作一致
+##### 重复 初始化 master-100 的操作即可
+
 ```
 
 
@@ -116,5 +155,13 @@ scp 10.222.0.100:/etc/kubernetes/pki/ca.* /etc/kubernetes/pki
 ```bash
 ##### 加入集群
 kubeadm join --token xxx.xxxxxxx 10.222.0.100:6443 --discovery-token-ca-cert-hash sha256:xxx
+
+```
+
+
+### 查看状态
+```bash
+kubectl get ds,deploy,svc,pods --all-namespaces
+kubectl get nodes
 
 ```
