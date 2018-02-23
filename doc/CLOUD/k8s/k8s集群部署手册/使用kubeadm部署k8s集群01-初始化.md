@@ -267,9 +267,9 @@ docker pull quay.io/calico/kube-controllers:v1.0.2
 
 
 ### 可以将镜像保存下来，拷贝到其他节点上直接 docker load -i xxx.tar 即可
-[root@tvm-00 network]# docker save -o calico-all.tar quay.io/coreos/etcd:v3.1.10 quay.io/calico/node:v2.6.5 quay.io/calico/cni:v1.11.2 quay.io/calico/kube-controllers:v1.0.2
+[root@tvm-00 network]# docker save -o calico-v2.6.tar quay.io/coreos/etcd:v3.1.10 quay.io/calico/node:v2.6.5 quay.io/calico/cni:v1.11.2 quay.io/calico/kube-controllers:v1.0.2
 [root@tvm-00 network]# ls
-calico-all.tar  calico-v2.6.yaml
+calico-v2.6.tar  calico-v2.6.yaml
 ```
 
 - 部署 calico
