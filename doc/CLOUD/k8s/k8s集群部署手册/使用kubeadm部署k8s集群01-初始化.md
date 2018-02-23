@@ -1,5 +1,5 @@
 # 使用kubeadm部署k8s集群01-初始化
-2018/1/19
+2018/2/23
 
 ### 节点配置
   - master x3
@@ -36,7 +36,7 @@
 [root@tvm-00 ~]# yum -y install docker-ce-17.09.1.ce-1.el7.centos.x86_64
 
 ### 个性化配置
-[root@tvm-00 ~]# mkdir -p /data2/docker
+[root@tvm-00 ~]# mkdir -p /data/docker
 [root@tvm-00 ~]# mkdir -p /etc/docker; tee /etc/docker/daemon.json <<-'EOF'
 {
   "exec-opts": ["native.cgroupdriver=cgroupfs"],
@@ -238,7 +238,7 @@ Your Kubernetes master has initialized successfully!
 [root@tvm-00 ~]# cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 ### 查看节点信息：
 [root@tvm-00 ~]# kubectl get nodes
-NAME                     STATUS     ROLES     AGE       VERSION
+NAME     STATUS     ROLES     AGE       VERSION
 tvm-00   NotReady   master    19h       v1.9.0
 ### 查看日志：
 [root@tvm-00 ~]# journalctl -xeu kubelet
@@ -254,30 +254,31 @@ To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
 - 准备 calico 需要的下述镜像
   - 提前 pull 到本地，在 worker 节点上也需要 node 和 cni 这2个镜像
 ```bash
-[root@tvm-00 ~]# grep image calico.yaml |uniq |sed -e 's#^.*image: quay.io#docker pull quay.io#g'
+### 准备 calico.yaml 配置文件
+[root@tvm-00 ~]# mkdir -p ~/k8s_install/master/network
+[root@tvm-00 ~]# cd !$
+[root@tvm-00 network]# curl -so calico-v2.6.yaml  https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
+
+[root@tvm-00 network]# grep image calico-v2.6.yaml |uniq |sed -e 's#^.*image: quay.io#docker pull quay.io#g'
 docker pull quay.io/coreos/etcd:v3.1.10
 docker pull quay.io/calico/node:v2.6.5
 docker pull quay.io/calico/cni:v1.11.2
 docker pull quay.io/calico/kube-controllers:v1.0.2
 
-### 可以将镜像保存下来，拷贝到其他节点上直接 docker load 即可
-[root@tvm-00 ~]# cd ~/k8s_install/master/network/
-[root@tvm-00 network]# docker save -o calico-all.tar quay.io/coreos/etcd quay.io/calico/node quay.io/calico/cni quay.io/calico/kube-controllers
-[root@tvm-00 network]# docker save -o calico-worker.tar quay.io/calico/node quay.io/calico/cni
+
+### 可以将镜像保存下来，拷贝到其他节点上直接 docker load -i xxx.tar 即可
+[root@tvm-00 network]# docker save -o calico-all.tar quay.io/coreos/etcd:v3.1.10 quay.io/calico/node:v2.6.5 quay.io/calico/cni:v1.11.2 quay.io/calico/kube-controllers:v1.0.2
 [root@tvm-00 network]# ls
-calico-all.tar  calico-worker.tar  calico.yaml
+calico-all.tar  calico-v2.6.yaml
 ```
 
 - 部署 calico
 ```bash
-### 准备 calico.yaml 配置文件
-[root@tvm-00 ~]# mkdir -p ~/k8s_install/master/network
-[root@tvm-00 ~]# cd !$
-[root@tvm-00 network]# curl -so calico.yaml  https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
-[root@tvm-00 network]# sed -i 's#192.168.0.0/16#172.30.0.0/20#' calico.yaml
+### 更新 calico.yaml 配置文件
+[root@tvm-00 network]# sed -i 's#192.168.0.0/16#172.30.0.0/20#' calico-v2.6.yaml
 
 ### 部署
-[root@tvm-00 network]# kubectl apply -f calico.yaml
+[root@tvm-00 network]# kubectl apply -f calico-v2.6.yaml
 configmap "calico-config" created
 daemonset "calico-etcd" created
 service "calico-etcd" created
@@ -297,16 +298,16 @@ NAMESPACE     NAME                                             READY     STATUS 
 kube-system   calico-etcd-djrtb                                1/1       Running   1          1d
 kube-system   calico-kube-controllers-d6c6b9b8-7ssrn           1/1       Running   1          1d
 kube-system   calico-node-mff7x                                2/2       Running   3          1d
-kube-system   etcd-tvm-00                      1/1       Running   1          4h
-kube-system   kube-apiserver-tvm-00            1/1       Running   0          2m
-kube-system   kube-controller-manager-tvm-00   1/1       Running   2          3d
+kube-system   etcd-tvm-00                                      1/1       Running   1          4h
+kube-system   kube-apiserver-tvm-00                            1/1       Running   0          2m
+kube-system   kube-controller-manager-tvm-00                   1/1       Running   2          3d
 kube-system   kube-dns-6f4fd4bdf-ntcgn                         3/3       Running   7          3d
 kube-system   kube-proxy-pfmh8                                 1/1       Running   1          3d
-kube-system   kube-scheduler-tvm-00            1/1       Running   2          3d
+kube-system   kube-scheduler-tvm-00                            1/1       Running   2          3d
 
 ### 确认集群 nodes 的状态
 [root@tvm-00 ~]# kubectl get nodes
-NAME                     STATUS    ROLES     AGE       VERSION
+NAME     STATUS    ROLES     AGE       VERSION
 tvm-00   Ready     master    2d        v1.9.0
 ```
 
@@ -330,7 +331,7 @@ TOKEN                     TTL       EXPIRES                     USAGES          
 - 查看 cluster 信息
 ```bash
 [root@tvm-00 ~]# kubectl get nodes
-NAME                     STATUS    ROLES     AGE       VERSION
+NAME     STATUS    ROLES     AGE       VERSION
 tvm-00   Ready     master    3d        v1.9.0
 tvm-01   Ready     <none>    2h        v1.9.0
 tvm-02   Ready     <none>    27s       v1.9.0
@@ -342,14 +343,14 @@ kube-system   calico-kube-controllers-d6c6b9b8-7ssrn           1/1       Running
 kube-system   calico-node-9bncs                                2/2       Running   4          19h
 kube-system   calico-node-mff7x                                2/2       Running   3          1d
 kube-system   calico-node-mw96v                                2/2       Running   3          19h
-kube-system   etcd-tvm-00                      1/1       Running   1          4h
-kube-system   kube-apiserver-tvm-00            1/1       Running   0          2m
-kube-system   kube-controller-manager-tvm-00   1/1       Running   2          3d
+kube-system   etcd-tvm-00                                      1/1       Running   1          4h
+kube-system   kube-apiserver-tvm-00                            1/1       Running   0          2m
+kube-system   kube-controller-manager-tvm-00                   1/1       Running   2          3d
 kube-system   kube-dns-6f4fd4bdf-ntcgn                         3/3       Running   7          3d
 kube-system   kube-proxy-6nqwv                                 1/1       Running   1          19h
 kube-system   kube-proxy-7xtv4                                 1/1       Running   1          19h
 kube-system   kube-proxy-pfmh8                                 1/1       Running   1          3d
-kube-system   kube-scheduler-tvm-00            1/1       Running   2          3d
+kube-system   kube-scheduler-tvm-00                            1/1       Running   2          3d
 
 ### 符合预期，有 3 个 calico-node 和 kube-proxy 在集群中
 ```
