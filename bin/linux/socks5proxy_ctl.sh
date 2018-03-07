@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#2018/1/12
+#2018/3/7
 
 # 本地代理的 IP+端口
 s_local='127.0.0.1:8888'
@@ -8,7 +8,7 @@ s_local='127.0.0.1:8888'
 s_remote="username@your_remote_host"
 
 function do_get(){
-	echo "[+] 获取当前http_proxy/https_proxy指令的值来验证是否生效："
+	echo "[+] 获取当前 proxy 相关的环境变量的值来验证是否生效："
 	echo "http_proxy=${http_proxy}"
 	echo "https_proxy=${https_proxy}"
 }
@@ -43,6 +43,7 @@ function usage(){
 	cat <<_EOF
 ######
 ###### 来，试试这个 ssh 代理脚本，快速帮你完成工作
+###### （本脚本并未实现自动重连之类的方法，仅用于临时解决工作所需）
 ######
 
 USAGE:
@@ -55,13 +56,15 @@ export http_proxy=socks5://${s_local}
 export https_proxy=socks5://${s_local}
 
 ### 取消proxy
-unset http_proxy=
-unset https_proxy=
+unset http_proxy
+unset https_proxy
+
 
 #--------------- 使用方法2: 长期使用 ---------------#
 ### 2. 在配置文件中增加上述2个指令
-/etc/profile （所有用户生效）
-~/.bashrc （仅自己的账号生效）
+vim /etc/profile （所有用户生效）
+or:
+vim ~/.bashrc （仅自己的账号生效）
 
 配置文件更新后要使用 source 来直接使用，否则要重启后才能生效
 source /etc/profile
@@ -69,7 +72,7 @@ or:
 source ~/.bashrc
 
 ### 取消代理
-注释掉增加的指令后再次 source 一下并执行：
+注释掉增加的指令后再次 source 一下上述配置文件，并在 shell 中执行下述指令来取消代理：
 unset http_proxy
 unset https_proxy
 
