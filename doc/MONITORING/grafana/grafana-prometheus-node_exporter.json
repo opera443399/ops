@@ -53,7 +53,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1520476255931,
+  "iteration": 1520476593281,
   "links": [
     {
       "asDropdown": false,
@@ -1698,7 +1698,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "host metrics",
+  "title": "docker hosts",
   "uid": "000000006",
-  "version": 27
+  "version": 28
 }
