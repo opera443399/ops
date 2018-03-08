@@ -1,8 +1,43 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_DOCKER-DEV",
+      "label": "docker-dev",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "5.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "graph",
+      "name": "Graph",
+      "version": "5.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "5.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "singlestat",
+      "name": "Singlestat",
+      "version": "5.0.0"
+    }
+  ],
   "annotations": {
     "list": [
       {
-        "$$hashKey": "object:91",
         "builtIn": 1,
         "datasource": "-- Grafana --",
         "enable": true,
@@ -17,8 +52,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 6,
-  "iteration": 1519896604329,
+  "id": null,
+  "iteration": 1520476255931,
   "links": [
     {
       "asDropdown": false,
@@ -41,7 +76,8 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(245, 54, 54, 0.9)"
       ],
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
+      "decimals": null,
       "editable": true,
       "error": false,
       "format": "percentunit",
@@ -124,7 +160,7 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(50, 172, 45, 0.97)"
       ],
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
       "editable": true,
       "error": false,
       "format": "none",
@@ -213,7 +249,7 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(245, 54, 54, 0.9)"
       ],
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
       "editable": true,
       "error": false,
       "format": "none",
@@ -298,7 +334,7 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(245, 54, 54, 0.9)"
       ],
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
       "decimals": 2,
       "editable": true,
       "error": false,
@@ -383,7 +419,7 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(245, 54, 54, 0.9)"
       ],
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
       "decimals": 2,
       "editable": true,
       "error": false,
@@ -469,7 +505,7 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(245, 54, 54, 0.9)"
       ],
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
       "decimals": 1,
       "editable": true,
       "error": false,
@@ -551,7 +587,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
       "decimals": 2,
       "editable": true,
       "error": false,
@@ -638,7 +674,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
       "decimals": 2,
       "editable": true,
       "error": false,
@@ -743,7 +779,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
       "editable": true,
       "error": false,
       "fill": 7,
@@ -872,7 +908,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
       "editable": true,
       "error": false,
       "fill": 1,
@@ -916,8 +952,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "irate(node_network_transmit_bytes{job=\"node_exporter\", instance=~\"$node:.*\", device!~\"lo|bond[0-9]|cbr[0-9]|veth.*|cali.*\"}[5m]) > 0",
+          "expr": "irate(node_network_transmit_bytes{job=\"node_exporter\", instance=~\"$node:.*\", device!~\"lo|bond[0-9]|cbr[0-9]|veth.*|cali.*|docker.*|tunl.*\"}[5m]) > 0",
           "format": "time_series",
+          "hide": false,
           "interval": "",
           "intervalFactor": 2,
           "legendFormat": "{{device}} outbound",
@@ -926,7 +963,7 @@
           "step": 10
         },
         {
-          "expr": "irate(node_network_receive_bytes{job=\"node_exporter\", instance=~\"$node:.*\", device!~\"lo|bond[0-9]|cbr[0-9]|veth.*|cali.*\"}[5m]) > 0",
+          "expr": "irate(node_network_receive_bytes{job=\"node_exporter\", instance=~\"$node:.*\", device!~\"lo|bond[0-9]|cbr[0-9]|veth.*|cali.*|docker.*|tunl.*\"}[5m]) > 0",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -980,7 +1017,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
       "editable": true,
       "error": false,
       "fill": 1,
@@ -1071,7 +1108,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
       "decimals": 2,
       "editable": true,
       "error": false,
@@ -1165,7 +1202,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
       "decimals": 2,
       "editable": true,
       "error": false,
@@ -1264,7 +1301,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
       "decimals": 2,
       "editable": true,
       "error": false,
@@ -1369,7 +1406,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "docker-dev",
+      "datasource": "${DS_DOCKER-DEV}",
       "editable": true,
       "error": false,
       "fill": 7,
@@ -1401,253 +1438,6 @@
       "points": false,
       "renderer": "flot",
       "repeat": "filesystem_mountpoint",
-      "scopedVars": {
-        "filesystem_mountpoint": {
-          "selected": false,
-          "text": "/",
-          "value": "/"
-        }
-      },
-      "seriesOverrides": [
-        {
-          "alias": "free",
-          "fill": 10,
-          "fillBelowTo": "used",
-          "lines": false,
-          "linewidth": 2
-        }
-      ],
-      "spaceLength": 10,
-      "stack": true,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "node_filesystem_size{job=\"node_exporter\", instance=~\"$node:.*\", device=~\"/dev/.*\", mountpoint=\"$filesystem_mountpoint\"} - node_filesystem_free{job=\"node_exporter\", instance=~\"$node:.*\", device=~\"/dev/.*\", mountpoint=\"$filesystem_mountpoint\"}",
-          "format": "time_series",
-          "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "used",
-          "metric": "",
-          "refId": "A",
-          "step": 4
-        },
-        {
-          "expr": "node_filesystem_free{job=\"node_exporter\", instance=~\"$node:.*\", device=~\"/dev/.*\", mountpoint=\"$filesystem_mountpoint\"}",
-          "format": "time_series",
-          "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "free",
-          "metric": "",
-          "refId": "B",
-          "step": 4
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Filesystem $filesystem_mountpoint usage",
-      "tooltip": {
-        "msResolution": false,
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "bytes",
-          "logBase": 1,
-          "max": null,
-          "min": 0,
-          "show": true
-        },
-        {
-          "format": "short",
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ]
-    },
-    {
-      "aliasColors": {
-        "free": "#7EB26D",
-        "size": "#7EB26D",
-        "usage": "#EAB839",
-        "used": "#EAB839"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "docker-dev",
-      "editable": true,
-      "error": false,
-      "fill": 7,
-      "grid": {},
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 28
-      },
-      "id": 18,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": true,
-        "show": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 2,
-      "links": [],
-      "minSpan": 8,
-      "nullPointMode": "null as zero",
-      "percentage": false,
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "repeat": null,
-      "repeatIteration": 1519896604329,
-      "repeatPanelId": 11,
-      "scopedVars": {
-        "filesystem_mountpoint": {
-          "selected": false,
-          "text": "/data2",
-          "value": "/data2"
-        }
-      },
-      "seriesOverrides": [
-        {
-          "alias": "free",
-          "fill": 10,
-          "fillBelowTo": "used",
-          "lines": false,
-          "linewidth": 2
-        }
-      ],
-      "spaceLength": 10,
-      "stack": true,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "node_filesystem_size{job=\"node_exporter\", instance=~\"$node:.*\", device=~\"/dev/.*\", mountpoint=\"$filesystem_mountpoint\"} - node_filesystem_free{job=\"node_exporter\", instance=~\"$node:.*\", device=~\"/dev/.*\", mountpoint=\"$filesystem_mountpoint\"}",
-          "format": "time_series",
-          "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "used",
-          "metric": "",
-          "refId": "A",
-          "step": 4
-        },
-        {
-          "expr": "node_filesystem_free{job=\"node_exporter\", instance=~\"$node:.*\", device=~\"/dev/.*\", mountpoint=\"$filesystem_mountpoint\"}",
-          "format": "time_series",
-          "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "free",
-          "metric": "",
-          "refId": "B",
-          "step": 4
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Filesystem $filesystem_mountpoint usage",
-      "tooltip": {
-        "msResolution": false,
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "bytes",
-          "logBase": 1,
-          "max": null,
-          "min": 0,
-          "show": true
-        },
-        {
-          "format": "short",
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ]
-    },
-    {
-      "aliasColors": {
-        "free": "#7EB26D",
-        "size": "#7EB26D",
-        "usage": "#EAB839",
-        "used": "#EAB839"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "docker-dev",
-      "editable": true,
-      "error": false,
-      "fill": 7,
-      "grid": {},
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 28
-      },
-      "id": 19,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": true,
-        "show": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 2,
-      "links": [],
-      "minSpan": 8,
-      "nullPointMode": "null as zero",
-      "percentage": false,
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "repeat": null,
-      "repeatIteration": 1519896604329,
-      "repeatPanelId": 11,
-      "scopedVars": {
-        "filesystem_mountpoint": {
-          "selected": false,
-          "text": "/data1",
-          "value": "/data1"
-        }
-      },
       "seriesOverrides": [
         {
           "alias": "free",
@@ -1723,62 +1513,10 @@
   "style": "dark",
   "tags": [
     "prometheus",
-    "node"
+    "node_exporter"
   ],
   "templating": {
     "list": [
-      {
-        "allFormat": "pipe",
-        "allValue": null,
-        "current": {
-          "text": "10.6.27.75",
-          "value": "10.6.27.75"
-        },
-        "datasource": "docker-dev",
-        "hide": 0,
-        "hideLabel": true,
-        "includeAll": false,
-        "label": "Node",
-        "multi": false,
-        "multiFormat": "pipe",
-        "name": "node",
-        "options": [],
-        "query": "label_values(node_load1{job=\"node_exporter\"}, instance)",
-        "refresh": 1,
-        "regex": "/([^:]+):.*/",
-        "sort": 0,
-        "tagValuesQuery": "",
-        "tags": [],
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
-      },
-      {
-        "allFormat": "regex wildcard",
-        "allValue": null,
-        "current": {
-          "text": "All",
-          "value": "$__all"
-        },
-        "datasource": "docker-dev",
-        "hide": 2,
-        "hideVariable": true,
-        "includeAll": true,
-        "label": null,
-        "multi": false,
-        "multiFormat": "glob",
-        "name": "filesystem_mountpoint",
-        "options": [],
-        "query": "query_result(node_filesystem_size{job=\"node_exporter\", instance=~\"$node:.*\", device=~\"/dev/.*\", mountpoint!~\".*docker.*\"})",
-        "refresh": 1,
-        "regex": "/mountpoint=\"([^\"]+)/",
-        "sort": 0,
-        "tagValuesQuery": "",
-        "tags": [],
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
-      },
       {
         "auto": true,
         "auto_count": 200,
@@ -1835,6 +1573,98 @@
         "query": "1s,5s,1m,5m,1h,6h,1d",
         "refresh": 2,
         "type": "interval"
+      },
+      {
+        "allFormat": "pipe",
+        "allValue": null,
+        "current": {},
+        "datasource": "${DS_DOCKER-DEV}",
+        "hide": 0,
+        "hideLabel": true,
+        "includeAll": true,
+        "label": "Environment",
+        "multi": false,
+        "multiFormat": "pipe",
+        "name": "environment",
+        "options": [],
+        "query": "label_values(node_load1{job=\"node_exporter\"}, env)",
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allFormat": "pipe",
+        "allValue": null,
+        "current": {},
+        "datasource": "${DS_DOCKER-DEV}",
+        "hide": 0,
+        "hideLabel": true,
+        "includeAll": true,
+        "label": "App",
+        "multi": false,
+        "multiFormat": "pipe",
+        "name": "app",
+        "options": [],
+        "query": "label_values(node_load1{job=\"node_exporter\",env=~\"$environment\"}, app)",
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allFormat": "pipe",
+        "allValue": null,
+        "current": {},
+        "datasource": "${DS_DOCKER-DEV}",
+        "hide": 0,
+        "hideLabel": true,
+        "includeAll": false,
+        "label": "Node",
+        "multi": false,
+        "multiFormat": "pipe",
+        "name": "node",
+        "options": [],
+        "query": "label_values(node_load1{job=\"node_exporter\",env=~\"$environment\",app=~\"$app\"}, instance)",
+        "refresh": 1,
+        "regex": "/([^:]+):.*/",
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allFormat": "regex wildcard",
+        "allValue": null,
+        "current": {},
+        "datasource": "${DS_DOCKER-DEV}",
+        "hide": 2,
+        "hideVariable": true,
+        "includeAll": true,
+        "label": null,
+        "multi": false,
+        "multiFormat": "glob",
+        "name": "filesystem_mountpoint",
+        "options": [],
+        "query": "query_result(node_filesystem_size{job=\"node_exporter\", instance=~\"$node:.*\", device=~\"/dev/.*\", mountpoint!~\".*docker.*\"})",
+        "refresh": 1,
+        "regex": "/mountpoint=\"([^\"]+)/",
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
       }
     ]
   },
@@ -1868,7 +1698,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "docker-dev",
+  "title": "host metrics",
   "uid": "000000006",
-  "version": 23
+  "version": 27
 }
