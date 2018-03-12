@@ -1,5 +1,5 @@
 # CICD-配置jenkins任务
-2018/1/29
+2018/3/12
 
 
 ### General
@@ -81,7 +81,7 @@
       - 通常初始化时执行一次即可，默认不选中
   - Boolean Parameter
     - Name
-      - FIX_BLOCKED_PKGS
+      - LOG_LEVEL_DEBUG
     - Default Value
       - unchecked
     - Description
