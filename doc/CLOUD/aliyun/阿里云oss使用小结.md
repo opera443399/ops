@@ -1,4 +1,5 @@
 # 阿里云oss使用小结
+2018/3/14
 
 ### 命令行工具
 ```bash
@@ -51,5 +52,39 @@ osstest/
 ~]# ossutil cp -r -f -u osstest/html oss://bucket01/html
 Succeed: Total num: 6, size: 2,901,569. OK num: 6(skip 6 files), Skip size: 2,901,569.
 0.107582(s) elapsed
+
+```
+
+
+### QA
+##### 跨域
+```
+在 js 中上传图片到 OSS 时，出现下述异常：
+400 Bad Request
+<Error>
+  <Code>InvalidPart</Code>
+  <Message>One or more of the specified parts could not be found or the specified entity tag might not have matched the part's entity tag.</Message>
+  <RequestId>xxxx</RequestId>
+  <HostId>xxx.oss-cn-beijing.aliyuncs.com</HostId>
+  <ETag>undefined</ETag>
+  <PartNumber>1</PartNumber>
+  <UploadId>xxx</UploadId>
+</Error>
+
+解决方案：
+Bucket设置
+从浏览器中直接访问OSS需要开通Bucket的CORS设置：
+- 将allowed origins设置成：
+      *
+- 将allowed methods设置成：
+      PUT, GET, POST, DELETE, HEAD
+- 将allowed headers设置成：
+      *
+- 将expose headers设置成：
+      ETag
+      x-oss-request-id
+参考：
+https://help.aliyun.com/document_detail/32069.html?spm=a2c4e.11153987.0.0.42a41193keM0Xq
+https://github.com/ali-sdk/ali-oss/issues/202
 
 ```
