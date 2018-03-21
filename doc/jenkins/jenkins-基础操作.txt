@@ -1,19 +1,32 @@
 jenkins-基础操作
-2017/12/28
+2018/3/21
 
 一、安装
 1、准备工作
 请先安装jdk
+推荐使用 oracle jdk 而不是 centos 的yum源自带的 openjdk
 
-默认由于版权问题，centos 默认的yum源未加入 oracle jdk 的包，默认将安装开源版本的oepnjdk，请根据需要自行下载缓存后安装对应的jdk包。
-实例1：
-~]# wget -O jdk-8u151-linux-x64.rpm http://download.oracle.com/otn-pub/java/jdk/8u151-b12/e758a0de34e24606bca991d704f6dcbf/jdk-8u151-linux-x64.rpm?AuthParam=1514462045_a4e4f32327fd3543815d60fa94e4cb9f
-~]# yum localinstall jdk-8u151-linux-x64.rpm
+默认由于版权问题，centos 默认的yum源未加入 oracle jdk 的包，默认将安装开源版本的oepnjdk
 
-实例2：
-本例所需jdk已经从 oracle 网站下载并缓存到本地yum源，此时可以直接安装：
-~]# yum install jdk1.8.0_60
+两者的名称差异是这样的：
+oracle jdk:  jdk-8u102-linux-x64
+openjdk:     java-1.8.0-openjdk
 
+
+请根据需要去 oracle java 网站自行下载 jdk 的 rpm 包来安装（下述链接可能会失效）
+实例：
+~]# wget -O jdk-10_linux-x64_bin.rpm http://download.oracle.com/otn-pub/java/jdk/10+46/76eac37278c24557a3c4199677f19b62/jdk-10_linux-x64_bin.rpm?AuthParam=1521624974_b41b4d1af2efcf405abd3aa0a2829fa2
+
+~]# yum localinstall jdk-10_linux-x64_bin.rpm
+
+
+安装后，配置一下环境变量：
+~]# cat <<'_EOF' >>/etc/profile.conf
+export JAVA_HOME=/usr/java/default
+export CLASSPATH=.:$JAVA_HOME/lib:$JAVA_HOME/jre/lib
+export PATH=$PATH:$JAVA_HOME/bin:$JAVA_HOME/jre/bin
+
+_EOF
 
 2、安装方式
 1）yum源安装（推荐）
