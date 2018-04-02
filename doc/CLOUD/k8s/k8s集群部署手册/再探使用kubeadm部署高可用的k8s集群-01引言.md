@@ -1,5 +1,5 @@
 # 再探使用kubeadm部署高可用的k8s集群-01引言
-2018/3/12
+2018/4/2
 
 
 ### 提示
@@ -236,13 +236,16 @@ systemctl start etcd
 systemctl status etcd
 
 ##### 测试
-ETCDCTL_API=3 etcdctl \
---endpoints="https://10.222.0.100:2379,https://10.222.0.101:2379,https://10.222.0.102:2379" \
---cacert=/etc/kubernetes/pki/etcd/ca.pem \
---cert=/etc/kubernetes/pki/etcd/client.pem \
---key=/etc/kubernetes/pki/etcd/client-key.pem \
--w table \
-endpoint status
+export ETCDCTL_DIAL_TIMEOUT=3s
+export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.pem
+export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/client.pem
+export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/client-key.pem
+export ETCDCTL_API=3
+export ENDPOINTS="https://10.222.0.100:2379,https://10.222.0.101:2379,https://10.222.0.102:2379"
+
+etcdctl --endpoints=${ENDPOINTS} -w table endpoint status
+etcdctl --endpoints=${ENDPOINTS} put foo bar
+etcdctl --endpoints=${ENDPOINTS} get --prefix ''
 
 ```
 
@@ -253,7 +256,7 @@ endpoint status
 mkdir -p ~/k8s_install/master/init
 cd ~/k8s_install/master/init
 
-##### 备份 etcd 证书
+##### 备份 etcd 证书（该 etcd 集群的所有节点都要备份自己的证书）
 cp -a /etc/kubernetes/pki/etcd ~/k8s_install/master/init/
 ##### 后续如果 kubeadm reset 将导致 pki 目录被清空，此时可以恢复证书
 cp -a ~/k8s_install/master/init/etcd /etc/kubernetes/pki/
@@ -290,29 +293,70 @@ kubeadm init --config=config.yaml
 mkdir -p $HOME/.kube
 cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 
+##### 查看状态
+kubectl get ds,deploy,svc,pods --all-namespaces
+kubectl get nodes
+
 ```
 
-### 初始化 网络插件之 calico
+
+##### 初始化 网络插件之 calico
 ```bash
 ##### 关于 calico 的更多内容，请参考笔记：使用kubeadm部署k8s集群01-初始化
-mkdir -p ~/k8s_install/network/calico
-cd ~/k8s_install/network/calico
-curl -so calico-v2.6.yaml  https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
-##### 注意 CALICO_IPV4POOL_CIDR 是否和 podSubnet 一致，默认的需要替换：
-sed -i 's#192.168.0.0/16#172.30.0.0/16#' calico-v2.6.yaml
-##### 启用
-kubectl apply -f calico-v2.6.yaml
+[root@master-100 ~]# mkdir -p ~/k8s_install/network/calico
+[root@master-100 ~]# cd ~/k8s_install/network/calico
+[root@master-100 calico]# curl -so calico-v3.0.yaml https://docs.projectcalico.org/v3.0/getting-started/kubernetes/installation/hosted/kubeadm/1.7/calico.yaml
 
+##### 所有节点提前准备好镜像，类似下述实例中，缓存 `calico-v3.0.yaml` 使用的镜像，并打包同步到集群所有节点上
+[root@master-100 calico]# grep 'image' calico-v3.0.yaml |uniq |sed -e 's#^.*image: quay.io#docker pull quay.io#g'
+docker pull quay.io/coreos/etcd:v3.1.10
+docker pull quay.io/calico/node:v3.0.4
+docker pull quay.io/calico/cni:v2.0.3
+docker pull quay.io/calico/kube-controllers:v2.0.2
+
+[root@master-100 calico]# docker save -o calico-v3.0.tar quay.io/coreos/etcd:v3.1.10 quay.io/calico/node:v3.0.4 quay.io/calico/cni:v2.0.3 quay.io/calico/kube-controllers:v2.0.2
+[root@master-100 calico]# scp calico-v3.0.tar 10.222.0.100:~/k8s_install/network/calico/
+[root@master-102 calico]# docker load -i ~/k8s_install/network/calico/calico-v3.0.tar
+
+
+##### 注意 CALICO_IPV4POOL_CIDR 是否和 podSubnet 一致，默认的需要替换：
+[root@master-100 calico]# sed -i 's#192.168.0.0/16#172.30.0.0/16#' calico-v3.0.yaml
+
+##### 启用
+[root@master-100 calico]# kubectl apply -f calico-v3.0.yaml
+
+##### 验证网络正常的方法是：检查 deploy/kube-dns 是否上线
 ```
 
-### 初始化 master-101 master-102
-###### 提醒：多次研究实验表明，当加入多个 `master` 到集群中时，集群网络出现异常，表现为网络插件部分副本不可用，跟踪日志显示部分节点的 `kube-proxy` 的 `api` 访问出现 `Unauthorized` 这样的异常，限于精力和时间，未能有进一步突破，但个人凭经验判断，极有可能是在本步骤中使用 `kubeadm init` 加入新的 `master` 节点时出现的异常，本文的研究目前处于暂停状态，待后续补充。
-```bash
-##### 将 master-101 加入集群（ 因 master-102 的操作同理，略过）
-##### 同步在 master-100 上生成的 ca.crt 和 ca.key 文件
-scp 10.222.0.100:/etc/kubernetes/pki/ca.* /etc/kubernetes/pki
 
-##### 重复 初始化 master-100 的操作即可
+
+##### 初始化 master-101 master-102
+> 将 master-101 加入集群（ 因 master-102 的操作同理，略过）
+>  同步在 master-100 上生成的 pki 相关的证书文件（除了 etcd 这个目录由于已经存在不会被 scp 同步），实际上，我们只需要重建 `apiserver.*` 相关的证书
+```bash
+scp 10.222.0.100:/etc/kubernetes/pki/* /etc/kubernetes/pki
+rm apiserver.*
+```
+> 接下来，重复前述操作中，初始化 master-100 的指令即可将该节点加入集群。
+
+> 提示：只是同步 `ca.*` 和 `sa.*` 证书（照着 `Option 2: Copy paste` 描述的操作）可能是错误的，至少在我的实验环境中，遇到了异常，导致 kube-dns 无法上线，如果你也遇到类似的场景，请仔细查看 apiserver 的 pod 的日志输出是否有异常。
+
+
+
+##### 如果需要重置 kubeadm 初始化的节点(例如，重做一次)
+
+```bash
+##### 这里以清理 master-102 这个节点为例说明：
+##### 先在 master-100 上操作
+kubectl drain master-102 --delete-local-data --force --ignore-daemonsets
+kubectl delete node master-102
+
+##### 然后在 master-102 上操作
+kubeadm reset
+
+##### 还原 etcd 相关的证书（因为 master-102 刚好也是 etcd 集群的节点）
+cp -a ~/k8s_install/master/init/etcd /etc/kubernetes/pki/
+
 
 ```
 
@@ -324,13 +368,6 @@ kubeadm join --token xxx.xxxxxxx 10.222.0.100:6443 --discovery-token-ca-cert-has
 
 ```
 
-
-### 查看状态
-```bash
-kubectl get ds,deploy,svc,pods --all-namespaces
-kubectl get nodes
-
-```
 
 
 ### 配置 worker 使用 kube-proxy 时通过 LB 来访问后端高可用的 apiserver 服务（注明：未完成，下述内容待验证）
@@ -346,7 +383,7 @@ sed -i 's#server:.*#server: https://10.222.0.88:6443#g' /etc/kubernetes/kubelet.
 systemctl restart kubelet
 ```
 
-上述 kube-proxy 是一个 daemonset 类型的服务，也就是说 master节点上也会有该服务，此时思考下述数据流向是否会有异常：
+上述 kube-proxy 是一个 daemonset 类型的服务，也就是说 master 节点上也会有该服务，此时思考下述数据流向是否会有异常：
 ```
 kube-proxy(on master-100) -> LB(backend to master-100)
 ```
@@ -371,3 +408,4 @@ RS1 -> RS1
 ### ZYXW、参考
 1. [Creating HA clusters with kubeadm](https://kubernetes.io/docs/setup/independent/high-availability/)
 2. [阿里云-SLB-后端服务器常见问题-后端ECS实例为什么访问不了负载均衡服务？](https://help.aliyun.com/knowledge_detail/55198.html)
+3. [Two bug fixes to HA guide for kubeadm: #7451](https://github.com/kubernetes/website/pull/7451)
