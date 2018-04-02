@@ -1,5 +1,5 @@
 初探etcd-基本操作
-2018/2/12
+2018/4/2
 
 ### 初识
 - 用途
@@ -418,8 +418,14 @@ export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/client-key.pem
 export ETCDCTL_API=3
 export ENDPOINTS="https://10.222.0.100:2379,https://10.222.0.101:2379,https://10.222.0.102:2379"
 
+###### 查看集群
 etcdctl --endpoints=${ENDPOINTS} -w table endpoint status
-
+###### 写入数据
+etcdctl --endpoints=${ENDPOINTS} put foo bar
+###### 获取所有的数据
+etcdctl --endpoints=${ENDPOINTS} get --prefix ''
+###### 清空所有的数据
+etcdctl --endpoints=${ENDPOINTS} del --prefix ''
 
 ```
 
