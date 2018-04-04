@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2018/2/23
+# 2018/4/4
 set -e
 
 tee /etc/hosts <<-'_EOF'
@@ -14,14 +14,19 @@ tee /etc/hosts <<-'_EOF'
 10.222.0.102 master-102
 
 ### k8s worker @envTest
-10.222.0.200 worker-200
+10.222.0.201 worker-201
+10.222.0.202 worker-202
 
 _EOF
 
 
-cat <<'_EOF' >/etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-ip6tables = 1
+cat <<'_EOF' >>/etc/sysctl.conf
+### for k8s
 net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward = 1
 _EOF
 
-sysctl --system
+sysctl -w net.bridge.bridge-nf-call-iptables=1
+sysctl -w net.bridge.bridge-nf-call-ip6tables=1
+sysctl -w net.ipv4.ip_forward = 1

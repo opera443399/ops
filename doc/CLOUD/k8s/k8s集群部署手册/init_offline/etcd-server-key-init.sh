@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2018/2/7
+# 2018/4/4
 set -e
 
 print_info() {
@@ -27,7 +27,7 @@ mkdir -p /etc/kubernetes/pki/etcd
 cd /etc/kubernetes/pki/etcd/
 
 ##### 生成 CA 证书
-cat >ca-config.json <<EOL
+cat >ca-config.json <<_EOF
 {
     "signing": {
         "default": {
@@ -63,9 +63,9 @@ cat >ca-config.json <<EOL
         }
     }
 }
-EOL
+_EOF
 
-cat >ca-csr.json <<EOL
+cat >ca-csr.json <<_EOF
 {
     "CN": "etcd",
     "key": {
@@ -73,12 +73,12 @@ cat >ca-csr.json <<EOL
         "size": 2048
     }
 }
-EOL
+_EOF
 cfssl gencert -initca ca-csr.json | cfssljson -bare ca -
 
 ##### 生成 client 证书
 print_info 'client.pem, client-key.pem'
-cat >client.json <<EOL
+cat >client.json <<_EOF
 {
     "CN": "client",
     "key": {
@@ -86,7 +86,7 @@ cat >client.json <<EOL
         "size": 256
     }
 }
-EOL
+_EOF
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client.json | cfssljson -bare client
 
 ##### 同步 ca 和 client 的证书相关文件到另外 2 个节点

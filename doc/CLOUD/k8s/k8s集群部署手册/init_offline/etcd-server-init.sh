@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2018/2/7
+# 2018/4/4
 set -e
 
 print_info() {
@@ -30,7 +30,7 @@ echo "PEER_NAME=$PEER_NAME" > /etc/etcd.env
 echo "PRIVATE_IP=$PRIVATE_IP" >> /etc/etcd.env
 
 ##### 准备 etcd 服务的配置文件
-cat >/etc/systemd/system/etcd.service <<EOL
+cat >/etc/systemd/system/etcd.service <<_EOF
 [Unit]
 Description=etcd
 Documentation=https://github.com/coreos/etcd
@@ -66,7 +66,7 @@ ExecStart=/usr/local/bin/etcd --name ${PEER_NAME} \
 [Install]
 WantedBy=multi-user.target
 
-EOL
+_EOF
 
 ##### 激活 etcd 服务
 systemctl daemon-reload

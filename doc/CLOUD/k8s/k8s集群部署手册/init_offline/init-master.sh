@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2018/2/7
+# 2018/4/4
 set -e
 
 print_info() {

@@ -1,5 +1,5 @@
 # 再探使用kubeadm部署高可用的k8s集群-01引言
-2018/4/2
+2018/4/4
 
 
 ### 提示
@@ -16,6 +16,8 @@
   - master-102, 10.222.0.102
   - LB, 10.222.0.88
     - master-100, master-101, master-102
+  - worker-201, 10.222.0.201
+  - worker-202, 10.222.0.202
 * k8s version
   - v1.9.0
 * 步骤
@@ -77,7 +79,7 @@ rsync -avzP /usr/local/bin/* 10.222.0.102:/usr/local/bin/
 mkdir -p /etc/kubernetes/pki/etcd
 cd /etc/kubernetes/pki/etcd/
 
-cat >ca-config.json <<EOL
+cat >ca-config.json <<_EOF
 {
     "signing": {
         "default": {
@@ -113,9 +115,9 @@ cat >ca-config.json <<EOL
         }
     }
 }
-EOL
+_EOF
 
-cat >ca-csr.json <<EOL
+cat >ca-csr.json <<_EOF
 {
     "CN": "etcd",
     "key": {
@@ -123,7 +125,7 @@ cat >ca-csr.json <<EOL
         "size": 2048
     }
 }
-EOL
+_EOF
 
 ##### 生成 CA 证书
 cfssl gencert -initca ca-csr.json | cfssljson -bare ca -
@@ -137,7 +139,7 @@ ca-key.pem
 
 ##### 创建 etcd client 证书
 ```bash
-cat >client.json <<EOL
+cat >client.json <<_EOF
 {
     "CN": "client",
     "key": {
@@ -145,7 +147,7 @@ cat >client.json <<EOL
         "size": 256
     }
 }
-EOL
+_EOF
 
 ##### 生成 client 证书
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client.json | cfssljson -bare client
@@ -189,7 +191,7 @@ echo "PEER_NAME=$PEER_NAME" > /etc/etcd.env
 echo "PRIVATE_IP=$PRIVATE_IP" >> /etc/etcd.env
 
 ##### 准备 etcd 服务的配置文件
-cat >/etc/systemd/system/etcd.service <<EOL
+cat >/etc/systemd/system/etcd.service <<_EOF
 [Unit]
 Description=etcd
 Documentation=https://github.com/coreos/etcd
@@ -225,7 +227,7 @@ ExecStart=/usr/local/bin/etcd --name ${PEER_NAME} \
 [Install]
 WantedBy=multi-user.target
 
-EOL
+_EOF
 
 ##### 激活 etcd 服务
 systemctl daemon-reload
@@ -264,7 +266,7 @@ cp -a ~/k8s_install/master/init/etcd /etc/kubernetes/pki/
 ##### 准备配置用于初始化
 export PRIVATE_IP=$(ip addr show eth0 | grep -Po 'inet \K[\d.]+')
 
-cat >config.yaml <<EOL
+cat >config.yaml <<_EOF
 apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
 api:
@@ -284,7 +286,7 @@ apiServerCertSANs:
 kubernetesVersion: v1.9.0
 apiServerExtraArgs:
   endpoint-reconciler-type: lease
-EOL
+_EOF
 
 ##### 开始初始化 master
 kubeadm init --config=config.yaml
@@ -399,8 +401,8 @@ RS1 -> RS1
 > 5. 后端ECS实例为什么访问不了负载均衡服务？
 > 这和负载均衡TCP的实现机制有关。在四层TCP协议服务中，不支持后端ECS实例既作为Real Server又作为客户端向所在的负载均衡实例发送请求。因为返回的数据包只在云服务器内部转发，不经过负载均衡，所以在后端ECS实例上去访问负载均衡的服务地址是不通的。
 
-结论：如果从 master 节点的 IP 来访问 k8s 中的访问，可能出现异常。
-
+结论1：如果从 master 节点的 IP 来访问 k8s 中的访问，可能出现异常。
+结论2：仅将 worker 节点的 IP 添加到 SLB 中作为后端，预计能避免上述异常。 
 
 
 
