@@ -1,5 +1,5 @@
 # k8s基本概念-配置调度策略之(Taints-and-Tolerations)
-2018/4/11
+2018/4/12
 
 ### 通过定义 Taints and Tolerations 来达到 node 排斥 pod 的目的
 * 通过一个典型实例来描述 taint 和 toleration 之间的关联
