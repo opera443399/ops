@@ -1,40 +1,40 @@
 ops
 ---
-2018/3/27
+2018/4/12
 
 # Go for it
 collecting #ops# related basic docs here.
+
 基础知识库：收集整理本人工作经历中接触到的一些 ops 相关的知识点。
+
 服务对象：互联网运维工程师，软件工程师。
 
-学而时习之
-温故而知新
-好记性不如烂笔头
+**学而时习之，温故而知新**
+**好记性不如烂笔头**
 
 
-# Who might need this
+# Who Might Need This
 
 
-    SRE/dev ops
-
-    sys/net ops
-
-    app/biz ops
+    ops
+    dev
+    qa
 
 
 
 
-# Workspace
+# Tree
 
 
-    bin: little scripts
-    conf: some configuration examples
-    doc: howto
+    .
+    |- bin: script samples
+    |- conf: configuration examples
+    |- doc: guide/howto
 
 
 
 
-# Commit labels
+# Commit Labels
 
 
     chore(xxx): xxx
@@ -45,10 +45,10 @@ collecting #ops# related basic docs here.
     style(xxx): xxx
 
 
-# For newcomers
+# For Newcomers
 
 
-notice: no security relatied articles here, as it's not easy to talk about this. Please follow the official doc for all open source softwares.
+**Notice**: no security relatied articles here, as it's not easy to talk about this. Please follow the official doc for all open source softwares.
 
 注1：凡是本人整理的，开源产品相关的文章中，标题党写明了“最佳实践”的文章，要特别注意，本人总结的文字并未涉及安全方面的指导，请参考官方的指导教程，因为安全是一个有深度的话题，且安全是相对而言的，并不是个容易的话题。
 
