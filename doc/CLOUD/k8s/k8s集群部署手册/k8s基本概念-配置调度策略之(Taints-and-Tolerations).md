@@ -228,7 +228,7 @@ spec:
 ```
 
 ##### 测试结果
-下述操作表明：之前不可用的节点，调整后，节点处于可用状态，任务部署成功
+下述操作表明：之前不可用的节点，调整后，节点处于可用状态， pod 部署成功
 ```bash
 ##### 更新
 [root@tvm-02 whoami]# kubectl apply -f app-t2.yaml
@@ -347,8 +347,8 @@ tolerations:
 - 当 `operator` 是 `Exists` （意味着不用指定 `value` 的内容）时，或者
 - 当 `operator` 是 `Equal` 时 `values` 也相同
 
-
 注1： `operator` 默认值是 `Equal` 如果不指定的话
+
 注2: 留意下面 2 个使用 `Exists` 的特例
 - key 为空且 `operator` 是 `Exists`  时，将匹配所有的 `keys`, `values` 和 `effects` ，这表明可以 `tolerate` 所有的 `taint`
 ```yaml
