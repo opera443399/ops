@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#2018/1/29
+#2018/4/17
 #set -e
 
 # docker template path on the worker node
@@ -99,6 +99,7 @@ do_build_golang_and_docker_image() {
           if [ -f ${f_k8s_yaml} ]; then
             echo "[-] 当前 k8s 配置 ${f_k8s_yaml} 的 image 为：" >>${f_log_successful}
             grep image ${f_k8s_yaml} >>${f_log_successful}
+            mkdir -p ${K8S_YAML_ROOT}/${K8S_NAMESPACE}
             sed -e "s#TPL_REPLACE_NS_HERE#${K8S_NAMESPACE}#" \
                 -e "s#TPL_REPLACE_IMAGE_HERE#${s_tag_remote}#" \
                 ${f_k8s_yaml} >"${K8S_YAML_ROOT}/${K8S_NAMESPACE}/${s_name}.yaml"
