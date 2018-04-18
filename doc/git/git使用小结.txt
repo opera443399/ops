@@ -1,5 +1,5 @@
 git使用小结
-2017/10/18
+2018/4/18
 
 注释：不定时更新
 
@@ -31,7 +31,7 @@ git 提交的作者信息
         name = Jack
         email = jack@test.com
 
-        
+
 
 2、clone
 git clone https://tester01@github.com/tester01/charade.git
@@ -58,7 +58,7 @@ Switched to branch 'bbb'
 [root@dev_08 portainer]# git branch
 * bbb
   develop
-  
+
 切换分支：
 [root@dev_08 portainer]# git checkout develop
 Switched to branch 'develop'
@@ -95,7 +95,7 @@ Deleted branch bbb (was f3a1250).
   remotes/upstream/gh-pages
   remotes/upstream/master
 
-  
+
 切换到远程分支
 [root@dev_08 confd]# git branch
 * master
@@ -106,7 +106,7 @@ Deleted branch bbb (was f3a1250).
   remotes/origin/fix-integration-etcd-curl-err
   remotes/origin/gh-pages
   remotes/origin/master
-[root@dev_08 confd]# git checkout -b exp-keep-backend-etcd-only origin/exp-keep-backend-etcd-only
+[root@dev_08 confd]# git checkout -b exp-keep-backend-etcd-only remotes/origin/exp-keep-backend-etcd-only
 Branch exp-keep-backend-etcd-only set up to track remote branch exp-keep-backend-etcd-only from origin.
 Switched to a new branch 'exp-keep-backend-etcd-only'
 [root@dev_08 confd]# git branch
@@ -274,7 +274,7 @@ git add .
 ".git/COMMIT_EDITMSG" 23L, 1300C written
 [feat-add-container-console-on-task-details c42aaa7] add console on 'Task details' view; move tasks to the top
  4 files changed, 14 insertions(+), 4 deletions(-)
- 
+
 [root@dev_08 portainer]# git log -1 --oneline
 c42aaa7 add console on 'Task details' view; move tasks to the top
 [root@dev_08 portainer]# git status
@@ -292,7 +292,7 @@ git push
 
 push到远端分支
 [root@dev_08 portainer]# git push origin feat-add-container-console-on-task-details:feat-add-container-console-on-task-details
-Password for 'https://opera443399@github.com': 
+Password for 'https://opera443399@github.com':
 Counting objects: 23, done.
 Delta compression using up to 4 threads.
 Compressing objects: 100% (8/8), done.
@@ -320,6 +320,3 @@ git log -5 --oneline
 XYWX、参考
 1、gitlab或github下fork后如何同步源的新更新内容？
 https://www.zhihu.com/question/28676261
-
-
-
