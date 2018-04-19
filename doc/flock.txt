@@ -1,5 +1,5 @@
 flock
-2017/9/7
+2018/4/19
 
 
 flock - Manage locks from shell scripts
@@ -12,15 +12,15 @@ pid_file='/tmp/test_flock.pid'
 pid_old=$(cat ${pid_file})
 echo $$ > ${pid_file}
 {
-    flock -n 101
+    flock -n 11
     if [ $? -eq 1 ] ; then
         if lsof -n -P -l ${pid_file} | grep ${pid_old} | grep -v grep >/dev/null; then
             echo "Warn: exec $0 timeout!"
         else
-            flock -u 3
+            flock -u 11
         fi
     fi
 
-    do_something
+    #do_something
 
-} 101<> ${pid_file}
+} 11<> ${pid_file}
