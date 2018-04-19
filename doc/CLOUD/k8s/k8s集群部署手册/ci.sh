@@ -50,6 +50,7 @@ do_etcd_put_rollout() {
   local f_value="{\"k8sNamespace\":\"${K8S_NAMESPACE}\",\"appParent\":\"${APP_PARENT}\",\"appName\":\"${f_appName}\",\"imageLatest\":\"$2\"}"
 
   ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" put ${f_key} ${f_value}
+  ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" put ${f_key} ${f_value}
   ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" get ${f_key}
 }
 
@@ -58,6 +59,7 @@ do_etcd_put_undo() {
   local f_key="/k8s-deploy/${APP_PARENT}/undo"
   local f_value="{\"k8sNamespace\":\"${K8S_NAMESPACE}\",\"appParent\":\"${APP_PARENT}\",\"appName\":\"${f_appName}\",\"undoTimestamp\":\"$(date +%F"T"%T)\"}"
 
+  ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" put ${f_key} ${f_value}
   ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" put ${f_key} ${f_value}
   ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" get ${f_key}
 }
@@ -168,6 +170,7 @@ do_rollout_to_etcd() {
     print_info "[-] 更新服务 ${s_name} 在 etcd 中的 rollout 信息"
     do_etcd_put_rollout ${s_name} ${s_tag_remote}
 
+    sleep 1
   done
 
   exit 0
