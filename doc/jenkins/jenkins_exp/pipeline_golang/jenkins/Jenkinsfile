@@ -1,56 +1,56 @@
 pipeline {
   agent {
     node {
-      // 这个 label 是在 jenkins 系统管理中针对某个 node 设置的标签
-      label 'pipeline'
-      // 执行本 job 时，约束工作目录，则源代码将 clone 到这个指定的路径下
-      customWorkspace '/data/jenkins_node_home/workspace/pipeline_only/demo-project/src/demo.com'
+      label 'pipeline_only'
+      customWorkspace '/data/server/jenkins_node_workspace/code/demoproject/src/demoproject'
     }
   }
 
-  parameters {
-    // 定义参数
-    string(name: 'SVC_NAMES', defaultValue: 'empty', description: '')
-    string(name: 'SVC_VERSION', defaultValue: 'empty', description: '')
-  }
-
   tools {
-    // type 为 go，别名为 go plugin 在 global tools configuration 下增加的一个 go tool 的别名
     go 'golang4demo'
   }
 
   environment {
-    // 定义环境变量
-    GOPATH = "/data/jenkins_node_home/workspace/pipeline_only/demo-project"
+    GOPATH = '/data/server/jenkins_node_workspace/code/demoproject'
   }
 
   stages {
-    // 定义每一个步骤，步骤的名称将显示在 blue ocean 的 pipeline 任务界面上作为流程节点
     stage('Pre-build') {
       steps {
-        // 本步骤中执行的具体操作，可以输出文字（echo xxx），也可以执行shell指令（sh xxx）
         echo '[+] 准备环境'
         echo '[@] Jenkinsfile for jenkins(current ver.2.73.3) pipeline'
         echo "[-] --> 任务链接：${BUILD_URL}"
-        // workspace
-        echo '[-] --> 检查 WORKSPACE 是否正确'
-        sh 'echo "pwd = $(pwd)"'
-        // golang
+        //## workspace
+        //echo '[-] --> 检查 WORKSPACE 是否正确'
+        //sh 'echo "pwd = $(pwd)"'
+        //## golang
         echo '[-] --> 检查 golang 环境'
         sh 'go version'
-        sh 'go env'
+        //sh 'go env'
         echo '[-] --> 列出 GOPATH'
         sh 'tree -L 1 ${GOPATH}'
-        sh 'sh ./scripts/ci.sh fix'
+        echo '[+] 检查参数：'
+        echo "[-] --> SVC_NAMES = ${params.SVC_NAMES}"
+        echo "[-] --> SVC_VERSION = ${params.SVC_VERSION}"
+        echo "[-] --> GIT_BRANCH_NAME = ${params.GIT_BRANCH_NAME}"
+        echo "[-] --> K8S_NAMESPACE = ${params.K8S_NAMESPACE}"
+        echo "[-] --> LOG_LEVEL_DEBUG = ${params.LOG_LEVEL_DEBUG}"
+        echo "[-] --> NEED_UNDO = ${params.NEED_UNDO}"
         echo '[-] ______________________END_OF_STAGE______________________'
       }
     }
 
     stage('Checkout') {
+      when {
+          expression {
+              //回滚操作直接跳过
+              params.NEED_UNDO == false
+          }
+      }
       steps {
-        echo '[+] 准备代码'
+        echo '[+] 准备代码...'
         echo '[-] --> git 签出'
-        checkout([$class: 'GitSCM', branches: [[name: '*/branch-name']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: '11223344-1111-2222-3333-444444555555', url: 'xxx.git']]])
+        checkout([$class: 'GitSCM', branches: [[name: "${params.GIT_BRANCH_NAME}"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: '11223344-1111-2222-3333-444444555555', url: 'xxx.git']]])
         echo '[-] --> git 变更日志（最近3条）'
         sh 'git log -3 --oneline'
         //sh 'git whatchanged -3'
@@ -59,34 +59,44 @@ pipeline {
     }
 
     stage('Build') {
-      steps {
-        echo '[+] 构建 golang binary'
-        echo "[-] --> 检查参数 params.SVC_NAMES = ${params.SVC_NAMES}"
-        echo "[-] --> 检查参数 params.SVC_VERSION = ${params.SVC_VERSION}"
-
-        sh 'sh ./scripts/ci.sh build'
-        echo '[-] ______________________END_OF_STAGE______________________'
+      when {
+          expression {
+              //回滚操作直接跳过
+              params.NEED_UNDO == false
+          }
       }
-    }
-
-    stage('Test') {
       steps {
-        echo '[+] Testing..'
-        echo '[-] --> (omitted)'
+        echo '[+] 代码构建中...'
+        sh '/bin/bash /data/server/jenkins_node_workspace/cicd/demoproject/ci.sh build'
         echo '[-] ______________________END_OF_STAGE______________________'
       }
     }
 
     stage('Deploy') {
+      when {
+          expression {
+              //回滚操作直接跳过
+              params.NEED_UNDO == false
+          }
+      }
       steps {
-        echo '[+] Deploying..'
-        echo '[-] --> envTest Delivering..'
+        echo '[+] 服务上线中...'
+        sh '/bin/bash /data/server/jenkins_node_workspace/cicd/demoproject/ci.sh rollout'
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
 
-        sh 'sh ./scripts/ci.sh deploy envTest'
-        // 可通过一个弹窗来中断，等待用户继续操作（继续发布到 envProd 或回滚，或其他操作）
-        input 'Continue? (Click "Proceed" to continue)'
-        echo '[-] --> envProd Deploying..(for example)'
-        sh 'sh ./scripts/ci.sh deploy envTest'
+    stage('Rollback') {
+      when {
+          expression {
+              //回滚操作才执行
+              params.NEED_UNDO == true
+          }
+      }
+      steps {
+        echo '[+] 请确认是否需要执行回滚操作？'
+        input message: '需要回滚? (请点击 "Proceed" 来回滚到上一个版本)'
+        sh '/bin/bash /data/server/jenkins_node_workspace/cicd/demoproject/ci.sh undo'
         echo '[-] ______________________END_OF_STAGE______________________'
       }
     }
