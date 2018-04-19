@@ -1,20 +1,27 @@
 #!/bin/bash
 #
-#2018/4/17
+# 2018/4/19
+###########
+### 请使用 `dep` 来解决 golang 的依赖而不是使用 `go get`
+### goal:
+### - build
+### - rollout
+### - undo
+### login to your docker registry before push
+### $ DOCKER_REGISTRY_USERNAME='xxx'
+### $ DOCKER_REGISTRY_PASSWORD='xxx'
+### $ echo ${DOCKER_REGISTRY_PASSWORD} |docker login --username=${DOCKER_REGISTRY_USERNAME} --password-stdin ${DOCKER_REGISTRY_URL}
+###########
+
 #set -e
 
-# docker template path on the worker node
-#
-APP_PARENT='demo-project'
-APP_CI_ROOT="/data/jenkins_node_home/workspace/cicd/${APP_PARENT}"
+APP_PARENT='demoproject'
+APP_CI_ROOT="/data/server/jenkins_node_workspace/cicd/${APP_PARENT}"
 DOCKER_TPL_ROOT="${APP_CI_ROOT}/tpl.docker.d"
 K8S_YAML_ROOT="${APP_CI_ROOT}/k8s.yaml.d"
 DOCKER_IMAGE_NS="ns-my-company"
 DOCKER_REGISTRY_URL='registry.cn-hangzhou.aliyuncs.com'
-ETCD_ENDPOINTS='http://10.10.9.111:2379'
-#DOCKER_REGISTRY_USERNAME='xxx'
-#DOCKER_REGISTRY_PASSWORD='xxx'
-#echo ${DOCKER_REGISTRY_PASSWORD} |docker login --username=${DOCKER_REGISTRY_USERNAME} --password-stdin ${DOCKER_REGISTRY_URL}
+ETCD_ENDPOINTS='http://10.250.3.100:2379'
 
 print_info() {
   echo "[I] -----------------> $1"
@@ -31,26 +38,36 @@ print_error() {
 }
 
 
-do_etcd_put() {
+if [ "X${SVC_VERSION}"=="XEMPTY" ]; then
+  print_debug '[+] 由于版本号参数 "VERSION" 为 "EMPTY" ，提取 "git rev" 来作为 [docker image tag] 的值'
+  s_version="$(git rev-parse --short HEAD)"
+fi
+
+
+do_etcd_put_rollout() {
   local f_appName="$(echo $1 |tr '_' '-')"
-  local f_key="/k8s-deploy/reload/${APP_PARENT}"
+  local f_key="/k8s-deploy/${APP_PARENT}/rollout"
   local f_value="{\"k8sNamespace\":\"${K8S_NAMESPACE}\",\"appParent\":\"${APP_PARENT}\",\"appName\":\"${f_appName}\",\"imageLatest\":\"$2\"}"
 
   ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" put ${f_key} ${f_value}
   ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" get ${f_key}
 }
 
+do_etcd_put_undo() {
+  local f_appName="$(echo $1 |tr '_' '-')"
+  local f_key="/k8s-deploy/${APP_PARENT}/undo"
+  local f_value="{\"k8sNamespace\":\"${K8S_NAMESPACE}\",\"appParent\":\"${APP_PARENT}\",\"appName\":\"${f_appName}\",\"undoTimestamp\":\"$(date +%F"T"%T)\"}"
 
-do_build_golang_and_docker_image() {
-  if [ "X${SVC_VERSION}"=="XEMPTY" ]; then
-    print_debug '由于版本号参数 "VERSION" 为 "EMPTY" ，提取 "git rev" 来作为版本号'
-    local s_version="$(git rev-parse --short HEAD)"
-  fi
+  ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" put ${f_key} ${f_value}
+  ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" get ${f_key}
+}
 
-  #print_debug  "GET dep on dir: $(pwd)"
-  #go get -v github.com/golang/dep/cmd/dep
-  #$GOPATH/bin/dep ensure -v
-  #$GOPATH/bin/dep status -v
+
+do_build_golang_docker() {
+  ##### dep howto
+  # go get -v github.com/golang/dep/cmd/dep
+  # $GOPATH/bin/dep ensure -v
+  # $GOPATH/bin/dep status -v
 
   local f_log_successful="/tmp/ci.successful.log"
   local f_log_failed="/tmp/ci.failed.log"
@@ -107,10 +124,6 @@ do_build_golang_and_docker_image() {
             grep image "${K8S_YAML_ROOT}/${K8S_NAMESPACE}/${s_name}.yaml" >>${f_log_successful}
           fi
 
-          ### update etcd
-          print_info "更新服务 ${s_name} 在 etcd 中的信息"
-          do_etcd_put ${s_name} ${s_tag_remote}
-
           echo '[-] ______________________END_OF_THIS_BUILD______________________' >>${f_log_successful}
         else
           print_error "[###] 构建 ${s_name} 失败：该服务的 docker 配置目录中不存在 Dockerfile"
@@ -143,26 +156,36 @@ do_build_golang_and_docker_image() {
 }
 
 
-do_fix_blocked_golang_pkgs() {
-  if ${FIX_BLOCKED_PKGS}; then
-    GO_pkgs_BLOCKED=("tools" "crypto" "net" "text" "sys")
-    mkdir -p $GOPATH/src/golang.org/x
-    cd $GOPATH/src/golang.org/x
-    for pkg in ${GO_pkgs_BLOCKED[@]};do
-      print_info "获取无法下载的 go pkg: $pkg"
-      git clone https://github.com/golang/$pkg.git
-    done
-  fi
+do_rollout_to_etcd() {
+  for s_name in $(echo ${SVC_NAMES} |sed 's/,/\n/g'); do
+    echo
+    print_info "[+] 准备上线： ${s_name} 版本： ${s_version}"
+
+    ### update etcd
+    local s_tag_local="${DOCKER_IMAGE_NS}/${APP_PARENT}-${s_name}:${s_version}"
+    local s_tag_remote="${DOCKER_REGISTRY_URL}/${s_tag_local}"
+    ### update etcd
+    print_info "[-] 更新服务 ${s_name} 在 etcd 中的 rollout 信息"
+    do_etcd_put_rollout ${s_name} ${s_tag_remote}
+
+  done
+
+  exit 0
 }
 
 
-do_backup() {
-  rm bak -fr
-  mkdir bak
-  cp -a k8s.yaml.d bak/
-  cp -a tpl.docker.d/ bak/
-  find bak/tpl.docker.d -type f -executable -delete
-  tar zcvf bak.tgz bak/
+do_undo_to_etcd() {
+  for s_name in $(echo ${SVC_NAMES} |sed 's/,/\n/g'); do
+    echo
+    print_info "[+] 准备回滚： ${s_name} 版本： ${s_version}"
+
+    ### update etcd
+    print_info "[-] 更新服务 ${s_name} 在 etcd 中的 undo 信息"
+    do_etcd_put_undo ${s_name}
+
+  done
+
+  exit 0
 }
 
 
@@ -170,7 +193,11 @@ print_usage() {
   cat <<_EOF
 
 usage:
-    $0 [build|fix|backup]
+    $0 [build|rollout|undo]
+
+    build             构建(golang->docker)
+    rollout           上线(etcd->k8s)
+    undo              回滚(etcd->k8s)
 
 _EOF
 }
@@ -178,13 +205,13 @@ _EOF
 
 case $1 in
   build)
-    do_build_golang_and_docker_image
+    do_build_golang_docker
     ;;
-  fix)
-    do_fix_blocked_golang_pkgs
+  rollout)
+    do_rollout_to_etcd
     ;;
-  backup)
-    do_backup
+  undo)
+    do_undo_to_etcd
     ;;
   *)
     print_usage

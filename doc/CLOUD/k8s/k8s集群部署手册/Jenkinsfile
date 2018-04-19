@@ -2,7 +2,7 @@ pipeline {
   agent {
     node {
       label 'pipeline_only'
-      customWorkspace '/data/jenkins_node_home/workspace/pipeline_only/demo-project/src/demo.com'
+      customWorkspace '/data/server/jenkins_node_workspace/code/demoproject/src/demoproject'
     }
   }
 
@@ -11,7 +11,7 @@ pipeline {
   }
 
   environment {
-    GOPATH = '/data/jenkins_node_home/workspace/pipeline_only/demo-project'
+    GOPATH = '/data/server/jenkins_node_workspace/code/demoproject'
   }
 
   stages {
@@ -20,23 +20,35 @@ pipeline {
         echo '[+] 准备环境'
         echo '[@] Jenkinsfile for jenkins(current ver.2.73.3) pipeline'
         echo "[-] --> 任务链接：${BUILD_URL}"
-        // workspace
-        echo '[-] --> 检查 WORKSPACE 是否正确'
-        sh 'echo "pwd = $(pwd)"'
-        // golang
+        //## workspace
+        //echo '[-] --> 检查 WORKSPACE 是否正确'
+        //sh 'echo "pwd = $(pwd)"'
+        //## golang
         echo '[-] --> 检查 golang 环境'
         sh 'go version'
-        sh 'go env'
+        //sh 'go env'
         echo '[-] --> 列出 GOPATH'
         sh 'tree -L 1 ${GOPATH}'
-        sh 'sh /data/jenkins_node_home/workspace/cicd/demo-project/ci.sh fix'
+        echo '[+] 检查参数：'
+        echo "[-] --> SVC_NAMES = ${params.SVC_NAMES}"
+        echo "[-] --> SVC_VERSION = ${params.SVC_VERSION}"
+        echo "[-] --> GIT_BRANCH_NAME = ${params.GIT_BRANCH_NAME}"
+        echo "[-] --> K8S_NAMESPACE = ${params.K8S_NAMESPACE}"
+        echo "[-] --> LOG_LEVEL_DEBUG = ${params.LOG_LEVEL_DEBUG}"
+        echo "[-] --> NEED_UNDO = ${params.NEED_UNDO}"
         echo '[-] ______________________END_OF_STAGE______________________'
       }
     }
 
     stage('Checkout') {
+      when {
+          expression {
+              //回滚操作直接跳过
+              params.NEED_UNDO == false
+          }
+      }
       steps {
-        echo '[+] 准备代码'
+        echo '[+] 准备代码...'
         echo '[-] --> git 签出'
         checkout([$class: 'GitSCM', branches: [[name: "${params.GIT_BRANCH_NAME}"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: '11223344-1111-2222-3333-444444555555', url: 'xxx.git']]])
         echo '[-] --> git 变更日志（最近3条）'
@@ -47,16 +59,44 @@ pipeline {
     }
 
     stage('Build') {
+      when {
+          expression {
+              //回滚操作直接跳过
+              params.NEED_UNDO == false
+          }
+      }
       steps {
-        echo '[+] 构建 golang binary'
-        echo "[-] --> 检查参数 params.SVC_NAMES = ${params.SVC_NAMES}"
-        echo "[-] --> 检查参数 params.SVC_VERSION = ${params.SVC_VERSION}"
-        echo "[-] --> 检查参数 params.GIT_BRANCH_NAME = ${params.GIT_BRANCH_NAME}"
-        echo "[-] --> 检查参数 params.K8S_NAMESPACE = ${params.K8S_NAMESPACE}"
-        echo "[-] --> 检查参数 params.FIX_BLOCKED_PKGS = ${params.FIX_BLOCKED_PKGS}"
-        echo "[-] --> 检查参数 params.LOG_LEVEL_DEBUG = ${params.LOG_LEVEL_DEBUG}"
+        echo '[+] 代码构建中...'
+        sh '/bin/bash /data/server/jenkins_node_workspace/cicd/demoproject/ci.sh build'
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
 
-        sh 'sh /data/jenkins_node_home/workspace/cicd/demo-project/ci.sh build'
+    stage('Deploy') {
+      when {
+          expression {
+              //回滚操作直接跳过
+              params.NEED_UNDO == false
+          }
+      }
+      steps {
+        echo '[+] 服务上线中...'
+        sh '/bin/bash /data/server/jenkins_node_workspace/cicd/demoproject/ci.sh rollout'
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
+
+    stage('Rollback') {
+      when {
+          expression {
+              //回滚操作才执行
+              params.NEED_UNDO == true
+          }
+      }
+      steps {
+        echo '[+] 请确认是否需要执行回滚操作？'
+        input message: '需要回滚? (请点击 "Proceed" 来回滚到上一个版本)'
+        sh '/bin/bash /data/server/jenkins_node_workspace/cicd/demoproject/ci.sh undo'
         echo '[-] ______________________END_OF_STAGE______________________'
       }
     }

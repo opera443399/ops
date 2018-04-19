@@ -1,10 +1,10 @@
 # CICD-配置jenkins任务
-2018/3/12
+2018/4/19
 
 
 ### General
 - 项目名称
-  - pipeline-demo-project
+  - pipeline-demoproject
 - 描述
   - 负责人
     - xxx@xxx.com
@@ -65,20 +65,12 @@
     - Name
       - K8S_NAMESPACE
     - Default Value
-      - ns-dev
-      - ns-test
+      - ns-demo-dev
+      - ns-demo-test
     - Description
       - 请选择部署至 k8s 的哪一个 namespace 中
-        - ns-dev -> 开发环境
-        - ns-test -> 测试环境
-  - Boolean Parameter
-    - Name
-      - FIX_BLOCKED_PKGS
-    - Default Value
-      - unchecked
-    - Description
-      - 通过 github 来获取因网络异常无法下载的 go pkg
-      - 通常初始化时执行一次即可，默认不选中
+        - ns-demo-dev -> 开发环境
+        - ns-demo-test -> 测试环境
   - Boolean Parameter
     - Name
       - LOG_LEVEL_DEBUG
@@ -86,12 +78,19 @@
       - unchecked
     - Description
       - 是否允许构建任务时调用的脚本输出更详细的日志？
-      - 默认不选中
+  - Boolean Parameter
+    - Name
+      - NEED_UNDO
+    - Default Value
+      - unchecked
+    - Description
+      - 请确认是否需要执行回滚操作？
+
 
 
 ### Advanced Project Options
 - Display Name
-  - [k8s@dev] demo-project [调试中]
+  - [开发][k8s] demoproject
 
 ### Pipeline
 - Definition
