@@ -1,7 +1,8 @@
 # ci目录结构示例
 2018/4/20
 
-### 持续集成时工作目录示例结构如下：
+
+*CI的工作目录结构示例*
 
 ```bash
 /data/server/jenkins_node_workspace/cicd

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2018/4/19
+# 2018/4/20
 ###########
 ### 请使用 `dep` 来解决 golang 的依赖而不是使用 `go get`
 ### goal:
@@ -50,16 +50,14 @@ do_etcd_put_rollout() {
   local f_value="{\"k8sNamespace\":\"${K8S_NAMESPACE}\",\"appParent\":\"${APP_PARENT}\",\"appName\":\"${f_appName}\",\"imageLatest\":\"$2\"}"
 
   ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" put ${f_key} ${f_value}
-  ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" put ${f_key} ${f_value}
   ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" get ${f_key}
 }
 
 do_etcd_put_undo() {
   local f_appName="$(echo $1 |tr '_' '-')"
   local f_key="/k8s-deploy/${APP_PARENT}/undo"
-  local f_value="{\"k8sNamespace\":\"${K8S_NAMESPACE}\",\"appParent\":\"${APP_PARENT}\",\"appName\":\"${f_appName}\",\"undoTimestamp\":\"$(date +%F"T"%T)\"}"
+  local f_value="{\"k8sNamespace\":\"${K8S_NAMESPACE}\",\"appParent\":\"${APP_PARENT}\",\"appName\":\"${f_appName}\",\"undoTimestamp\":\"$(date +Y%m%d_%H%M%S)\"}"
 
-  ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" put ${f_key} ${f_value}
   ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" put ${f_key} ${f_value}
   ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "${ETCD_ENDPOINTS}" get ${f_key}
 }

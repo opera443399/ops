@@ -1,6 +1,9 @@
 # cd目录结构示例
 2018/4/20
 
+
+*CD的工作目录结构示例*
+
 ```bash
 /data/server/k8s-deploy
 ├── bin
@@ -55,10 +58,13 @@
 │               ├── s4.yaml
 │               └── s5.yaml
 ├── logs                            # confd 的 reload 日志
-│   └── xxx.log
+│   ├── demoproject-rollout
+│   │   └── xxx.log
+│   └── demoproject-undo
+│       └── xxx.log
 └── temp.cmd                          # confd 使用的临时脚本
-    ├── rollout.demoproject
-    └── undo.demoproject
+    ├── demoproject-rollout
+    └── demoproject-undo
 
 
 ```
