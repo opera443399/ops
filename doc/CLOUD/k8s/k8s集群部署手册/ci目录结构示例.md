@@ -1,10 +1,10 @@
 # ci目录结构示例
-2018/1/22
+2018/4/20
 
 ### 持续集成时工作目录示例结构如下：
 
 ```bash
-/data/jenkins_node_home/workspace/cicd
+/data/server/jenkins_node_workspace/cicd
 ├── bin
 │   ├── backup.sh
 │   ├── cleanup.sh

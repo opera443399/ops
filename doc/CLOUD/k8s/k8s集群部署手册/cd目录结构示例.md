@@ -1,5 +1,5 @@
 # cd目录结构示例
-2018/1/22
+2018/4/20
 
 ```bash
 /data/server/k8s-deploy
@@ -56,8 +56,9 @@
 │               └── s5.yaml
 ├── logs                            # confd 的 reload 日志
 │   └── xxx.log
-└── reload                          # confd 使用的临时脚本
-    └── auto.create.cmd
+└── temp.cmd                          # confd 使用的临时脚本
+    ├── rollout.demoproject
+    └── undo.demoproject
 
 
 ```
