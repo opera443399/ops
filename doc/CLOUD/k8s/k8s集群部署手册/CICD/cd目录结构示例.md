@@ -9,15 +9,18 @@
 ├── bin
 │   ├── backup.sh
 │   ├── confd_ctl.sh
-│   └── confd_reload_cmd.sh
+│   ├── confd_reload_cmd.sh
+│   └── k8s_rsync_yamls.sh
 ├── k8s.yaml.d                                      # 微服务的配置文件根目录
 │   ├── public                                      # 公共资源
 │   │   ├── ns                                      # 命名空间
-│   │   │   ├── ns-demo2-dev.yaml                     # 新建一个命名空间 ns-demo2-dev
-│   │   │   └── ns-demo2-test.yaml
+│   │   │   └── demo2
+│   │   │       ├── ns-demo2-dev.yaml
+│   │   │       └── ns-demo2-test.yaml              # 新建一个命名空间 ns-demo2-dev
 │   │   ├── secrets                                 # secrets
-│   │   │   ├── hub-demo2-dev.yaml                    # 用于私有镜像的 secrets
-│   │   │   └── hub-demo2-test.yaml
+│   │   │   └── demo2
+│   │   │       ├── hub-ns-demo2-dev.yaml           # 用于私有镜像的 secret
+│   │   │       └── hub-ns-demo2-test.yaml
 │   │   └── volume                                  # 存储
 │   │       └── glusterfs                             # glusterfs 存储
 │   │           ├── 10.endpoints                        # 根据 ns 来分类定义 ep
