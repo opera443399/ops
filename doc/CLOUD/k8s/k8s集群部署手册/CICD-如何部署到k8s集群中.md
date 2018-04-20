@@ -249,3 +249,55 @@ case $1 in
     ;;
 esac
 ```
+
+
+
+### FAQ
+1、 在配置 confd 时，可以配置多个 `toml` 文件，但请注意每个文件中的 `prefix` 要是唯一无二的，否则在后续 watch 时，将因为有多个配置使用同一个 prefix 而导致更新不及时的异常。
+
+可以观察到下述现象：
+```
+2018-04-20T11:57:31+08:00 tvm-00 /usr/local/bin/confd[26430]: DEBUG Key updated /k8s-deploy/demoproject/rollout
+2018-04-20T11:57:48+08:00 tvm-00 /usr/local/bin/confd[26430]: DEBUG Key updated /k8s-deploy/demoproject/rollout
+2018-04-20T11:58:26+08:00 tvm-00 /usr/local/bin/confd[26430]: DEBUG Key updated /k8s-deploy/demoproject/rollout
+2018-04-20T11:58:29+08:00 tvm-00 /usr/local/bin/confd[26430]: DEBUG Key updated /k8s-deploy/demoproject/rollout
+2018-04-20T11:58:29+08:00 tvm-00 /usr/local/bin/confd[26430]: DEBUG Retrieving keys from store
+2018-04-20T11:58:29+08:00 tvm-00 /usr/local/bin/confd[26430]: DEBUG Key prefix set to /
+2018-04-20T11:58:29+08:00 tvm-00 /usr/local/bin/confd[26430]: DEBUG Got the following map from store: map[/k8s-deploy/demoproject/rollout:{"appName":"demoproject","errMsg":"t1"}]
+2018-04-20T11:58:29+08:00 tvm-00 /usr/local/bin/confd[26430]: DEBUG Using source template /etc/confd/templates/demoproject-rollout.tmpl
+2018-04-20T11:58:29+08:00 tvm-00 /usr/local/bin/confd[26430]: DEBUG Compiling source template /etc/confd/templates/demoproject-rollout.tmpl
+2018-04-20T11:58:29+08:00 tvm-00 /usr/local/bin/confd[26430]: DEBUG Comparing candidate config to /data/server/k8s-deploy/temp.cmd/demoproject-rollout
+2018-04-20T11:58:29+08:00 tvm-00 /usr/local/bin/confd[26430]: INFO /data/server/k8s-deploy/temp.cmd/demoproject-rollout has md5sum 38616c9f5fd6fac4bc926488b5de88e7 should be f7cd944bd7932715ab74c84277769602
+2018-04-20T11:58:29+08:00 tvm-00 /usr/local/bin/confd[26430]: INFO Target config /data/server/k8s-deploy/temp.cmd/demoproject-rollout out of sync
+2018-04-20T11:58:29+08:00 tvm-00 /usr/local/bin/confd[26430]: DEBUG Overwriting target config /data/server/k8s-deploy/temp.cmd/demoproject-rollout
+2018-04-20T11:58:29+08:00 tvm-00 /usr/local/bin/confd[26430]: DEBUG Running cd /data/server/k8s-deploy && /bin/bash bin/confd_reload_cmd.sh temp.cmd/demoproject-rollout
+2018-04-20T11:58:29+08:00 tvm-00 /usr/local/bin/confd[26430]: DEBUG ""
+2018-04-20T11:58:29+08:00 tvm-00 /usr/local/bin/confd[26430]: INFO Target config /data/server/k8s-deploy/temp.cmd/demoproject-rollout has been updated
+```
+
+上述日志对应的2个配置文件大致是：
+
+- demoproject-rollout.toml
+```
+prefix = "/"
+keys = [
+  "/k8s-deploy/demoproject/rollout"
+]
+```
+
+- demoproject-undo.toml
+```
+prefix = "/"
+keys = [
+  "/k8s-deploy/demoproject/undo"
+]
+```
+
+执行的操作是：
+```bash
+ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "http://10.250.3.100:2379" get '/k8s-deploy/demoproject/rollout'
+##### 连续执行 4 次
+ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints "http://10.250.3.100:2379" put '/k8s-deploy/demoproject/rollout' '{"appName":"demoproject","errMsg":"t1"}'
+```
+
+上述操作表明，连续更新了 4 次 key 但只有第 4 次才生效，实际上预期的结果是每一次都会生效。
