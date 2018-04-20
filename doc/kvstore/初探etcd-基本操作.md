@@ -1,5 +1,5 @@
 初探etcd-基本操作
-2018/4/2
+2018/4/20
 
 ### 初识
 - 用途
@@ -115,12 +115,9 @@ PublishedPort:11111
 ### 附加：使用 confd 读取 etcd 中的数据
 ```bash
 ##### 安装 confd
-git clone https://github.com/kelseyhightower/confd.git $GOPATH/src/github.com/kelseyhightower/confd
-cd $GOPATH/src/github.com/kelseyhightower/confd
-make
-cp bin/confd /usr/local/bin/
-mkdir -p /etc/confd/{conf.d,templates}
-
+wget https://github.com/kelseyhightower/confd/releases/download/v0.15.0/confd-0.15.0-linux-amd64
+chmod +x confd-0.15.0-linux-amd64
+mv confd-0.15.0-linux-amd64 /usr/local/bin/confd
 
 ##### 配置文件
 ~]# tree /etc/confd
