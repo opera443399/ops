@@ -1,0 +1,45 @@
+groups:
+- name: rules_docker_node
+  rules:
+  ### cpu
+  - alert: node_cpu_usage
+    expr: 100 - (avg(irate(node_cpu{mode="idle"}[1m])
+      * 100) BY (instance)) > 50
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      description: Docker node {{ $labels.instance }} CPU usage is at {{ humanize
+        $value}}%.
+      summary: CPU alert for Docker node '{{ $labels.instance }}'
+  ### mem
+  - alert: node_memory_usage
+    expr: sum(((node_memory_MemTotal - node_memory_MemAvailable) / node_memory_MemTotal)
+      * 100) BY (instance) > 80
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      description: Docker node {{ $labels.instance }} memory usage is at {{ humanize
+        $value}}%.
+      summary: Memory alert for Docker node '{{ $labels.instance }}'
+  ### disk
+  - alert: node_disk_usage
+    expr: ((node_filesystem_size{mountpoint="/"} - node_filesystem_free{mountpoint="/"})
+      * 100 / node_filesystem_size{mountpoint="/"}) > 80
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      description: Docker node {{ $labels.instance }} disk usage is at {{ humanize
+        $value}}%.
+      summary: Disk alert for Docker node '{{ $labels.instance }}'
+  - alert: node_disk_fill_rate_6h
+    expr: predict_linear(node_filesystem_free{mountpoint="/"}[1h], 6 * 3600) < 0
+    for: 1h
+    labels:
+      severity: critical
+    annotations:
+      description: Docker node {{ $labels.instance }} disk is going to fill up in
+        6h.
+      summary: Disk fill alert for Docker node '{{ $labels.instance }}'

@@ -1,0 +1,86 @@
+# my global config
+global:
+  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      # - alertmanager:9093
+      - 10.250.200.50:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+  - "rules_docker_node.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+
+  - job_name: 'federate'
+    scrape_interval: 15s
+    honor_labels: true
+    metrics_path: '/federate'
+    params:
+      'match[]':
+        - '{job=~"kubernetes-.*"}'
+    static_configs:
+      - targets:
+        - '10.250.200.70:30090'
+
+
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'prometheus'
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: ['10.250.200.50:9090']
+        labels:
+          env: dev
+
+
+  - job_name: 'node_exporter'
+    static_configs:
+      ##### k8s-dev
+      - targets: ['10.250.11.101:9100', '10.250.11.102:9100', '10.250.11.103:9100']
+        labels:
+          env: dev
+          role: k8s-master
+          app: mixed
+      - targets: ['10.250.11.201:9100', '10.250.11.202:9100']
+        labels:
+          env: dev
+          role: k8s-worker
+          app: mixed
+
+      ##### swarm-qa
+      - targets: ['10.250.22.81:9100']
+        labels:
+          env: qa
+          role: swarm-master
+          app: car2share
+      - targets: ['10.250.22.91:9100']
+        labels:
+          env: qa
+          role: swarm-worker
+          app: car2share
+
+      ##### swarm-prod
+      - targets: ['10.101.2.190:9100', '10.101.2.191:9100', '10.101.2.192:9100']
+        labels:
+          env: prod
+          role: swarm-master
+          app: car2share
+
+      - targets: ['10.101.2.201:9100', '10.101.2.202:9100']
+        labels:
+          env: prod
+          role: swarm-worker
+          app: car2share
