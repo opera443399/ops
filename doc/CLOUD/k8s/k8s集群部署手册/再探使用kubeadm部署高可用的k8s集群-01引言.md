@@ -1,5 +1,5 @@
 # 再探使用kubeadm部署高可用的k8s集群-01引言
-2018/4/4
+2018/4/24
 
 
 ### 提示
@@ -331,6 +331,19 @@ docker pull quay.io/calico/kube-controllers:v2.0.2
 ```
 
 
+> [警告]
+```
+来自今天（2018-04-24）的实验结果：
+从下一步开始，加入多个 master 节点后，通过验证 `calico` 和 `kube-dns` 并不能表明网络可用。
+
+实际上，需要验证业务，因为我在实验过程中发现一个问题：
+
+业务 t1 部署后，运行在节点 worker-201 上，此时能通过 worker-201 的 ip:port 访问，但无法通过集群的其他节点来访问
+
+小结： 新的 master 节点在加入过程中，对 iptables 规则的变化产生了影响。可能原因是：新的服务上线后，更新了节点 worker-201 上的 iptables 规则，但遇到权限异常，无法写入 calico-etcd 集群中，从而更新其他节点上的 iptables 规则
+
+诉求： 请大家仔细验证业务，确认网络是否有异常！！后续将抽空研究该问题。
+````
 
 ##### 初始化 master-101 master-102
 > 将 master-101 加入集群（ 因 master-102 的操作同理，略过）
@@ -371,12 +384,16 @@ kubeadm join --token xxx.xxxxxxx 10.222.0.100:6443 --discovery-token-ca-cert-has
 ```
 
 
+> [警告]
+```
+（注明：未完成，下述内容待验证）
+```
 
-### 配置 worker 使用 kube-proxy 时通过 LB 来访问后端高可用的 apiserver 服务（注明：未完成，下述内容待验证）
+### 配置 worker 使用 kube-proxy 时通过 LB 来访问后端高可用的 apiserver 服务
 ```bash
-kubectl get configmap -n kube-system kube-proxy -o yaml > kube-proxy.yaml
-sed -i 's#server:.*#server: https://10.222.0.88:6443#g' kube-proxy.yaml
-kubectl apply -f kube-proxy.yaml --force
+kubectl get configmap -n kube-system kube-proxy -o yaml > kube-proxy-cm.yaml
+sed -i 's#server:.*#server: https://10.222.0.88:6443#g' kube-proxy-cm.yaml
+kubectl apply -f kube-proxy-cm.yaml --force
 kubectl delete pod -n kube-system -l k8s-app=kube-proxy
 
 
@@ -402,7 +419,7 @@ RS1 -> RS1
 > 这和负载均衡TCP的实现机制有关。在四层TCP协议服务中，不支持后端ECS实例既作为Real Server又作为客户端向所在的负载均衡实例发送请求。因为返回的数据包只在云服务器内部转发，不经过负载均衡，所以在后端ECS实例上去访问负载均衡的服务地址是不通的。
 
 结论1：如果从 master 节点的 IP 来访问 k8s 中的访问，可能出现异常。
-结论2：仅将 worker 节点的 IP 添加到 SLB 中作为后端，预计能避免上述异常。 
+结论2：仅将 worker 节点的 IP 添加到 SLB 中作为后端，预计能避免上述异常。
 
 
 
