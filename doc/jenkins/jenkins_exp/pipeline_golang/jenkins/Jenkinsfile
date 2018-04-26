@@ -14,7 +14,7 @@ pipeline {
     string(name: 'SVC_VERSION', defaultValue: 'EMPTY', description: '请指定`docker镜像`的`tag`，默认将提取 `git rev`值')
     choice(name: 'SWARM_ENV', choices: 'dev\ntest', description: '请选择运行环境')
     choice(name: 'GIT_BRANCH_NAME', choices: 'refs/heads/develop\nrefs/heads/release', description: '请选择 git 分支')
-    booleanParam(name: 'NEED_UNDO', defaultValue: false, description: '可选的回滚步骤')
+    booleanParam(name: 'NEED_UNDO', defaultValue: false, description: '默认不启用回滚操作(可选)')
   }
 
   tools {
@@ -110,11 +110,20 @@ pipeline {
           environment name: 'SWARM_ENV', value: 'test'
       }
       steps {
-        input([
-          message: '服务上线中...(待审核)',
-          ok: '同意'
-        ])
-
+        script {
+          userInput = input([
+            message: '服务上线中...(待审核)',
+            ok: '同意',
+            parameters: [
+              text(name: 'approvers', defaultValue: '管理员\n项目dev/qa负责人', description: '审核者')
+            ],
+            submitterParameter: 'approverID'
+            //------ 指定审核者，请使用逗号','分割(无空格)
+            //submitter: 'admin,jack'
+          ])
+          echo "由 ${userInput['approverID']} 审核通过"
+        }
+        
         sh '/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh demoproject rollout'
         echo '[-] ______________________END_OF_STAGE______________________'
       }
@@ -123,7 +132,7 @@ pipeline {
     stage('Rollback') {
       when {
           expression {
-              //------ 默认不启用回滚操作
+              //------ 默认不启用回滚操作(可选)
               params.NEED_UNDO == true
           }
       }
