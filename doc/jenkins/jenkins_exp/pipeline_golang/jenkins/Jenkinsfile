@@ -1,6 +1,7 @@
 pipeline {
   agent {
     node {
+      //------ 分配任务给打了下述标签的 worker
       label 'pipeline_only'
       //------ 指定干活的路径
       customWorkspace '/data/server/jenkins_worker/pipeline_only/demoproject/src/demoproject'
@@ -113,7 +114,7 @@ pipeline {
           message: '服务上线中...(待审核)',
           ok: '同意'
         ])
-        
+
         sh '/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh demoproject rollout'
         echo '[-] ______________________END_OF_STAGE______________________'
       }
