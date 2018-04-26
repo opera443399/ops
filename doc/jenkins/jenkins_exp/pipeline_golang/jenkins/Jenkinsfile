@@ -64,15 +64,15 @@ pipeline {
           $class: 'GitSCM',
           branches: [[
             name: "${params.GIT_BRANCH_NAME}"
-            ]],
+          ]],
           doGenerateSubmoduleConfigurations: false,
           extensions: [],
           submoduleCfg: [],
           userRemoteConfigs: [[
             credentialsId: '11223344-1111-2222-3333-444444555555',
             url: 'git@example.com:group1/demoproject.git'
-            ]]
-          ])
+          ]]
+        ])
         echo '[-] --> git 变更日志（最近3条）'
         sh 'git log -3 --oneline'
         //sh 'git whatchanged -3'
