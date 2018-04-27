@@ -30,29 +30,25 @@ pipeline {
   stages {
     stage('初始化') {
       steps {
-        echo '[+] 准备环境'
-        echo '[@] Jenkinsfile for jenkins(current ver.2.73.3) pipeline'
-        echo "[-] --> 任务链接：${BUILD_URL}"
-        //------ workspace
-        //echo '[-] --> 检查 WORKSPACE 是否正确'
-        //sh 'echo "pwd = $(pwd)"'
+        echo '[@] Jenkinsfile for jenkins pipeline'
+        echo "[@] __> 任务链接：${BUILD_URL}"
         //------ golang
-        echo '[-] --> 检查 golang 环境'
+        echo '[-] __> 检查 golang 环境'
         sh 'go version'
         //sh 'go env'
-        echo '[-] --> 列出 GOPATH'
+        echo '[-] __> 列出 GOPATH'
         sh 'tree -L 1 ${GOPATH}'
-        echo '[+] 检查参数：'
-        echo "[-] --> SVC_NAMES = ${params.SVC_NAMES}"
-        echo "[-] --> SVC_VERSION = ${params.SVC_VERSION}"
-        echo "[-] --> SWARM_ENV = ${params.SWARM_ENV}"
-        echo "[-] --> GIT_BRANCH_NAME = ${params.GIT_BRANCH_NAME}"
-        echo "[-] --> NEED_UNDO = ${params.NEED_UNDO}"
+        echo '[+] --> 检查参数：'
+        echo "[-] __> SVC_NAMES = ${params.SVC_NAMES}"
+        echo "[-] __> SVC_VERSION = ${params.SVC_VERSION}"
+        echo "[-] __> SWARM_ENV = ${params.SWARM_ENV}"
+        echo "[-] __> GIT_BRANCH_NAME = ${params.GIT_BRANCH_NAME}"
+        echo "[-] __> NEED_UNDO = ${params.NEED_UNDO}"
         echo '[-] ______________________END_OF_STAGE______________________'
       }
     }
 
-    stage('拉取代码') {
+    stage('准备 git 仓库') {
       when {
           //------ 只在 dev 环境中执行
           environment name: 'SWARM_ENV', value: 'dev'
@@ -72,7 +68,7 @@ pipeline {
             url: 'git@example.com:group1/demoproject.git'
           ]]
         ])
-        echo '[-] --> git 变更日志（最近3条）'
+        echo '[-] __> git 变更日志(最近3条)'
         sh 'git log -3 --oneline'
         //sh 'git whatchanged -3'
         echo '[-] ______________________END_OF_STAGE______________________'
@@ -103,10 +99,10 @@ pipeline {
       }
     }
 
-    stage('部署至 test 环境') {
+    stage('部署至 qa 环境') {
       when {
-          //------ 只在 test 环境中执行
-          environment name: 'SWARM_ENV', value: 'test'
+          //------ 只在 qa 环境中执行
+          environment name: 'SWARM_ENV', value: 'qa'
       }
       steps {
         script {
@@ -129,7 +125,7 @@ pipeline {
       }
     }
 
-    stage('Rollback') {
+    stage('回滚') {
       when {
           expression {
               //------ 默认不启用回滚操作(可选)
@@ -138,7 +134,7 @@ pipeline {
       }
       steps {
         input([
-          message: '回滚? (回滚到上一个版本)',
+          message: '开始回滚? (回滚到上一个版本)',
           ok: '确认'
         ])
 
