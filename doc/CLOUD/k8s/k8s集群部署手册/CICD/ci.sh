@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2018/4/20
+# 2018/4/27
 ###########
 ### 请使用 `dep` 来解决 golang 的依赖而不是使用 `go get`
 ### goal:
@@ -11,6 +11,8 @@
 ### $ DOCKER_REGISTRY_USERNAME='xxx'
 ### $ DOCKER_REGISTRY_PASSWORD='xxx'
 ### $ echo ${DOCKER_REGISTRY_PASSWORD} |docker login --username=${DOCKER_REGISTRY_USERNAME} --password-stdin ${DOCKER_REGISTRY_URL}
+###
+### 适用于 k8s
 ###########
 
 #set -e
