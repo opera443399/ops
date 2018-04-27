@@ -28,7 +28,7 @@ pipeline {
   }
 
   stages {
-    stage('Pre-build') {
+    stage('初始化') {
       steps {
         echo '[+] 准备环境'
         echo '[@] Jenkinsfile for jenkins(current ver.2.73.3) pipeline'
@@ -52,14 +52,13 @@ pipeline {
       }
     }
 
-    stage('Checkout') {
+    stage('拉取代码') {
       when {
-          //------ 只有 dev 需要执行
+          //------ 只在 dev 环境中执行
           environment name: 'SWARM_ENV', value: 'dev'
       }
       steps {
-        echo '[+] 准备代码...'
-        echo '[-] --> git 签出'
+        echo '[+] --> 获取 git 代码...'
         checkout([
           $class: 'GitSCM',
           branches: [[
@@ -80,9 +79,9 @@ pipeline {
       }
     }
 
-    stage('Build') {
+    stage('构建') {
       when {
-          //------ 只有 dev 需要执行
+          //------ 只在 dev 环境中执行
           environment name: 'SWARM_ENV', value: 'dev'
       }
       steps {
@@ -92,9 +91,9 @@ pipeline {
       }
     }
 
-    stage('Deploy to dev') {
+    stage('部署至 dev 环境') {
       when {
-          //------ 只有 dev 需要执行
+          //------ 只在 dev 环境中执行
           environment name: 'SWARM_ENV', value: 'dev'
       }
       steps {
@@ -104,9 +103,9 @@ pipeline {
       }
     }
 
-    stage('Deploy to test') {
+    stage('部署至 test 环境') {
       when {
-          //------ 只有 dev 需要执行
+          //------ 只在 test 环境中执行
           environment name: 'SWARM_ENV', value: 'test'
       }
       steps {
@@ -115,15 +114,16 @@ pipeline {
             message: '服务上线中...(待审核)',
             ok: '同意',
             parameters: [
-              text(name: 'approvers', defaultValue: '管理员\n项目dev/qa负责人', description: '审核者')
+              text(name: 'approvers', defaultValue: '*下述角色拥有本项目的审批权限: *\n  - Admin\n  - QA\n', description: '审核者')
             ],
+            //------ 指定审核者，请使用逗号','分割(无空格)，启用请取消下面一行的注释
+            //submitter: 'admin,hanmeimei,lilei',
             submitterParameter: 'approverID'
-            //------ 指定审核者，请使用逗号','分割(无空格)
-            //submitter: 'admin,jack'
+
           ])
           echo "由 ${userInput['approverID']} 审核通过"
         }
-        
+
         sh '/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh demoproject rollout'
         echo '[-] ______________________END_OF_STAGE______________________'
       }
