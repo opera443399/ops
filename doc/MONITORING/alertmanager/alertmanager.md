@@ -1,5 +1,5 @@
 # alertmanager
-2018/4/23
+2018/5/2
 
 
 ### deploy
@@ -8,19 +8,17 @@
 ~]# cat start.sh
 #!/bin/bash
 #
-# 2018/4/23
+# 2018/5/2
 
 test $(docker ps -a -f name=monitor_alertmanager -q |wc -l) -eq 0 || \
 docker rm -f $(docker ps -a -f name=monitor_alertmanager -q)
-docker run -d -p 9093:9093 \
+
+docker run -d -p '127.0.0.1:9093:9093' \
     --name monitor_alertmanager \
     -v /data/server/alertmanager/data:/alertmanager \
-    -e "API_SECRET=xxx" \
-    -e "CORP_ID=xxx" \
-    -e "AGENT_ID=111" \
-    -e "TO_PARTY=111" \
-    opera443399/swarmprom-alertmanager:v0.14.0 \
-      --config.file=/etc/alertmanager/alertmanager.yml \
-      --storage.path=/alertmanager
+    -v /data/server/alertmanager/conf/alertmanager.yml:/etc/alertmanager/config.yml \
+    -v /data/server/alertmanager/templates:/etc/alertmanager/templates \
+    prom/alertmanager:v0.14.0
+
 
 ```
