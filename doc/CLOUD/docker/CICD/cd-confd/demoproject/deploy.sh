@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2018/4/27
+# 2018/5/2
 
 IS_RESET=false
 REGISTRY_PREFIX="registry.cn-hangzhou.aliyuncs.com/ns-my-company"
@@ -94,14 +94,14 @@ do_ps() {
 usage() {
 cat<<_EOF
 
-usage: $0 [init|reset|update|stop|ps|net-init]
+usage: $0 [init|reset|update|stop|ps|net_init]
 
 _EOF
 }
 
 # ---
 case $1 in
-  init|stop|ps|update|net-init)
+  init|stop|ps|update|net_init)
     do_$1
     ;;
   reset)
