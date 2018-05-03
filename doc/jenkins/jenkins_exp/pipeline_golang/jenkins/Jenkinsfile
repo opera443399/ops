@@ -10,120 +10,58 @@ pipeline {
 
   parameters {
     //------ 定义参数(环境变量)
-    string(name: 'SVC_NAMES', defaultValue: 'svc1,svc2,svc3,svc4,svc5', description: '微服务列表')
-    string(name: 'SVC_VERSION', defaultValue: 'EMPTY', description: '请指定`docker镜像`的`tag`，默认将提取 `git rev`值')
-    choice(name: 'SWARM_ENV', choices: 'dev\ntest', description: '请选择运行环境')
-    choice(name: 'GIT_BRANCH_NAME', choices: 'refs/heads/develop\nrefs/heads/release', description: '请选择 git 分支')
-    booleanParam(name: 'NEED_UNDO', defaultValue: false, description: '默认不启用回滚操作(可选)')
-  }
-
-  tools {
-    //------ 指定全局定义的依赖工具，此处为 golang 环境
-    go 'golangtools'
+    string(name: 'SVC_NAMES', defaultValue: 'svc1,svc2,svc3,svc4,svc5', description: '请选择微服务（使用逗号作为分隔符，无空格）: \nsvc1,svc2,svc3,svc4,svc5')
+    string(name: 'SVC_VERSION', defaultValue: 'EMPTY', description: '请指定`docker image tag`的值，默认将提取 `git rev id`')
+    choice(name: 'SWARM_ENV', choices: 'dev\ntest', description: '请问您要部署至哪一个环境中呢？')
+    choice(name: 'GIT_BRANCH_NAME', choices: 'develop\nmaster', description: '请选择一个 git 分支：')
+    booleanParam(name: 'NEED_UNDO', defaultValue: false, description: '请问是否需要回滚（可选项）？')
   }
 
   environment {
     // 定义 golang 环境变量
     GOPATH = '/data/server/jenkins_worker/pipeline_only/demoproject'
+    SSH_OPTS_SWARM_DEV = 'ssh -o StrictHostKeyChecking=no jack@10.250.1.201 /bin/bash /data/server/swarm-deploy/bin/swarm-ctl.sh'
   }
 
   stages {
-    stage('初始化') {
-      steps {
-        echo '[@] Jenkinsfile for jenkins pipeline'
-        echo "[@] __> 任务链接：${BUILD_URL}"
-        //------ golang
-        echo '[-] __> 检查 golang 环境'
-        sh 'go version'
-        //sh 'go env'
-        echo '[-] __> 列出 GOPATH'
-        sh 'tree -L 1 ${GOPATH}'
-        echo '[+] --> 检查参数：'
-        echo "[-] __> SVC_NAMES = ${params.SVC_NAMES}"
-        echo "[-] __> SVC_VERSION = ${params.SVC_VERSION}"
-        echo "[-] __> SWARM_ENV = ${params.SWARM_ENV}"
-        echo "[-] __> GIT_BRANCH_NAME = ${params.GIT_BRANCH_NAME}"
-        echo "[-] __> NEED_UNDO = ${params.NEED_UNDO}"
-        echo '[-] ______________________END_OF_STAGE______________________'
-      }
-    }
-
     stage('准备 git 仓库') {
       when {
           //------ 只在 dev 环境中执行
           environment name: 'SWARM_ENV', value: 'dev'
       }
       steps {
-        echo '[+] --> 获取 git 代码...'
+        echo '[+] 获取 git 代码...'
         checkout([
           $class: 'GitSCM',
           branches: [[
-            name: "${params.GIT_BRANCH_NAME}"
+            name: "refs/heads/${GIT_BRANCH_NAME}"
           ]],
           doGenerateSubmoduleConfigurations: false,
           extensions: [],
           submoduleCfg: [],
           userRemoteConfigs: [[
-            credentialsId: '11223344-1111-2222-3333-444444555555',
+            credentialsId: '11112222-1111-2222-1111-222211112222',
             url: 'git@example.com:group1/demoproject.git'
           ]]
         ])
-        echo '[-] __> git 变更日志(最近3条)'
+
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
+
+
+    stage('初始化') {
+      steps {
+        echo '[@] Jenkinsfile for jenkins pipeline'
+        echo "[@] 任务链接：${BUILD_URL}"
+        echo '[+] git logs (最近3条)'
         sh 'git log -3 --oneline'
         //sh 'git whatchanged -3'
+
         echo '[-] ______________________END_OF_STAGE______________________'
       }
     }
 
-    stage('构建') {
-      when {
-          //------ 只在 dev 环境中执行
-          environment name: 'SWARM_ENV', value: 'dev'
-      }
-      steps {
-        echo '[+] 代码构建中...'
-        sh '/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh demoproject build'
-        echo '[-] ______________________END_OF_STAGE______________________'
-      }
-    }
-
-    stage('部署至 dev 环境') {
-      when {
-          //------ 只在 dev 环境中执行
-          environment name: 'SWARM_ENV', value: 'dev'
-      }
-      steps {
-        echo '[+] 服务上线中...'
-        sh '/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh demoproject rollout'
-        echo '[-] ______________________END_OF_STAGE______________________'
-      }
-    }
-
-    stage('部署至 qa 环境') {
-      when {
-          //------ 只在 qa 环境中执行
-          environment name: 'SWARM_ENV', value: 'qa'
-      }
-      steps {
-        script {
-          userInput = input([
-            message: '服务上线中...(待审核)',
-            ok: '同意',
-            parameters: [
-              text(name: 'approvers', defaultValue: '*下述角色拥有本项目的审批权限: *\n  - Admin\n  - QA\n', description: '审核者')
-            ],
-            //------ 指定审核者，请使用逗号','分割(无空格)，启用请取消下面一行的注释
-            //submitter: 'admin,hanmeimei,lilei',
-            submitterParameter: 'approverID'
-
-          ])
-          echo "由 ${userInput['approverID']} 审核通过"
-        }
-
-        sh '/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh demoproject rollout'
-        echo '[-] ______________________END_OF_STAGE______________________'
-      }
-    }
 
     stage('回滚') {
       when {
@@ -133,14 +71,134 @@ pipeline {
           }
       }
       steps {
-        input([
-          message: '开始回滚? (回滚到上一个版本)',
-          ok: '确认'
-        ])
+        script {
+          //------ tag diff
+          if (params.SVC_VERSION == 'EMPTY') {
+            env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
+          } else {
+            env.APP_TAG = params.SVC_VERSION
+          }
+          echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
 
-        sh '/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh demoproject undo'
+          //------ ACL
+          userInput = input([
+            message: '开始回滚? (回滚到上一个版本)',
+            ok: '确认',
+            parameters: [
+              text(name: 'approvers', defaultValue: '*下述角色拥有本项目的审批权限: *\n  - All\n', description: '审核者')
+            ],
+            //------ 指定审核者，请使用逗号','作为分隔符(无空格)，启用请取消下面一行的注释
+            //submitter: 'admin,hanmeimei,lilei',
+            submitterParameter: 'approverID'
+
+          ])
+          echo "[-] 由 ${userInput['approverID']} 审核通过"
+
+        }
+
+        sshagent(['11112222-1111-2222-1111-222211112222']) {
+            sh "${SSH_OPTS_SWARM_DEV} rollback ${SWARM_ENV} demoproject ${APP_TAG} ${SVC_NAMES}"
+        }
+
         echo '[-] ______________________END_OF_STAGE______________________'
       }
     }
+
+
+    stage('构建') {
+      when {
+          //------ 只在 dev 环境中执行
+          environment name: 'SWARM_ENV', value: 'dev'
+      }
+      tools {
+        //------ 指定全局定义的依赖工具，此处为 golang 环境
+        go 'go1.9'
+      }
+      steps {
+        echo '[+] 代码构建中...'
+
+        script {
+          //------ tag diff
+          if (params.SVC_VERSION == 'EMPTY') {
+            env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
+          } else {
+            env.APP_TAG = params.SVC_VERSION
+          }
+          echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
+        }
+
+        sh '/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh build demoproject ${APP_TAG}'
+
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
+
+
+    stage('部署至 dev 环境') {
+      when {
+          //------ 只在 dev 环境中执行
+          environment name: 'SWARM_ENV', value: 'dev'
+      }
+      steps {
+        echo '[+] 服务上线中...'
+
+        script {
+          //------ tag diff
+          if (params.SVC_VERSION == 'EMPTY') {
+            env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
+          } else {
+            env.APP_TAG = params.SVC_VERSION
+          }
+          echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
+        }
+
+        sshagent(['11112222-1111-2222-1111-222211112222']) {
+            sh "${SSH_OPTS_SWARM_DEV} update ${SWARM_ENV} demoproject ${APP_TAG} ${SVC_NAMES}"
+        }
+
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
+
+
+    stage('部署至 test 环境') {
+      when {
+          //------ 只在 test 环境中执行
+          environment name: 'SWARM_ENV', value: 'test'
+      }
+      steps {
+        script {
+
+          //------ tag diff
+          if (params.SVC_VERSION == 'EMPTY') {
+            env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
+          } else {
+            env.APP_TAG = params.SVC_VERSION
+          }
+          echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
+
+          //------ ACL
+          userInput = input([
+            message: '服务上线中...(待审核)',
+            ok: '同意',
+            parameters: [
+              text(name: 'approvers', defaultValue: '*下述角色拥有本项目的审批权限: *\n  - Admin\n  - QA\n', description: '审核者')
+            ],
+            //------ 指定审核者，请使用逗号','作为分隔符(无空格)，启用请取消下面一行的注释
+            //submitter: 'admin,hanmeimei,lilei',
+            submitterParameter: 'approverID'
+          ])
+          echo "[-] 由 ${userInput['approverID']} 审核通过"
+        }
+
+        sshagent(['11112222-1111-2222-1111-222211112222']) {
+            sh "${SSH_OPTS_SWARM_DEV} update ${SWARM_ENV} demoproject ${APP_TAG} ${SVC_NAMES}"
+        }
+
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
+
+
   }
 }
