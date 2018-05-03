@@ -1,7 +1,0 @@
-# env=dev
-# app_name src_port dest_port
-svc1 8001 11101
-svc2 8002 11102
-svc3 8003 11103
-svc4 8004 11104
-svc5 8005 11105
