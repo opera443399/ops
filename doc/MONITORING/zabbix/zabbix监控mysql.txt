@@ -1,18 +1,18 @@
 http://www.yuminstall.com/zabbix-monitoring-mysql.html
 
-1£©Ä£°åÃû³Æ£ºTemplate App MySQL
-Ôö¼ÓÄ£°æµ½¶ÔÓ¦µÄÖ÷»ú¡£
+1ï¼‰æ¨¡æ¿åç§°ï¼šTemplate App MySQL
+å¢åŠ æ¨¡ç‰ˆåˆ°å¯¹åº”çš„ä¸»æœºã€‚
 
-2£©¿Í»§¶Ë£º
-´´½¨Ò»¸ömsyqlÕË»§ÓÃÓÚzabbix agent »ñÈ¡mysql×´Ì¬¡£ÕË»§²»ĞèÒªÈÎºÎÈ¨ÏŞ
+2ï¼‰å®¢æˆ·ç«¯ï¼š
+åˆ›å»ºä¸€ä¸ªmsyqlè´¦æˆ·ç”¨äºzabbix agent è·å–mysqlçŠ¶æ€ã€‚è´¦æˆ·ä¸éœ€è¦ä»»ä½•æƒé™
 
 GRANT USAGE ON *.* TO 'zabbix'@'127.0.0.1' IDENTIFIED BY 'xxx';
 FLUSH PRIVILEGES;
 
 
-ÔÚzabbixÓÃ»§µÄhomeÄ¿Â¼/var/lib/zabbixÏÂĞÂ½¨ÎÄ¼ş£º
+åœ¨zabbixç”¨æˆ·çš„homeç›®å½•/var/lib/zabbixä¸‹æ–°å»ºæ–‡ä»¶ï¼š
 .my.cnf
-ÓÃÓÚZabbix Agent·ÃÎÊÊı¾İ¿â£¬ÄÚÈİÈçÏÂ£º
+ç”¨äºZabbix Agentè®¿é—®æ•°æ®åº“ï¼Œå†…å®¹å¦‚ä¸‹ï¼š
 
 # Zabbix Agent
 [mysql]
@@ -28,10 +28,10 @@ user = zabbix
 password = xxx
 
 
-¼ì²é£º/etc/zabbix/zabbix_agentd.d/userparameter_mysql.conf
-Ä¬ÈÏµÄHOMEÊÇ£º/var/lib/zabbix
-Èô¶ÔÓ¦µÄÄ¿Â¼ÊÇÆäËûÄ¿Â¼£¬ÒªĞŞ¸Ä´Ë´¦¡£
+æ£€æŸ¥ï¼š/etc/zabbix/zabbix_agentd.d/userparameter_mysql.conf
+é»˜è®¤çš„HOMEæ˜¯ï¼š/var/lib/zabbix
+è‹¥å¯¹åº”çš„ç›®å½•æ˜¯å…¶ä»–ç›®å½•ï¼Œè¦ä¿®æ”¹æ­¤å¤„ã€‚
 
 
-ÖØÆôZabbix Agent
+é‡å¯Zabbix Agent
 service zabbix-agent restart
