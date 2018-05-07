@@ -1,0 +1,10 @@
+### prefix=/swarm-deploy/demoproject/dev
+### temp.cmd
+###---------------------------------------------------------------------
+
+{{if exists "/undo"}}
+{{$data := json (getv "/undo")}}
+echo "undo"-{{$data.appName}}-{{$data.errMsg}}
+{{end}}
+
+###---------------------------------------------------------------------

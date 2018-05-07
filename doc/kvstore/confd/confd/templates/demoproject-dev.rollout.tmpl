@@ -1,0 +1,10 @@
+### prefix=/swarm-deploy/demoproject/dev
+### temp.cmd
+###---------------------------------------------------------------------
+
+{{if exists "/rollout"}}
+{{$data := json (getv "/rollout")}}
+echo "rollout"-{{$data.appName}}-{{$data.errMsg}}
+{{end}}
+
+###---------------------------------------------------------------------
