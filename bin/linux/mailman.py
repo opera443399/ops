@@ -5,17 +5,17 @@
 
 '''
 
-ÓÃ·¨: 
+ç”¨æ³•:
     mailman.py "to" "subject" "body" "attachments"
 
-ËµÃ÷:
-[-] 1¸öÊÕ¼şÈË:
+è¯´æ˜:
+[-] 1ä¸ªæ”¶ä»¶äºº:
         ./mailman.py 'a@example.com' "test subject" "simple test content"
 
-[-] ¶à¸öÊÕ¼şÈË:
+[-] å¤šä¸ªæ”¶ä»¶äºº:
         ./mailman.py "a@example.com;b@example.com" "test again" "another simple test"
 
-[-] ´ø¸½¼ş:
+[-] å¸¦é™„ä»¶:
         ./mailman.py 'c@example.com' 'test1' 'test att' '/tmp/a.log' '/tmp/1.log'
 
 --
@@ -28,9 +28,9 @@ from email.mime.multipart import MIMEMultipart
 from email import encoders
 import smtplib, os, sys, logging, base64
 
-# ·¢¼şÈË
+# å‘ä»¶äºº
 email_from_1 = {'smtp':'smtp.exmail.qq.com', 'account':'test@xxx.com', 'password':'xxx', 'nickname':'some_test', 'greeting':'Dear Sir'}
-# ·¢¼şÈË£¬±¸ÓÃ
+# å‘ä»¶äººï¼Œå¤‡ç”¨
 email_from_2 = {'smtp':'smtp.126.com', 'account':'xxx@126.com', 'password':'xxx', 'nickname':'zbx_test_bak', 'greeting':'Dear Sir'}
 
 
@@ -48,7 +48,7 @@ def delivering(s_from, s_to):
     s_from: (smtp, account, password, nickname, greeting)
     s_to: (to, subject, body, attachments)
     '''
-    
+
     #+---- logging ---+
     print("logging to", logging_file)
     logging.info('''\
@@ -68,13 +68,13 @@ attachments:
 +------------------------------+
 '''.format(s_from['nickname'], s_from['account'], s_from['greeting'],
             s_to['to'], s_to['subject'], s_to['body'], s_to['attachments']))
- 
+
     # email header
     m = MIMEMultipart()
     m['From'] = '{0} <{1}>'.format(s_from['nickname'], s_from['account'])
     m['To'] = ';'.join(s_to['to'])
     m['Subject'] = s_to['subject']
-    
+
     # email body
     content = MIMEText('''
 {0},
@@ -115,10 +115,10 @@ attachments:
         retval = -2
     finally:
         svr.quit()
-    
+
     #+---- logging ---+
     logging.info("mailman code: {0}".format(retval))
-    
+
     return retval
 
 def usage():
@@ -152,4 +152,3 @@ if __name__ == '__main__':
         print('[*] main err: {0}'.format(err), file=sys.stderr)
         # logging
         logging.warning('{0}'.format(err))
-
