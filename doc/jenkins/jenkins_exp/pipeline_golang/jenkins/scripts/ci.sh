@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2018/5/3
+# 2018/5/9
 ###########
 ### 请使用 `dep` 来解决 golang 的依赖而不是使用 `go get`
 ### goal:
@@ -19,6 +19,7 @@
 APP_PARENT="$2"
 APP_TAG="$3"
 APP_CI_ROOT="/data/server/jenkins_worker/cicd/${APP_PARENT}"
+APP_CI_LOG_ROOT="${APP_CI_ROOT}/logs"
 DOCKER_TPL_ROOT="${APP_CI_ROOT}/tpl.docker.d"
 DOCKER_IMAGE_NS="ns-demo"
 DOCKER_REGISTRY_URL='registry.cn-hangzhou.aliyuncs.com'
@@ -36,8 +37,8 @@ do_build_golang_docker() {
   ##### dep howto
   # go get -v github.com/golang/dep/cmd/dep # $GOPATH/bin/dep ensure -v # $GOPATH/bin/dep status -v
 
-  local f_log_successful="/tmp/ci.successful.log"
-  local f_log_failed="/tmp/ci.failed.log"
+  local f_log_successful="${APP_CI_LOG_ROOT}/ci.successful.log"
+  local f_log_failed="${APP_CI_LOG_ROOT}/ci.failed.log"
   echo >${f_log_successful}
   echo >${f_log_failed}
 
