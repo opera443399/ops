@@ -4,7 +4,7 @@ pipeline {
       //------ 分配任务给打了下述标签的 worker
       label 'pipeline_only'
       //------ 指定干活的路径
-      customWorkspace '/data/server/jenkins_worker/pipeline_only/demoproject/src/demoproject'
+      customWorkspace '/data/server/jenkins_worker/code/demoproject/src/demoproject.com'
     }
   }
 
@@ -12,22 +12,24 @@ pipeline {
     //------ 定义参数(环境变量)
     string(name: 'SVC_NAMES', defaultValue: 'svc1,svc2,svc3,svc4,svc5', description: '请选择微服务（使用逗号作为分隔符，无空格）: \nsvc1,svc2,svc3,svc4,svc5')
     string(name: 'SVC_VERSION', defaultValue: 'EMPTY', description: '请指定`docker image tag`的值，默认将提取 `git rev id`')
-    choice(name: 'SWARM_ENV', choices: 'dev\ntest', description: '请问您要部署至哪一个环境中呢？')
     choice(name: 'GIT_BRANCH_NAME', choices: 'develop\nmaster', description: '请选择一个 git 分支：')
-    booleanParam(name: 'NEED_UNDO', defaultValue: false, description: '请问是否需要回滚（可选项）？')
+    choice(name: 'SWARM_ENV', choices: 'dev\ntest', description: '请问您要部署至哪一个环境中呢？')
+    choice(name: 'SWARM_OP', choices: 'deploy\nrollback', description: '请选择操作类型：')
   }
 
   environment {
     // 定义 golang 环境变量
-    GOPATH = '/data/server/jenkins_worker/pipeline_only/demoproject'
+    GOPATH = '/data/server/jenkins_worker/code/demoproject'
     SSH_OPTS_SWARM_DEV = 'ssh -o StrictHostKeyChecking=no jack@10.250.1.201 /bin/bash /data/server/swarm-deploy/bin/swarm-ctl.sh'
   }
 
   stages {
     stage('准备 git 仓库') {
       when {
+        expression {
           //------ 只在 dev 环境中执行
-          environment name: 'SWARM_ENV', value: 'dev'
+          (params.SWARM_ENV=='dev' && params.SWARM_OP=='deploy') ? true : false
+        }
       }
       steps {
         echo '[+] 获取 git 代码...'
@@ -65,10 +67,10 @@ pipeline {
 
     stage('回滚') {
       when {
-          expression {
-              //------ 默认不启用回滚操作(可选)
-              params.NEED_UNDO == true
-          }
+        expression {
+          //------ 只在操作为 rollback 时激活
+          params.SWARM_OP == 'rollback'
+        }
       }
       steps {
         script {
@@ -93,11 +95,10 @@ pipeline {
 
           ])
           echo "[-] 由 ${userInput['approverID']} 审核通过"
-
         }
 
         sshagent(['11112222-1111-2222-1111-222211112222']) {
-            sh "${SSH_OPTS_SWARM_DEV} rollback ${SWARM_ENV} demoproject ${APP_TAG} ${SVC_NAMES}"
+          sh "${SSH_OPTS_SWARM_DEV} rollback '${SWARM_ENV}' demoproject '${APP_TAG}' '${SVC_NAMES}'"
         }
 
         echo '[-] ______________________END_OF_STAGE______________________'
@@ -107,8 +108,10 @@ pipeline {
 
     stage('构建') {
       when {
+        expression {
           //------ 只在 dev 环境中执行
-          environment name: 'SWARM_ENV', value: 'dev'
+          (params.SWARM_ENV=='dev' && params.SWARM_OP=='deploy') ? true : false
+        }
       }
       tools {
         //------ 指定全局定义的依赖工具，此处为 golang 环境
@@ -127,7 +130,7 @@ pipeline {
           echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
         }
 
-        sh '/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh build demoproject ${APP_TAG}'
+        sh "/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh build demoproject '${APP_TAG}'"
 
         echo '[-] ______________________END_OF_STAGE______________________'
       }
@@ -136,8 +139,10 @@ pipeline {
 
     stage('部署至 dev 环境') {
       when {
+        expression {
           //------ 只在 dev 环境中执行
-          environment name: 'SWARM_ENV', value: 'dev'
+          (params.SWARM_ENV=='dev' && params.SWARM_OP=='deploy') ? true : false
+        }
       }
       steps {
         echo '[+] 服务上线中...'
@@ -153,7 +158,7 @@ pipeline {
         }
 
         sshagent(['11112222-1111-2222-1111-222211112222']) {
-            sh "${SSH_OPTS_SWARM_DEV} update ${SWARM_ENV} demoproject ${APP_TAG} ${SVC_NAMES}"
+          sh "${SSH_OPTS_SWARM_DEV} update '${SWARM_ENV}' demoproject '${APP_TAG}' '${SVC_NAMES}'"
         }
 
         echo '[-] ______________________END_OF_STAGE______________________'
@@ -163,8 +168,10 @@ pipeline {
 
     stage('部署至 test 环境') {
       when {
+        expression {
           //------ 只在 test 环境中执行
-          environment name: 'SWARM_ENV', value: 'test'
+          (params.SWARM_ENV=='test' && params.SWARM_OP=='deploy') ? true : false
+        }
       }
       steps {
         script {
@@ -192,7 +199,7 @@ pipeline {
         }
 
         sshagent(['11112222-1111-2222-1111-222211112222']) {
-            sh "${SSH_OPTS_SWARM_DEV} update ${SWARM_ENV} demoproject ${APP_TAG} ${SVC_NAMES}"
+          sh "${SSH_OPTS_SWARM_DEV} update '${SWARM_ENV}' demoproject '${APP_TAG}' '${SVC_NAMES}'"
         }
 
         echo '[-] ______________________END_OF_STAGE______________________'
