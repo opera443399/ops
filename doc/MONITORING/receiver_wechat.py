@@ -48,9 +48,10 @@ def receiver_wechat(msg):
 if __name__ == '__main__':
     alert_group = sys.argv[1]
     message = sys.argv[2]
+    print("[+] 'alert_group': '{0}'".format(alert_group))
+    print("[+] 'message': ")
     print('#'*79)
-    print("[-] 'alert_group': '{0}'".format(alert_group))
-    print("[-] 'message': '{0}'".format(message))
+    print("{0}".format(message))
     print('#'*79)
     api_secret = multi_conf[alert_group]["api_secret"]
     agent_id = multi_conf[alert_group]["agent_id"]
