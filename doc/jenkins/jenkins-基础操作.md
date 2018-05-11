@@ -1,87 +1,108 @@
-jenkins-基础操作
-2018/3/21
+# jenkins-基础操作
+2018/5/11
 
-一、安装
-1、准备工作
-请先安装jdk
+### 一、常规部署方法
+
+##### 准备 jdk
+```
 推荐使用 oracle jdk 而不是 centos 的yum源自带的 openjdk
-
 默认由于版权问题，centos 默认的yum源未加入 oracle jdk 的包，默认将安装开源版本的oepnjdk
-
 两者的名称差异是这样的：
-oracle jdk:  jdk-8u102-linux-x64
-openjdk:     java-1.8.0-openjdk
 
+| 类型 | 版本 |
+| --- | --- |
+| oracle jdk | jdk-8u102-linux-x64 |
+| openjdk | java-1.8.0-openjdk |
 
 请根据需要去 oracle java 网站自行下载 jdk 的 rpm 包来安装（下述链接可能会失效）
-实例：
+```
+
+> 实例
+```bash
 ~]# wget -O jdk-10_linux-x64_bin.rpm http://download.oracle.com/otn-pub/java/jdk/10+46/76eac37278c24557a3c4199677f19b62/jdk-10_linux-x64_bin.rpm?AuthParam=1521624974_b41b4d1af2efcf405abd3aa0a2829fa2
 
 ~]# yum localinstall jdk-10_linux-x64_bin.rpm
+```
 
-
-安装后，配置一下环境变量：
+安装 jdk 后，配置一下环境变量：
+```bash
 ~]# cat <<'_EOF' >>/etc/profile.conf
 export JAVA_HOME=/usr/java/default
 export CLASSPATH=.:$JAVA_HOME/lib:$JAVA_HOME/jre/lib
 export PATH=$PATH:$JAVA_HOME/bin:$JAVA_HOME/jre/bin
 
 _EOF
+```
 
-2、安装方式
-1）yum源安装（推荐）
+##### 安装 jenkins 服务的几种姿势
+1. yum源安装（推荐）
+```bash
 ~]# wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
 ~]# rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
 
 ~]# yum install jenkins
 
-启动服务
+##### 启动服务
 ~]# systemctl enable jenkins
 ~]# systemctl start jenkins
-(防火墙略过)
+##### (防火墙配置略过)
 
-2）直接下载rpm包来安装
+```
+
+2. 直接下载rpm包来安装
+```bash
 ~]# wget http://pkg.jenkins-ci.org/redhat-stable/jenkins-2.7.4-1.1.noarch.rpm
 ~]# yum localinstall jenkins-2.7.4-1.1.noarch.rpm
+```
 
-
-3）直接下载指定的war包来使用
+3. 直接下载指定的war包来使用
+```bash
 ~]# mkdir -p /opt/jenkins/logs
 ~]# wget http://mirrors.jenkins-ci.org/war/latest/jenkins.war -O /opt/jenkins/jenkins.war
 ~]# nohup java -jar /opt/jenkins/jenkins.war >/opt/jenkins/logs/$(date +%F).log 2>&1 &
+```
+
+### 二、使用 docker 部署启用了 blueocean 的版本
+```bash
+mkdir -p /data/server/jenkins/data
+
+docker run \
+  --name jenkinsci \
+  --restart=always \
+  -d \
+  -u root \
+  -p 8080:8080 \
+  -v /data/server/jenkins/data:/var/jenkins_home \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  jenkinsci/blueocean
+```
 
 
-3、在 docker 环境中使用
-~]$ docker pull jenkins
-~]$ mkdir -p /data/docker/jenkins-test
-~]$ docker run -d --restart=always -p 8080:8080 -p 50000:50000 -v /data/docker/jenkins-test:/var/jenkins_home --name jenkins_36 jenkins
+### 三、服务配置实例
+##### 访问
+http://ip_of_jenkins:8080/
 
-
-
-二、配置
-1、基础
-访问：http://ip_of_jenkins:8080/
-
-初始化-安装插件-设置admin帐号
-系统管理-系统设置-设置邮件等信息
-创建项目
+##### 初始化
+- 安装插件
+- 帐号、邮件等系统设置
+- 创建项目
 
 
 访问后，根据引导，将安装插件，但jenkins默认会去探测google能否访问，这个，，在国内会困住一批人，解决办法：
 请自行搜索关键词：“jenkins connectionCheckUrl”，了解解决办法。
 请根据需要安装插件，插件安装报错时，多半是有依赖关系，缺少哪个插件安装即可。
 
-2、注意事项
-1）权限
+##### 注意事项
+- 权限
 例如，使用docker服务时，jenkins 用户要加入 docker 组
-
+```bash
 usermod -a -G docker jenkins
 systemctl restart jenkins
+```
 
-
-2）获取jenkins相关的几个key用于远程调用（注，新版本的jenkins的默认安全设置，导致请求时需要提供以下数据）
+- 获取jenkins相关的几个key用于远程调用（注，新版本的jenkins的默认安全设置，导致请求时需要提供以下数据）
 目的：用于 svn hook 脚本远程调用触发 jenkins 的任务。
-
+```bash
 【jenkins_api_token】
 右上角用户名-菜单-设置
     API Token
@@ -129,13 +150,14 @@ jenkins_api_token='admin:xxxxxx'
     ]
 }
 " "http://${jenkins_api_token}@${jenkins_server}/job/projectname/build?token=${jenkins_token}"
+```
 
 
+### 四、执行任务
+1. 新增一个 salve 节点
+> 提示：先手动 ssh 测试一下连通性。
 
-三、使用
-1、新增一个 salve 节点
-提示：先手动 ssh 测试一下连通性。
-
+```
 选择菜单：“Jenkins-系统管理-管理节点-新建节点”
 调整部分配置：
 ------------------------------------------------------------------------------
@@ -147,9 +169,10 @@ jenkins_api_token='admin:xxxxxx'
     Credentials:             （可选 ssh password 或 key 认证）
 保存
 ------------------------------------------------------------------------------
+```
 
-
-2、创建一个任务
+2. 创建一个任务
+```
 选择菜单：“Jenkins-新建”
 ------------------------------------------------------------------------------
     Item名称:                job1
@@ -168,8 +191,10 @@ jenkins_api_token='admin:xxxxxx'
 
 保存
 ------------------------------------------------------------------------------
+```
 
-3、执行任务
+3. 执行任务
+```
 选择菜单：“立即构建”
 页面变成：
 ------------------------------------------------------------------------------
@@ -186,8 +211,10 @@ Last stable build(#1),16 秒之前
 Last successful build(#1),16 秒之前
 Last completed build(#1),16 秒之前
 ------------------------------------------------------------------------------
+```
 
-4、验证任务
+4. 验证任务
+```
 查看工作区：
 ------------------------------------------------------------------------------
 Workspace of job1 on n32
@@ -216,18 +243,22 @@ Success > 控制台输出 #3 2016-6-30 上午3:20
 Success > 控制台输出 #2 2016-6-30 上午3:20
 Success > 控制台输出 #1 2016-6-30 上午3:18
 ------------------------------------------------------------------------------
+```
 
-5、小结
+5. 小结
+```
 本次示例，尚未使用 svn，git，仅简单示范在指定的节点上执行 shell 任务，体现出 jenkins 大致上是如何工作的。
+```
 
 
+### 插件
+##### git/gitlab插件的使用示例
 
-四、插件
-1、git/gitlab插件的使用示例
-通常是这样的思路：
+> 通常是这样的思路：
 dev -> push -> gitlab(with web hook) -> jenkins-gitlab-hook -> build
 
-1）插件
+1. 插件
+```
 credentials：管理帐号密码
 git：
 gitlab-hook：配合gitlab项目下触发自动构建
@@ -248,11 +279,11 @@ cloudbees-folder.jpi           github.jpi                      ldap.jpi         
 credentials-binding.jpi        github-organization-folder.jpi  mailer.jpi           pipeline-rest-api.jpi        structs.jpi            workflow-durable-task-step.jpi
 credentials.jpi                git.jpi                         mapdb-api.jpi        pipeline-stage-step.jpi      subversion.jpi         workflow-job.jpi
 display-url-api.jpi            gitlab-hook.jpi                 matrix-auth.jpi      pipeline-stage-view.jpi      timestamper.jpi        workflow-multibranch.jpi
+```
 
-
-2）创建一个任务
+2. 创建一个任务
+```
 选择菜单：“Jenkins-新建”
-------------------------------------------------------------------------------
     Item名称:                asset
     （勾选）构建一个自由风格的软件项目
 
@@ -300,14 +331,16 @@ display-url-api.jpi            gitlab-hook.jpi                 matrix-auth.jpi  
                     sudo ls -l ${d_root}
 
 保存
-------------------------------------------------------------------------------
+```
 
-3）执行任务
+3. 执行任务
+```
 选择菜单：“立即构建”
 结果：成功，符合预期
+```
 
-
-4）在gitlab上配置web hook
+4. 在gitlab上配置web hook
+```
 先测试一下 jenkins 插件 gitlab-hook 是否有效：
 页面请求：http://ip_of_jenkins:8080/gitlab/build_now
 返回结果：
@@ -333,26 +366,32 @@ Push Events
 ------------------------------------------------------------------------------
 单击：“Test Hook”按钮后，回到jenkins页面，查看是否触发了新的build。
 结果：符合预期。
+```
 
 
 
+##### svn的使用示例
 
-2、svn的使用示例
-1）项目配置
+1. 项目配置
+
 【General】
+```
 项目名称: job02
 参数化构建过程
     String parameter
         名字: key01
         默认值: default_not_exist
+```
 
 【源码管理】
+```
 在源码管理模块选择Subversion。
 Repository URL中填入svn repo地址。【特别注意：注1】
 Credentials中添加svn服务器的用户名和密码。
+```
 
-~~~~~注1
-########################################################################
+> 注1
+```
 重点：为了避免Jenkins master时区和SVN服务器时区不一致，请在repo地址末尾添加 @HEAD，例如：http://svn_server/repo_name@HEAD
 否则 jenkins 构建时 update svn 仓库是根据 jenkins 服务器当前的时间来拉取的，极可能拉取到的是一个旧的 svn 版本，从而引发错误。
 jenkins 上的相关说明：
@@ -362,8 +401,10 @@ During the build, revision number of the module that was checked out is availabl
 
 svn的文档参考：
 http://svnbook.red-bean.com/en/1.5/svn.tour.revs.specifiers.html
+```
 
-~~~~~案例
+> 案例
+```
 jenkins构建过程中，遇到一个问题：获取 svn postcommit 触发传递的参数和作者信息，出现混乱，初步判断和 jenkins 服务器停机维护有关系。
 注意到以下提示：
 Updating http://svn_server/repo_name at revision '2017-09-20T15:52:45.978 +0800'
@@ -383,20 +424,24 @@ Updating http://svn_server/repo_name at revision '2017-09-20T15:52:45.978 +0800'
 
 小结：初步判断是jenkins服务器今天关机维护后，时间没及时同步导致的异常。
 解决方法：在svn仓库的url后指定 @HEAD
-########################################################################
+```
 
 
-
-【构建触发器】（注：在svn中使用hook脚本过滤出最新版本中有变动的image目录名称作为参数传递到这里来build）
+【构建触发器】
+```
+（注：在svn中使用hook脚本过滤出最新版本中有变动的image目录名称作为参数传递到这里来build）
 ✔触发远程构建 (例如,使用脚本)
     身份验证令牌：test_build_token
-
+```
 
 【构建】
+```
 选择：Execute shell
     Command: （脚本略）
+```
 
 【构建后操作】
+```
 选择：Editable Email Notification
 
     单击: [Advanced Settings...]
@@ -405,14 +450,15 @@ Updating http://svn_server/repo_name at revision '2017-09-20T15:52:45.978 +0800'
                 Send To
                     Developers
 
-
 注1：目前jenkins未接入ldap，当svn用户提交后，jenkins会自动记录该用户，但svn提交的信息中只有用户名，没有邮箱信息（这点和git不一样），且该用户并未激活，需要激活（在jenkins中给该用户设置密码）后才能给该用户发送邮件，默认使用系统全局设置中的邮件后缀。
+```
 
-
-2）svn 仓库增加一个 hook 用来传递参数，并调用远程api
+2. 配置 svn 仓库
+```
+增加一个 hook 用来传递参数，并调用远程api
 首先，通过 svnlook changed -r ${svn_repository_revision} ${svn_repository} 来获取提交的内容，解析参数传递出去
 其次，通过调用远程api来触发build
-
+```
 
 
 
