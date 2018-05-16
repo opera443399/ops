@@ -1,5 +1,5 @@
 git使用小结
-2018/4/18
+2018/5/16
 
 注释：不定时更新
 
@@ -311,8 +311,18 @@ git log -5
 查看最近5条日志（单行）：
 git log -5 --oneline
 
+查看最新提交的id：
+git rev-parse --short HEAD
+git log -n 1 --pretty=format:'%h'
 
 
+
+6、变更
+查看最新的变更：
+git whatchanged -1
+
+查看最新的变更，简化：
+git diff-tree --no-commit-id --name-status -r HEAD
 
 
 
