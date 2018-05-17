@@ -95,9 +95,6 @@ docker rmi $(docker images |grep opera443399 |awk '{print $1":"$2}')
 
 
 ZYXW、参考
-1、阿里云快速部署Kubernetes - VPC环境
-https://yq.aliyun.com/articles/66474
-2、support customize repository prefix of image through environment KUBE… #35948
-https://github.com/kubernetes/kubernetes/pull/35948
-3、Using custom images
-https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/#custom-images
+1. [阿里云快速部署Kubernetes - VPC环境](https://yq.aliyun.com/articles/66474)
+2. [support customize repository prefix of image through environment KUBE… #35948](https://github.com/kubernetes/kubernetes/pull/35948)
+3. [Using custom images](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/#custom-images)
