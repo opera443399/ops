@@ -1,8 +1,10 @@
 ops
 ---
-2018/4/12
+2018/5/19
 
-# Go for it
+init
+---
+
 collecting #ops# related basic docs here.
 
 基础知识库：收集整理本人工作经历中接触到的一些 ops 相关的知识点。
@@ -10,43 +12,47 @@ collecting #ops# related basic docs here.
 服务对象：互联网运维工程师，软件工程师。
 
 **学而时习之，温故而知新**
+
 **好记性不如烂笔头**
 
 
-# Who Might Need This
+Who Might Need This
+---
 
-
-    ops
-    dev
-    qa
-
-
-
-
-# Tree
-
-
-    .
-    |- bin: script samples
-    |- conf: configuration examples
-    |- doc: guide/howto
+- ops
+- dev
+- qa
 
 
 
 
-# Commit Labels
+Tree
+---
+
+```
+.
+|- bin: script samples
+|- conf: configuration examples
+|- doc: guide/howto
+```
 
 
-    chore(xxx): xxx
-    docs(xxx): xxx
-    feat(xxx): xxx
-    fix(xxx): xxx
-    refactor(xxx): xxx
-    style(xxx): xxx
+
+Commit Labels
+---
+
+```
+chore(xxx): xxx
+docs(xxx): xxx
+feat(xxx): xxx
+fix(xxx): xxx
+refactor(xxx): xxx
+style(xxx): xxx
+```
 
 
-# For Newcomers
-
+For Newcomers
+---
 
 **Notice**: no security relatied articles here, as it's not easy to talk about this. Please follow the official doc for all open source softwares.
 
