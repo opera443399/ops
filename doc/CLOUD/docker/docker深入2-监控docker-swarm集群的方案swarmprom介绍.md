@@ -1,5 +1,5 @@
 # docker深入2-监控docker-swarm集群的方案swarmprom介绍
-2018/4/18
+2018/4/28
 
 
 ### 本文目的
@@ -14,13 +14,13 @@
 
 简而言之，该方案是以下工具的组合：
 
-> `caddy` 网关，提供了基础的认证功能
-> `grafana` 数据展示 `http://<swarm-ip>:3000`
-> `prometheus` 数据源 `http://<swarm-ip>:9090`
-> `alertmanager` 告警 `http://<swarm-ip>:9093`
-> `unsee` 告警看板 `http://<swarm-ip>:9094`
-> `cAdvisor` 容器 metrics 收集
-> `nodeExporter` 主机 metrics 收集
+* `caddy` 网关，提供了基础的认证功能
+* `grafana` 数据展示 `http://<swarm-ip>:3000`
+* `prometheus` 数据源 `http://<swarm-ip>:9090`
+* `alertmanager` 告警 `http://<swarm-ip>:9093`
+* `unsee` 告警看板 `http://<swarm-ip>:9094`
+* `cAdvisor` 容器 metrics 收集
+* `nodeExporter` 主机 metrics 收集
 
 
 
@@ -37,31 +37,31 @@
   - prometheus/docs
     - [#977](https://github.com/prometheus/docs/pull/977)
 
+> 通过上述 2 个 PR 可以发现 wechat 相关的配置指南(文末简介)
+
 
 - 在这个 branch 中，更新的配置文件包含:
   - `alertmanager/conf/alertmanager.yml`
     - 使用 wechat 作为 receiver 的配置模版
-  - `alertmanager/conf/docker-entrypoint.sh`
-    - 使用 wechat 作为 receiver 的启动脚本
+  - `alertmanager/templates/wechat.tmpl`
+    - 自定义告警内容的模版
   - `docker-compose.yml`
-    - 更换 `alertmanager` 的镜像为使用了 `wechat` 的版本
-    - 传递 `wechat` 相关的环境变量
+    - 更换 `alertmanager` 的镜像为 `prom` 官方默认的的版本
+    - 通过 volume 映射来传递 `wechat` 相关的配置
 
 其中，`docker-compose.yml` 变更的内容为：
 ```yaml
 alertmanager:
-  image: opera443399/swarmprom-alertmanager:v0.14.0
+  image: prom/alertmanager:v0.14.0
   networks:
     - net
-  environment:
-    - API_SECRET=${API_SECRET}
-    - CORP_ID=${CORP_ID}
-    - AGENT_ID=${AGENT_ID}
-    - TO_PARTY=${TO_PARTY}
+  volumes:
+    - alertmanager:/alertmanager
+    - ./alertmanager/conf/alertmanager.yml:/etc/alertmanager/config.yml
+    - ./alertmanager/templates:/etc/alertmanager/templates
 
 ```
 
-请通过 `环境变量` 来提供 `wechat` 对应的 `API_SECRET`, `CORP_ID`, `AGENT_ID` 和 `TO_PARTY`
 
 示例中使用了一个脚本 `start.sh` 来简化操作
 
@@ -69,16 +69,15 @@ alertmanager:
 $ git clone https://github.com/opera443399/swarmprom.git
 $ cd swarmprom
 $ git checkout -b feat-alertmanager-receiver-wechat remotes/origin/feat-alertmanager-receiver-wechat
-$ cat start.sh
+### 设置 wechat
+$ vim alertmanager/conf/alertmanager.yml
+### 设置访问账号
+$ vim start.sh
 #!/bin/bash
 #
 
 ADMIN_USER='admin' \
 ADMIN_PASSWORD='admin' \
-API_SECRET='xxx' \
-CORP_ID='xxx' \
-AGENT_ID='111' \
-TO_PARTY='111' \
 docker stack deploy -c docker-compose.yml mon
 
 ```
@@ -114,6 +113,77 @@ $ sh start.sh
 
 ```
 
+
+### wechat 相关的文档介绍
+文档来源：
+https://github.com/simonpasquier/docs/blob/700fac224efc28d5ab9905e971e452e52e8e77a7/content/docs/alerting/configuration.md
+
+
+`<wechat_config>`
+
+```yaml
+# Whether or not to notify about resolved alerts.
+[ send_resolved: <boolean> | default = false ]
+
+# The API key to use when talking to the Wechat API.
+[ api_secret: <secret> | default = global.wechat_secret_url ]
+
+# The Wechat API URL.
+[ api_url: <string> | default = global.wechat_api_url ]
+
+# The corp id for authentication
+[ corp_id: <string> | default = global.wechat_api_corp_id ]
+
+# API request data as defined by the Wechat API.
+[ message: <tmpl_string> | default = '{{ template "wechat.default.message" . }}' ]
+[ agent_id: <string> | default = '{{ template "wechat.default.agent_id" . }}' ]
+[ to_user: <string> | default = '{{ template "wechat.default.to_user" . }}' ]
+[ to_party: <string> | default = '{{ template "wechat.default.to_party" . }}' ]
+[ to_tag: <string> | default = '{{ template "wechat.default.to_tag" . }}' ]
+```
+
+
+重点请关注这一行：
+```yaml
+[ message: <tmpl_string> | default = '{{ template "wechat.default.message" . }}' ]
+```
+
+这个默认的 message 的模版来源：
+https://github.com/prometheus/alertmanager/blob/master/template/default.tmpl
+
+是的，已经被合并到 master 上啦。
+
+其中，定义的默认 `message` 格式为：
+```yaml
+{{ define "__subject" }}[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .GroupLabels.SortedPairs.Values | join " " }} {{ if gt (len .CommonLabels) (len .GroupLabels) }}({{ with .CommonLabels.Remove .GroupLabels.Names }}{{ .Values | join " " }}{{ end }}){{ end }}{{ end }}
+
+{{ define "__text_alert_list" }}{{ range . }}Labels:
+{{ range .Labels.SortedPairs }} - {{ .Name }} = {{ .Value }}
+{{ end }}Annotations:
+{{ range .Annotations.SortedPairs }} - {{ .Name }} = {{ .Value }}
+{{ end }}Source: {{ .GeneratorURL }}
+{{ end }}{{ end }}
+
+
+{{ define "wechat.default.message" }}{{ template "__subject" . }}
+{{ .CommonAnnotations.SortedPairs.Values | join " " }}
+{{ if gt (len .Alerts.Firing) 0 -}}
+Alerts Firing:
+{{ template "__text_alert_list" .Alerts.Firing }}
+{{- end }}
+{{ if gt (len .Alerts.Resolved) 0 -}}
+Alerts Resolved:
+{{ template "__text_alert_list" .Alerts.Resolved }}
+{{- end }}
+AlertmanagerUrl:
+{{ template "__alertmanagerURL" . }}
+{{- end }}
+```
+
+您也可以自定义 `message` 来格式化数据实例，请参考示例：
+```
+$ vim alertmanager/templates/wechat.tmpl
+```
 
 
 ### ZYXW、参考
