@@ -169,9 +169,17 @@ docker service create \
 
 用途：处于同一个 overlay 网络中的服务，互相之间可以通过服务名称来访问
 
+
 3、在 swarm mode 中使用私有镜像仓库
 --with-registry-auth
 示例同 FAQ#2
+
+
+4、使用 go 模版来获取指定内容
+例如，获取所有 overlay 网络的 subnet 信息
+docker network inspect $(docker network ls -f driver='overlay' -q) \
+> --format='{{.Name}} -> {{if .IPAM.Config}}{{(index .IPAM.Config 0).Subnet}}{{else}}null{{end}}' |sort -k2
+
 
 
 zyxw、参考
