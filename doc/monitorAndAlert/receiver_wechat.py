@@ -1,12 +1,16 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
-# 2018/5/8
+# 2018/5/29
 
 
 import urllib3
 import json
+import os
 import sys
+from datetime import datetime
 
+sec_token_expire = 7000
+token_file = "{0}/.wxtoken".format(os.path.expanduser('~'))
 corp_id = 'xxx'
 multi_conf = {
     "g1": {"api_secret": "xxx", "agent_id": "1000002", "to_party": "2"},
@@ -17,11 +21,32 @@ http = urllib3.PoolManager()
 urllib3.disable_warnings()
 
 
-def get_wechat_access_token():
+def renew_wechat_access_token():
     resp = http.request('GET', api_token_url)
     resp_decode = json.loads(resp.data.decode('utf-8'))
-
+    with open(token_file, "w+") as f:
+        f.write("{0},{1}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), resp_decode['access_token']))
     return resp_decode['access_token']
+
+
+def get_wechat_access_token():
+    try:
+        with open(token_file) as f:
+            x, y = f.readline().split(",")
+    except IOError:
+        return renew_wechat_access_token()
+
+    print("cache time: {0}".format(x))
+    dt1 = datetime.now()
+    dt2 = datetime.strptime(x, "%Y-%m-%d %H:%M:%S")
+    sec_delta = (dt1 - dt2).seconds
+
+    if sec_delta < sec_token_expire:
+        print("token is in use for {0} seconds.".format(sec_delta))
+        return y
+    else:
+        print("renew token...")
+        return renew_wechat_access_token()
 
 
 def receiver_wechat(msg):
@@ -59,4 +84,5 @@ if __name__ == '__main__':
     api_token_url = 'https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid={0}&corpsecret={1}'.format(corp_id, api_secret)
     api_msg_url = 'https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={0}'
 
+    #get_wechat_access_token()
     receiver_wechat(message)
