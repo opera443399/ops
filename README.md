@@ -1,9 +1,7 @@
-ops
----
-2018/5/19
+# ops
+2018/6/1
 
-init
----
+### init
 
 collecting #ops# related basic docs here.
 
@@ -16,20 +14,19 @@ collecting #ops# related basic docs here.
 **好记性不如烂笔头**
 
 
-Who Might Need This
----
+### Who Might Need This
 
-- ops
-- dev
-- qa
-
+* **ops** 
+* **dev**
+* **qa**
 
 
 
-Tree
----
 
-```
+### Tree
+
+```bash
+$ tree
 .
 |- bin: script samples
 |- conf: configuration examples
@@ -38,20 +35,47 @@ Tree
 
 
 
-Commit Labels
+### Commit Message Format
 ---
 
+(from: [portainer](https://raw.githubusercontent.com/portainer/portainer/develop/CONTRIBUTING.md))
+
+Each commit message should include a **type**, a **scope** and a **subject**:
+
 ```
-chore(xxx): xxx
-docs(xxx): xxx
-feat(xxx): xxx
-fix(xxx): xxx
-refactor(xxx): xxx
-style(xxx): xxx
+ <type>(<scope>): <subject>
 ```
 
+###### Type
 
-For Newcomers
+Must be one of the following:
+
+* **feat**: A new feature
+* **fix**: A bug fix
+* **docs**: Documentation only changes
+* **style**: Changes that do not affect the meaning of the code (white-space, formatting, missing
+  semi-colons, etc)
+* **refactor**: A code change that neither fixes a bug or adds a feature
+* **test**: Adding missing tests
+* **chore**: Changes to the build process or auxiliary tools and libraries such as documentation
+  generation
+
+##### Scope
+
+The scope could be anything specifying place of the commit change. For example `networks`,
+`containers`, `images` etc...
+You can use the **area** label tag associated on the issue here (for `area/containers` use `containers` as a scope...)
+
+##### Subject
+
+The subject contains succinct description of the change:
+
+* use the imperative, present tense: "change" not "changed" nor "changes"
+* don't capitalize first letter
+* no dot (.) at the end
+
+
+### For Newcomers
 ---
 
 **Notice**: no security relatied articles here, as it's not easy to talk about this. Please follow the official doc for all open source softwares.
