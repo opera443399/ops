@@ -1,6 +1,6 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
-# 2018/5/29
+# 2018/6/2
 
 
 import urllib3
@@ -33,7 +33,7 @@ def get_wechat_access_token():
     try:
         with open(token_file) as f:
             x, y = f.readline().split(",")
-    except IOError:
+    except:
         return renew_wechat_access_token()
 
     print("cache time: {0}".format(x))
