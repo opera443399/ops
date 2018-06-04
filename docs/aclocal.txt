@@ -1,0 +1,20 @@
+yum install libtool
+
+Libtool library used but `LIBTOOL' is undefined
+
+有一次编译GeoIP
+先，configure，再make时提示：
+Libtool library used but `LIBTOOL' is undefined
+
+琢磨了半天，才了解到：
+
+安装完所有需要的软件包后，先要执行一下下aclocal，这个命令应该是会把一些软件包的配置写入到configure.ac这个文件中，然后再进行configure、make、make install就可以
+
+
+安装coreseek时，也会用到：
+
+# aclocal
+# libtoolize --force
+# automake --add-missing
+# autoconf
+# autoheader
