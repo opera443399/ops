@@ -30,7 +30,7 @@ $ tree
 .
 |- bin: script samples
 |- conf: configuration examples
-|- doc: guide/howto
+|- docs: guide/howto
 ```
 
 
