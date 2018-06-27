@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2018/5/9
+# 2018/6/27
 ###########
 ### 请使用 `dep` 来解决 golang 的依赖而不是使用 `go get`
 ### goal:
@@ -35,7 +35,9 @@ print_error() {
 
 do_build_golang_docker() {
   ##### dep howto
-  # go get -v github.com/golang/dep/cmd/dep # $GOPATH/bin/dep ensure -v # $GOPATH/bin/dep status -v
+  # go get -v github.com/golang/dep/cmd/dep
+  # $GOPATH/bin/dep ensure -v
+  # $GOPATH/bin/dep status -v
 
   local f_log_successful="${APP_CI_LOG_ROOT}/ci.successful.log"
   local f_log_failed="${APP_CI_LOG_ROOT}/ci.failed.log"
