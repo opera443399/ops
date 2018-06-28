@@ -1,6 +1,6 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
-# 2018/6/2
+# 2018/6/28
 
 
 import urllib3
@@ -9,7 +9,10 @@ import os
 import sys
 from datetime import datetime
 
-sec_token_expire = 7000
+# less than 7200 sec
+dt_token_expire_seconds = 7000
+token_file = "{0}/.wxtoken".format(os.path.expanduser('~'))
+# wechat config
 token_file = "{0}/.wxtoken".format(os.path.expanduser('~'))
 corp_id = 'xxx'
 multi_conf = {
@@ -39,10 +42,11 @@ def get_wechat_access_token():
     print("cache time: {0}".format(x))
     dt1 = datetime.now()
     dt2 = datetime.strptime(x, "%Y-%m-%d %H:%M:%S")
-    sec_delta = (dt1 - dt2).seconds
+    dt_days_delta = (dt1 - dt2).days
+    dt_seconds_delta = (dt1 - dt2).seconds
 
-    if sec_delta < sec_token_expire:
-        print("token is in use for {0} seconds.".format(sec_delta))
+    if dt_days_delta == 0 and dt_seconds_delta < dt_token_expire_seconds:
+        print("token is in use for {0} seconds.".format(dt_seconds_delta))
         return y
     else:
         print("renew token...")
