@@ -60,6 +60,10 @@ pipeline {
         sh 'git log -3 --oneline'
         //sh 'git whatchanged -3'
 
+        echo "[+] SVC_VERSION: ${SVC_VERSION} , SVC_NAMES: \n${SVC_NAMES}"
+        echo "[+] GIT_BRANCH_NAME: ${GIT_BRANCH_NAME}"
+        echo "[+] SWARM_ENV: ${SWARM_ENV} , SWARM_OP: ${SWARM_OP}"
+
         echo '[-] ______________________END_OF_STAGE______________________'
       }
     }
@@ -130,7 +134,7 @@ pipeline {
           echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
         }
 
-        sh "/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh build demoproject '${APP_TAG}'"
+        sh "/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh build demoproject '${APP_TAG}' '${SVC_NAMES}'"
 
         echo '[-] ______________________END_OF_STAGE______________________'
       }

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2018/6/27
+# 2018/6/28
 ###########
 ### 请使用 `dep` 来解决 golang 的依赖而不是使用 `go get`
 ### goal:
@@ -16,9 +16,10 @@
 
 #set -e
 
-APP_PARENT="$2"
+APP_NAME="$2"
 APP_TAG="$3"
-APP_CI_ROOT="/data/server/jenkins_worker/cicd/${APP_PARENT}"
+APP_SVC_NAMES="$4"
+APP_CI_ROOT="/data/server/jenkins_worker/cicd/${APP_NAME}"
 APP_CI_LOG_ROOT="${APP_CI_ROOT}/logs"
 DOCKER_TPL_ROOT="${APP_CI_ROOT}/tpl.docker.d"
 DOCKER_IMAGE_NS="ns-demo"
@@ -44,7 +45,7 @@ do_build_golang_docker() {
   echo >${f_log_successful}
   echo >${f_log_failed}
 
-  for s_name in $(echo ${SVC_NAMES} |sed 's/,/\n/g'); do
+  for s_name in $(echo ${APP_SVC_NAMES} |sed 's/,/\n/g'); do
     echo
     print_info "使用版本： ${APP_TAG} 来构建服务： ${s_name}"
 
@@ -67,7 +68,7 @@ do_build_golang_docker() {
         print_info "准备构建 docker image"
         if [ -e "./Dockerfile" ]; then
           ### docker build
-          local s_tag_local="${DOCKER_IMAGE_NS}/${APP_PARENT}-$(echo ${s_name} |tr '_' '-'):${APP_TAG}"
+          local s_tag_local="${DOCKER_IMAGE_NS}/${APP_NAME}-$(echo ${s_name} |tr '_' '-'):${APP_TAG}"
           local s_tag_remote="${DOCKER_REGISTRY_URL}/${s_tag_local}"
           docker build -q -t "${s_tag_local}" .
 
