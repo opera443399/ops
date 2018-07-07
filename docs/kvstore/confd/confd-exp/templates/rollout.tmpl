@@ -1,0 +1,13 @@
+### key=/cicd/rollout/trigger
+{{if exists "/trigger"}}
+{{$data := json (getv "/trigger")}}
+### ------ input exp:
+# action: {{$data.action}}
+# k8sNamespace: {{$data.k8sNamespace}}
+# appName: {{$data.appName}}
+# svcName: {{$data.svcName}}
+# imageTag: {{$data.imageTag}}
+### ------ output exp: k8s cmd
+# kubectl -n {{$data.k8sNamespace}} set image deployments/{{$data.appName}}-{{$data.svcName}} {{$data.svcName}}=registry.cn-hangzhou.aliyuncs.com/ns-demo/{{$data.appName}}-{{$data.svcName}}:{{$data.imageTag}}
+
+{{end}}

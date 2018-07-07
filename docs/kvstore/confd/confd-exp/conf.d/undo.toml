@@ -1,0 +1,10 @@
+[template]
+prefix = "/cicd/undo"
+src = "undo.tmpl"
+dest = "/data/server/k8s-deploy/reload/undo.cmd"
+owner = "root"
+mode = "0644"
+keys = [
+  "/trigger",
+]
+reload_cmd = "cd /data/server/k8s-deploy && /bin/bash bin/confd-reload-cmd.sh reload/undo.cmd"

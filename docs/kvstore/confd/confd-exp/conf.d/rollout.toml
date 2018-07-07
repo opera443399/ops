@@ -1,0 +1,10 @@
+[template]
+prefix = "/cicd/rollout"
+src = "rollout.tmpl"
+dest = "/data/server/k8s-deploy/reload/rollout.cmd"
+owner = "root"
+mode = "0644"
+keys = [
+  "/trigger",
+]
+reload_cmd = "cd /data/server/k8s-deploy && /bin/bash bin/confd-reload-cmd.sh reload/rollout.cmd"
