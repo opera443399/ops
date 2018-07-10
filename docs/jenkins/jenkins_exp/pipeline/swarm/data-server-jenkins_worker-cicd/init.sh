@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-APP_PARENT="demoproject"
-cd /data/server/jenkins_worker/cicd/${APP_PARENT}
+app_name="demoproject"
+cd /data/server/jenkins_worker/cicd/${app_name}
 grep "^[^#]" svc.list |awk -F',' '{print $1" "$2}' >.svc
 
 while read svc_name svc_port
