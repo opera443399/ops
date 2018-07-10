@@ -1,0 +1,55 @@
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: demoproject-svc1
+  labels:
+    app.parent: demoproject
+    app.name: svc1
+  namespace: TPL_REPLACE_NS_HERE
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.parent: demoproject
+      app.name: svc1
+  template:
+    metadata:
+      labels:
+        app.parent: demoproject
+        app.name: svc1
+    spec:
+      containers:
+      - name: svc1
+        image: TPL_REPLACE_IMAGE_HERE
+        ports:
+        - containerPort: 80
+        env:
+          - name: RUN_ENV
+            value: TPL_REPLACE_NS_HERE
+        volumeMounts:
+        - name: glusterfsvol
+          mountPath: "/var/log/demoproject"
+      volumes:
+      - name: glusterfsvol
+        persistentVolumeClaim:
+          claimName: glusterfs-r3-gv1-TPL_REPLACE_NS_HERE
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demoproject-svc1
+  labels:
+    app.parent: demoproject
+    app.name: svc1
+  namespace: TPL_REPLACE_NS_HERE
+spec:
+  selector:
+      app.parent: demoproject
+      app.name: svc1
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+    nodePort: 5001
+  type: NodePort
