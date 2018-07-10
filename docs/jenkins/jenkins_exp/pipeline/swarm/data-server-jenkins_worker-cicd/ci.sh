@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2018/6/28
+# 2018/7/10
 ###########
 ### 请使用 `dep` 来解决 golang 的依赖而不是使用 `go get`
 ### goal:
@@ -16,11 +16,14 @@
 
 #set -e
 
+# app
 APP_NAME="$2"
 APP_TAG="$3"
 APP_SVC_NAMES="$4"
 APP_CI_ROOT="/data/server/jenkins_worker/cicd/${APP_NAME}"
 APP_CI_LOG_ROOT="${APP_CI_ROOT}/logs"
+[ -d ${APP_CI_LOG_ROOT} ] || mkdir -p ${APP_CI_LOG_ROOT}
+# docker
 DOCKER_TPL_ROOT="${APP_CI_ROOT}/tpl.docker.d"
 DOCKER_IMAGE_NS="ns-demo"
 DOCKER_REGISTRY_URL='registry.cn-hangzhou.aliyuncs.com'

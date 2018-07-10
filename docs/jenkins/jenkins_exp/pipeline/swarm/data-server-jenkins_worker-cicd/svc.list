@@ -1,0 +1,3 @@
+##### svc,port,env-dev,env-test,env-prod
+svc1,80,5001,5001,5001
+svc2,80,5002,5002,5002

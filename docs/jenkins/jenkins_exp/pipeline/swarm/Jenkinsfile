@@ -4,7 +4,7 @@ pipeline {
       //------ 分配任务给打了下述标签的 worker
       label 'pipeline_only'
       //------ 指定干活的路径
-      customWorkspace '/data/server/jenkins_worker/code/demoproject/src/demoproject.com'
+      customWorkspace '/data/server/jenkins_worker/code/demoproject/src/demoproject'
     }
   }
 
@@ -13,14 +13,14 @@ pipeline {
     string(name: 'SVC_NAMES', defaultValue: 'svc1,svc2,svc3,svc4,svc5', description: '请选择微服务（使用逗号作为分隔符，无空格）: \nsvc1,svc2,svc3,svc4,svc5')
     string(name: 'SVC_VERSION', defaultValue: 'EMPTY', description: '请指定`docker image tag`的值，默认将提取 `git rev id`')
     choice(name: 'GIT_BRANCH_NAME', choices: 'develop\nmaster', description: '请选择一个 git 分支：')
-    choice(name: 'SWARM_ENV', choices: 'dev\ntest', description: '请问您要部署至哪一个环境中呢？')
-    choice(name: 'SWARM_OP', choices: 'deploy\nrollback', description: '请选择操作类型：')
+    choice(name: 'CICD_ENV', choices: 'dev\ntest', description: '请问您要部署至哪一个环境中呢？')
+    choice(name: 'CICD_OP', choices: 'deploy\nrollback', description: '请选择操作类型：')
   }
 
   environment {
     // 定义 golang 环境变量
     GOPATH = '/data/server/jenkins_worker/code/demoproject'
-    SSH_OPTS_SWARM_DEV = 'ssh -o StrictHostKeyChecking=no jack@10.250.1.201 /bin/bash /data/server/swarm-deploy/bin/swarm-ctl.sh'
+    SSH_OPTS_DEPLOY_TO_DEV = 'ssh -o StrictHostKeyChecking=no jack@10.250.1.201 /bin/bash /data/server/CICD-deploy/bin/CICD-ctl.sh'
   }
 
   stages {
@@ -28,7 +28,7 @@ pipeline {
       when {
         expression {
           //------ 只在 dev 环境中执行
-          (params.SWARM_ENV=='dev' && params.SWARM_OP=='deploy') ? true : false
+          (params.CICD_ENV=='dev' && params.CICD_OP=='deploy') ? true : false
         }
       }
       steps {
@@ -62,7 +62,7 @@ pipeline {
 
         echo "[+] SVC_VERSION: ${SVC_VERSION} , SVC_NAMES: \n${SVC_NAMES}"
         echo "[+] GIT_BRANCH_NAME: ${GIT_BRANCH_NAME}"
-        echo "[+] SWARM_ENV: ${SWARM_ENV} , SWARM_OP: ${SWARM_OP}"
+        echo "[+] CICD_ENV: ${CICD_ENV} , CICD_OP: ${CICD_OP}"
 
         echo '[-] ______________________END_OF_STAGE______________________'
       }
@@ -73,7 +73,7 @@ pipeline {
       when {
         expression {
           //------ 只在操作为 rollback 时激活
-          params.SWARM_OP == 'rollback'
+          params.CICD_OP == 'rollback'
         }
       }
       steps {
@@ -102,7 +102,7 @@ pipeline {
         }
 
         sshagent(['11112222-1111-2222-1111-222211112222']) {
-          sh "${SSH_OPTS_SWARM_DEV} rollback '${SWARM_ENV}' demoproject '${APP_TAG}' '${SVC_NAMES}'"
+          sh "${SSH_OPTS_DEPLOY_TO_DEV} rollback '${CICD_ENV}' demoproject '${APP_TAG}' '${SVC_NAMES}'"
         }
 
         echo '[-] ______________________END_OF_STAGE______________________'
@@ -114,7 +114,7 @@ pipeline {
       when {
         expression {
           //------ 只在 dev 环境中执行
-          (params.SWARM_ENV=='dev' && params.SWARM_OP=='deploy') ? true : false
+          (params.CICD_ENV=='dev' && params.CICD_OP=='deploy') ? true : false
         }
       }
       tools {
@@ -145,7 +145,7 @@ pipeline {
       when {
         expression {
           //------ 只在 dev 环境中执行
-          (params.SWARM_ENV=='dev' && params.SWARM_OP=='deploy') ? true : false
+          (params.CICD_ENV=='dev' && params.CICD_OP=='deploy') ? true : false
         }
       }
       steps {
@@ -162,7 +162,7 @@ pipeline {
         }
 
         sshagent(['11112222-1111-2222-1111-222211112222']) {
-          sh "${SSH_OPTS_SWARM_DEV} update '${SWARM_ENV}' demoproject '${APP_TAG}' '${SVC_NAMES}'"
+          sh "${SSH_OPTS_DEPLOY_TO_DEV} update '${CICD_ENV}' demoproject '${APP_TAG}' '${SVC_NAMES}'"
         }
 
         echo '[-] ______________________END_OF_STAGE______________________'
@@ -174,7 +174,7 @@ pipeline {
       when {
         expression {
           //------ 只在 test 环境中执行
-          (params.SWARM_ENV=='test' && params.SWARM_OP=='deploy') ? true : false
+          (params.CICD_ENV=='test' && params.CICD_OP=='deploy') ? true : false
         }
       }
       steps {
@@ -203,7 +203,7 @@ pipeline {
         }
 
         sshagent(['11112222-1111-2222-1111-222211112222']) {
-          sh "${SSH_OPTS_SWARM_DEV} update '${SWARM_ENV}' demoproject '${APP_TAG}' '${SVC_NAMES}'"
+          sh "${SSH_OPTS_DEPLOY_TO_DEV} update '${CICD_ENV}' demoproject '${APP_TAG}' '${SVC_NAMES}'"
         }
 
         echo '[-] ______________________END_OF_STAGE______________________'
