@@ -1,5 +1,5 @@
 几个查看系统状态的工具简介
-2017/8/14
+2018/7/13
 linux性能分析博大精深，各工具的详情请查看man和参考网络文章。
 
 一、查看主机流量
@@ -21,19 +21,19 @@ netstat -ant
 显示对应的进程：
 netstat -antp
 [root@test79 ~]# netstat -antp |grep ':80'
-tcp        1      0 10.0.200.10:39670           23.62.109.17:80             CLOSE_WAIT  3348/clock-applet   
-tcp        1      0 10.0.200.10:48423           23.62.109.73:80             CLOSE_WAIT  3082/clock-applet   
-tcp        0      0 :::80                       :::*                        LISTEN      23616/docker-proxy  
+tcp        1      0 10.0.200.10:39670           23.62.109.17:80             CLOSE_WAIT  3348/clock-applet
+tcp        1      0 10.0.200.10:48423           23.62.109.73:80             CLOSE_WAIT  3082/clock-applet
+tcp        0      0 :::80                       :::*                        LISTEN      23616/docker-proxy
 
 5）ss
 查看tcp连接
 ss -ant
-ss -ant src :80 
+ss -ant src :80
 ss -ant dst 10.0.200.21:80
 
 加上-p参数也是查看对应的进程
 [root@test79 ~]# ss -antp src :80
-State      Recv-Q Send-Q                                Local Address:Port                                  Peer Address:Port 
+State      Recv-Q Send-Q                                Local Address:Port                                  Peer Address:Port
 LISTEN     0      128                                              :::80                                              :::*      users:(("docker",23616,4))
 
 注意：
@@ -57,7 +57,7 @@ sys	0m0.161s
 6）lsof
 查看使用80端口的进程
 
-[root@test79 ~]# lsof -i :80   
+[root@test79 ~]# lsof -i :80
 COMMAND     PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
 clock-app  3082 root   15u  IPv4 733274      0t0  TCP 10.0.200.10:48423->a23-62-109-73.deploy.static.akamaitechnologies.com:http (CLOSE_WAIT)
 clock-app  3348 root   15u  IPv4 733273      0t0  TCP 10.0.200.10:39670->a23-62-109-17.deploy.static.akamaitechnologies.com:http (CLOSE_WAIT)
@@ -73,7 +73,7 @@ docker    23616 root    4u  IPv6 319706      0t0  TCP *:http (LISTEN)
 
 sar -d -p 2
 iostat -d -x -k 2
-vmstat -S M -w 
+vmstat -S M -w
 top -b -n 1 -c
 pidstat -d 2
 
@@ -91,7 +91,7 @@ Linux 3.8.13-16.2.1.el6uek.x86_64 (test79.company.com)      06/08/2015      _x86
 
 2）iostat
 例如：查看硬盘状态，1秒间隔
-[root@test79 ~]# iostat -d -k -x 1   
+[root@test79 ~]# iostat -d -k -x 1
 Linux 3.8.13-16.2.1.el6uek.x86_64 (test79.company.com)      06/08/2015      _x86_64_        (24 CPU)
 
 Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %util
@@ -146,7 +146,7 @@ r：反向排序
 5）ps
 ps aux | sort -nk3
 排序查看 CPU 占用率最高的进程（最底下一行）
- 
+
 ps aux | sort -nk4
 排序查看 MEM 占用率最高的进程（最底下一行）
 
@@ -169,6 +169,8 @@ a）快捷键
 z：打开颜色显示
 x：单独显示排序的那一列
 b：加粗显示运行进程的那一行
+p: 按 cpu 利用率排序
+m: 按 mem 利用率排序
 
 b）命令行模式
 打印一次
@@ -178,10 +180,10 @@ b）命令行模式
 打印完整的命令行
 ~# top -b -c -n 1
 打印指定pid的内容，并显示 thread
-~]# top -b -n 1 -p 4227 -H
+~]# top -b -n 1 -p 31441 -H
 
 
-c）在 top 中，可能要重点注意的地方是：
+c）在 top 中，查看每个 core 的统计：
 看到 load 很高（要注意一点，你的服务器有多少cpu，并非单纯的查看这个 load 的值是否超过 1 呢），，但是不知道消耗到哪里了，怎么办呢？例如下面的输出：
 ~]# top -n 1
 Tasks: 124 total,   1 running, 123 sleeping,   0 stopped,   0 zombie
@@ -189,17 +191,17 @@ Cpu(s):  1.7%us,  0.5%sy,  0.0%ni, 89.0%id,  8.8%wa,  0.0%hi,  0.0%si,  0.0%st
 Mem:   3920968k total,  3781008k used,   139960k free,   162768k buffers
 Swap:  4194296k total,   471156k used,  3723140k free,  2932460k cached
 
-  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND                                                                                                                                
- 4227 root      20   0  589m 315m 1380 S  3.9  8.2  14858:22 carbon-cache.py                                                                                                                        
- 2590 root      20   0  950m  64m 3756 S  2.0  1.7   1293:21 statsd config.j                                                                                                                        
- 7845 root      20   0 15024 1220  896 R  2.0  0.0   0:00.01 top                                                                                                                                    
-    1 root      20   0 19232  600  428 S  0.0  0.0   0:34.87 init                                                                                                                                   
-    2 root      20   0     0    0    0 S  0.0  0.0   0:00.00 kthreadd                                                                                                                               
-    3 root      RT   0     0    0    0 S  0.0  0.0   1:12.47 migration/0                                                                                                                            
-    4 root      20   0     0    0    0 S  0.0  0.0   2:11.38 ksoftirqd/0                                                                                                                            
-    5 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 migration/0  
- 
- 
+  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+ 4227 root      20   0  589m 315m 1380 S  3.9  8.2  14858:22 carbon-cache.py
+ 2590 root      20   0  950m  64m 3756 S  2.0  1.7   1293:21 statsd config.j
+ 7845 root      20   0 15024 1220  896 R  2.0  0.0   0:00.01 top
+    1 root      20   0 19232  600  428 S  0.0  0.0   0:34.87 init
+    2 root      20   0     0    0    0 S  0.0  0.0   0:00.00 kthreadd
+    3 root      RT   0     0    0    0 S  0.0  0.0   1:12.47 migration/0
+    4 root      20   0     0    0    0 S  0.0  0.0   2:11.38 ksoftirqd/0
+    5 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 migration/0
+
+
 咱们这样来分析，进入 top 后，在交互模式下（可用的命令请 man top 查看 INTERACTIVE Commands 这一节），按下数字1，查看每个cpu的状态：
 ~]# top
 top - 15:25:22 up 176 days,  8:59,  1 user,  load average: 2.86, 2.87, 2.91
@@ -215,6 +217,24 @@ Swap:  4194296k total,   471156k used,  3723140k free,  2885372k cached
 请注意，，，cpu0和cpu3的 %wa 都飙高了。
 
 
+d）在 top 中，分析进程/线程的 cpu 占用情况
+a、分析进程：
+~]# top -c
+按下 CTRL + p
+
+pid=25308 的进程占用 cpu 最高
+
+b、分析线程：
+~]# top -Hp 25308
+
+pid=25580 的线程占用 cpu 最高
+
+c、分析堆栈
+~]# pstack 25580
+
+
+
+
 9）pidstat
 参考：
 http://weibo.com/ttarticle/p/show?id=2309404042490498950621
@@ -228,4 +248,3 @@ Linux 2.6.32-431.el6.x86_64 (test79.company.com)   03/03/2017      _x86_64(32 CP
 06:34:12 PM     47625   1826.09      0.00      0.00  swapoff
 06:34:12 PM     48242      3.86      0.00      0.00  qemu-kvm
 06:34:12 PM     48520      7.73      0.00      0.00  qemu-kvm
-
