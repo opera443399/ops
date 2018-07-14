@@ -1,5 +1,5 @@
 docker深入2-docker-ce的最佳实践
-2018/5/26
+2018/7/14
 
 > 注1：凡是本人整理的，开源产品相关的文章中，标题党写明了“最佳实践”的文章，要特别注意，本人总结的文字并未涉及安全方面的指导，请参考官方的指导教程，因为安全是一个有深度的话题，且安全是相对而言的，并不是个容易的话题。
 
@@ -26,7 +26,16 @@ docker深入2-docker-ce的最佳实践
 yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
 yum makecache fast
 yum -y install docker-ce
+# (可选)指定版本
+yum -y install docker-ce-18.03.1.ce-1.el7.centos.x86_64
+# (可选)升级版本
+yum -y upgrade docker-ce-18.03.1.ce-1.el7.centos.x86_64
+
+# 开机启动
 systemctl enable docker
+
+# 启动服务
+systemctl start docker
 ```
 
 
@@ -173,7 +182,7 @@ opera443399/whoami          0.7                  160ed79ce86f        5 weeks ago
 已经试图反馈给[阿里云](https://github.com/aliyun/aliyun-cli/issues/36)，如果进展，后续更新。
 
 
-### 2、在 swarm mode 中使用独立的网络
+##### 2、在 swarm mode 中使用独立的网络
 
 用途：处于同一个 overlay 网络中的服务，互相之间可以通过服务名称来访问
 ```
@@ -188,16 +197,44 @@ docker service create \
 
 ```
 
-### 3、在 swarm mode 中使用私有镜像仓库
+##### 3、在 swarm mode 中使用私有镜像仓库
 `--with-registry-auth` 示例同 FAQ#2
 
 
-### 4、使用 go 模版来获取指定内容
+##### 4、使用 go 模版来获取指定内容
 
 例如，获取所有 overlay 网络的 subnet 信息
 ```bash
 docker network inspect $(docker network ls -f driver='overlay' -q) \
 --format='{{.Name}} -> {{if .IPAM.Config}}{{(index .IPAM.Config 0).Subnet}}{{else}}null{{end}}' |sort -k2
+```
+
+
+##### 5、安装指定版本的 docker 服务
+使用 `labels` 和 `constraint` 来调度容器
+
+* 给 node 打标签
+```bash
+docker node update --label-add 'deploy.env==ops' worker1
+docker node update --label-add 'deploy.env==dev' worker2
+docker node update --label-add 'deploy.env==qa' worker3
+```
+
+* 更新服务，加上调度策略(注意：每执行一次 `--constraint-add` 将增加一个标签)
+```bash
+docker service update --with-registry-auth \
+  --constraint-add "node.labels.deploy.env==dev" svc1
+```
+
+* 查看 svc1 的调度策略
+```bash
+docker service inspect svc1 --pretty |grep Constraints
+```
+
+* 移除标签(如果有多个标签，可以重复使用 `--constraint-rm` 指令)
+```bash
+docker service update --with-registry-auth \
+  --constraint-rm "node.labels.deploy.env==dev" svc1
 ```
 
 
