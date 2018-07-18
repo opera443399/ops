@@ -1,7 +1,7 @@
 # k8s基本概念-配置调度策略之(Taints-and-Tolerations)
-2018/4/12
+2018/7/18
 
-### 通过定义 Taints and Tolerations 来达到 node 排斥 pod 的目的
+#### 通过定义 Taints and Tolerations 来达到 node 排斥 pod 的目的
 * 通过一个典型实例来描述 taint 和 toleration 之间的关联
   - 测试前的集群状态
   - 部署app `whoami-t1`
@@ -14,7 +14,7 @@
   - 概念
 
 
-### 通过一个典型实例来描述 taint 和 toleration 之间的关联
+#### 通过一个典型实例来描述 taint 和 toleration 之间的关联
 ##### 测试前的集群状态
 部署集群的时候，你极可能有留意到，集群中设置为 master 角色的节点，是不会有任务调度到这里来执行的，这是为何呢？
 ```bash
@@ -88,13 +88,15 @@ Roles:              <none>
 Taints:             node-role.kubernetes.io/master:NoSchedule
 
 ```
-> 上述 taint 的指令含义是：
-> 给节点 `tvm-04` 配置一个 taint （可以理解为：污点）
-> 其中，这个 taint 的
-> key 是 `node-role.kubernetes.io/master`
-> value 是 `` （值为空）
-> taint effect 是 `NoSchedule`
-> 这意味着，没有任何 pod 可以调度到这个节点上面，除非在这个 pod 的描述文件中有一个对应的 `toleration` （可以理解为：设置 pod 容忍了这个污点）
+
+上述 `taint` 的指令含义是：
+给节点 tvm-04 配置一个 `taint` （可以理解为：污点）
+其中，这个 `taint` 的
+key 是 `node-role.kubernetes.io/master`
+value 是 `` （值为空）
+taint effect 是 `NoSchedule`
+
+这意味着，没有任何 pod 可以调度到这个节点上面，除非在这个 pod 的描述文件中有一个对应的 `toleration` （可以理解为：设置 pod 容忍了这个污点）
 
 
 ##### 测试结果
@@ -308,27 +310,29 @@ Taints:             <none>
 
 ### 聊一聊 Taints and Tolerations 的细节
 
-> `Taints` 和 `Node affinity` 是对立的概念，用来允许一个 node 拒绝某一类 pods
-> `Taints` 和 `tolerations` 配合起来可以保证 pods 不会被调度到不合适的 nodes 上干活
->  一个 node 上可以有多个 `taints`
-> 将`tolerations` 应用到 pods 来允许被调度到合适的 nodes 上干活
+`Taints` 和 `Node affinity` 是对立的概念，用来允许一个 node 拒绝某一类 pods
+`Taints` 和 `tolerations` 配合起来可以保证 pods 不会被调度到不合适的 nodes 上干活
+一个 node 上可以有多个 `taints`
+将 `tolerations` 应用到 pods 来允许被调度到合适的 nodes 上干活
 
 ##### 概念
 示范增加一个 taint 到 node 上的操作：
 ```bash
 kubectl taint nodes tvm-04 demo.test.com/app=whoami:NoSchedule
 ```
-在节点 `tvm-04` 上配置了一个 `taint` ，其中：
-`key` 是 `demo.test.com/app`
-`value` 是 `whoami`
-`taint effect` 是 `NoSchedule`
+在节点 tvm-04 上配置了一个 `taint` ，其中：
+key 是 `demo.test.com/app`
+value 是 `whoami`
+taint effect 是 `NoSchedule`
 
 如果要移除 `taint` 则：
 ```bash
 kubectl taint nodes tvm-04 demo.test.com/app:NoSchedule-
 ```
 
-然后在 `PodSpec` 中定义 `toleration` 使得该 pod 可以被调度到 `tvm-04` 上，有下述 2 种方式：
+然后在 `PodSpec` 中定义 `toleration` 使得该 pod 可以被调度到 tvm-04 上，有下述 2 种方式：
+
+示例配置1:
 ```yaml
 tolerations:
 - key: "demo.test.com/app"
@@ -336,6 +340,8 @@ tolerations:
   value: "whoami"
   effect: "NoSchedule"
 ```
+
+示例配置2:
 ```yaml
 tolerations:
 - key: "demo.test.com/app"
@@ -347,16 +353,17 @@ tolerations:
 - 当 `operator` 是 `Exists` （意味着不用指定 `value` 的内容）时，或者
 - 当 `operator` 是 `Equal` 时 `values` 也相同
 
-注1： `operator` 默认值是 `Equal` 如果不指定的话
+**注1：** `operator` 默认值是 `Equal` 如果不指定的话
 
-注2: 留意下面 2 个使用 `Exists` 的特例
-- key 为空且 `operator` 是 `Exists`  时，将匹配所有的 `keys`, `values` 和 `effects` ，这表明可以 `tolerate` 所有的 `taint`
+**注2：** 留意下面 2 个使用 `Exists` 的特例
+
+key 为空且 `operator` 是 `Exists`  时，将匹配所有的 `keys`, `values` 和 `effects` ，这表明可以 `tolerate` 所有的 `taint`
 ```yaml
 tolerations:
 - operator: "Exists"
 ```
 
-- `effect` 为空将匹配 `demo.test.com/app` 这个 `key` 对应的所有的 `effects`
+`effect` 为空将匹配 `demo.test.com/app` 这个 `key` 对应的所有的 `effects`
 ```bash
 tolerations:
 - key: "demo.test.com/app"
@@ -364,21 +371,22 @@ tolerations:
 ```
 
 上述 `effect` 使用的是 `NoSchedule` ，其实还可以使用其他的调度策略，例如：
-- PreferNoSchedule ： 这意味着不是一个强制必须的调度策略（尽量不去满足不合要求的 pod 调度到 node 上来）
-- NoExecute ： 后续解释
+  * PreferNoSchedule ： 这意味着不是一个强制必须的调度策略（尽量不去满足不合要求的 pod 调度到 node 上来）
+  * NoExecute ： 后续解释
 
 可以在同一个 node 上使用多个 `taints` ，也可以在同一个 pod 上使用多个 `tolerations` ，而 k8s 在处理 `taints and tolerations` 时类似一个过滤器：
-- 对比一个 node 上所有的 `taints`
-- 忽略掉和 pod 中 `toleration` 匹配的 `taints`
-- 遗留下来未被忽略掉的所有 `taints` 将对 pod 产生 `effect`
+  * 对比一个 node 上所有的 `taints`
+  * 忽略掉和 pod 中 `toleration` 匹配的 `taints`
+  * 遗留下来未被忽略掉的所有 `taints` 将对 pod 产生 `effect`
 
 尤其是：
-- 至少有 1 个未被忽略的 `taint` 且 `effect` 是 `NoSchedule` 时，则 k8s 不会将该 pod 调度到这个 node 上
-- 不满足上述场景，但至少有 1 个未被忽略的 `taint` 且 `effect` 是 `PreferNoSchedule` 时，则 k8s 将尝试不把该 pod 调度到这个 node 上
-- 至少有 1 个未被忽略的 `taint` 且 `effect` 是 `NoExecute` 时，则 k8s 会立即将该 pod 从该 node 上驱逐（如果已经在该 node 上运行），或着不会将该 pod 调度到这个 node 上（如果还没在这个 node 上运行）
+  * 至少有 1 个未被忽略的 `taint` 且 `effect` 是 `NoSchedule` 时，则 k8s 不会将该 pod 调度到这个 node 上
+  * 不满足上述场景，但至少有 1 个未被忽略的 `taint` 且 `effect` 是 `PreferNoSchedule` 时，则 k8s 将尝试不把该 pod 调度到这个 node 上
+  * 至少有 1 个未被忽略的 `taint` 且 `effect` 是 `NoExecute` 时，则 k8s 会立即将该 pod 从该 node 上驱逐（如果已经在该 node 上运行），或着不会将该 pod 调度到这个 node 上（如果还没在这个 node 上运行）
 
 
-**实例**，有下述 node 和 pod 的定义：
+**实例**
+有下述 node 和 pod 的定义：
 ```bash
 kubectl taint nodes tvm-04 key1=value1:NoSchedule
 kubectl taint nodes tvm-04 key1=value1:NoExecute
@@ -410,7 +418,7 @@ tolerations:
 ```
 
 也就是说，在 3600 秒后将被驱逐。但是，如果在这个时间点前移除了相关的 `taint` 则也不会被驱逐
-注3：关于被驱逐，如果该 pod 没有其他地方可以被调度，也不会被驱逐出去（个人实验结果，请自行验证）
+**注3：** 关于被驱逐，如果该 pod 没有其他地方可以被调度，也不会被驱逐出去（个人实验结果，请自行验证）
 
 
 
