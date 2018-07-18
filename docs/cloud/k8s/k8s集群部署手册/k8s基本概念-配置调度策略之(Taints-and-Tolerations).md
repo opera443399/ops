@@ -90,14 +90,15 @@ Taints:             node-role.kubernetes.io/master:NoSchedule
 ```
 
 上述 `taint` 的指令含义是：
-给节点 tvm-04 配置一个 `taint` （可以理解为：污点）
-其中，这个 `taint` 的
-key 是 `node-role.kubernetes.io/master`
-value 是 `` （值为空）
-taint effect 是 `NoSchedule`
+```
+给节点 tvm-04 配置一个 taint（可以理解为：污点）
+其中，这个 taint 的
+key 是 "node-role.kubernetes.io/master"
+value 是 "" （值为空）
+taint effect 是 "NoSchedule"
 
-这意味着，没有任何 pod 可以调度到这个节点上面，除非在这个 pod 的描述文件中有一个对应的 `toleration` （可以理解为：设置 pod 容忍了这个污点）
-
+这意味着，没有任何 pod 可以调度到这个节点上面，除非在这个 pod 的描述文件中有一个对应的 toleration （可以理解为：设置 pod 容忍了这个污点）
+```
 
 ##### 测试结果
 我们发现，之前部署的 `deploy/whoami-t1` 并未被驱逐
@@ -309,11 +310,12 @@ Taints:             <none>
 
 
 ### 聊一聊 Taints and Tolerations 的细节
-
-`Taints` 和 `Node affinity` 是对立的概念，用来允许一个 node 拒绝某一类 pods
-`Taints` 和 `tolerations` 配合起来可以保证 pods 不会被调度到不合适的 nodes 上干活
-一个 node 上可以有多个 `taints`
-将 `tolerations` 应用到 pods 来允许被调度到合适的 nodes 上干活
+```
+Taints 和 Node affinity 是对立的概念，用来允许一个 node 拒绝某一类 pods
+Taints 和 tolerations 配合起来可以保证 pods 不会被调度到不合适的 nodes 上干活
+一个 node 上可以有多个 taints
+将 tolerations 应用到 pods 来允许被调度到合适的 nodes 上干活
+```
 
 ##### 概念
 示范增加一个 taint 到 node 上的操作：
@@ -321,9 +323,11 @@ Taints:             <none>
 kubectl taint nodes tvm-04 demo.test.com/app=whoami:NoSchedule
 ```
 在节点 tvm-04 上配置了一个 `taint` ，其中：
-key 是 `demo.test.com/app`
-value 是 `whoami`
-taint effect 是 `NoSchedule`
+```
+key 是 "demo.test.com/app"
+value 是 "whoami"
+taint effect 是 "NoSchedule"
+```
 
 如果要移除 `taint` 则：
 ```bash
