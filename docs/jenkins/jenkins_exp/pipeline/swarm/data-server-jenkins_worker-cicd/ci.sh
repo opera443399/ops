@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2018/7/10
+# 2018/7/20
 ###########
 ### 请使用 `dep` 来解决 golang 的依赖而不是使用 `go get`
 ### goal:
@@ -27,6 +27,9 @@ APP_CI_LOG_ROOT="${APP_CI_ROOT}/logs"
 DOCKER_TPL_ROOT="${APP_CI_ROOT}/tpl.docker.d"
 DOCKER_IMAGE_NS="ns-demo"
 DOCKER_REGISTRY_URL='registry.cn-hangzhou.aliyuncs.com'
+# workspaces
+export GOPATH="${WORKSPACE}"
+APP_CODE_ROOT="${WORKSPACE}/src/${APP_NAME}"
 
 print_info() {
   echo "[I] -----------------> $1"
@@ -53,8 +56,8 @@ do_build_golang_docker() {
     print_info "使用版本： ${APP_TAG} 来构建服务： ${s_name}"
 
     ### go build
-    if [ -d "${WORKSPACE}/${s_name}/" ]; then
-      cd "${WORKSPACE}/${s_name}/"
+    if [ -d "${APP_CODE_ROOT}/${s_name}/" ]; then
+      cd "${APP_CODE_ROOT}/${s_name}/"
       print_info  "清理：上次构建的 binary"
       rm -fv ./${s_name}
       print_info  "执行：GO BUILD 来构建 binary"

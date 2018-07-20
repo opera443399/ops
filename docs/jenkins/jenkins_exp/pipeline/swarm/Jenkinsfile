@@ -4,7 +4,7 @@ pipeline {
       //------ 分配任务给打了下述标签的 worker
       label 'pipeline_only'
       //------ 指定干活的路径
-      customWorkspace '/data/server/jenkins_worker/code/demoproject/src/demoproject'
+      customWorkspace '/data/server/jenkins_worker/code/demoproject'
     }
   }
 
@@ -12,15 +12,13 @@ pipeline {
     //------ 定义参数(环境变量)
     string(name: 'SVC_NAMES', defaultValue: 'svc1,svc2,svc3,svc4,svc5', description: '请选择微服务（使用逗号作为分隔符，无空格）: \nsvc1,svc2,svc3,svc4,svc5')
     string(name: 'SVC_VERSION', defaultValue: 'EMPTY', description: '请指定`docker image tag`的值，默认将提取 `git rev id`')
-    choice(name: 'GIT_BRANCH_NAME', choices: 'develop\nmaster', description: '请选择一个 git 分支：')
+    string(name: 'GIT_BRANCH_NAME', defaultValue: 'develop', description: '请指定 git 分支：')
     choice(name: 'CICD_ENV', choices: 'dev\ntest', description: '请问您要部署至哪一个环境中呢？')
     choice(name: 'CICD_OP', choices: 'deploy\nrollback', description: '请选择操作类型：')
   }
 
   environment {
-    // 定义 golang 环境变量
-    GOPATH = '/data/server/jenkins_worker/code/demoproject'
-    SSH_OPTS_DEPLOY_TO_DEV = 'ssh -o StrictHostKeyChecking=no jack@10.250.1.201 /bin/bash /data/server/CICD-deploy/bin/CICD-ctl.sh'
+    SSH_OPTS_DEPLOY_TO_DEV = 'ssh -o StrictHostKeyChecking=no jack@10.250.1.201 /bin/bash /data/server/swarm-deploy/bin/swarm-ctl.sh'
   }
 
   stages {
@@ -39,7 +37,7 @@ pipeline {
             name: "refs/heads/${GIT_BRANCH_NAME}"
           ]],
           doGenerateSubmoduleConfigurations: false,
-          extensions: [],
+          extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'src/demoproject']],
           submoduleCfg: [],
           userRemoteConfigs: [[
             credentialsId: '11112222-1111-2222-1111-222211112222',
@@ -57,12 +55,10 @@ pipeline {
         echo '[@] Jenkinsfile for jenkins pipeline'
         echo "[@] 任务链接：${BUILD_URL}"
         echo '[+] git logs (最近3条)'
-        sh 'git log -3 --oneline'
-        //sh 'git whatchanged -3'
-
-        echo "[+] SVC_VERSION: ${SVC_VERSION} , SVC_NAMES: \n${SVC_NAMES}"
-        echo "[+] GIT_BRANCH_NAME: ${GIT_BRANCH_NAME}"
-        echo "[+] CICD_ENV: ${CICD_ENV} , CICD_OP: ${CICD_OP}"
+        dir('src/demoproject') {
+          sh 'git log -3 --oneline'
+          //sh 'git whatchanged -3'
+        }
 
         echo '[-] ______________________END_OF_STAGE______________________'
       }
@@ -77,28 +73,30 @@ pipeline {
         }
       }
       steps {
-        script {
-          //------ tag diff
-          if (params.SVC_VERSION == 'EMPTY') {
-            env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
-          } else {
-            env.APP_TAG = params.SVC_VERSION
+        dir('src/demoproject') {
+          script {
+            //------ tag diff
+            if (params.SVC_VERSION == 'EMPTY') {
+              env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
+            } else {
+              env.APP_TAG = params.SVC_VERSION
+            }
+            echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
+
+            //------ ACL
+            userInput = input([
+              message: '开始回滚? (回滚到上一个版本)',
+              ok: '确认',
+              parameters: [
+                text(name: 'approvers', defaultValue: '*下述角色拥有本项目的审批权限: *\n  - All\n', description: '审核者')
+              ],
+              //------ 指定审核者，请使用逗号','作为分隔符(无空格)，启用请取消下面一行的注释
+              //submitter: 'admin,hanmeimei,lilei',
+              submitterParameter: 'approverID'
+
+            ])
+            echo "[-] 由 ${userInput['approverID']} 审核通过"
           }
-          echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
-
-          //------ ACL
-          userInput = input([
-            message: '开始回滚? (回滚到上一个版本)',
-            ok: '确认',
-            parameters: [
-              text(name: 'approvers', defaultValue: '*下述角色拥有本项目的审批权限: *\n  - All\n', description: '审核者')
-            ],
-            //------ 指定审核者，请使用逗号','作为分隔符(无空格)，启用请取消下面一行的注释
-            //submitter: 'admin,hanmeimei,lilei',
-            submitterParameter: 'approverID'
-
-          ])
-          echo "[-] 由 ${userInput['approverID']} 审核通过"
         }
 
         sshagent(['11112222-1111-2222-1111-222211112222']) {
@@ -123,15 +121,16 @@ pipeline {
       }
       steps {
         echo '[+] 代码构建中...'
-
-        script {
-          //------ tag diff
-          if (params.SVC_VERSION == 'EMPTY') {
-            env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
-          } else {
-            env.APP_TAG = params.SVC_VERSION
+        dir('src/demoproject') {
+          script {
+            //------ tag diff
+            if (params.SVC_VERSION == 'EMPTY') {
+              env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
+            } else {
+              env.APP_TAG = params.SVC_VERSION
+            }
+            echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
           }
-          echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
         }
 
         sh "/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh build demoproject '${APP_TAG}' '${SVC_NAMES}'"
@@ -150,15 +149,16 @@ pipeline {
       }
       steps {
         echo '[+] 服务上线中...'
-
-        script {
-          //------ tag diff
-          if (params.SVC_VERSION == 'EMPTY') {
-            env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
-          } else {
-            env.APP_TAG = params.SVC_VERSION
+        dir('src/demoproject') {
+          script {
+            //------ tag diff
+            if (params.SVC_VERSION == 'EMPTY') {
+              env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
+            } else {
+              env.APP_TAG = params.SVC_VERSION
+            }
+            echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
           }
-          echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
         }
 
         sshagent(['11112222-1111-2222-1111-222211112222']) {
@@ -178,28 +178,30 @@ pipeline {
         }
       }
       steps {
-        script {
+        echo '[+] 服务上线中...'
+        dir('src/demoproject') {
+          script {
+            //------ tag diff
+            if (params.SVC_VERSION == 'EMPTY') {
+              env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
+            } else {
+              env.APP_TAG = params.SVC_VERSION
+            }
+            echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
 
-          //------ tag diff
-          if (params.SVC_VERSION == 'EMPTY') {
-            env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
-          } else {
-            env.APP_TAG = params.SVC_VERSION
+            //------ ACL
+            userInput = input([
+              message: '服务上线中...(待审核)',
+              ok: '同意',
+              parameters: [
+                text(name: 'approvers', defaultValue: '*下述角色拥有本项目的审批权限: *\n  - Admin\n  - QA\n', description: '审核者')
+              ],
+              //------ 指定审核者，请使用逗号','作为分隔符(无空格)，启用请取消下面一行的注释
+              //submitter: 'admin,hanmeimei,lilei',
+              submitterParameter: 'approverID'
+            ])
+            echo "[-] 由 ${userInput['approverID']} 审核通过"
           }
-          echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
-
-          //------ ACL
-          userInput = input([
-            message: '服务上线中...(待审核)',
-            ok: '同意',
-            parameters: [
-              text(name: 'approvers', defaultValue: '*下述角色拥有本项目的审批权限: *\n  - Admin\n  - QA\n', description: '审核者')
-            ],
-            //------ 指定审核者，请使用逗号','作为分隔符(无空格)，启用请取消下面一行的注释
-            //submitter: 'admin,hanmeimei,lilei',
-            submitterParameter: 'approverID'
-          ])
-          echo "[-] 由 ${userInput['approverID']} 审核通过"
         }
 
         sshagent(['11112222-1111-2222-1111-222211112222']) {
