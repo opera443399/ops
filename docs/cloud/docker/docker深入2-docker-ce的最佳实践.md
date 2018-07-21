@@ -215,9 +215,9 @@ docker network inspect $(docker network ls -f driver='overlay' -q) \
 
 * 给 node 打标签
 ```bash
-docker node update --label-add 'deploy.env==ops' worker1
-docker node update --label-add 'deploy.env==dev' worker2
-docker node update --label-add 'deploy.env==qa' worker3
+docker node update --label-add 'deploy.env=ops' worker1
+docker node update --label-add 'deploy.env=dev' worker2
+docker node update --label-add 'deploy.env=qa' worker3
 ```
 
 * 更新服务，加上调度策略(注意：每执行一次 `--constraint-add` 将增加一个标签)
