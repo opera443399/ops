@@ -2,7 +2,9 @@
 #
 # 2018/7/25
 
-docker rm -f log-pilot
+test $(docker ps -a -f name=log-pilot -q |wc -l) -eq 0 || \
+docker rm -f $(docker ps -a -f name=log-pilot -q)
+
 docker run -d --rm -it \
     --name log-pilot \
     -v /etc/localtime:/etc/localtime \

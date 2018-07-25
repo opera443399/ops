@@ -15,45 +15,20 @@
 下面以 graylog 为例，描述部署一个简易的日志服务的基本步骤。
 
 ##### elasticsearch+graylog
-先给 docker node 打一个标签来调度该服务的部署：
-```bash
-docker node update --label-add 'deploy.env=swarmlog' 10.50.200.101
-```
+注意 graylog 在容器中运行时，可以注入环境变量，变量名称的小技巧是：
+参考 `graylog配置文件` 中定义的变量，变成大写字符，加上前缀： `GRAYLOG_`
 
 初始化：
 ```bash
-$ cat graylog.sh
-#!/bin/bash
-#
-# 2018/7/25
-
-GRAYLOG_PASSWORD_SECRET='graylog-password-secret' \
-GRAYLOG_ROOT_PASSWORD_SHA2='8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918' \
-GRAYLOG_WEB_ENDPOINT_URI='http://10.50.200.101:9000/api' \
-docker stack deploy -c docker-compose.yml logs
+# sh es.sh
+# sh mongodb.sh
+# sh graylog.sh
 
 ```
 
 ##### 日志 agent 在每个 docker node 上运行
 ```bash
-$ cat log-pilot.sh
-#!/bin/bash
-#
-# 2018/7/25
-
-docker rm -f log-pilot
-docker run -d --rm -it \
-    --name log-pilot \
-    -v /etc/localtime:/etc/localtime \
-    -v /etc/timezone:/etc/timezone \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -v /:/host \
-    --privileged \
-    -e PILOT_TYPE="fluentd" \
-    -e FLUENTD_OUTPUT="graylog" \
-    -e GRAYLOG_HOST="10.50.200.101" \
-    -e GRAYLOG_PORT="12201" \
-    registry.cn-hangzhou.aliyuncs.com/acs-sample/log-pilot:latest
+$ sh log-pilot.sh
 
 ```
 
@@ -64,7 +39,7 @@ docker run -d --rm -it \
     --name t001 \
     -p 10001:80 \
     --log-driver=gelf \
-    --log-opt gelf-address=udp://10.50.200.101:12201 \
+    --log-opt gelf-address=udp://10.6.27.68:12201 \
     --log-opt tag="log-t001" \
     opera443399/whoami:0.9
 
@@ -92,3 +67,5 @@ docker service update --with-registry-auth --container-label-add "aliyun.logs.t0
 ##### ZYXW、参考
 1. [Docker 日志收集新方案：log-pilot](https://help.aliyun.com/document_detail/50441.html)
 2. [log-pilot](https://github.com/AliyunContainerService/log-pilot)
+3. [graylog-image](https://hub.docker.com/r/graylog/graylog/)
+3. [graylog配置文件](https://github.com/Graylog2/graylog-docker/blob/2.4/config/graylog.conf)
