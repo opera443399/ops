@@ -14,7 +14,7 @@ docker深入2-docker-ce的最佳实践
 - v1.11 时代是 swarmkit
 - v1.12 开始出现了 swarm mode
 - v1.13 后 docker 变成 EE 和 CE 版本，CE 对应的是社区版本，并将社区的 docker 重命名为 moby，版本跳跃为：v17.03
-- 当前最新版本是：v18.05
+- 当前最新版本是：v18.06
 
 在[这里](https://github.com/docker/docker-ce/releases)查看版本
 
@@ -308,6 +308,25 @@ docker service update --with-registry-auth \
 ```
 
 
+##### 自定义 docker_gwbridge 的网段
+```bash
+gwbridge_users=$(docker network inspect --format '{{range $key, $val := .Containers}} {{$key}}{{end}}' docker_gwbridge | \
+xargs -d' ' -I {} -n1 docker ps --format {{.Names}} -f id={})
+
+echo "$gwbridge_users" | xargs docker stop
+
+docker network rm docker_gwbridge
+
+docker network create  \
+--subnet=172.18.0.1/16    \
+--gateway 172.18.0.1   \
+-o com.docker.network.bridge.enable_icc=false \
+-o com.docker.network.bridge.name=docker_gwbridge \
+docker_gwbridge
+
+```
+
+
 
 zyxw、参考
 ---
@@ -316,3 +335,4 @@ zyxw、参考
 3. [Docker CE 镜像源站](https://yq.aliyun.com/articles/110806)
 4. [阿里云容器服务-镜像加速器](https://cr.console.aliyun.com/#/accelerator)
 5. [Docker --format 格式化输出概要操作说明](https://yq.aliyun.com/articles/230067)
+6. [How do I change the docker gwbridge address?](https://success.docker.com/article/how-do-i-change-the-docker-gwbridge-address)
