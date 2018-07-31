@@ -1,5 +1,5 @@
 # docker深入2-UI之 portainer 的使用简介
-2017/6/4
+2017/7/31
 
 ### 前言
 预计该 UI 仅满足部分需求，还有坑要填，部分需求得自己去实现。
@@ -60,7 +60,8 @@ docker service create \
     -e AGENT_CLUSTER_ADDR=tasks.portainer-agent \
     --mode global \
     --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
-    portainer/agent
+    --mount type=bind,src=/var/lib/docker/volumes,dst=/var/lib/docker/volumes \
+    portainer/agent:1.0.0
 
 docker service create \
     --name portainer \
@@ -70,7 +71,8 @@ docker service create \
     --replicas=1 \
     --constraint 'node.role == manager' \
     --mount type=bind,src=/data/server/portainer,dst=/data \
-    portainer/portainer -H "tcp://tasks.portainer-agent:9001" --tlsskipverify
+    portainer/portainer:1.17.1 -H "tcp://tasks.portainer-agent:9001" --tlsskipverify
+    
 ```
 
 - **访问UI界面**
