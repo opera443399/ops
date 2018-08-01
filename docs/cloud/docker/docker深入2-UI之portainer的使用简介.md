@@ -50,7 +50,8 @@ Add agent support: #461, #1828
 
 - **部署**
 ```bash
-mkdir /data/server/portainer -p
+### 初始化
+mkdir /data/server/portainer/data -p
 docker network create --driver overlay net-portainer
 
 docker service create \
@@ -70,9 +71,14 @@ docker service create \
     --publish 9000:9000 \
     --replicas=1 \
     --constraint 'node.role == manager' \
-    --mount type=bind,src=/data/server/portainer,dst=/data \
+    --mount type=bind,src=/data/server/portainer/data,dst=/data \
     portainer/portainer:1.17.1 -H "tcp://tasks.portainer-agent:9001" --tlsskipverify
-    
+
+
+### 升级
+docker service update --detach=false portainer-agent --image portainer/agent:1.0.0
+docker service update --detach=false portainer --image portainer/portainer:1.17.1
+
 ```
 
 - **访问UI界面**
