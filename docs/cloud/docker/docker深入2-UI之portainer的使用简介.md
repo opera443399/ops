@@ -1,5 +1,5 @@
 # docker深入2-UI之 portainer 的使用简介
-2017/7/31
+2017/8/2
 
 ### 前言
 预计该 UI 仅满足部分需求，还有坑要填，部分需求得自己去实现。
@@ -62,7 +62,7 @@ docker service create \
     --mode global \
     --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
     --mount type=bind,src=/var/lib/docker/volumes,dst=/var/lib/docker/volumes \
-    portainer/agent:1.0.0
+    portainer/agent:1.1.1
 
 docker service create \
     --name portainer \
@@ -72,12 +72,35 @@ docker service create \
     --replicas=1 \
     --constraint 'node.role == manager' \
     --mount type=bind,src=/data/server/portainer/data,dst=/data \
-    portainer/portainer:1.17.1 -H "tcp://tasks.portainer-agent:9001" --tlsskipverify
+    portainer/portainer:1.19.1 -H "tcp://tasks.portainer-agent:9001" --tlsskipverify
 
 
 ### 升级
-docker service update --detach=false portainer-agent --image portainer/agent:1.0.0
-docker service update --detach=false portainer --image portainer/portainer:1.17.1
+docker service update --detach=false portainer-agent --image portainer/agent:1.1.1
+docker service update --detach=false portainer --image portainer/portainer:1.19.1
+
+
+### https
+
+# mkdir /data/server/portainer/certs -p
+# cd /data/server/portainer/certs
+# openssl genrsa -out portainer.key 2048
+# openssl ecparam -genkey -name secp384r1 -out portainer.key
+# openssl req -new -x509 -sha256 -key portainer.key -out portainer.crt -days 3650
+
+docker service create \
+  --name portainer \
+  --detach=true \
+  --network net-portainer \
+  --publish 443:9000 \
+  --replicas=1 \
+  --constraint 'node.role == manager' \
+  --mount type=bind,src=/data/server/portainer/data,dst=/data \
+  --mount type=bind,src=/data/server/portainer/certs,dst=/certs \
+  portainer/portainer:1.19.1 -H "tcp://tasks.portainer-agent:9001" --ssl \
+    --sslcert /certs/portainer.crt \
+    --sslkey /certs/portainer.key
+
 
 ```
 
