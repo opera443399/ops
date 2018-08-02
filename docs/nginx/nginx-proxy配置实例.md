@@ -1,8 +1,9 @@
 # nginx-proxy配置实例.md
-2018/4/17
+2018/8/2
 
 ### exp1
 ---
+```
 upstream backend{
     server 192.168.1.244.8080 weight=10;
     server 192.168.1.245.8080 weight=10;
@@ -24,3 +25,40 @@ server {
         proxy_set_header X-Forwarded-For $http_x_forwarded_for;
       }
 }
+```
+
+
+### exp2: proxy_pass http://backend; vs proxy_pass http://backend/;
+---
+```
+upstream backend {
+    server 10.6.27.124:9000 weight=10 max_fails=3  fail_timeout=20s;
+    keepalive 400;
+}
+
+server {
+    listen 80;
+    server_name x.test.com;
+    add_header 'Access-Control-Allow-Origin' *;
+    add_header 'Access-Control-Allow-Credentials' 'true';
+    add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTION, HEAD';
+
+    location / {
+        proxy_redirect off;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_pass http://backend;
+        proxy_set_header X-Forwarded-For $http_x_forwarded_for;
+    }
+
+    location /ui/ {
+        proxy_redirect off;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_pass http://backend/;
+        proxy_set_header X-Forwarded-For $http_x_forwarded_for;
+    }
+}
+```

@@ -1,61 +1,61 @@
 http://developer.51cto.com/art/201007/209322.htm
 
-ÔÚNginxÏÂÕë¶ÔIPºÍÄ¿Â¼ÏŞËÙ
-2010-07-05 10:05 TOM ZHENG TOM ZHENG'Blog ÎÒÒªÆÀÂÛ(0) ×ÖºÅ£ºT | T
-Ò»¼üÊÕ²Ø£¬ËæÊ±²é¿´£¬·ÖÏíºÃÓÑ£¡
-ÔÚÄ³ÖÖÓ¦ÓÃ³¡¾°ÏÂ£¬ÎÒÃÇĞèÒªÔÚNginxÏÂ¶ÔIPºÍÄ¿Â¼½øĞĞÏŞËÙ£»±¾ÎÄÍ¨¹ıNginxµÄlimit_zoneºÍlimit_rateµÈ·½Ê½ÊµÏÖ¶ÔIPºÍÄ¿Â¼µÄÏŞËÙ¡£
-AD£º
-´ÓNginxÅäÖÃÓëÓ¦ÓÃÏê½â×¨ÌâµÄÍ¶Æ±½á¹ûÀ´¿´£¬NginxÒÑ¾­ÊÇÄ¿Ç°½ö´ÎÓÚAPacheºÍMS IISµÄWeb·şÎñÆ÷¡£NginxÓÅĞãµÄ¸ß²¢·¢Ö§³ÖºÍ¸ßĞ§µÄ¸ºÔØ¾ùºâÊÇÎÒÃÇÑ¡ÔñËüµÄÀíÓÉ¡£µ«ÓĞÊ±ÎÒÃÇÏ£ÍûËüÄÜ×öµÄ¸ü¶à¡£±¾ÎÄ½«ÏòÄú½éÉÜÈçºÎÔÚNginxÏÂ¶ÔIPºÍÄ¿Â¼½øĞĞÏŞËÙ£¬ÔÚÄ³ÖÖÓ¦ÓÃ³¡¾°ÏÂ£¬ÕâÒ²ÊÇ¸ö³£¼ûĞèÇó¡£
+åœ¨Nginxä¸‹é’ˆå¯¹IPå’Œç›®å½•é™é€Ÿ
+2010-07-05 10:05 TOM ZHENG TOM ZHENG'Blog æˆ‘è¦è¯„è®º(0) å­—å·ï¼šT | T
+ä¸€é”®æ”¶è—ï¼Œéšæ—¶æŸ¥çœ‹ï¼Œåˆ†äº«å¥½å‹ï¼
+åœ¨æŸç§åº”ç”¨åœºæ™¯ä¸‹ï¼Œæˆ‘ä»¬éœ€è¦åœ¨Nginxä¸‹å¯¹IPå’Œç›®å½•è¿›è¡Œé™é€Ÿï¼›æœ¬æ–‡é€šè¿‡Nginxçš„limit_zoneå’Œlimit_rateç­‰æ–¹å¼å®ç°å¯¹IPå’Œç›®å½•çš„é™é€Ÿã€‚
+ADï¼š
+ä»Nginxé…ç½®ä¸åº”ç”¨è¯¦è§£ä¸“é¢˜çš„æŠ•ç¥¨ç»“æœæ¥çœ‹ï¼ŒNginxå·²ç»æ˜¯ç›®å‰ä»…æ¬¡äºAPacheå’ŒMS IISçš„WebæœåŠ¡å™¨ã€‚Nginxä¼˜ç§€çš„é«˜å¹¶å‘æ”¯æŒå’Œé«˜æ•ˆçš„è´Ÿè½½å‡è¡¡æ˜¯æˆ‘ä»¬é€‰æ‹©å®ƒçš„ç†ç”±ã€‚ä½†æœ‰æ—¶æˆ‘ä»¬å¸Œæœ›å®ƒèƒ½åšçš„æ›´å¤šã€‚æœ¬æ–‡å°†å‘æ‚¨ä»‹ç»å¦‚ä½•åœ¨Nginxä¸‹å¯¹IPå’Œç›®å½•è¿›è¡Œé™é€Ÿï¼Œåœ¨æŸç§åº”ç”¨åœºæ™¯ä¸‹ï¼Œè¿™ä¹Ÿæ˜¯ä¸ªå¸¸è§éœ€æ±‚ã€‚
 
-Nginx¿ÉÒÔÍ¨¹ıHTTPLimitZoneModuleºÍHTTPCoreModuleÁ½¸öÄ¿Â¼À´ÏŞËÙ¡£
+Nginxå¯ä»¥é€šè¿‡HTTPLimitZoneModuleå’ŒHTTPCoreModuleä¸¤ä¸ªç›®å½•æ¥é™é€Ÿã€‚
 
-Ê¾Àı:
+ç¤ºä¾‹:
 
-limit_zone one $binary_remote_addr 10m;  
- 
-location / {   
-        limit_conn one 1;   
-        limit_rate 100k;   
-} 
-ËµÃ÷:
+limit_zone one $binary_remote_addr 10m;
 
-limit_zone£¬ÊÇÕë¶ÔÃ¿¸öIP¶¨ÒåÒ»¸ö´æ´¢session×´Ì¬µÄÈİÆ÷¡£Õâ¸öÊ¾ÀıÖĞ¶¨ÒåÁËÒ»¸ö10mµÄÈİÆ÷£¬°´ÕÕ32bytes/session£¬¿ÉÒÔ´¦Àí320000¸ösession¡£
+location / {
+        limit_conn one 1;
+        limit_rate 100k;
+}
+è¯´æ˜:
 
-È»ºóÕë¶ÔÄ¿Â¼½øĞĞÉè¶¨¡£
+limit_zoneï¼Œæ˜¯é’ˆå¯¹æ¯ä¸ªIPå®šä¹‰ä¸€ä¸ªå­˜å‚¨sessionçŠ¶æ€çš„å®¹å™¨ã€‚è¿™ä¸ªç¤ºä¾‹ä¸­å®šä¹‰äº†ä¸€ä¸ª10mçš„å®¹å™¨ï¼ŒæŒ‰ç…§32bytes/sessionï¼Œå¯ä»¥å¤„ç†320000ä¸ªsessionã€‚
 
-limit_conn one 1; 
-ÊÇÏŞÖÆÃ¿¸öIPÖ»ÄÜ·¢ÆğÒ»¸öÁ¬½Ó¡£
+ç„¶åé’ˆå¯¹ç›®å½•è¿›è¡Œè®¾å®šã€‚
 
-limit_rate 100k; 
-ÊÇ¶ÔÃ¿¸öÁ¬½ÓÏŞËÙ100k. ×¢Òâ£¬ÕâÀïÊÇ¶ÔÁ¬½ÓÏŞËÙ£¬¶ø²»ÊÇ¶ÔIPÏŞËÙ¡£Èç¹ûÒ»¸öIPÔÊĞíÁ½¸ö²¢·¢Á¬½Ó£¬ÄÇÃ´Õâ¸öIP¾ÍÊÇÏŞËÙlimit_rate x 2¡£
+limit_conn one 1;
+æ˜¯é™åˆ¶æ¯ä¸ªIPåªèƒ½å‘èµ·ä¸€ä¸ªè¿æ¥ã€‚
 
-¹ØÓÚlimit_zoneµÄÔ­Ê¼ÎÄµµ£¬Çë¼û http://wiki.Nginx.org/NginxHttpLimitZoneModule
+limit_rate 100k;
+æ˜¯å¯¹æ¯ä¸ªè¿æ¥é™é€Ÿ100k. æ³¨æ„ï¼Œè¿™é‡Œæ˜¯å¯¹è¿æ¥é™é€Ÿï¼Œè€Œä¸æ˜¯å¯¹IPé™é€Ÿã€‚å¦‚æœä¸€ä¸ªIPå…è®¸ä¸¤ä¸ªå¹¶å‘è¿æ¥ï¼Œé‚£ä¹ˆè¿™ä¸ªIPå°±æ˜¯é™é€Ÿlimit_rate x 2ã€‚
 
-¹ØÓÚlimit_rateºÍlimit_connµÄÔ­Ê¼ÎÄµµ£¬Çë¼û http://wiki.Nginx.org/NginxHttpCoreModule
+å…³äºlimit_zoneçš„åŸå§‹æ–‡æ¡£ï¼Œè¯·è§ http://wiki.Nginx.org/NginxHttpLimitZoneModule
+
+å…³äºlimit_rateå’Œlimit_connçš„åŸå§‹æ–‡æ¡£ï¼Œè¯·è§ http://wiki.Nginx.org/NginxHttpCoreModule
 
 
-nginx×Ô´Ó1.1.8°æ±¾·¢²¼ºó½«limit_conn¸ü»»Îªlimit_conn_zone ¡£¶ÔÓ¦ÔòĞèÒªĞŞ¸ÄÅäÖÃÎÄ¼ş¡£
-¹Ù·½¹«¸æ£º
+nginxè‡ªä»1.1.8ç‰ˆæœ¬å‘å¸ƒåå°†limit_connæ›´æ¢ä¸ºlimit_conn_zone ã€‚å¯¹åº”åˆ™éœ€è¦ä¿®æ”¹é…ç½®æ–‡ä»¶ã€‚
+å®˜æ–¹å…¬å‘Šï¼š
 syntax:  limit_zone name $variable size;
-default:  ¡ª
+default:  â€•
 context:  http
 This directive is made obsolete in version 1.1.8, an equivalent limit_conn_zone directive with a changed syntax should be used instead:
 limit_conn_zone $variable zone=name:size;
-limit_conn_zoneµÄÃèÊö£º
+limit_conn_zoneçš„æè¿°ï¼š
 When several limit_conn directives are specified, any configured limit will apply. For example, the following configuration will limit the number of connections to the server per client IP and at the same time will limit the total number of connections to the virtual host:
 limit_conn_zone $binary_remote_addr zone=perip:10m;
 limit_conn_zone $server_name zone=perserver:10m;
 server {
-¡­
+â€¦
 limit_conn perip 10;
 limit_conn perserver 100;
 }
 These directives are inherited from the previous level if and only if there are no limit_conn directives on the current level.
- 
-¶ÔÓ¦confÎÄ¼ş¼ĞÖĞµÄnginx.confÎÄ¼ş£¬½«limit_connÌæ»»Îªlimit_conn_zone¡£Ê¹ÓÃÓÚhttp
-Ê¾Àı£º
-limit_conn_zone $binary_remote_addr zone=perip:10m;  #ÈİÆ÷¹²Ê¹ÓÃ10MµÄÄÚ´æÀ´¶ÔÓÚIP´«Êä¿ªÏú
- 
-¶ÔÓ¦µÄĞéÄâÖ÷»úÎÄ¼ş£¬½«Ô­À´µÄlimit_conn one Ìæ»»Îª limit_conn perip¡£Ê¹ÓÃÓÚserver
-Ê¾Àı£º
-limit_conn perip 10;  # Ã¿¸öIPÊ¹ÓÃ10¸öÁ¬½Ó¡£
+
+å¯¹åº”confæ–‡ä»¶å¤¹ä¸­çš„nginx.confæ–‡ä»¶ï¼Œå°†limit_connæ›¿æ¢ä¸ºlimit_conn_zoneã€‚ä½¿ç”¨äºhttp
+ç¤ºä¾‹ï¼š
+limit_conn_zone $binary_remote_addr zone=perip:10m;  #å®¹å™¨å…±ä½¿ç”¨10Mçš„å†…å­˜æ¥å¯¹äºIPä¼ è¾“å¼€é”€
+
+å¯¹åº”çš„è™šæ‹Ÿä¸»æœºæ–‡ä»¶ï¼Œå°†åŸæ¥çš„limit_conn one æ›¿æ¢ä¸º limit_conn peripã€‚ä½¿ç”¨äºserver
+ç¤ºä¾‹ï¼š
+limit_conn perip 10;  # æ¯ä¸ªIPä½¿ç”¨10ä¸ªè¿æ¥ã€‚
