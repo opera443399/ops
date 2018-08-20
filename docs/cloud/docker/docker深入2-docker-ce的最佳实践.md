@@ -1,5 +1,5 @@
 docker深入2-docker-ce的最佳实践
-2018/7/31
+2018/8/20
 
 > 注1：凡是本人整理的，开源产品相关的文章中，标题党写明了“最佳实践”的文章，要特别注意，本人总结的文字并未涉及安全方面的指导，请参考官方的指导教程，因为安全是一个有深度的话题，且安全是相对而言的，并不是个容易的话题。
 
@@ -258,6 +258,7 @@ docker network inspect $(docker network ls -f driver='overlay' -q) \
 
 * 给 node 打标签
 ```bash
+##### 增加标签
 docker node update --label-add 'deploy.env=ops' worker1
 docker node update --label-add 'deploy.env=dev' worker2
 docker node update --label-add 'deploy.env=dev' worker3
@@ -268,11 +269,14 @@ for i in `seq 1 5`; do
   docker node inspect -f "{{.Description.Hostname}} -> {{.Spec.Labels}}" worker$i
 done
 
+##### 移除标签
+docker node update --label-rm 'deploy.env' worker5
+
 ```
 
 * 更新服务，加上调度策略(注意：每执行一次 `--constraint-add` 将增加一个标签)
 ```bash
-# 批量给一组 service 增加 Constraints
+##### 批量给一组 service 增加 Constraints
 for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
   echo "[+] inspect: $h"
   docker service inspect -f "{{.Spec.TaskTemplate.Placement.Constraints}}" $h |grep 'node.labels.deploy.env' \
@@ -280,17 +284,17 @@ for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
   || docker service update --with-registry-auth --constraint-add "node.labels.deploy.env==test" $h
 done
 
-# 批量查看一组 service 的 Constraints
+##### 批量查看一组 service 的 Constraints
 for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
   echo "[+] inspect: $h"
   docker service inspect -f "{{.Spec.TaskTemplate.Placement.Constraints}}" $h |grep 'node.labels.deploy.env' \
   && echo '' \
   || echo 'x'
 done
-```
 
-* 移除标签(如果有多个标签，可以重复使用 `--constraint-rm` 指令)
-```bash
+
+##### 移除标签(如果有多个标签，可以重复使用 `--constraint-rm` 指令)
+
 docker service update --with-registry-auth \
   --constraint-rm "node.labels.deploy.env==dev" svc1
 ```
