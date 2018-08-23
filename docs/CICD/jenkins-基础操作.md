@@ -1,5 +1,5 @@
 # jenkins-基础操作
-2018/5/11
+2018/8/23
 
 ### 一、常规部署方法
 
@@ -74,7 +74,7 @@ docker run \
   -p 8080:8080 \
   -v /data/server/jenkins/data:/var/jenkins_home \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  jenkinsci/blueocean
+  jenkinsci/blueocean:1.8.2
 ```
 
 
