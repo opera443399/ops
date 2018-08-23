@@ -1,5 +1,5 @@
 docker深入2-容器删除操作失败
-2017/9/26
+2018/8/23
 
 
 1、报错
@@ -20,7 +20,7 @@ Storage Driver: overlay
 Logging Driver: json-file
 Cgroup Driver: cgroupfs
 
-Plugins: 
+Plugins:
  Volume: local
  Network: bridge host macvlan null overlay
  Log: awslogs fluentd gcplogs gelf journald json-file logentries splunk syslog
@@ -47,8 +47,10 @@ Experimental: false
 Error response from daemon: driver "overlay" failed to remove root filesystem for 808acab2716420275cdb135ab964071cfc33406a34481354127635d3a282fa31: remove /var/lib/docker/overlay/88440438ea95b47e7459049fd765b51282afee4ad974107b0bf96d08d9c7763e/merged: device or resource busy
 
 
+记住本例中 884404 开头的这一串：  “remove /var/lib/docker/overlay/88440438ea95b47e7”  下一步会用到
+
 2）查找 /proc/*/mountinfo 来确认是哪个 pid 在 mount 资源：
-[root@test_node_02 ~]# grep -l --color `docker ps -a --filter status=dead -q |head -n 1` /proc/*/mountinfo
+[root@test_node_02 ~]# grep -l --color '88440438ea95b47e7459049' /proc/*/mountinfo
 
 
 3）查找 pid 确认进程的用途
@@ -56,30 +58,30 @@ Error response from daemon: driver "overlay" failed to remove root filesystem fo
 UID        PID  PPID  C STIME TTY      STAT   TIME CMD
 root      7360  7344  1 Aug16 ?        Ssl   73:57 /usr/bin/cadvisor -logtostderr
 
-  
+
 4）还可以验证，使用的不是同一个 mount namespace
 [root@test_node_02 ~]# ls -l /proc/$(cat /var/run/docker.pid)/ns/mnt /proc/7360/ns/mnt
 lrwxrwxrwx 1 root root 0 Aug 21 15:55 /proc/11460/ns/mnt -> mnt:[4026531840]
 lrwxrwxrwx 1 root root 0 Aug 21 15:55 /proc/7360/ns/mnt -> mnt:[4026532279]
-[root@test_node_02 ~]# 
+[root@test_node_02 ~]#
 
 
 
 5）尝试重启 cadvisor 服务：
 [root@test_node_01 ~]# docker service ls |grep cadvisor
 5f001c9293cf        cadvisor            global              3/3                 google/cadvisor:latest
-     
+
 [root@test_node_01 ~]# docker service update --force cadvisor
 [root@test_node_01 ~]#
-  
-  
+
+
 6）再次删除：
 [root@test_node_02 ~]# docker rm -f $(docker ps -a --filter status=dead -q |head -n 1)
 808acab27164
 [root@test_node_02 ~]#
- 
- 
-  
+
+
+
 符合预期。
 
 
@@ -130,7 +132,7 @@ https://github.com/moby/moby/issues/22260#issuecomment-330214623
 cpuguy83 commented 8 days ago
 fs.may_detach_mounts=1 should resolve this on 7.4
  @xdexter
- 
+
 https://github.com/moby/moby/issues/22260#issuecomment-330217256
 xdexter commented 8 days ago
 Hello,
