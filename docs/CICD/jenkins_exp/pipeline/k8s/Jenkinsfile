@@ -90,10 +90,10 @@ pipeline {
             message: '开始回滚? (回滚到上一个版本)',
             ok: '确认',
             parameters: [
-              text(name: 'approvers', defaultValue: '*下述角色拥有本项目的审批权限: *\n  - All\n', description: '审核者')
+              text(name: 'approvers', defaultValue: '🔜🔵admin🔵hanmeimei🔵lilei', description: '审核者:')
             ],
-            //------ 指定审核者，请使用逗号','作为分隔符(无空格)，启用请取消下面一行的注释
-            //submitter: 'admin,hanmeimei,lilei',
+            //------ 指定审核者，请使用逗号','作为分隔符(无空格)
+            submitter: 'admin,hanmeimei,lilei',
             submitterParameter: 'approverID'
 
           ])
@@ -189,10 +189,10 @@ pipeline {
             message: '服务上线中...(待审核)',
             ok: '同意',
             parameters: [
-              text(name: 'approvers', defaultValue: '*下述角色拥有本项目的审批权限: *\n  - Admin\n  - QA\n', description: '审核者')
+              text(name: 'approvers', defaultValue: '🔜🔵admin🔵hanmeimei🔵lilei', description: '审核者:')
             ],
-            //------ 指定审核者，请使用逗号','作为分隔符(无空格)，启用请取消下面一行的注释
-            //submitter: 'admin,hanmeimei,lilei',
+            //------ 指定审核者，请使用逗号','作为分隔符(无空格)
+            submitter: 'admin,hanmeimei,lilei',
             submitterParameter: 'approverID'
           ])
           echo "[-] 由 ${userInput['approverID']} 审核通过"
