@@ -1,6 +1,6 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
-# 2018/6/28
+# 2018/10/18
 
 
 import urllib3
@@ -13,7 +13,6 @@ from datetime import datetime
 dt_token_expire_seconds = 7000
 token_file = "{0}/.wxtoken".format(os.path.expanduser('~'))
 # wechat config
-token_file = "{0}/.wxtoken".format(os.path.expanduser('~'))
 corp_id = 'xxx'
 multi_conf = {
     "g1": {"api_secret": "xxx", "agent_id": "1000002", "to_party": "2"},
