@@ -1,21 +1,19 @@
 docker深入2-UI之portainer通过API来更新service的ACL
-2018/10/15
-
+2018/10/19
 
 
 ### 准备工作
 1. 阅读文档
-2. 本例使用 httpie 来发送请求
+2. 本例在 mac 下操作，使用 httpie 来发送请求
 `brew install httpie`
 3. 通过 jq 来格式化数据
 `brew install jq`
-4. workdir
+4. 干活的目录
 `/tmp/httpie`
 
 
 ### 原因
 portainer升级至1.19.2后，有比较特别的变化：
-尽管之前为 service 设置过 ACL ，但在升级后发现还是全部重置为 Administrators 权限
 
 1.19.2
 ---
@@ -24,14 +22,15 @@ Breaking changes
 
 This version changes the default ownership for externally created resources from Public to Administrator restricted (#960, #2137). The migration process will automatically migrate any existing resource declared as Public to Administrators only.
 
+`尽管之前为 service 设置过 ACL ，但在升级后发现还是全部重置为 Administrators 权限`
 
-### 临时解决办法
-通过API来重置ACL
+
+### 临时解决办法: 通过API来重置ACL
 下面是具体示范：
 ```bash
 ##### *1. 拿到认证 token*
 
-# http POST http://your-portainer-addr/api/auth Username="admin" Password="ti9M%DjI6c7M"
+# http POST http://your-portainer-addr/api/auth Username="admin" Password="portainer"
 {
     "jwt": "xxJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOjEsImV4cCI6MTUzOTYxNzcwNX0.ifadEaqEo7LNWPuPBl8zQMZqeFvxfVPgAD6asNdMQYY"
 }
