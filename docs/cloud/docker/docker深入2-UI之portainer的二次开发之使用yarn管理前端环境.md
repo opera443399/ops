@@ -1,5 +1,5 @@
 # docker深入2-UI之portainer的二次开发之使用yarn管理前端环境
-2018/10/18
+2018/10/19
 
 ### 问题点
 1. 前端
@@ -51,7 +51,7 @@ $ yarn dev
 
 
 
-**Important**
+**提醒**
 
 别忘了要 lint 代码：
 ```bash
@@ -62,7 +62,7 @@ $ yarn grunt lint
 
 后端
 ---
-> 默认是通过一个 golang 镜像来构建后端代码，如果有网络问题，将导致构建失败，最终影响前端允许，怎么处理？
+> 默认是通过一个 golang 镜像来构建后端代码，如果有网络问题，将导致构建失败，最终影响前端的运行，怎么处理？
 
 
 假设不能解决网络问题，则去 [releases](https://github.com/portainer/portainer/releases) 下载对应版本的 `binary` 存放到 `Portainer` 代码根目录的 `dist/` 目录下，然后注释以下内容来跳过构建操作：
