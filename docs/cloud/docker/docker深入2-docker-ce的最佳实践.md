@@ -1,5 +1,5 @@
 docker深入2-docker-ce的最佳实践
-2018/8/20
+2018/10/23
 
 > 注1：凡是本人整理的，开源产品相关的文章中，标题党写明了“最佳实践”的文章，要特别注意，本人总结的文字并未涉及安全方面的指导，请参考官方的指导教程，因为安全是一个有深度的话题，且安全是相对而言的，并不是个容易的话题。
 
@@ -7,7 +7,7 @@ docker深入2-docker-ce的最佳实践
 
 
 ### 目标
----
+
 部署 docker-ce 服务的最佳实践（持续更新）
 
 部分童鞋对 docker 的版本不太理解，以下是我记忆中的事，docker 版本大致是这样演变的：
@@ -20,8 +20,10 @@ docker深入2-docker-ce的最佳实践
 
 
 ### 部署 docker
+
+**安装**
 ---
-##### 安装
+
 ```bash
 # yum仓库配置
 yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
@@ -50,7 +52,8 @@ systemctl restart docker
 ```
 
 
-##### 配置
+**配置**
+---
 推荐配置如下内容：
 - 存储驱动
 - 日志
@@ -64,7 +67,8 @@ linux 上默认没有配置文件，需要创建：
 `mkdir -p /etc/docker`
 
 
-###### 配置存储驱动的实例 - overlay 驱动
+**配置存储**
+###### overlay 驱动(以 CentOS 最为典型)
 ```bash
 tee /etc/docker/daemon.json <<-'EOF'
 {
@@ -83,7 +87,7 @@ EOF
 
 
 
-###### 配置存储驱动的实例 - overlay2 驱动
+###### overlay2 驱动(文件存储，以 Ubuntu 最为典型)
 ```bash
 tee /etc/docker/daemon.json <<-'EOF'
 {
@@ -107,7 +111,7 @@ EOF
 
 
 
-###### 配置存储驱动的实例 - devicemapper 驱动
+###### DeviceMapper 驱动(块存储)
 ```bash
 yum install -y yum-utils device-mapper-persistent-data lvm2
 
@@ -135,8 +139,8 @@ EOF
 [参考文档](https://docs.docker.com/engine/userguide/storagedriver/device-mapper-driver/#configure-direct-lvm-mode-for-production)
 
 
-
-##### 激活 metrics 功能
+**配置其他特性**
+###### 激活 metrics 功能
 ```bash
 # cat /etc/docker/daemon.json
 {
@@ -147,7 +151,7 @@ EOF
 ```
 
 
-##### 定义 cgroupdriver
+###### 定义 cgroupdriver
 ```bash
 # cat /etc/docker/daemon.json
 {
@@ -157,8 +161,8 @@ EOF
 }
 ```
 
-
-##### centos7 下的配置示例
+**配置示例**
+##### centos7 下的典型配置示范
 ```bash
 # cat /etc/docker/daemon.json
 {
@@ -176,10 +180,141 @@ EOF
 ```
 
 
-### FAQ
+### 常用技巧
+
+##### 如何在 swarm mode 中使用自定义的网络
 ---
 
-##### 使用阿里云 Docker Hub 镜像站点和 latest 这个 tag 带来的问题
+用途：处于同一个 overlay 网络中的服务，互相之间可以通过服务名称来访问
+```
+docker network create --driver overlay my-network
+docker service create \
+    --name t001 \
+    --with-registry-auth \
+    --detach=true \
+    --network=my-network \
+    --publish 11111:80 \
+    your-private-registry/your-ns/whoami:0.9
+
+```
+
+##### 在 swarm mode 中使用私有镜像仓库
+---
+`--with-registry-auth` 示例同 FAQ#2
+
+
+##### 使用 go 模版来获取指定内容
+---
+
+例如，获取所有 overlay 网络的 subnet 信息
+```bash
+docker network inspect $(docker network ls -f driver='overlay' -q) \
+--format='{{.Name}} -> {{if .IPAM.Config}}{{(index .IPAM.Config 0).Subnet}}{{else}}null{{end}}' |sort -k2
+```
+
+
+##### 使用 `labels` 和 `constraint` 来调度容器
+---
+* 给 node 打标签
+```bash
+##### 增加标签
+docker node update --label-add 'deploy.env=ops' worker1
+docker node update --label-add 'deploy.env=dev' worker2
+docker node update --label-add 'deploy.env=dev' worker3
+docker node update --label-add 'deploy.env=qa' worker4
+docker node update --label-add 'deploy.env=qa' worker5
+
+for i in `seq 1 5`; do
+  docker node inspect -f "{{.Description.Hostname}} -> {{.Spec.Labels}}" worker$i
+done
+
+##### 移除标签
+docker node update --label-rm 'deploy.env' worker5
+
+```
+
+* 更新服务，加上调度策略(注意：每执行一次 `--constraint-add` 将增加一个标签)
+```bash
+##### 批量给一组 service 增加 `Constraints`
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
+  echo "[+] inspect: $h"
+  docker service inspect -f "{{.Spec.TaskTemplate.Placement.Constraints}}" $h |grep 'node.labels.deploy.env' \
+  && echo '' \
+  || docker service update --with-registry-auth --constraint-add "node.labels.deploy.env==test" $h
+done
+
+##### 批量查看一组 service 的 Constraints
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
+  echo "[+] inspect: $h"
+  docker service inspect -f "{{.Spec.TaskTemplate.Placement.Constraints}}" $h |grep 'node.labels.deploy.env' \
+  && echo '' \
+  || echo 'x'
+done
+
+
+##### 移除标签(如果有多个标签，可以重复使用 `--constraint-rm` 指令)
+
+docker service update --with-registry-auth \
+  --constraint-rm "node.labels.deploy.env==dev" svc1
+```
+
+##### 限制 service 的资源占用
+---
+
+```bash
+# 批量查看一组 service 的 `Resource`
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
+  echo "[+] show limit: $h"
+  docker service inspect -f "NanoCPUs={{.Spec.TaskTemplate.Resources.Limits.NanoCPUs}}, MemoryBytes={{.Spec.TaskTemplate.Resources.Limits.MemoryBytes}}" $h
+done
+
+# 批量查看一组 service 的 Resource
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
+  echo "[+] limit: $h"
+  docker service update --limit-cpu 0.75 --limit-memory 500m $h
+done
+```
+
+
+##### 移除 swarm node 的姿势
+---
+
+```bash
+# 请参考如下顺序来执行，否则可能会有多个 node id 信息遗留
+# curl -s 127.0.0.1:9323/metrics |grep 'swarm_node_info' 可以检查
+[管理节点]# docker node demote vuwwcanp1ma14g8m3wmlp5umj
+[被移除的节点]# docker swarm leave
+[被移除的节点]# systemctl restart docker
+[管理节点]# docker node rm vuwwcanp1ma14g8m3wmlp5umj
+
+```
+
+
+##### 自定义 docker_gwbridge 的网段
+---
+
+```bash
+gwbridge_users=$(docker network inspect --format '{{range $key, $val := .Containers}} {{$key}}{{end}}' docker_gwbridge | \
+xargs -d' ' -I {} -n1 docker ps --format {{.Names}} -f id={})
+
+echo "$gwbridge_users" | xargs docker stop
+
+docker network rm docker_gwbridge
+
+docker network create  \
+--subnet=172.18.0.1/16    \
+--gateway 172.18.0.1   \
+-o com.docker.network.bridge.enable_icc=false \
+-o com.docker.network.bridge.name=docker_gwbridge \
+docker_gwbridge
+
+```
+
+
+### FAQ
+
+###### 使用阿里云 Docker Hub 镜像站点和 latest 这个 tag 带来的问题
+---
 
 > 注1：拉取镜像时，不推荐使用 latest 这个 tag 来拉取，否则可能拉取到旧的镜像，建议指定明确的版本号。
 
@@ -224,111 +359,6 @@ opera443399/whoami          0.7                  160ed79ce86f        5 weeks ago
 
 已经试图反馈给[阿里云](https://github.com/aliyun/aliyun-cli/issues/36)，如果进展，后续更新。
 
-
-##### 如何在 swarm mode 中使用自定义的网络
-
-用途：处于同一个 overlay 网络中的服务，互相之间可以通过服务名称来访问
-```
-docker network create --driver overlay my-network
-docker service create \
-    --name t001 \
-    --with-registry-auth \
-    --detach=true \
-    --network=my-network \
-    --publish 11111:80 \
-    your-private-registry/your-ns/whoami:0.9
-
-```
-
-##### 在 swarm mode 中使用私有镜像仓库
-`--with-registry-auth` 示例同 FAQ#2
-
-
-##### 使用 go 模版来获取指定内容
-
-例如，获取所有 overlay 网络的 subnet 信息
-```bash
-docker network inspect $(docker network ls -f driver='overlay' -q) \
---format='{{.Name}} -> {{if .IPAM.Config}}{{(index .IPAM.Config 0).Subnet}}{{else}}null{{end}}' |sort -k2
-```
-
-
-##### 安装指定版本的 docker 服务
-使用 `labels` 和 `constraint` 来调度容器
-
-* 给 node 打标签
-```bash
-##### 增加标签
-docker node update --label-add 'deploy.env=ops' worker1
-docker node update --label-add 'deploy.env=dev' worker2
-docker node update --label-add 'deploy.env=dev' worker3
-docker node update --label-add 'deploy.env=qa' worker4
-docker node update --label-add 'deploy.env=qa' worker5
-
-for i in `seq 1 5`; do
-  docker node inspect -f "{{.Description.Hostname}} -> {{.Spec.Labels}}" worker$i
-done
-
-##### 移除标签
-docker node update --label-rm 'deploy.env' worker5
-
-```
-
-* 更新服务，加上调度策略(注意：每执行一次 `--constraint-add` 将增加一个标签)
-```bash
-##### 批量给一组 service 增加 Constraints
-for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
-  echo "[+] inspect: $h"
-  docker service inspect -f "{{.Spec.TaskTemplate.Placement.Constraints}}" $h |grep 'node.labels.deploy.env' \
-  && echo '' \
-  || docker service update --with-registry-auth --constraint-add "node.labels.deploy.env==test" $h
-done
-
-##### 批量查看一组 service 的 Constraints
-for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
-  echo "[+] inspect: $h"
-  docker service inspect -f "{{.Spec.TaskTemplate.Placement.Constraints}}" $h |grep 'node.labels.deploy.env' \
-  && echo '' \
-  || echo 'x'
-done
-
-
-##### 移除标签(如果有多个标签，可以重复使用 `--constraint-rm` 指令)
-
-docker service update --with-registry-auth \
-  --constraint-rm "node.labels.deploy.env==dev" svc1
-```
-
-
-##### 移除 swarm node 的姿势
-```bash
-# 请参考如下顺序来执行，否则可能会有多个 node id 信息遗留
-# curl -s 127.0.0.1:9323/metrics |grep 'swarm_node_info' 可以检查
-[管理节点]# docker node demote vuwwcanp1ma14g8m3wmlp5umj
-[被移除的节点]# docker swarm leave
-[被移除的节点]# systemctl restart docker
-[管理节点]# docker node rm vuwwcanp1ma14g8m3wmlp5umj
-
-```
-
-
-##### 自定义 docker_gwbridge 的网段
-```bash
-gwbridge_users=$(docker network inspect --format '{{range $key, $val := .Containers}} {{$key}}{{end}}' docker_gwbridge | \
-xargs -d' ' -I {} -n1 docker ps --format {{.Names}} -f id={})
-
-echo "$gwbridge_users" | xargs docker stop
-
-docker network rm docker_gwbridge
-
-docker network create  \
---subnet=172.18.0.1/16    \
---gateway 172.18.0.1   \
--o com.docker.network.bridge.enable_icc=false \
--o com.docker.network.bridge.name=docker_gwbridge \
-docker_gwbridge
-
-```
 
 
 
