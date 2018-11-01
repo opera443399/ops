@@ -1,9 +1,10 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
-# 2018/10/18
+# 2018/11/1
 
 
 import urllib3
+import certifi
 import json
 import os
 import sys
@@ -11,32 +12,32 @@ from datetime import datetime
 
 # less than 7200 sec
 dt_token_expire_seconds = 7000
-token_file = "{0}/.wxtoken".format(os.path.expanduser('~'))
+token_file_prefix = "{0}/.wxtoken".format(os.path.expanduser('~'))
 # wechat config
 corp_id = 'xxx'
 multi_conf = {
     "g1": {"api_secret": "xxx", "agent_id": "1000002", "to_party": "2"},
-    "g2": {"api_secret": "xxx", "agent_id": "1000004", "to_party": "4"}
+    "g2": {"api_secret": "xxx", "agent_id": "1000004", "to_party": "4"},
     }
 
-http = urllib3.PoolManager()
+http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
 urllib3.disable_warnings()
 
 
-def renew_wechat_access_token():
+def renew_wechat_access_token(session):
     resp = http.request('GET', api_token_url)
     resp_decode = json.loads(resp.data.decode('utf-8'))
-    with open(token_file, "w+") as f:
+    with open(session, "w+") as f:
         f.write("{0},{1}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), resp_decode['access_token']))
     return resp_decode['access_token']
 
 
-def get_wechat_access_token():
+def get_wechat_access_token(session):
     try:
-        with open(token_file) as f:
+        with open(session) as f:
             x, y = f.readline().split(",")
     except:
-        return renew_wechat_access_token()
+        return renew_wechat_access_token(session)
 
     print("cache time: {0}".format(x))
     dt1 = datetime.now()
@@ -53,7 +54,7 @@ def get_wechat_access_token():
 
 
 def receiver_wechat(msg):
-    access_token = get_wechat_access_token()
+    access_token = get_wechat_access_token("{0}.{1}".format(token_file_prefix, agent_id))
 
     api_sent_url = api_msg_url.format(access_token)
     data = {
