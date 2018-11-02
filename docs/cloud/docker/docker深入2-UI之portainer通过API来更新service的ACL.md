@@ -27,17 +27,19 @@ This version changes the default ownership for externally created resources from
 
 ### 临时解决办法: 通过API来重置ACL
 下面是具体示范：
-```bash
-##### *1. 拿到认证 token*
 
-# http POST http://your-portainer-addr/api/auth Username="admin" Password="portainer"
+##### *1. 拿到认证 token*
+```bash
+http POST http://your-portainer-addr/api/auth Username="admin" Password="portainer"
 {
     "jwt": "xxJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOjEsImV4cCI6MTUzOTYxNzcwNX0.ifadEaqEo7LNWPuPBl8zQMZqeFvxfVPgAD6asNdMQYY"
 }
 
+```
 
 ##### *2. 列出teams信息*
-# http GET http://your-portainer-addr/api/teams \
+```bash
+http GET http://your-portainer-addr/api/teams \
 "Authorization: Bearer xxJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOjEsImV4cCI6MTUzOTYxNzcwNX0.ifadEaqEo7LNWPuPBl8zQMZqeFvxfVPgAD6asNdMQYY"
 
 [
@@ -55,39 +57,58 @@ This version changes the default ownership for externally created resources from
     }
 ]
 
-##### *示例: 从文本中读取json数据来发送POST请求*
-# mkdir /tmp/httpie && cd /tmp/httpie
+```
 
-# http POST http://your-portainer-addr/api/resource_controls \
+##### *示例: 从文本中读取json数据来发送POST请求*
+```bash
+mkdir /tmp/httpie && cd /tmp/httpie
+
+```
+
+```bash
+http POST http://your-portainer-addr/api/resource_controls \
 "Authorization: Bearer xxJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOjEsImV4cCI6MTUzOTYxNzcwNX0.ifadEaqEo7LNWPuPBl8zQMZqeFvxfVPgAD6asNdMQYY" \
 @/tmp/httpie/1.json
 
+```
+
 
 ##### *示例: 获得通过service前缀过滤后的状态*
-# http GET http://your-portainer-addr/api/endpoints/5/docker/services\?filters\='{"name":["dev-app1"]}' \
+```bash
+http GET http://your-portainer-addr/api/endpoints/5/docker/services\?filters\='{"name":["dev-app1"]}' \
 "Authorization: Bearer xxJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOjEsImV4cCI6MTUzOTYxNzcwNX0.ifadEaqEo7LNWPuPBl8zQMZqeFvxfVPgAD6asNdMQYY" |jq '.[] | {name: .Spec.Name, id: .ID, teams: .Portainer.ResourceControl.TeamAccesses[0].TeamId}'
+
+```
 
 
 ##### *3. 获得通过service前缀过滤后的ID*
-# http GET http://your-portainer-addr/api/endpoints/5/docker/services\?filters\='{"name":["dev-app1"]}' \
-"Authorization: Bearer xxJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOjEsImV4cCI6MTUzOTYxNzcwNX0.ifadEaqEo7LNWPuPBl8zQMZqeFvxfVPgAD6asNdMQYY" |jq '.[].ID' \
-> .id
+```bash
+http GET http://your-portainer-addr/api/endpoints/5/docker/services\?filters\='{"name":["dev-app1"]}' \
+"Authorization: Bearer xxJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOjEsImV4cCI6MTUzOTYxNzcwNX0.ifadEaqEo7LNWPuPBl8zQMZqeFvxfVPgAD6asNdMQYY" |jq '.[].ID' > .id
+
+```
+
 
 ##### *4. 根据上述信息，批量执行API来设置team权限*
-s1='{"Type":"service","Public":false,"ResourceID":"'
-s2='","Users":[],"Teams":[2]}'
-
+```bash
+s1='{"Type": "service", "Public": false, "ResourceID": "'
+s2='", "Users": [], "Teams": [2]}'
 
 for ID in `cat .id |sed 's/"//g'`;do
   echo $ID
-  echo ${s1}${ID}${s2}>d.json
+  echo ${s1}${ID}${s2} >setup.json
+
   http POST http://your-portainer-addr/api/resource_controls \
   "Authorization: Bearer xxJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOjEsImV4cCI6MTUzOTYxNzcwNX0.ifadEaqEo7LNWPuPBl8zQMZqeFvxfVPgAD6asNdMQYY" \
-  @/tmp/httpie/d.json
+  @/tmp/httpie/setup.json
+
   echo '---------'
 done
 
 ```
+
+
+
 
 
 
