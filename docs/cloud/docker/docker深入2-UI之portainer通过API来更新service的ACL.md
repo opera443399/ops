@@ -108,7 +108,29 @@ done
 ```
 
 
+##### *5. 根更新team权限*
+```bash
+s3='{"Public": false, "Users":[], "Teams":[2]}'
 
+
+for ID in `cat .id |sed 's/"//g'`;do
+  echo ${ID}
+  echo ${s3} >modify.json
+
+  echo '[+] Portainer.ResourceControl.ID:'
+  portainer_svc_rc_id=`http GET "http://your-portainer-addr/api/endpoints/5/docker/services/${ID}" \
+  "Authorization: Bearer xxJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOjEsImV4cCI6MTUzOTYxNzcwNX0.ifadEaqEo7LNWPuPBl8zQMZqeFvxfVPgAD6asNdMQYY" |jq '.Portainer.ResourceControl.Id'`
+  echo ${portainer_svc_rc_id}
+
+  echo '[+] Update:'
+  http PUT "http://your-portainer-addr/api/resource_controls/${portainer_svc_rc_id}" \
+  "Authorization: Bearer xxJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOjEsImV4cCI6MTUzOTYxNzcwNX0.ifadEaqEo7LNWPuPBl8zQMZqeFvxfVPgAD6asNdMQYY" \
+  @/tmp/httpie/modify.json
+
+  echo '---------'
+done
+
+```
 
 
 
