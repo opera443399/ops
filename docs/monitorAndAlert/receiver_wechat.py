@@ -1,6 +1,6 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
-# 2018/11/1
+# 2018/11/2
 
 
 import urllib3
@@ -50,7 +50,7 @@ def get_wechat_access_token(session):
         return y
     else:
         print("renew token...")
-        return renew_wechat_access_token()
+        return renew_wechat_access_token(session)
 
 
 def receiver_wechat(msg):
