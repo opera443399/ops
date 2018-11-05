@@ -4,39 +4,45 @@ docker深入2-UI之portainer通过API来更新service的ACL
 
 ### 准备工作
 1. 阅读文档
-```
-resource_controls
-Manage access control on Docker resources
+  ```
+  resource_controls
+  Manage access control on Docker resources
 
-POST
-/resource_controls
-Create a new resource control
-PUT
-/resource_controls/{id}
-Update a resource control
-DELETE
-/resource_controls/{id}
-Remove a resource control
-```
+  POST
+  /resource_controls
+  Create a new resource control
+  PUT
+  /resource_controls/{id}
+  Update a resource control
+  DELETE
+  /resource_controls/{id}
+  Remove a resource control
+  ```
+
 2. 本例在 mac 下操作，使用 httpie 来发送请求
-`brew install httpie`
+  `brew install httpie`
+
 3. 通过 jq 来格式化数据
-`brew install jq`
+  `brew install jq`
+
 4. 干活的目录
-`/tmp/httpie`
+  `/tmp/httpie`
+
+
 
 
 ### 原因
 portainer升级至1.19.2后，有比较特别的变化：
 
-1.19.2
----
-Breaking changes
----
+> 1.19.2
+>
+>> Breaking changes
+>>
+>>
+>>> This version changes the default ownership for externally created resources from Public to Administrator restricted (#960, #2137). The migration process will automatically migrate any existing resource declared as Public to Administrators only.
+>>>
 
-This version changes the default ownership for externally created resources from Public to Administrator restricted (#960, #2137). The migration process will automatically migrate any existing resource declared as Public to Administrators only.
-
-`尽管之前为 service 设置过 ACL ，但在升级后发现还是全部重置为 Administrators 权限`
+尽管之前为 service 设置过 ACL ，但在升级后发现还是全部重置为 Administrators 权限
 
 
 ### 临时解决办法: 通过API来重置ACL
