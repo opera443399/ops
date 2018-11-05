@@ -1,9 +1,23 @@
 docker深入2-UI之portainer通过API来更新service的ACL
-2018/11/2
+2018/11/5
 
 
 ### 准备工作
 1. 阅读文档
+```
+resource_controls
+Manage access control on Docker resources
+
+POST
+/resource_controls
+Create a new resource control
+PUT
+/resource_controls/{id}
+Update a resource control
+DELETE
+/resource_controls/{id}
+Remove a resource control
+```
 2. 本例在 mac 下操作，使用 httpie 来发送请求
 `brew install httpie`
 3. 通过 jq 来格式化数据
@@ -89,18 +103,18 @@ http GET http://your-portainer-addr/api/endpoints/5/docker/services\?filters\='{
 ```
 
 
-##### *4. 根据上述信息，批量执行API来设置team权限*
+##### *4. 根据上述信息，批量执行API来创建针对team的ACL权限(注意：此处，根据api文档，使用的是 POST 方法)*
 ```bash
 s1='{"Type": "service", "Public": false, "ResourceID": "'
 s2='", "Users": [], "Teams": [2]}'
 
 for ID in `cat .id |sed 's/"//g'`;do
   echo $ID
-  echo ${s1}${ID}${s2} >setup.json
+  echo ${s1}${ID}${s2} >acl-create.json
 
   http POST http://your-portainer-addr/api/resource_controls \
   "Authorization: Bearer xxJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOjEsImV4cCI6MTUzOTYxNzcwNX0.ifadEaqEo7LNWPuPBl8zQMZqeFvxfVPgAD6asNdMQYY" \
-  @/tmp/httpie/setup.json
+  @/tmp/httpie/acl-create.json
 
   echo '---------'
 done
@@ -108,14 +122,14 @@ done
 ```
 
 
-##### *5. 根更新team权限*
+##### *5. 【例如权限设置错误的场景】根据上述信息，批量执行API来更新针对team的ACL权限(注意：此处，根据api文档，使用的是 PUT 方法)*
 ```bash
 s3='{"Public": false, "Users":[], "Teams":[2]}'
 
 
 for ID in `cat .id |sed 's/"//g'`;do
   echo ${ID}
-  echo ${s3} >modify.json
+  echo ${s3} >acl-update.json
 
   echo '[+] Portainer.ResourceControl.ID:'
   portainer_svc_rc_id=`http GET "http://your-portainer-addr/api/endpoints/5/docker/services/${ID}" \
@@ -125,7 +139,7 @@ for ID in `cat .id |sed 's/"//g'`;do
   echo '[+] Update:'
   http PUT "http://your-portainer-addr/api/resource_controls/${portainer_svc_rc_id}" \
   "Authorization: Bearer xxJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOjEsImV4cCI6MTUzOTYxNzcwNX0.ifadEaqEo7LNWPuPBl8zQMZqeFvxfVPgAD6asNdMQYY" \
-  @/tmp/httpie/modify.json
+  @/tmp/httpie/acl-update.json
 
   echo '---------'
 done
