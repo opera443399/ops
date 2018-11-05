@@ -136,8 +136,8 @@ done
 
 
 ### ZYXW、参考
-1、swagger
-https://app.swaggerhub.com/apis/deviantony/Portainer/1.19.2/#/
+1、Portainer-API-docs
+https://app.swaggerhub.com/apis-docs/deviantony/Portainer/1.19.2#/
 2、issuecomment
 https://github.com/portainer/portainer/pull/2137#issuecomment-426421950
 3、releases-tag-1.19.2
