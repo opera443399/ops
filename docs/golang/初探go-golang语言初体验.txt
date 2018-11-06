@@ -9,7 +9,7 @@ tar -C /usr/local -xzf go1.9.2.linux-amd64.tar.gz
 
 cat <<'_EOF' >/etc/profile.d/golang.sh
 #golang
-export GOPATH=/opt/go
+export GOPATH=~/go
 export GOROOT=/usr/local/go
 export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 _EOF
@@ -23,26 +23,27 @@ source /etc/profile
 
 
 3、第一个程序
-# cd $GOPATH
-# mkdir src/abc.com/demo/hello -p
-# vim src/abc.com/demo/hello/hello.go
+# mkdir -p $GOPATH/src/github.com/opera443399/cmd
+# cd $GOPATH/src/github.com/opera443399/cmd
+
+# mkdir hello
+# vim hello/app1.go
 package main
 
 import "fmt"
 
 func main() {
-    fmt.Printf("Hello, world.\n")
+  fmt.Printf("Hello, world.\n")
 }
 
 
-# go install abc.com/demo/hello
-# bin/hello 
+# go run hello/app1.go
 Hello, world.
 
 
 4、第一个包
-# mkdir src/abc.com/demo/stringutil -p
-# vim src/abc.com/demo/stringutil/reverse.go
+# mkdir stringutil
+# vim stringutil/reverse.go
 // Package stringutil contains utility functions for working with strings.
 package stringutil
 
@@ -55,48 +56,27 @@ func Reverse(s string) string {
 	return string(r)
 }
 
-# go build abc.com/demo/stringutil
-# cat src/abc.com/demo/hello/hello.go
+# go build github.com/opera443399/cmd/stringutil
+# vim /hello/app.go
 package main
 
 import (
-	"fmt"
+  "fmt"
 
-	"abc.com/demo/stringutil"
+	"github.com/opera443399/cmd/stringutil"
 )
 
 func main() {
 	fmt.Printf(stringutil.Reverse("!oG ,olleH"))
 }
 
-# go install abc.com/demo/hello
-# bin/hello 
+# go install github.com/opera443399/cmd/hello
+# ~/go/bin/hello
 Hello, Go!
 
 
-5、目录结构
-# tree /opt/go
-/opt/go
-├── bin                                 # install 后生成的可执行文件目录
-│   └── hello
-├── pkg                                 # install 后生成的包目录
-│   └── linux_amd64
-│       └── abc.com
-│           └── demo
-│               └── stringutil.a
-└── src                                 # 源码目录
-    └── abc.com
-        └── demo
-            ├── hello
-            │   └── hello.go
-            └── stringutil
-                └── reverse.go
-
-10 directories, 4 files
-
-
-6、引入测试
-# vim src/abc.com/demo/stringutil/reverse_test.go
+5、引入测试
+# vim stringutil/reverse_test.go
 package stringutil
 
 import "testing"
@@ -117,41 +97,20 @@ func TestReverse(t *testing.T) {
 	}
 }
 
-# go test abc.com/demo/stringutil
-ok      abc.com/demo/stringutil 0.007s
+# go test github.com/opera443399/cmd/stringutil
+ok      github.com/opera443399/cmd/stringutil 0.007s
 
 
 
-7、使用远程的包
+6、使用远程的包
 示例，从git上指定的url获取包，go get 将完成 fetch, build 和 install的操作：
 # go get github.com/golang/example/hello
-# bin/hello
+# ~/go/bin/hello
 Hello, Go examples!
 
 
 8、查看当前 go 的环境变量
-[root@tvm01 go]# go env
-GOARCH="amd64"
-GOBIN=""
-GOEXE=""
-GOHOSTARCH="amd64"
-GOHOSTOS="linux"
-GOOS="linux"
-GOPATH="/opt/go"
-GORACE=""
-GOROOT="/usr/local/go"
-GOTOOLDIR="/usr/local/go/pkg/tool/linux_amd64"
-GCCGO="gccgo"
-CC="gcc"
-GOGCCFLAGS="-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build679741147=/tmp/go-build"
-CXX="g++"
-CGO_ENABLED="1"
-PKG_CONFIG="pkg-config"
-CGO_CFLAGS="-g -O2"
-CGO_CPPFLAGS=""
-CGO_CXXFLAGS="-g -O2"
-CGO_FFLAGS="-g -O2"
-
+# go env
 
 
 9、重新编译go源码
@@ -172,13 +131,13 @@ var vcsGit = &vcsCmd{
         createCmd:   []string{"clone --progress {repo} {dir}", "-go-internal-cd {dir} submodule update --init --recursive"},
         downloadCmd: []string{"pull --ff-only", "submodule update --init --recursive"},
 
-（略）  
-        
+（略）
+
 func (v *vcsCmd) run1(dir string, cmdline string, keyval []string, verbose bool) ([]byte, error) {
 （略）
         cmd.Stdout = &buf
         cmd.Stderr = &buf
-        
+
 变更为：
         cmd.Stdout = &buf
         cmd.Stderr = &buf
@@ -188,7 +147,7 @@ func (v *vcsCmd) run1(dir string, cmdline string, keyval []string, verbose bool)
 
 
 2）编译
-[root@tvm01 src]# ./all.bash 
+[root@tvm01 src]# ./all.bash
 ##### Building Go bootstrap tool.
 cmd/dist
 ERROR: $GOROOT_BOOTSTRAP must not be set to $GOROOT
@@ -200,7 +159,7 @@ unset GOPATH
 unset GOROOT
 
 
-cd /opt
+cd ~
 mkdir go1.4_src
 git clone https://github.com/golang/go.git
 cd go
@@ -211,7 +170,7 @@ cd ../..
 cp -a go /root/go1.4
 cd /usr/local/go
 
-[root@tvm01 src]# ./all.bash 
+[root@tvm01 src]# ./all.bash
 
 
 重新测试：
@@ -219,10 +178,10 @@ cd /usr/local/go
 
 [root@tvm01 src]# go get -v github.com/docker/docker/client
 github.com/docker/docker (download)
-Cloning into '/opt/go/src/github.com/docker/docker'...
-remote: Counting objects: 234999, done.        
-remote: Compressing objects: 100% (24/24), done.        
-Receiving objects:   6% (15150/234999), 4.64 MiB | 345.00 KiB/s 
+Cloning into '~/go/src/github.com/docker/docker'...
+remote: Counting objects: 234999, done.
+remote: Compressing objects: 100% (24/24), done.
+Receiving objects:   6% (15150/234999), 4.64 MiB | 345.00 KiB/s
 
 
 符合预期。
@@ -237,184 +196,43 @@ Receiving objects:   6% (15150/234999), 4.64 MiB | 345.00 KiB/s
 
 
 2、代码示例
-[root@tvm01 go]# cat src/abc.com/demo/demoHttpHead/app.go
-/*
-# demoHttpHead
-# 2017/10/31
-*/
-
-package main
-
-import (
-    "flag"
-    "fmt"
-    "io/ioutil"
-    "log"
-    "net/http"
-    "runtime"
-    "strconv"
-    "strings"
-    "sync"
-    "time"
-)
-
-const defaultTestURL1 = "http://www.baidu.com"
-const defaultTestURL2 = "http://www.taobao.com"
-const defaultCfg = "urls.txt"
-const defaultFrequency = 10
-const defaultTimeout = 1
-const defaultStdout = false
-
-var cnt int
-var fromCfg bool
-var targetWebsites []string
-
-func init() {
-    flag.IntVar(&cnt, "c", defaultFrequency, "[] repeat N times to request the URL.")
-    flag.BoolVar(&fromCfg, "f", false, "[] load URLs from file. (default: "+defaultCfg+")")
-    runtime.GOMAXPROCS(runtime.NumCPU())
-}
-
-type taskState struct {
-    v   map[string]int
-    mux sync.Mutex
-}
-
-func (ts *taskState) Inc(key string) {
-    ts.mux.Lock()
-    ts.v[key]++
-    ts.mux.Unlock()
-}
-
-func (ts *taskState) Value(key string) int {
-    ts.mux.Lock()
-    defer ts.mux.Unlock()
-    return ts.v[key]
-}
-
-func loadDataFromFile() []string {
-    var urls []string
-    data, err := ioutil.ReadFile(defaultCfg)
-    if err != nil {
-        log.Printf("[E] %s : %v", "ioutil.ReadFile", err)
-        return urls
-    }
-
-    for _, h := range strings.Split(string(data), "\n") {
-        if h == "" {
-            continue
-        }
-        urls = append(urls, h)
-    }
-    return urls
-}
-
-func handleHTTPHeadRequest(cnt int, url string, ch chan string, stat *taskState) {
-    for i := 0; i < cnt; i++ {
-        header, err := http.Head(url)
-        if err != nil {
-            log.Printf("[E] %s : %v", "http.Head", err)
-            stat.Inc("failure")
-            ch <- "[" + strconv.Itoa(i) + "]" + url + " : failed."
-        } else {
-            stat.Inc("success")
-            status := header.Status
-            ch <- "[" + strconv.Itoa(i) + "]" + url + " : " + status
-        }
-    }
-
-}
-
-func main() {
-    flag.Parse()
-    if fromCfg == true {
-        targetWebsites = loadDataFromFile()
-    } else if len(flag.Args()) > 0 {
-        targetWebsites = flag.Args()
-    } else {
-        targetWebsites = []string{defaultTestURL1, defaultTestURL2}
-    }
-
-    dtStart := time.Now()
-    stat := taskState{v: make(map[string]int)}
-    ch := make(chan string)
-    chTheEnd := make(chan bool)
-
-    for _, url := range targetWebsites {
-        go handleHTTPHeadRequest(cnt, url, ch, &stat)
-    }
-
-    go func() {
-        timer := time.NewTimer(time.Second * defaultTimeout)
-        for {
-            if !timer.Stop() {
-                select {
-                case <-timer.C: //try to drain from the channel
-                default:
-                }
-            }
-            timer.Reset(time.Second * defaultTimeout)
-            select {
-            case msg, ok := <-ch:
-                if ok {
-                    fmt.Println(msg)
-                    continue
-                }
-                chTheEnd <- true
-            case <-timer.C:
-                log.Printf("timer expired (%ds)", defaultTimeout)
-                chTheEnd <- true
-            }
-        }
-    }()
-
-    <-chTheEnd
-    log.Printf("success: %d, failure: %d, Time Cost: %v\n", stat.Value("success"), stat.Value("failure"), time.Since(dtStart))
-
-}
-
-
+github.com/opera443399/cmd/httpHead/app.go
 
 
 
 3、如何运行
 1）直接运行
-[root@tvm01 go]# go run src/abc.com/demo/http_status/http_status.go -h
-Usage of /tmp/go-build500825291/command-line-arguments/_obj/exe/app:
+# go install github.com/opera443399/cmd/httpHead
+# ~/go/bin/httpHead -h
+Usage of /Users/pengchao/go/bin/httpHead:
   -c int
     	[] repeat N times to request the URL. (default 10)
-  -f	[] load URLs from file. (default: urls.txt)
-exit status 2
+  -f string
+    	[] load URLs from file.
 
-[root@tvm01 go]# go run demoHttpHead/app.go -c 5 'http://www.baidu.com' 'http://www.taobao.com'
-[0]http://www.baidu.com : 200 OK
-[1]http://www.baidu.com : 200 OK
-[2]http://www.baidu.com : 200 OK
-[3]http://www.baidu.com : 200 OK
-[4]http://www.baidu.com : 200 OK
-[0]http://www.taobao.com : 200 OK
-[1]http://www.taobao.com : 200 OK
-[2]http://www.taobao.com : 200 OK
-[3]http://www.taobao.com : 200 OK
-[4]http://www.taobao.com : 200 OK
-2017/10/31 17:08:53 timer expired (1s)
-2017/10/31 17:08:53 success: 10, failure: 0, Time Cost: 1.180516801s
+
+# ~/go/bin/httpHead -c 2 -f /tmp/urls.list
+[0]https://www.baidu.com : 200 OK
+[1]https://www.baidu.com : 200 OK
+[0]https://www.qq.com : 200 OK
+[1]https://www.qq.com : 200 OK
+2018/11/06 15:45:24 timer expired (1s)
+2018/11/06 15:45:24 success: 4, failure: 0, Time Cost: 1.366854494s
 
 
 
-2）编译
-当前为 linux 环境
-[root@tvm01 go]# go install abc.com/demo/demoHttpHead 
-运行
-[root@tvm01 go]# ./bin/demoHttpHead -h
-符合预期
+2）交叉编译
+当前为 mac 环境
+# go install github.com/opera443399/cmd/httpHead
 
+编译其他环境：
+# GOARCH="amd64" GOOS="windows" go install github.com/opera443399/cmd/httpHead
+# GOARCH="amd64" GOOS="linux" go install github.com/opera443399/cmd/httpHead
 
-3）交叉编译
-以 windows 平台为例：
-[root@tvm01 go]# GOOS="windows" go install abc.com/demo/demoHttpHead
-[root@tvm01 go]# sz bin/windows_amd64/abc.com/demo/demoHttpHead.exe
-下载到windows下执行，符合预期
+# find ~/go/bin -name 'httpHead*'
+~/go/bin/windows_amd64/httpHead.exe
+~/go/bin/httpHead
+~/go/bin/linux_amd64/httpHead
 
 
 
@@ -424,73 +242,31 @@ exit status 2
 三、FAQ
 1、当我的本地网络访问 golang.org 异常时，应该如何处理？
 答：
-引用【docker深入2-UI之portainer的二次开发】文章的实例
-
-构建 app
-
-[root@dev_08 portainer]# grunt build
-
-如果遇到这样的错误：
-Building portainer for linux-amd64
-/go/src/github.com/portainer/portainer/crypto/crypto.go:4:2: cannot find package "golang.org/x/crypto/bcrypt" in any of:
-	/usr/local/go/src/golang.org/x/crypto/bcrypt (from $GOROOT)
-	/go/src/golang.org/x/crypto/bcrypt (from $GOPATH)
-/go/src/github.com/portainer/portainer/http/handler/websocket.go:21:2: cannot find package "golang.org/x/net/websocket" in any of:
-	/usr/local/go/src/golang.org/x/net/websocket (from $GOROOT)
-	/go/src/golang.org/x/net/websocket (from $GOPATH)
-mv: cannot stat ‘api/cmd/portainer/portainer-linux-amd64’: No such file or directory
-Warning: Command failed: build/build_in_container.sh linux amd64
-mv: cannot stat ‘api/cmd/portainer/portainer-linux-amd64’: No such file or directory
- Use --force to continue.
-
-Aborted due to warnings.
+例如，遇到这样的错误：
+cannot find package "golang.org/x/crypto/bcrypt"
+cannot find package "golang.org/x/net/websocket"
 
 那是因为网络可达性问题，国内访问 golang.org 异常。
 [root@dev_08 portainer]# host golang.org
 golang.org is an alias for golang-consa.l.google.com.
 golang-consa.l.google.com has address 216.239.37.1
 
-
 导致这2个依赖下载失败：
 golang.org/x/crypto/bcrypt
 golang.org/x/net/websocket
 
 
-解决方法：
-[root@dev_08 portainer]# go get github.com/golang/crypto/tree/master/bcrypt
-[root@dev_08 portainer]# go get github.com/golang/net/tree/master/websocket
+**如何解决**
+方法1：
+go get github.com/golang/crypto/tree/master/bcrypt
+go get github.com/golang/net/tree/master/websocket
 
-[root@dev_08 portainer]# cd $GOPATH/src
-[root@dev_08 src]# mkdir golang.org/x -p
-[root@dev_08 src]# mv github.com/golang/* golang.org/x/
+# cd $GOPATH/src
+# mkdir golang.org/x -p
+# mv github.com/golang/* golang.org/x/
 
-
-然后再切换到源码目录，调整构建脚本： 
-[root@dev_08 src]# cd /opt/portainer
-[root@dev_08 portainer]# vim build/build_in_container.sh
-挂载本地的 $GOPATH/src/golang.org 到容器路径：/go/src/golang.org
-
-docker run --rm -tv $(pwd)/api:/src -e BUILD_GOOS="$1" -e BUILD_GOARCH="$2" portainer/golang-builder:cross-platform /src/cmd/portainer
-
-调整为：
-
-docker run --rm -tv $(pwd)/api:/src -v $GOPATH/src/golang.org:/go/src/golang.org -e BUILD_GOOS="$1" -e BUILD_GOARCH="$2" portainer/golang-builder:cross-platform /src/cmd/portainer
-
-
-最后重新构建一次：
-[root@dev_08 portainer]# grunt build
-（略）
-Cleaning "dist/js/angular.37dfac18.js"...OK
-Cleaning "dist/js/portainer.cab56db9.js"...OK
-Cleaning "dist/js/vendor.4edc9b0f.js"...OK
-Cleaning "dist/css/portainer.e7f7fdaa.css"...OK
-
-Done, without errors.
-
-
-看到上述输出，表示符合预期。
-
-
+方法2：
+引入 dep 之类的依赖包管理工具
 
 
 四、在学习的过程中，体验到哪些印象深刻的基础语法？
@@ -649,9 +425,9 @@ func (r ReceiverType) funcName(parameters) (results)
 
 
 
-【--】 struct 
+【--】 struct
 要理解匿名字段在 override 的时候的用法
- 
+
 package main
 
 import "fmt"
@@ -689,7 +465,7 @@ func main() {
     fmt.Println("Bob's work phone is:", Bob.phone)
     // 如果我们要访问Human的phone字段
     fmt.Println("Bob's personal phone is:", Bob.Human.phone)
-    
+
     Mark := Student{Human{"Mark", 25, "44444444"}, "MIT"}
     Sam := Employee{Human{"Sam", 45, "5555555"}, "Golang Inc", "999999"}
 
@@ -760,4 +536,3 @@ http://tonybai.com/2015/03/09/understanding-import-packages/
 http://tonybai.com/2015/07/31/understand-go15-vendor/
 http://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/
 http://tonybai.com/2016/12/21/how-to-use-timer-reset-in-golang-correctly/
-
