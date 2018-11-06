@@ -1,5 +1,5 @@
 # Building Projects With Native Code
-2018/5/26
+2018/11/6
 
 
 > 前言：使用 React Native 来开发 ios 项目，极大的降低了开发门槛
@@ -10,23 +10,25 @@
 - React Native command line interface
 - Xcode
 
-##### Node, Watchman
+1. 安装 Node, Watchman
 ```bash
 brew install node
 brew install watchman
 ```
 
 
-##### The React Native CLI
+2. 安装 The React Native CLI
 ```bash
 npm install -g react-native-cli
 ```
 
 
-##### Xcode
-from mac appstore
+3. 安装 Xcode
+从 appstore 下载
 
-##### 初始化项目
+
+
+### 初始化项目
 ```bash
 react-native init AwesomeProject
 ```
@@ -38,7 +40,8 @@ react-native run-ios
 ```
 
 
-### 异常: CFBundleIdentifier
+### FAQ
+1. 异常: CFBundleIdentifier
 
 when running react-native run-ios:
 

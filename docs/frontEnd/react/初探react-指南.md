@@ -1,6 +1,5 @@
-# npm
-2018/10/30
-
+# 初探react-指南
+2018/11/6
 
 ### install nodejs on mac
 
@@ -25,12 +24,16 @@ $ npm start
 
 ```
 
-### React Native 的命令行工具用于执行创建、初始化、更新项目、运行打包服务（packager）等任务
+
+
+### 构建生产版本
 ```bash
-$ sudo npm install -g react-native-cli
+$ npm run build
 
 ```
 
 
+
 ### ZYXW、参考
-1. [taobao-npm](https://npm.taobao.org/)
+1. [tutorial](https://reactjs.org/tutorial/tutorial.html)
+2. [create-react-app](https://reactjs.org/docs/optimizing-performance.html#create-react-app)
