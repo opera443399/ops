@@ -1,5 +1,5 @@
 docker深入2-docker-ce的最佳实践
-2018/10/23
+2018/11/6
 
 > 注1：凡是本人整理的，开源产品相关的文章中，标题党写明了“最佳实践”的文章，要特别注意，本人总结的文字并未涉及安全方面的指导，请参考官方的指导教程，因为安全是一个有深度的话题，且安全是相对而言的，并不是个容易的话题。
 
@@ -198,11 +198,6 @@ docker service create \
 
 ```
 
-##### 在 swarm mode 中使用私有镜像仓库
----
-`--with-registry-auth` 示例同 FAQ#2
-
-
 ##### 使用 go 模版来获取指定内容
 ---
 
@@ -240,7 +235,7 @@ for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
   echo "[+] inspect: $h"
   docker service inspect -f "{{.Spec.TaskTemplate.Placement.Constraints}}" $h |grep 'node.labels.deploy.env' \
   && echo '' \
-  || docker service update --with-registry-auth --constraint-add "node.labels.deploy.env==test" $h
+  || docker service update --with-registry-auth --detach=false --constraint-add "node.labels.deploy.env==test" $h
 done
 
 ##### 批量查看一组 service 的 Constraints
@@ -254,8 +249,7 @@ done
 
 ##### 移除标签(如果有多个标签，可以重复使用 `--constraint-rm` 指令)
 
-docker service update --with-registry-auth \
-  --constraint-rm "node.labels.deploy.env==dev" svc1
+docker service update --with-registry-auth --detach=false --constraint-rm "node.labels.deploy.env==dev" svc1
 ```
 
 ##### 限制 service 的资源占用
@@ -271,7 +265,7 @@ done
 # 批量查看一组 service 的 Resource
 for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
   echo "[+] limit: $h"
-  docker service update --limit-cpu 0.75 --limit-memory 500m $h
+  docker service update --with-registry-auth --detach=false --limit-cpu 0.75 --limit-memory 500m $h
 done
 ```
 
@@ -312,8 +306,20 @@ docker_gwbridge
 
 
 ### FAQ
+**在 swarm mode 中使用私有镜像仓库时遇到的问题**
+image xxx could not be accessed on a registry to record its digest. Each node will access xxx independently, possibly leading to different nodes running different versions of the image.
 
-###### 使用阿里云 Docker Hub 镜像站点和 latest 这个 tag 带来的问题
+执行下面的指令时：
+```
+docker service create
+docker service update
+```
+要激活这个参数来传递私有仓库的信息到 worker 节点上：
+`--with-registry-auth`
+
+
+
+**使用阿里云 Docker Hub 镜像站点和 latest 这个 tag 带来的问题**
 ---
 
 > 注1：拉取镜像时，不推荐使用 latest 这个 tag 来拉取，否则可能拉取到旧的镜像，建议指定明确的版本号。
@@ -367,6 +373,7 @@ zyxw、参考
 1. [systemd](https://docs.docker.com/engine/admin/systemd/)
 2. [storagedriver](https://docs.docker.com/engine/userguide/storagedriver)
 3. [Docker CE 镜像源站](https://yq.aliyun.com/articles/110806)
-4. [阿里云容器服务-镜像加速器](https://cr.console.aliyun.com/#/accelerator)
+4. [阿里云容器服务-镜像加速器](https://cr.console.aliyun.com/#/accelerator)
 5. [Docker --format 格式化输出概要操作说明](https://yq.aliyun.com/articles/230067)
 6. [How do I change the docker gwbridge address?](https://success.docker.com/article/how-do-i-change-the-docker-gwbridge-address)
+7. [Docker service update --image "could not accessed on a registry to record its digest" #34153](https://github.com/moby/moby/issues/34153)
