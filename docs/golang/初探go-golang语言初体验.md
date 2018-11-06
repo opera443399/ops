@@ -1,28 +1,48 @@
-初探go-golang语言初体验
-2017/11/24
+# 初探go-golang语言初体验
+2018/11/6
 
 
-一、初体验
-1、环境
-wget https://redirector.gvt1.com/edgedl/go/go1.9.2.linux-amd64.tar.gz
-tar -C /usr/local -xzf go1.9.2.linux-amd64.tar.gz
+### 初体验
+**安装**
 
-cat <<'_EOF' >/etc/profile.d/golang.sh
-#golang
-export GOPATH=~/go
+如果网络访问 golang.org 异常，，请想办法绕过，例如从国外服务器上访问。
+mac:
+```bash
+# wget https://dl.google.com/go/go1.11.1.darwin-amd64.pkg
+```
+
+linux:
+```bash
+# wget https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz
+# tar -C /usr/local -xzf go1.9.2.linux-amd64.tar.gz
+```
+
+环境变量：
+```bash
+# cat <<'_EOF' >/etc/profile
+###golang
+export GOPATH=/opt/go
 export GOROOT=/usr/local/go
 export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 _EOF
 
-source /etc/profile
+# source /etc/profile
+```
 
-
-2、教程
+**教程**
+```bash
 # go tool tour &
+```
 访问：http://127.0.0.1:3999/
 
+**查看当前 go 的环境变量**
+```bash
+# go env
+```
 
-3、第一个程序
+
+**第一个程序**
+```bash
 # mkdir -p $GOPATH/src/github.com/opera443399/cmd
 # cd $GOPATH/src/github.com/opera443399/cmd
 
@@ -39,9 +59,10 @@ func main() {
 
 # go run hello/app1.go
 Hello, world.
+```
 
-
-4、第一个包
+**第一个包**
+```bash
 # mkdir stringutil
 # vim stringutil/reverse.go
 // Package stringutil contains utility functions for working with strings.
@@ -71,11 +92,12 @@ func main() {
 }
 
 # go install github.com/opera443399/cmd/hello
-# ~/go/bin/hello
+# /opt/go/bin/hello
 Hello, Go!
+```
 
-
-5、引入测试
+**引入测试**
+```bash
 # vim stringutil/reverse_test.go
 package stringutil
 
@@ -99,111 +121,34 @@ func TestReverse(t *testing.T) {
 
 # go test github.com/opera443399/cmd/stringutil
 ok      github.com/opera443399/cmd/stringutil 0.007s
+```
 
 
-
-6、使用远程的包
+**使用远程的包**
 示例，从git上指定的url获取包，go get 将完成 fetch, build 和 install的操作：
+```bash
 # go get github.com/golang/example/hello
-# ~/go/bin/hello
+# /opt/go/bin/hello
 Hello, Go examples!
-
-
-8、查看当前 go 的环境变量
-# go env
-
-
-9、重新编译go源码
-
-1）源码
-需求：使用 go get 的时候，看不到下载的进度条。
-目标：调整go源码，重新编译
-
-[root@tvm01 src]# pwd
-/usr/local/go/src
-[root@tvm01 src]# vim cmd/go/vcs.go
-var vcsGit = &vcsCmd{
-（略）
-        createCmd:   []string{"clone {repo} {dir}", "-go-internal-cd {dir} submodule update --init --recursive"},
-        downloadCmd: []string{"pull --ff-only", "submodule update --init --recursive"},
-
-变更为：
-        createCmd:   []string{"clone --progress {repo} {dir}", "-go-internal-cd {dir} submodule update --init --recursive"},
-        downloadCmd: []string{"pull --ff-only", "submodule update --init --recursive"},
-
-（略）
-
-func (v *vcsCmd) run1(dir string, cmdline string, keyval []string, verbose bool) ([]byte, error) {
-（略）
-        cmd.Stdout = &buf
-        cmd.Stderr = &buf
-
-变更为：
-        cmd.Stdout = &buf
-        cmd.Stderr = &buf
-        cmd.Stdout = os.Stdout
-        cmd.Stderr = os.Stderr
-（略）
-
-
-2）编译
-[root@tvm01 src]# ./all.bash
-##### Building Go bootstrap tool.
-cmd/dist
-ERROR: $GOROOT_BOOTSTRAP must not be set to $GOROOT
-Set $GOROOT_BOOTSTRAP to a working Go tree >= Go 1.4.
-
-
-解决办法：编译go1.4，然后再重试
-unset GOPATH
-unset GOROOT
-
-
-cd ~
-mkdir go1.4_src
-git clone https://github.com/golang/go.git
-cd go
-git checkout -b 1.4.3 go1.4.3
-cd src
-./all.bash
-cd ../..
-cp -a go /root/go1.4
-cd /usr/local/go
-
-[root@tvm01 src]# ./all.bash
-
-
-重新测试：
-[root@tvm01 src]# source /etc/profile
-
-[root@tvm01 src]# go get -v github.com/docker/docker/client
-github.com/docker/docker (download)
-Cloning into '~/go/src/github.com/docker/docker'...
-remote: Counting objects: 234999, done.
-remote: Compressing objects: 100% (24/24), done.
-Receiving objects:   6% (15150/234999), 4.64 MiB | 345.00 KiB/s
-
-
-符合预期。
+```
 
 
 
+### 试着写一个小的程序
+**设定目标**
+- 尽量多的用到go语言的语法基础内容：packages, variables ,functions Flow control, method, interface, concurrency
+- 请求 url，获取状态等；
 
-二、试着写一个小的程序
-1、设定目标
-1）尽量多的用到go语言的语法基础内容：packages, variables ,functions Flow control, method, interface, concurrency
-2）请求 url，获取状态等；
 
-
-2、代码示例
+**代码示例**
 github.com/opera443399/cmd/httpHead/app.go
 
 
 
-3、如何运行
-1）直接运行
+**运行**
+```
 # go install github.com/opera443399/cmd/httpHead
-# ~/go/bin/httpHead -h
+# /opt/go/bin/httpHead -h
 Usage of /Users/pengchao/go/bin/httpHead:
   -c int
     	[] repeat N times to request the URL. (default 10)
@@ -211,35 +156,42 @@ Usage of /Users/pengchao/go/bin/httpHead:
     	[] load URLs from file.
 
 
-# ~/go/bin/httpHead -c 2 -f /tmp/urls.list
+# /opt/go/bin/httpHead -c 2 -f /tmp/urls.list
 [0]https://www.baidu.com : 200 OK
 [1]https://www.baidu.com : 200 OK
 [0]https://www.qq.com : 200 OK
 [1]https://www.qq.com : 200 OK
 2018/11/06 15:45:24 timer expired (1s)
 2018/11/06 15:45:24 success: 4, failure: 0, Time Cost: 1.366854494s
+```
 
 
-
-2）交叉编译
+**交叉编译**
 当前为 mac 环境
+```bash
 # go install github.com/opera443399/cmd/httpHead
+```
 
 编译其他环境：
+```bash
 # GOARCH="amd64" GOOS="windows" go install github.com/opera443399/cmd/httpHead
 # GOARCH="amd64" GOOS="linux" go install github.com/opera443399/cmd/httpHead
+```
 
-# find ~/go/bin -name 'httpHead*'
-~/go/bin/windows_amd64/httpHead.exe
-~/go/bin/httpHead
-~/go/bin/linux_amd64/httpHead
+验证：
+```bash
+# find /opt/go/bin -name 'httpHead*'
+/opt/go/bin/windows_amd64/httpHead.exe
+/opt/go/bin/httpHead
+/opt/go/bin/linux_amd64/httpHead
+```
 
 
 
 
 
-
-三、FAQ
+### FAQ
+```
 1、当我的本地网络访问 golang.org 异常时，应该如何处理？
 答：
 例如，遇到这样的错误：
@@ -267,9 +219,10 @@ go get github.com/golang/net/tree/master/websocket
 
 方法2：
 引入 dep 之类的依赖包管理工具
+```
 
-
-四、在学习的过程中，体验到哪些印象深刻的基础语法？
+### 在学习的过程中，体验到哪些印象深刻的基础语法？
+```
 答：温故而知新。
 
 【--】 package
@@ -507,6 +460,7 @@ select默认是阻塞的，只有当监听的channel中有发送或接收可以�
 
 
 特别重视：关闭的Channel永远不会阻塞
+```
 
 
 
@@ -514,25 +468,14 @@ select默认是阻塞的，只有当监听的channel中有发送或接收可以�
 
 
 
-
-XYXW、参考
-1、golang
-https://golang.org/doc
-https://golang.org/doc/code.html#Workspaces
-
-2、the-way-to-go_ZH_CN
-https://github.com/Unknwon/the-way-to-go_ZH_CN/blob/master/eBook/directory.md
-
-3、解决升级go版本遇到的Set $GOROOT_BOOTSTRAP to a working Go tree >= Go 1.4.问题
-http://blog.csdn.net/qq_15437667/article/details/59776840
-
-4、国内下载golang.org的包有什么好办法么？
-https://gocn.io/question/362
-
-5、语法基础
-https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/
-http://tonybai.com/2014/09/29/a-channel-compendium-for-golang/
-http://tonybai.com/2015/03/09/understanding-import-packages/
-http://tonybai.com/2015/07/31/understand-go15-vendor/
-http://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/
-http://tonybai.com/2016/12/21/how-to-use-timer-reset-in-golang-correctly/
+### XYXW、参考
+1. [golang-doc](https://golang.org/doc)
+2. [the-way-to-go_ZH_CN](https://github.com/Unknwon/the-way-to-go_ZH_CN/blob/master/eBook/directory.md)
+3. [解决升级go版本遇到的Set $GOROOT_BOOTSTRAP to a working Go tree >= Go 1.4.问题](http://blog.csdn.net/qq_15437667/article/details/59776840)
+4. [国内下载golang.org的包有什么好办法么？](https://gocn.io/question/362)
+5. [a-channel-compendium-for-golang](http://tonybai.com/2014/09/29/a-channel-compendium-for-golang/)
+6. [a-channel-compendium-for-golang](http://tonybai.com/2014/09/29/a-channel-compendium-for-golang/)
+7. [understanding-import-packages](http://tonybai.com/2015/03/09/understanding-import-packages/)
+8. [understand-go15-vendor](http://tonybai.com/2015/07/31/understand-go15-vendor/)
+9. [7-things-you-may-not-pay-attation-to-in-go](http://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/)
+10. [how-to-use-timer-reset-in-golang-correctly](http://tonybai.com/2016/12/21/how-to-use-timer-reset-in-golang-correctly/)
