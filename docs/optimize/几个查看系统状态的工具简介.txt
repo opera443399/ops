@@ -1,5 +1,5 @@
 几个查看系统状态的工具简介
-2018/7/13
+2018/11/7
 linux性能分析博大精深，各工具的详情请查看man和参考网络文章。
 
 一、查看主机流量
@@ -79,14 +79,18 @@ pidstat -d 2
 
 
 1）sar
-例如：查看硬盘状态，1秒间隔
-[root@test79 ~]# sar -d -p 1
+例如：查看硬盘状态，2秒间隔
+[root@test79 ~]# sar -d -p 2
 Linux 3.8.13-16.2.1.el6uek.x86_64 (test79.company.com)      06/08/2015      _x86_64_        (24 CPU)
 
 04:39:00 PM       DEV       tps  rd_sec/s  wr_sec/s  avgrq-sz  avgqu-sz     await     svctm     %util
 04:39:01 PM       sdb   1264.58  29166.67  18333.33     37.56     16.59     14.08      0.83    104.38
 04:39:01 PM       sda      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
 
+查看网络设备统计数据：
+[root@test79 ~]# sar -n DEV 2
+查看cpu统计数据：
+[root@test79 ~]# sar -p -P ALL 2
 
 
 2）iostat
@@ -248,3 +252,8 @@ Linux 2.6.32-431.el6.x86_64 (test79.company.com)   03/03/2017      _x86_64(32 CP
 06:34:12 PM     47625   1826.09      0.00      0.00  swapoff
 06:34:12 PM     48242      3.86      0.00      0.00  qemu-kvm
 06:34:12 PM     48520      7.73      0.00      0.00  qemu-kvm
+
+
+
+ZYXW、参考
+1. [通过vmstat学习CPU和进程性能监控](http://www.talkwithtrend.com/Article/161357)
