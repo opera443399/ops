@@ -83,6 +83,16 @@ docker stack ps zk
 
 ```
 
+
+**测试**
+```bash
+~]# docker run -it --rm --network zk_net zookeeper zkCli.sh -server zoo1
+[zk: zoo1(CONNECTED) 0] ls /
+
+```
+
+
+
 ### zkui
 ---
 **zkui的配置示例**
