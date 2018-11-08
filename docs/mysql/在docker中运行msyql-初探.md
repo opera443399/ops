@@ -53,6 +53,7 @@ _EOF
 ##### 启动
 ```bash
 ~]# docker run --name=mysql-3306 \
+  -p 3306:3306 \
   --mount type=bind,src=/data/mysql/3306/my.cnf,dst=/etc/my.cnf \
   --mount type=bind,src=/data/mysql/3306/data,dst=/var/lib/mysql \
   --mount type=bind,src=/data/mysql/3306/log,dst=/var/log \
