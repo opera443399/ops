@@ -1,5 +1,5 @@
 docker深入2-docker-ce的最佳实践
-2018/11/6
+2018/11/9
 
 > 注1：凡是本人整理的，开源产品相关的文章中，标题党写明了“最佳实践”的文章，要特别注意，本人总结的文字并未涉及安全方面的指导，请参考官方的指导教程，因为安全是一个有深度的话题，且安全是相对而言的，并不是个容易的话题。
 
@@ -230,42 +230,58 @@ docker node update --label-rm 'deploy.env' worker5
 
 * 更新服务，加上调度策略(注意：每执行一次 `--constraint-add` 将增加一个标签)
 ```bash
-##### 批量给一组 service 增加 `Constraints`
-for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
-  echo "[+] inspect: $h"
-  docker service inspect -f "{{.Spec.TaskTemplate.Placement.Constraints}}" $h |grep 'node.labels.deploy.env' \
-  && echo '' \
-  || docker service update --with-registry-auth --detach=false --constraint-add "node.labels.deploy.env==test" $h
-done
-
-##### 批量查看一组 service 的 Constraints
-for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
-  echo "[+] inspect: $h"
+##### 批量查看一组 service 的调度策略
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 查看 $h 的调度策略"
   docker service inspect -f "{{.Spec.TaskTemplate.Placement.Constraints}}" $h |grep 'node.labels.deploy.env' \
   && echo '' \
   || echo 'x'
 done
 
+##### 批量更新一组 service 的调度策略
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 更新 $h 的调度策略"
+  docker service inspect -f "{{.Spec.TaskTemplate.Placement.Constraints}}" $h |grep 'node.labels.deploy.env' \
+  && echo '' \
+  || docker service update --with-registry-auth --detach=false --constraint-add "node.labels.deploy.env==test" $h
+done
 
 ##### 移除标签(如果有多个标签，可以重复使用 `--constraint-rm` 指令)
-
 docker service update --with-registry-auth --detach=false --constraint-rm "node.labels.deploy.env==dev" svc1
+
 ```
 
-##### 限制 service 的资源占用
+##### 更新 service 的资源限制
 ---
 
 ```bash
 # 批量查看一组 service 的 `Resource`
-for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
-  echo "[+] show limit: $h"
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 查看 $h 的资源限制"
   docker service inspect -f "NanoCPUs={{.Spec.TaskTemplate.Resources.Limits.NanoCPUs}}, MemoryBytes={{.Spec.TaskTemplate.Resources.Limits.MemoryBytes}}" $h
 done
 
-# 批量查看一组 service 的 Resource
-for h in $(docker service ls |grep 'dev-' |awk '{print $2}'); do
-  echo "[+] limit: $h"
+# 批量更新一组 service 的 Resource
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 更新 $h 的资源限制"
   docker service update --with-registry-auth --detach=false --limit-cpu 0.75 --limit-memory 500m $h
+done
+```
+
+##### 更新 service 的环境变量
+---
+
+```bash
+# 批量查看一组 service 的 环境变量
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 查看 $h 的环境变量"
+  docker service inspect -f "{{.Spec.TaskTemplate.ContainerSpec.Env}}" $h
+done
+
+# 批量更新一组 service 的环境变量
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 更新 $h 的环境变量"
+  docker service update --with-registry-auth --detach=false --env-add foo=bar $h
 done
 ```
 
