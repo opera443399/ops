@@ -1,5 +1,5 @@
 # zookeeper-在docker中运行
-2018/11/8
+2018/11/9
 
 
 ### zk
@@ -8,6 +8,10 @@
 ```yaml
 ~]# cat stack.yml
 version: "3.3"
+
+volumes:
+  zkdata:
+  zkdatalog:
 
 networks:
   net:
@@ -27,12 +31,16 @@ services:
           memory: 512M
     networks:
       - net
+    volumes:
+      - "zkdata:/data"
+      - "zkdatalog:/datalog"
     hostname: zoo1
     ports:
       - 2181:2181
     environment:
       ZOO_MY_ID: 1
       ZOO_SERVERS: server.1=0.0.0.0:2888:3888 server.2=zoo2:2888:3888 server.3=zoo3:2888:3888
+      ZOO_MAX_CLIENT_CNXNS: 1000
 
   zoo2:
     image: zookeeper
@@ -46,12 +54,16 @@ services:
           memory: 512M
     networks:
       - net
+    volumes:
+      - "zkdata:/data"
+      - "zkdatalog:/datalog"
     hostname: zoo2
     ports:
       - 2182:2181
     environment:
       ZOO_MY_ID: 2
       ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=0.0.0.0:2888:3888 server.3=zoo3:2888:3888
+      ZOO_MAX_CLIENT_CNXNS: 1000
 
   zoo3:
     image: zookeeper
@@ -65,12 +77,16 @@ services:
           memory: 512M
     networks:
       - net
+    volumes:
+      - "zkdata:/data"
+      - "zkdatalog:/datalog"
     hostname: zoo3
     ports:
       - 2183:2181
     environment:
       ZOO_MY_ID: 3
       ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=zoo2:2888:3888 server.3=0.0.0.0:2888:3888
+      ZOO_MAX_CLIENT_CNXNS: 1000
 
 ```
 
