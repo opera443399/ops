@@ -1,4 +1,4 @@
-初探mongodb-体验
+# mongodb-初探
 2015/12/15
 
 一、安装
@@ -35,7 +35,7 @@ journal  local.0  local.ns  mongod.lock  storage.bson  _tmp
 
 默认端口：
 [root@mongo3 ~]# ss -antp src :27017
-State      Recv-Q Send-Q                    Local Address:Port                      Peer Address:Port 
+State      Recv-Q Send-Q                    Local Address:Port                      Peer Address:Port
 LISTEN     0      128                           127.0.0.1:27017                                *:*      users:(("mongod",10371,6))
 
 
@@ -299,7 +299,7 @@ sh03: 27003
         ├── sh01
         ├── sh02
         └── sh03
-        
+
 
 3、启动配置服务[m1-3]
 mongod --configsvr --dbpath /data/mongodb/data/config --logpath /data/mongodb/log/config/access.log --port 27021 --fork
@@ -345,7 +345,7 @@ mongos> sh.addShard('rs01/mongo1:27001,mongo2:27001,mongo3:27001')
 mongos> sh.addShard('rs02/mongo1:27002,mongo2:27002,mongo3:27002')
 mongos> sh.addShard('rs03/mongo1:27003,mongo2:27003,mongo3:27003')
 mongos> sh.status()
---- Sharding Status --- 
+--- Sharding Status ---
   sharding version: {
         "_id" : 1,
         "minCompatibleVersion" : 5,
@@ -360,7 +360,7 @@ mongos> sh.status()
         Currently enabled:  yes
         Currently running:  no
         Failed balancer rounds in last 5 attempts:  0
-        Migration Results for the last 24 hours: 
+        Migration Results for the last 24 hours:
                 No recent migrations
   databases:
         {  "_id" : "admin",  "partitioned" : false,  "primary" : "config" }
@@ -369,7 +369,7 @@ mongos> sh.status()
 mongos> sh.enableSharding('testdb')
 { "ok" : 1 }
 mongos> sh.status()
---- Sharding Status --- 
+--- Sharding Status ---
   sharding version: {
         "_id" : 1,
         "minCompatibleVersion" : 5,
@@ -384,17 +384,17 @@ mongos> sh.status()
         Currently enabled:  yes
         Currently running:  no
         Failed balancer rounds in last 5 attempts:  0
-        Migration Results for the last 24 hours: 
+        Migration Results for the last 24 hours:
                 No recent migrations
   databases:
         {  "_id" : "admin",  "partitioned" : false,  "primary" : "config" }
         {  "_id" : "test",  "partitioned" : false,  "primary" : "rs01" }
         {  "_id" : "testdb",  "partitioned" : true,  "primary" : "rs01" }
 
-9、指定数据库的集合和键值自动sharding        
-mongos> sh.shardCollection('testdb.table1', { id: 1 } )  
+9、指定数据库的集合和键值自动sharding
+mongos> sh.shardCollection('testdb.table1', { id: 1 } )
 mongos> sh.status()
-                        
+
 10、测试sharding
 客户端插入数据：
 [root@mongo3 ~]# mongo 127.0.0.1:27022
@@ -404,8 +404,8 @@ mongos> for (var i = 1; i <= 10000; i++) db.table1.save({ id: i, 'key1': 'value1
 mongos> db.table1.stats()
 此时，可以注意到sharding的结果，大部分数据都在rs01上，因此，如何sharding是要讨论的一个问题。
 
-        
-        
+
+
 五、备份
 1、常规
 使用 mongodump 和 mongorestore 备份和恢复 MongoDB 数据库
