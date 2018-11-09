@@ -1,5 +1,5 @@
-redis使用小结
-2017/10/24
+redis-初探
+2018/11/9
 
 1. 安装redis服务
 去这里找最新版：
@@ -24,18 +24,18 @@ redis-benchmark  redis-check-aof  redis-check-rdb  redis-cli  redis-sentinel  re
 
 
 注意对引导按照server的影响：
-# sh utils/install_server.sh 
+# sh utils/install_server.sh
 Welcome to the redis service installer
 This script will help you easily set up a running redis server
 
-Please select the redis port for this instance: [6379] 
+Please select the redis port for this instance: [6379]
 Selecting default: 6379
-Please select the redis config file name [/etc/redis/6379.conf] 
+Please select the redis config file name [/etc/redis/6379.conf]
 Selected default - /etc/redis/6379.conf
-Please select the redis log file name [/var/log/redis_6379.log] 
+Please select the redis log file name [/var/log/redis_6379.log]
 Selected default - /var/log/redis_6379.log
-Please select the data directory for this instance [/var/lib/redis/6379] 
-Please select the redis executable path [] 
+Please select the data directory for this instance [/var/lib/redis/6379]
+Please select the redis executable path []
 Mmmmm...  it seems like you don't have a redis executable. Did you run make install yet?        ####这里要指定 redis-server 的路径，这一条提示是没指定直接回车时的结果，下一条是正确的姿势
 Please select the redis executable path [] /opt/redis4/bin/redis-server
 Selected config:
@@ -81,8 +81,3 @@ Installation successful!
 # redis-cli -h xxx -p xxx monitor                           #### 监控
 # redis-cli -h xxx -p xxx slaveof remote_ip remote_port     #### 配置为从库
 # redis-cli -h xxx -p xxx slaveof NO ONE                    #### 取消作为从库的角色
-
-
-
-
-
