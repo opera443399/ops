@@ -1,5 +1,5 @@
 # jenkins-基础操作
-2018/8/23
+2018/11/12
 
 ### 一、常规部署方法
 
@@ -75,6 +75,24 @@ docker run \
   -v /data/server/jenkins/data:/var/jenkins_home \
   -v /var/run/docker.sock:/var/run/docker.sock \
   jenkinsci/blueocean:1.8.2
+
+```
+
+
+### 三、使用 docker 部署 LTS 的版本
+```bash
+mkdir -p /data/server/jenkins/data
+
+docker run \
+  --name jenkinsci \
+  --restart=always \
+  -d \
+  -u root \
+  -p 8080:8080 \
+  -v /data/server/jenkins/data:/var/jenkins_home \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  jenkinsci/jenkins:lts-alpine
+
 ```
 
 
@@ -464,14 +482,9 @@ Updating http://svn_server/repo_name at revision '2017-09-20T15:52:45.978 +0800'
 
 
 
-ZYXW、参考
-1、doc
-http://pkg.jenkins-ci.org/redhat-stable/
-https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins+on+Red+Hat+distributions
-2、gitlab hook
-https://wiki.jenkins-ci.org/display/JENKINS/Gitlab+Hook+Plugin
-https://github.com/elvanja/jenkins-gitlab-hook-plugin#build-now-hook
-3、Running jenkins jobs via command line
-http://www.inanzzz.com/index.php/post/jnrg/running-jenkins-build-via-command-line
-4、使用阿里云容器服务Jenkins实现持续集成和Docker镜像构建(updated on 2017.3.3)
-https://yq.aliyun.com/articles/53971
+### ZYXW、参考
+1. [doc](http://pkg.jenkins-ci.org/redhat-stable/)
+2、[gitlab hook](https://github.com/elvanja/jenkins-gitlab-hook-plugin#build-now-hook)
+3. [Running jenkins jobs via command line](http://www.inanzzz.com/index.php/post/jnrg/running-jenkins-build-via-command-line)
+4. [使用阿里云容器服务Jenkins实现持续集成和Docker镜像构建(updated on 2017.3.3)](https://yq.aliyun.com/articles/53971)
+5. [docker-hub](https://hub.docker.com/r/jenkins/jenkins/)
