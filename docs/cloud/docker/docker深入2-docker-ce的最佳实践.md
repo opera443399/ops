@@ -323,6 +323,7 @@ docker_gwbridge
 
 ### FAQ
 **在 swarm mode 中使用私有镜像仓库时遇到的问题**
+---
 image xxx could not be accessed on a registry to record its digest. Each node will access xxx independently, possibly leading to different nodes running different versions of the image.
 
 执行下面的指令时：
@@ -333,6 +334,30 @@ docker service update
 要激活这个参数来传递私有仓库的信息到 worker 节点上：
 `--with-registry-auth`
 
+
+**在 swarm mode 中挂载的数据卷的目录中存在软链接目录时遇到的问题**
+---
+在容器中，访问挂载卷中的路径，出现如下异常的场景：
+```bash
+##### 创建 service 的指令：
+docker service create \
+    --name demo1 \
+    --with-registry-auth \
+    --detach=true \
+    --mount type=bind,src="/data/logs",dst="/var/log/demo1" \
+    ...
+
+##### 在容器中访问日志路径时：
+~]# docker exec -it logs-agent ls /host/data/logs/
+ls: /host/data/logs/: No such file or directory
+
+##### 在容器中检查发现，上述路径在 host 上其实是一个软链接，挂载到容器中是无法访问的
+~]# docker exec -it logs-agent ls -l /data/ |grep logs
+lrwxrwxrwx  1 demo1  demo1    11 Jul 30 10:43 logs -> /data1/logs
+```
+
+解决方案：
+请注意检查挂载的数据卷中是否存在软链接，可替换为完整的真实路径。
 
 
 **使用阿里云 Docker Hub 镜像站点和 latest 这个 tag 带来的问题**
