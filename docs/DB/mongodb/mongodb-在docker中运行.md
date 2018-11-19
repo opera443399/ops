@@ -1,5 +1,5 @@
 # mongodb-在docker中运行
-2018/11/9
+2018/11/19
 
 
 
@@ -11,7 +11,6 @@
 mongodb]# cat dev.sh
 #!/bin/bash
 #
-# 2018/11/9
 
 d_data_root='/data/server/mongodb'
 f_prefix='mongodb'

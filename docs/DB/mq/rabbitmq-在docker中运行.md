@@ -1,5 +1,5 @@
 # rabbitmq-在docker中运行
-2018/11/9
+2018/11/19
 
 
 ### rabbitmq management 配置示例
@@ -25,7 +25,6 @@ management.listener.ssl = false
 rabbitmq]# cat dev.sh
 #!/bin/bash
 #
-# 2018/11/9
 
 d_data_root='/data/server/rabbitmq'
 f_prefix='rabbitmq'

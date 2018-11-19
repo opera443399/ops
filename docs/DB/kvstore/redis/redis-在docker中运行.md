@@ -11,7 +11,6 @@
 redis]# cat dev.sh
 #!/bin/bash
 #
-# 2018/11/9
 
 d_data_root='/data/server/redis'
 f_prefix='redis'
