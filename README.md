@@ -1,5 +1,5 @@
 # ops
-2018/6/4
+2018/11/21
 
 ### init
 
@@ -22,19 +22,6 @@ collecting #ops# related basic docs here.
 * **ops**
 * **dev**
 * **qa**
-
-
-
-
-### Tree
-
-```bash
-$ tree
-.
-|- bin: script samples
-|- conf: configuration examples
-|- docs: guide/howto
-```
 
 
 
