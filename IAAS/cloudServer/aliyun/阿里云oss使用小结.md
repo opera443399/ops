@@ -1,15 +1,24 @@
 # 阿里云oss使用小结
-2018/3/14
+2018/11/21
 
 ### 命令行工具
 ```bash
 ##### 下载工具
-~]# curl -o /usr/local/bin/ossutil http://docs-aliyun.cn-hangzhou.oss.aliyun-inc.com/assets/attach/50452/cn_zh/1516454058701/ossutil64?spm=a2c4g.11186623.2.6.yeyxEt
+~]# curl -o /usr/local/bin/ossutil http://gosspublic.alicdn.com/ossutil/1.4.2/ossutil64
+~]# chmod +x /usr/local/bin/ossutil
+
+##### 直接执行 ls
+~]# ossutil -e oss-cn-beijing.aliyuncs.com -i xxx -k xxx ls oss://your-bucket-name/demo
+
+##### 直接执行 upload
+~]# ossutil -e oss-cn-beijing.aliyuncs.com -i xxx -k xxx cp -r -f -u local/dist oss://your-bucket-name/demo
 
 
-##### 配置 AK 等信息
+
+##### 通过引导来创建配置文件保存 AK 等信息
 ~]# ossutil config -L ch
 
+##### 默认输出到配置示例
 ~]# cat ~/.ossutilconfig
 [Credentials]
 language=CH
