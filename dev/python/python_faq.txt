@@ -1,0 +1,88 @@
+一、安装
+1、编译
+wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tgz \
+&& tar zxvf Python-3.4.3.tgz \
+&& cd Python-3.4.3 \
+&& ./configure \
+&& make \
+&& make install
+
+
+2、编译 python2.7 使用 sqlite 的问题
+
+先安装 sqlite-devel
+yum install sqlite-devel
+
+再编译 python2.7
+
+
+
+二、技巧
+1、针对2的版本，需要指定coding
+例如：
+#!/bin/env python
+# -*- coding: utf-8 -*-
+###################################
+# @ Django 1.9.1
+# @ 2016-02-15
+# @ pc
+###################################
+
+
+2、json
+echo '{"json":"obj"}' | python -m json.tool
+
+
+
+3、简单的get方法
+~]# cat sb.py
+#!/bin/env python
+#
+
+import requests
+
+uid = 'pp'
+url = 'https://suum.szsi.gov.cn/suum/check.do?method=checkIsAgent&userId={0}'.format(uid)
+r = requests.get(url)
+print '%s -> %s' % (uid, r.text)
+
+
+4、简单的post方法
+~]# cat sb.py
+#!/bin/env python
+#
+
+import requests
+
+url='http://www.psxq.gov.cn/app/inquiry/createVote.jsp'
+data={
+'inquiry':         1,
+'topic':           1,
+'topicType@1':     1,
+'1@1':             2,
+'button': ''
+}
+
+requests.post(url,data)
+
+
+
+5、请求json数据
+import requests
+
+url = 'http://www.test.com/api/v1/get/json'
+response = requests.get(url)
+if response.status_code == 200:
+    result = response.json()
+    return result['data']
+    for i in result['data']:
+        for k,v in i.items():
+            print(k, ': ', v)
+
+
+6、py2使用py3的print
+#!/bin/env python
+#-*- coding: utf8 -*-
+from __future__ import print_function
+
+print('x')

@@ -1,0 +1,98 @@
+﻿vim的用法简介
+2017/6/13
+
+--Vim的纵向编辑模式
+1）进入模式
+在 Vim 命令模式下，移动游标定位于某一个位置，键入 ctrl-v后状态栏上出现 VISUAL BLOCK 字样，即进入纵向编辑模式。
+2）编辑
+r 进入修改模式
+I 进入行首插入模式
+A 进入行尾插入模式
+
+--粘贴文本时遇到缩进乱了
+:set paste
+然后再粘贴
+
+--清空文本内容
+ggdG
+先跳转到首行，再删除到EOF
+
+--全部复制
+:1,$y
+
+--全选
+gg
+VG
+和上面的情况方法同理。
+
+--替换
+:%s/abc/def/g
+
+--搜索
+/abc
+区分大小写ic or noic, \c or \C
+:set ic
+/cba
+:set noic
+/\cerr
+\Cerr
+
+--查看编码
+:set fileencoding
+
+--文本文件处理异常时如何显示当前文件是否有特殊符号
+:set list
+
+
+
+--配置文件示例
+~# cat ~/.vimrc
+set nocompatible
+set enc=utf-8
+"-显示行号：
+"set number
+"-启用插件：filetype
+filetype plugin on
+set history=500
+syntax on
+set autoindent
+set smartindent
+"-显示括号匹配
+set showmatch
+"-显示状态
+set ruler
+"-关闭高亮匹配
+"set nohls
+"-启用快速搜索
+set incsearch
+"-启用paste模式
+set paste
+"设置tabstop
+set ts=4
+"设置shiftwidth
+set sw=4
+"设置expandtab
+set et
+
+if has("autocmd")
+filetype plugin indent on
+endif
+autocmd filetype python setlocal et sta sw=4 sts=4
+"-根据文件后缀增加指定内容到行首
+func SetTitle()
+if &filetype == 'sh'
+call setline(1, "\#!/bin/bash")
+call append(line("."), "\# ")
+call append(line(".")+1, "")
+else
+call setline(1, "\#!/bin/env python")
+call append(line("."), "\# ")
+call append(line(".")+1, "")
+endif
+endfunc
+
+autocmd BufNewFile *.py,*.sh exec ":call SetTitle()"
+"-跳转到EOF的位置
+autocmd BufNewFile * normal G
+"-按下 F2 删除空行
+nnoremap <F2> :g/^\s*$/d<CR>
