@@ -1,0 +1,243 @@
+pipeline {
+  agent {
+    node {
+      //------ 分配任务给打了下述标签的 worker
+      label 'pipeline_only'
+      //------ 指定干活的路径
+      customWorkspace '/data/server/jenkins_worker/code/demo-web'
+    }
+  }
+
+  parameters {
+    //------ 定义参数(环境变量)
+    string(name: 'GIT_BRANCH_NAME', defaultValue: '*/master', description: '请指定 git 分支/版本号：')
+    choice(name: 'CICD_ENV', choices: 'qa\nprod', description: '请问您要部署至哪一个环境中呢？')
+    choice(name: 'CICD_OP', choices: 'deploy', description: '请选择操作类型：')
+  }
+
+  environment {
+    DO_ALERT = 'python /data/server/jenkins_worker/bin/receiver_wechat.py'
+  }
+
+  stages {
+    stage('准备 git 仓库') {
+      when {
+        expression {
+          //------ 只在 dev 环境中执行
+          (params.CICD_OP=='deploy' && (params.CICD_ENV=='qa' || params.CICD_ENV=='prod')) ? true : false
+        }
+      }
+      steps {
+        echo '[+] 获取 git 代码...'
+        checkout([
+          $class: 'GitSCM',
+          branches: [[
+            name: "${GIT_BRANCH_NAME}"
+          ]],
+          doGenerateSubmoduleConfigurations: false,
+          extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'src']],
+          submoduleCfg: [],
+          userRemoteConfigs: [[
+            credentialsId: '11112222-1111-2222-1111-222211112222',
+            url: 'git@example.com:group1/demoproject.git'
+          ]]
+        ])
+
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
+
+
+    stage('初始化') {
+      steps {
+        echo '[@] Jenkinsfile for jenkins pipeline'
+        echo "[@] 任务链接：${BUILD_URL}"
+        echo '[+] git logs (最近3条)'
+        dir('src') {
+          sh 'git log -3 --oneline'
+          //sh 'git whatchanged -3'
+        }
+
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+    }
+
+
+    stage('交付到 qa 环境') {
+      when {
+        expression {
+          //------ 只在 test 环境中执行
+          (params.CICD_ENV=='qa' && params.CICD_OP=='deploy') ? true : false
+        }
+      }
+      steps {
+        echo '[+] 上线机器人️🤖p小C🤖开始干活...'
+        echo '[-] 审核中...'
+        dir('src') {
+          script {
+            env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
+            echo "[-] 当前选择的版本为: ${APP_TAG}"
+
+            //------ ACL-01-START
+            sh """
+              ${DO_ALERT} 'demo-qa' '[demo-web]交付[${APP_TAG}]到[qa]：请[🔵任意前端小伙伴]审核。'
+            """
+
+            userInput = input([
+              message: '允许上线?',
+              ok: '确认',
+              parameters: [
+                text(name: 'approvers', defaultValue: '🔜🔵任意前端小伙伴', description: '审核者')
+              ],
+              //------ 指定审核者，请使用逗号','作为分隔符(无空格)，启用请取消下面一行的注释
+              //submitter: 'admin,lilei,hanmeimei',
+              submitterParameter: 'approverID'
+            ])
+            sh """
+              ${DO_ALERT} 'demo-qa' '[demo-web]交付[${APP_TAG}]到[qa]：✅[${userInput['approverID']}]审核通过。'
+            """
+            //------ END-OF-ACL-01
+          }
+        }
+
+        echo '[-] 构建中...'
+        sh '''
+          docker run --rm -v "$(pwd)/src:/code" -w "/code" node:9-alpine npm install
+          docker run --rm -v "$(pwd)/src:/code" -w "/code" node:9-alpine npm run build_qa
+        '''
+
+        echo '[-] 归档构建输出的dist目录：'
+        sh '''
+          mkdir -p backup/qa
+          rsync -avz --delete src/dist backup/qa/${APP_TAG}
+          ls -lt backup/qa
+        '''
+
+        echo '[-] 上传到 OSS 中'
+        withCredentials([
+          usernamePassword(
+            credentialsId: 'oss-qa',
+            usernameVariable: 'AccessKeyId',
+            passwordVariable: 'AccessKeySecret'
+            )
+          ]) {
+
+          // ossutil
+          sh '''
+            /usr/local/bin/ossutil -e oss-cn-beijing.aliyuncs.com -i ${AccessKeyId} -k ${AccessKeySecret} cp -r -f -u backup/qa/${APP_TAG}/dist oss://qa/demo
+          '''
+          sh """
+            ${DO_ALERT} 'demo-qa' '[demo-web]交付[${APP_TAG}]到[qa]：✅[oss]上传完成。'
+          """
+        }
+
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+
+      post {
+        success {
+            echo 'I succeeeded!'
+            sh """
+              ${DO_ALERT} 'demo-qa' '[demo-web]交付[${APP_TAG}]到[qa]：✅任务完成！'
+            """
+        }
+        failure {
+            echo 'I failed :('
+            sh """
+              ${DO_ALERT} 'demo-qa' '[demo-web]交付[${APP_TAG}]到[qa]：❌任务失败请检查！'
+            """
+        }
+      }
+    }
+
+
+    stage('交付到 prod 环境') {
+      when {
+        expression {
+          //------ 只在 test 环境中执行
+          (params.CICD_ENV=='prod' && params.CICD_OP=='deploy') ? true : false
+        }
+      }
+      steps {
+        echo '[+] 上线机器人️🤖p小C🤖开始干活...'
+        echo '[-] 审核中...'
+        dir('src') {
+          script {
+            env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
+            echo "[-] 当前选择的版本为: ${APP_TAG}"
+
+            //------ ACL-01-START
+            sh """
+              ${DO_ALERT} 'demo-prod' '[demo-web]交付[${APP_TAG}]到[prod]：请[🔵lilei]审核。'
+            """
+
+            userInput = input([
+              message: '允许上线?',
+              ok: '确认',
+              parameters: [
+                text(name: 'approvers', defaultValue: '🔜🔵lilei', description: '审核者')
+              ],
+              //------ 指定审核者，请使用逗号','作为分隔符(无空格)，启用请取消下面一行的注释
+              submitter: 'admin,lilei',
+              submitterParameter: 'approverID'
+            ])
+            sh """
+              ${DO_ALERT} 'demo-prod' '[demo-web]交付[${APP_TAG}]到[prod]：✅[${userInput['approverID']}]审核通过。'
+            """
+            //------ END-OF-ACL-01
+          }
+        }
+
+        echo '[-] 构建中...'
+        sh '''
+          docker run --rm -v "$(pwd)/src:/code" -w "/code" node:9-alpine npm install
+          docker run --rm -v "$(pwd)/src:/code" -w "/code" node:9-alpine npm run build_qa
+        '''
+
+        echo '[-] 归档构建输出的dist目录：'
+        sh '''
+          mkdir -p backup/prod
+          rsync -avz --delete src/dist backup/prod/${APP_TAG}
+          ls -lt backup/prod
+        '''
+
+        echo '[-] 上传到 OSS 中'
+        withCredentials([
+          usernamePassword(
+            credentialsId: 'oss-prod',
+            usernameVariable: 'AccessKeyId',
+            passwordVariable: 'AccessKeySecret'
+            )
+          ]) {
+
+          // ossutil
+          sh '''
+            /usr/local/bin/ossutil -e oss-cn-beijing.aliyuncs.com -i ${AccessKeyId} -k ${AccessKeySecret} cp -r -f -u backup/prod/${APP_TAG}/dist oss://prod/demo
+          '''
+          sh """
+            ${DO_ALERT} 'demo-prod' '[demo-web]交付[${APP_TAG}]到[prod]：✅[oss]上传完成。'
+          """
+        }
+
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+
+      post {
+        success {
+            echo 'I succeeeded!'
+            sh """
+              ${DO_ALERT} 'demo-prod' '[demo-web]交付[${APP_TAG}]到[prod]：✅任务完成！'
+            """
+        }
+        failure {
+            echo 'I failed :('
+            sh """
+              ${DO_ALERT} 'demo-prod' '[demo-web]交付[${APP_TAG}]到[prod]：❌任务失败请检查！'
+            """
+        }
+      }
+    }
+
+
+  }
+}
