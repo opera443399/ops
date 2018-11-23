@@ -1,5 +1,5 @@
 # redis-cluster-在docker中运行
-2018/11/19
+2018/11/23
 
 
 
@@ -18,7 +18,13 @@ f_ns='dev'
 
 cd ${d_data_root}
 mkdir -pv ${f_ns}
-docker run -d --restart=always --name "${f_prefix}-${f_ns}" -v "${d_data_root}/${f_ns}":/redis-data -p "7000-7005:7000-7005" grokzen/redis-cluster:4.0.11
+docker run -d --restart=always \
+  --name "${f_prefix}-${f_ns}" \
+  -p "7000-7005:7000-7005" \
+  -v /etc/localtime:/etc/localtime \
+  -v "${d_data_root}/${f_ns}":/redis-data \
+  grokzen/redis-cluster:4.0.11
+
 docker ps -f name="${f_prefix}-${f_ns}"
 
 # test

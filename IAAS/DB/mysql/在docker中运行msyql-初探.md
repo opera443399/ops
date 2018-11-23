@@ -1,11 +1,13 @@
 # 在docker中运行msyql-初探
-2018/11/8
+2018/11/23
 
 
 ##### 准备
 ```bash
-~]# mkdir -p /data/mysql/3306/{data,log}
 ~]# docker pull mysql/mysql-server:5.7
+~]# mkdir -p /data/server/mysql/3306/{data,log}
+~]# chown -R mysql:mysql /data/server/mysql/3306
+~]# cd /data/server/mysql/3306
 
 ```
 
@@ -13,38 +15,47 @@
 
 ##### 这里是一份默认 mysql 配置的示例
 ```bash
-~]# cat <<'_EOF' >/data/mysql/3306/my.cnf
-# For advice on how to change settings please see
-# http://dev.mysql.com/doc/refman/5.7/en/server-configuration-defaults.html
-
+~]# cat <<'_EOF' >my.cnf
 [mysqld]
-#
-# Remove leading # and set to the amount of RAM for the most important data
-# cache in MySQL. Start at 70% of total RAM for dedicated server, else 10%.
-# innodb_buffer_pool_size = 128M
-#
-# Remove leading # to turn on a very important data integrity option: logging
-# changes to the binary log between backups.
-# log_bin
-#
-# Remove leading # to set options mainly useful for reporting servers.
-# The server defaults are faster for transactions and fast SELECTs.
-# Adjust sizes as needed, experiment to find the optimal values.
-# join_buffer_size = 128M
-# sort_buffer_size = 2M
-# read_rnd_buffer_size = 2M
+#------------innodb------------
+innodb_buffer_pool_size = 4G
+
+#------------replication------------
+server-id=101
+log_bin=bin.log
+sync_binlog=1
+gtid_mode=on
+enforce_gtid_consistency=1
+log_slave_updates
+binlog_format=row
+relay_log=relay.log
+relay_log_recovery=1
+binlog_gtid_simple_recovery=1
+slave_skip_errors=ddl_exist_errors
+
+#------------basic------------
 skip-host-cache
 skip-name-resolve
+symbolic-links=0
+user=mysql
+port=3306
+character_set_server=utf8mb4
+max_connections=800
+max_connect_errors=1000
+
 datadir=/var/lib/mysql
 socket=/var/lib/mysql/mysql.sock
 secure-file-priv=/var/lib/mysql-files
-user=mysql
-
-# Disabling symbolic-links is recommended to prevent assorted security risks
-symbolic-links=0
+pid-file=/var/run/mysqld/mysqld.pid
 
 log-error=/var/log/mysqld.log
-pid-file=/var/run/mysqld/mysqld.pid
+log_timestamps=system
+slow_query_log=1
+slow_query_log_file=/var/log/slow.log
+expire_logs_days=90
+long_query_time=2
+min_examined_row_limit=100
+
 _EOF
 
 ```
@@ -52,14 +63,18 @@ _EOF
 
 ##### 启动
 ```bash
-~]# docker run --name=mysql-3306 \
+docker run -d \
+  --name=mysql-3306 \
   -p 3306:3306 \
-  --mount type=bind,src=/data/mysql/3306/my.cnf,dst=/etc/my.cnf \
-  --mount type=bind,src=/data/mysql/3306/data,dst=/var/lib/mysql \
-  --mount type=bind,src=/data/mysql/3306/log,dst=/var/log \
-  -d mysql/mysql-server:5.7 \
+  -v /etc/localtime:/etc/localtime \
+  --mount type=bind,src=/data/server/mysql/3306/my.cnf,dst=/etc/my.cnf \
+  --mount type=bind,src=/data/server/mysql/3306/data,dst=/var/lib/mysql \
+  --mount type=bind,src=/data/server/mysql/3306/log,dst=/var/log \
+  mysql/mysql-server:5.7 \
     --character-set-server=utf8mb4 \
     --collation-server=utf8mb4_unicode_ci
+
+docker logs -f mysql-3306
 
 ```
 
@@ -75,6 +90,7 @@ _EOF
 ##### 修改密码
 ```bash
 ~]# docker exec -it mysql-3306 mysql -uroot -p
+Enter password:
 mysql> ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';
 
 ```

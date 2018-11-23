@@ -1,5 +1,5 @@
 # redis-在docker中运行
-2018/11/9
+2018/11/23
 
 
 
@@ -19,7 +19,13 @@ f_port='6379'
 
 cd ${d_data_root}
 mkdir -pv ${f_ns}
-docker run -d --restart=always --name "${f_prefix}-${f_ns}" -v "${d_data_root}/${f_ns}":/data -p ${f_port}:6379 redis
+docker run -d --restart=always \
+  --name "${f_prefix}-${f_ns}" \
+  -p ${f_port}:6379 \
+  -v /etc/localtime:/etc/localtime \
+  -v "${d_data_root}/${f_ns}":/data \
+  redis
+
 docker ps -f name="${f_prefix}-${f_ns}"
 
 # test
