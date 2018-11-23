@@ -30,7 +30,6 @@ docker run -d --restart=always \
   -v "${d_data_root}/${f_ns}/data":/var/lib/rabbitmq \
   -v "${d_data_root}/${f_ns}/etc":/etc/rabbitmq \
   --hostname "${f_prefix}-${f_ns}" \
-  --user root \
   rabbitmq:3-management
 
 docker ps -f name="${f_prefix}-${f_ns}"
