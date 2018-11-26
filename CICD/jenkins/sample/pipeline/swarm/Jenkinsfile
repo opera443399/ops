@@ -12,13 +12,14 @@ pipeline {
     //------ 定义参数(环境变量)
     string(name: 'SVC_NAMES', defaultValue: 'svc1,svc2,svc3,svc4,svc5', description: '请选择微服务（使用逗号作为分隔符，无空格）: \nsvc1,svc2,svc3,svc4,svc5')
     string(name: 'SVC_VERSION', defaultValue: 'EMPTY', description: '请指定`docker image tag`的值，默认将提取 `git rev id`')
-    string(name: 'GIT_BRANCH_NAME', defaultValue: 'develop', description: '请指定 git 分支：')
+    string(name: 'GIT_BRANCH_NAME', defaultValue: '*/develop', description: '请指定 git 分支：')
     choice(name: 'CICD_ENV', choices: 'dev\ntest', description: '请问您要部署至哪一个环境中呢？')
-    choice(name: 'CICD_OP', choices: 'deploy\nrollback', description: '请选择操作类型：')
+    choice(name: 'CICD_OP', choices: 'build\ndeploy\nrollback', description: '请选择操作类型：')
   }
 
   environment {
     SSH_OPTS_DEPLOY_TO_DEV = 'ssh -o StrictHostKeyChecking=no jack@10.250.1.201 /bin/bash /data/server/swarm-deploy/bin/swarm-ctl.sh'
+    DO_ALERT = 'python /data/server/jenkins_worker/bin/receiver_wechat.py'
   }
 
   stages {
@@ -26,7 +27,7 @@ pipeline {
       when {
         expression {
           //------ 只在 dev 环境中执行
-          (params.CICD_ENV=='dev' && params.CICD_OP=='deploy') ? true : false
+          (params.CICD_ENV=='dev' && (params.CICD_OP=='build' || params.CICD_OP=='deploy')) ? true : false
         }
       }
       steps {
@@ -34,7 +35,7 @@ pipeline {
         checkout([
           $class: 'GitSCM',
           branches: [[
-            name: "refs/heads/${GIT_BRANCH_NAME}"
+            name: "${GIT_BRANCH_NAME}"
           ]],
           doGenerateSubmoduleConfigurations: false,
           extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'src/demoproject']],
@@ -112,7 +113,7 @@ pipeline {
       when {
         expression {
           //------ 只在 dev 环境中执行
-          (params.CICD_ENV=='dev' && params.CICD_OP=='deploy') ? true : false
+          (params.CICD_ENV=='dev' && (params.CICD_OP=='build' || params.CICD_OP=='deploy')) ? true : false
         }
       }
       tools {
@@ -209,6 +210,15 @@ pipeline {
         }
 
         echo '[-] ______________________END_OF_STAGE______________________'
+      }
+
+      post {
+        success {
+            echo '[demo-test]交付${APP_TAG}[${SVC_NAMES}]：✅任务完成！'
+        }
+        failure {
+            echo '[demo-test]交付${APP_TAG}[${SVC_NAMES}]：❌任务失败请检查！'
+        }
       }
     }
 

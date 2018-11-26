@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2018/7/20
+# 2018/11/26
 ###########
 ### 请使用 `dep` 来解决 golang 的依赖而不是使用 `go get`
 ### goal:
@@ -51,6 +51,9 @@ do_build_golang_docker() {
   echo >${f_log_successful}
   echo >${f_log_failed}
 
+
+  print_info "Go Version: $(go version)"
+  print_info "GOPATH: ${GOPATH}"
   for s_name in $(echo ${APP_SVC_NAMES} |sed 's/,/\n/g'); do
     echo
     print_info "使用版本： ${APP_TAG} 来构建服务： ${s_name}"
@@ -76,7 +79,7 @@ do_build_golang_docker() {
           ### docker build
           local s_tag_local="${DOCKER_IMAGE_NS}/${APP_NAME}-$(echo ${s_name} |tr '_' '-'):${APP_TAG}"
           local s_tag_remote="${DOCKER_REGISTRY_URL}/${s_tag_local}"
-          docker build -q -t "${s_tag_local}" .
+          docker build -t "${s_tag_local}" .
 
           ### docker push
           docker tag "${s_tag_local}" "${s_tag_remote}"

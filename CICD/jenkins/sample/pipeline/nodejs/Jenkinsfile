@@ -80,7 +80,7 @@ pipeline {
 
             //------ ACL-01-START
             sh """
-              ${DO_ALERT} 'demo-qa' '[demo-web]交付[${APP_TAG}]到[qa]：请[🔵任意前端小伙伴]审核。'
+              ${DO_ALERT} 'demo-qa' '[demo-qa]交付${APP_TAG}[web]：请[🔵任意前端小伙伴]审核。'
             """
 
             userInput = input([
@@ -93,8 +93,9 @@ pipeline {
               //submitter: 'admin,lilei,hanmeimei',
               submitterParameter: 'approverID'
             ])
+            echo "[-] 由 ${userInput['approverID']} 审核通过"
             sh """
-              ${DO_ALERT} 'demo-qa' '[demo-web]交付[${APP_TAG}]到[qa]：✅[${userInput['approverID']}]审核通过。'
+              ${DO_ALERT} 'demo-qa' '[demo-qa]交付${APP_TAG}[web]：✅[${userInput['approverID']}]审核通过。'
             """
             //------ END-OF-ACL-01
           }
@@ -127,7 +128,7 @@ pipeline {
             /usr/local/bin/ossutil -e oss-cn-beijing.aliyuncs.com -i ${AccessKeyId} -k ${AccessKeySecret} cp -r -f -u backup/qa/${APP_TAG}/dist oss://qa/demo
           '''
           sh """
-            ${DO_ALERT} 'demo-qa' '[demo-web]交付[${APP_TAG}]到[qa]：✅[oss]上传完成。'
+            ${DO_ALERT} 'demo-qa' '[demo-qa]交付${APP_TAG}[web]：✅[oss]上传完成。'
           """
         }
 
@@ -138,13 +139,13 @@ pipeline {
         success {
             echo 'I succeeeded!'
             sh """
-              ${DO_ALERT} 'demo-qa' '[demo-web]交付[${APP_TAG}]到[qa]：✅任务完成！'
+              ${DO_ALERT} 'demo-qa' '[demo-qa]交付${APP_TAG}[web]：✅任务完成！'
             """
         }
         failure {
             echo 'I failed :('
             sh """
-              ${DO_ALERT} 'demo-qa' '[demo-web]交付[${APP_TAG}]到[qa]：❌任务失败请检查！'
+              ${DO_ALERT} 'demo-qa' '[demo-qa]交付${APP_TAG}[web]：❌任务失败请检查！'
             """
         }
       }
@@ -168,7 +169,7 @@ pipeline {
 
             //------ ACL-01-START
             sh """
-              ${DO_ALERT} 'demo-prod' '[demo-web]交付[${APP_TAG}]到[prod]：请[🔵lilei]审核。'
+              ${DO_ALERT} 'demo-prod' '[demo-prod]交付${APP_TAG}[web]：请[🔵lilei]审核。'
             """
 
             userInput = input([
@@ -181,8 +182,9 @@ pipeline {
               submitter: 'admin,lilei',
               submitterParameter: 'approverID'
             ])
+            echo "[-] 由 ${userInput['approverID']} 审核通过"
             sh """
-              ${DO_ALERT} 'demo-prod' '[demo-web]交付[${APP_TAG}]到[prod]：✅[${userInput['approverID']}]审核通过。'
+              ${DO_ALERT} 'demo-prod' '[demo-prod]交付${APP_TAG}[web]：✅[${userInput['approverID']}]审核通过。'
             """
             //------ END-OF-ACL-01
           }
@@ -215,7 +217,7 @@ pipeline {
             /usr/local/bin/ossutil -e oss-cn-beijing.aliyuncs.com -i ${AccessKeyId} -k ${AccessKeySecret} cp -r -f -u backup/prod/${APP_TAG}/dist oss://prod/demo
           '''
           sh """
-            ${DO_ALERT} 'demo-prod' '[demo-web]交付[${APP_TAG}]到[prod]：✅[oss]上传完成。'
+            ${DO_ALERT} 'demo-prod' '[demo-prod]交付${APP_TAG}[web]：✅[oss]上传完成。'
           """
         }
 
@@ -226,13 +228,13 @@ pipeline {
         success {
             echo 'I succeeeded!'
             sh """
-              ${DO_ALERT} 'demo-prod' '[demo-web]交付[${APP_TAG}]到[prod]：✅任务完成！'
+              ${DO_ALERT} 'demo-prod' '[demo-prod]交付${APP_TAG}[web]：✅任务完成！'
             """
         }
         failure {
             echo 'I failed :('
             sh """
-              ${DO_ALERT} 'demo-prod' '[demo-web]交付[${APP_TAG}]到[prod]：❌任务失败请检查！'
+              ${DO_ALERT} 'demo-prod' '[demo-prod]交付${APP_TAG}[web]：❌任务失败请检查！'
             """
         }
       }
