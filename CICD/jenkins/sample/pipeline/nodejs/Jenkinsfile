@@ -72,6 +72,12 @@ pipeline {
       }
       steps {
         echo '[+] 上线机器人️🤖p小C🤖开始干活...'
+        echo '[-] 构建中...'
+        sh '''
+          docker run --rm -v "$(pwd)/src:/code" -w "/code" opera443399/node:9-alpine-taobao npm install
+          docker run --rm -v "$(pwd)/src:/code" -w "/code" opera443399/node:9-alpine-taobao npm run build_qa
+        '''
+
         echo '[-] 审核中...'
         dir('src') {
           script {
@@ -101,12 +107,6 @@ pipeline {
           }
         }
 
-        echo '[-] 构建中...'
-        sh '''
-          docker run --rm -v "$(pwd)/src:/code" -w "/code" node:9-alpine npm install
-          docker run --rm -v "$(pwd)/src:/code" -w "/code" node:9-alpine npm run build_qa
-        '''
-
         echo '[-] 归档构建输出的dist目录：'
         sh '''
           mkdir -p backup/qa
@@ -127,9 +127,7 @@ pipeline {
           sh '''
             /usr/local/bin/ossutil -e oss-cn-beijing.aliyuncs.com -i ${AccessKeyId} -k ${AccessKeySecret} cp -r -f -u backup/qa/${APP_TAG}/dist oss://qa/demo
           '''
-          sh """
-            ${DO_ALERT} 'demo-qa' '[demo-qa]交付${APP_TAG}[web]：✅[oss]上传完成。'
-          """
+          echo '[demo-qa]交付${APP_TAG}[web]：✅[oss]上传完成。'
         }
 
         echo '[-] ______________________END_OF_STAGE______________________'
@@ -161,6 +159,12 @@ pipeline {
       }
       steps {
         echo '[+] 上线机器人️🤖p小C🤖开始干活...'
+        echo '[-] 构建中...'
+        sh '''
+          docker run --rm -v "$(pwd)/src:/code" -w "/code" opera443399/node:9-alpine-taobao npm install
+          docker run --rm -v "$(pwd)/src:/code" -w "/code" opera443399/node:9-alpine-taobao npm run build_prod
+        '''
+
         echo '[-] 审核中...'
         dir('src') {
           script {
@@ -190,12 +194,6 @@ pipeline {
           }
         }
 
-        echo '[-] 构建中...'
-        sh '''
-          docker run --rm -v "$(pwd)/src:/code" -w "/code" node:9-alpine npm install
-          docker run --rm -v "$(pwd)/src:/code" -w "/code" node:9-alpine npm run build_qa
-        '''
-
         echo '[-] 归档构建输出的dist目录：'
         sh '''
           mkdir -p backup/prod
@@ -216,9 +214,7 @@ pipeline {
           sh '''
             /usr/local/bin/ossutil -e oss-cn-beijing.aliyuncs.com -i ${AccessKeyId} -k ${AccessKeySecret} cp -r -f -u backup/prod/${APP_TAG}/dist oss://prod/demo
           '''
-          sh """
-            ${DO_ALERT} 'demo-prod' '[demo-prod]交付${APP_TAG}[web]：✅[oss]上传完成。'
-          """
+          echo '[demo-prod]交付${APP_TAG}[web]：✅[oss]上传完成。'
         }
 
         echo '[-] ______________________END_OF_STAGE______________________'
