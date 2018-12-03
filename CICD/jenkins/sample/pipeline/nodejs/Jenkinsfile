@@ -127,7 +127,7 @@ pipeline {
           sh '''
             /usr/local/bin/ossutil -e oss-cn-beijing.aliyuncs.com -i ${AccessKeyId} -k ${AccessKeySecret} cp -r -f -u backup/qa/${APP_TAG}/dist oss://qa/demo
           '''
-          echo '[demo-qa]交付${APP_TAG}[web]：✅[oss]上传完成。'
+          echo "[demo-qa]交付${APP_TAG}[web]：✅[oss]上传完成。"
         }
 
         echo '[-] ______________________END_OF_STAGE______________________'
@@ -214,7 +214,7 @@ pipeline {
           sh '''
             /usr/local/bin/ossutil -e oss-cn-beijing.aliyuncs.com -i ${AccessKeyId} -k ${AccessKeySecret} cp -r -f -u backup/prod/${APP_TAG}/dist oss://prod/demo
           '''
-          echo '[demo-prod]交付${APP_TAG}[web]：✅[oss]上传完成。'
+          echo "[demo-prod]交付${APP_TAG}[web]：✅[oss]上传完成。"
         }
 
         echo '[-] ______________________END_OF_STAGE______________________'
