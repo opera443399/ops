@@ -1,14 +1,14 @@
-±àÒëÄÚºË¼°ÖÆ×÷RPM°ü
+ç¼–è¯‘å†…æ ¸åŠåˆ¶ä½œRPMåŒ…
 
 http://blog.liuts.com/post/180/
 
 
-Ò»¡¢Ç°ÑÔ
-       ÓÉÓÚÄ¿Ç°²¿·ÖÆ½Ì¨ËùÊ¹ÓÃµÄLinux·¢ĞĞ°æ°æ±¾±È½ÏµÍ£¬×Ô´øµÄÄÚºË°æ±¾Ô¶µÍÓÚÖ÷Á÷ÄÚºË£¬ÎŞ·¨Ê¹ÓÃµ½Ò»Ğ©ÓÅĞãµÄĞÂÄÚºËÌØÕ÷£¬°üÀ¨¶ÔÎÒÃÇ±È½ÏÓĞÓÃµÄper-task storage I/O¡¢¸ÄÉÆÔÚSMPÏµÍ³ÖĞI/OµÄÍÌÍÂÁ¿¡¢Ext4ÎÄ¼ş¸ñÊ½¡¢ĞéÄâ»¯Ö§³ÖµÈ¡£Òò´Ë¾ö¶¨²ÉÓÃÄ¿Ç°×îĞÂÎÈ¶¨°æÄÚºËLinux-2.6.32.6(¸üĞÂÓÚ2010-01-25)½øĞĞÖØĞÂ±àÒë£¬Éú³ÉÒ»¸ö¸ü¼ÓĞ¡ÇÉ¡¢ÎÈ¶¨¡¢°²È«¡¢¸ßĞ§ÂÊµÄĞÂÄÚºË¡£
+ä¸€ã€å‰è¨€
+       ç”±äºç›®å‰éƒ¨åˆ†å¹³å°æ‰€ä½¿ç”¨çš„Linuxå‘è¡Œç‰ˆç‰ˆæœ¬æ¯”è¾ƒä½ï¼Œè‡ªå¸¦çš„å†…æ ¸ç‰ˆæœ¬è¿œä½äºä¸»æµå†…æ ¸ï¼Œæ— æ³•ä½¿ç”¨åˆ°ä¸€äº›ä¼˜ç§€çš„æ–°å†…æ ¸ç‰¹å¾ï¼ŒåŒ…æ‹¬å¯¹æˆ‘ä»¬æ¯”è¾ƒæœ‰ç”¨çš„per-task storage I/Oã€æ”¹å–„åœ¨SMPç³»ç»Ÿä¸­I/Oçš„ååé‡ã€Ext4æ–‡ä»¶æ ¼å¼ã€è™šæ‹ŸåŒ–æ”¯æŒç­‰ã€‚å› æ­¤å†³å®šé‡‡ç”¨ç›®å‰æœ€æ–°ç¨³å®šç‰ˆå†…æ ¸Linux-2.6.32.6(æ›´æ–°äº2010-01-25)è¿›è¡Œé‡æ–°ç¼–è¯‘ï¼Œç”Ÿæˆä¸€ä¸ªæ›´åŠ å°å·§ã€ç¨³å®šã€å®‰å…¨ã€é«˜æ•ˆç‡çš„æ–°å†…æ ¸ã€‚
 
-¶ş¡¢±àÒë²½Öè
-µÚÒ»²½£º
-ÒıÓÃ
+äºŒã€ç¼–è¯‘æ­¥éª¤
+ç¬¬ä¸€æ­¥ï¼š
+å¼•ç”¨
 
 # cd /home
 # wget http://www.kernel.org/pub/linux/kernel/v2.6/linux-2.6.32.5.tar.gz
@@ -17,25 +17,25 @@ http://blog.liuts.com/post/180/
 # ln -s linux-2.6.32.5 linux
 # cd linux
 
-µÚ¶ş²½£º
-ÒıÓÃ
+ç¬¬äºŒæ­¥ï¼š
+å¼•ç”¨
 
-# make mrproper (³õ´Î±àÒëÄÚºËÕâ²½Ò²¿ÉÒÔÊ¡ÂÔ£¬·½±ãµÚ¶ş´Î±àÒë³õÊ¼ÓÃ¡£)
+# make mrproper (åˆæ¬¡ç¼–è¯‘å†…æ ¸è¿™æ­¥ä¹Ÿå¯ä»¥çœç•¥ï¼Œæ–¹ä¾¿ç¬¬äºŒæ¬¡ç¼–è¯‘åˆå§‹ç”¨ã€‚)
 # make menuconfig
-# make bzImage && make modules && make modules_install(Ğè30~40·ÖÖÓ£¬¾ßÌå¿´·şÎñÆ÷ÅäÖÃ)
+# make bzImage && make modules && make modules_install(éœ€30~40åˆ†é’Ÿï¼Œå…·ä½“çœ‹æœåŠ¡å™¨é…ç½®)
 # make install
 
-ÈçĞèÖÆ×÷RPMÄÚºË°²×°°ü£¬ÔËĞĞÒÔÏÂÃüÁî£¬Ïàµ±ÓÚµÚ¶ş²½µÄ²Ù×÷£¬µ«²»±àÒë±¾»úÄÚºË¡£
+å¦‚éœ€åˆ¶ä½œRPMå†…æ ¸å®‰è£…åŒ…ï¼Œè¿è¡Œä»¥ä¸‹å‘½ä»¤ï¼Œç›¸å½“äºç¬¬äºŒæ­¥çš„æ“ä½œï¼Œä½†ä¸ç¼–è¯‘æœ¬æœºå†…æ ¸ã€‚
 # make rpm
-Éú³ÉÎ»ÖÃ£º
+ç”Ÿæˆä½ç½®ï¼š
 /usr/src/redhat/RPMS/x86_64/kernel-2.6.32.6-2.x86_64.rpm
 /usr/src/redhat/SRPMS/kernel-2.6.32.6-2.src.rpm
 
-Èı¡¢°²×°²½Öè
-1¡¢¶ş½øÖÆrpm°ü°²×°²½Öè
+ä¸‰ã€å®‰è£…æ­¥éª¤
+1ã€äºŒè¿›åˆ¶rpmåŒ…å®‰è£…æ­¥éª¤
 # rpm -ivh  kernel-2.6.32.6-1.x86_64.rpm
-# vi /boot/grub/menu.lstÌí¼ÓÒÔÏÂ²¢ĞŞ¸ÄdefaultÏî¡£
-ÒıÓÃ
+# vi /boot/grub/menu.lstæ·»åŠ ä»¥ä¸‹å¹¶ä¿®æ”¹defaulté¡¹ã€‚
+å¼•ç”¨
 
     title CentOS (2.6.32.6)
     root (hd0,0)
@@ -43,39 +43,39 @@ http://blog.liuts.com/post/180/
     initrd /initrd-2.6.32.6.img
 
 # cd /lib/modules && mkinitrd /boot/initrd-2.6.32.6.img 2.6.32.6/
-2¡¢RPMÔ´Âë°ü°²×°²½Öè£¬ºÃ´¦±ãÊÇÔÚÔ­ÓĞ»ù´¡ÉÏÔÙ½øĞĞ±àÒë£¬¸üÁé»î¡£
-ÒıÓÃ
+2ã€RPMæºç åŒ…å®‰è£…æ­¥éª¤ï¼Œå¥½å¤„ä¾¿æ˜¯åœ¨åŸæœ‰åŸºç¡€ä¸Šå†è¿›è¡Œç¼–è¯‘ï¼Œæ›´çµæ´»ã€‚
+å¼•ç”¨
 
 # rpm -Uvh kernel-2.6.32.6-2.src.rpm
-# rpmbuild -bp --target=$(arch) /usr/src/redhat/SPECS/kernel-2.6.32.6-2.spec 
+# rpmbuild -bp --target=$(arch) /usr/src/redhat/SPECS/kernel-2.6.32.6-2.spec
 # cd /usr/src/redhat/BUILD/kernel-2.6.32.6-2
-# vi Makefile <-- Change "EXTRAVERSION" to avoid kernel overwriting 
-# cp /lib/modules/2.6.32.6/build/.config . 
+# vi Makefile <-- Change "EXTRAVERSION" to avoid kernel overwriting
+# cp /lib/modules/2.6.32.6/build/.config .
 # make menuconfig
-# ÖØ¸´µÚ¶ş²½
+# é‡å¤ç¬¬äºŒæ­¥
 
-ËÄ¡¢ChangeLog
-ÒıÓÃ
+å››ã€ChangeLog
+å¼•ç”¨
 
-2.1¡¢²Ã¼õÁË51MÄÚºËÄ£¿é£¬Ä¿Ç°´óĞ¡Îª46M¡£
-2.2¡¢No Forced Preemption(Server)ÊÊºÏ·şÎñÆ÷»·¾³µÄ½ûÖ¹ÄÚºËÇÀÕ¼¡£
-2.3¡¢High Memory Support->64GB¡£
-2.4¡¢Default I/O scheduer(Deadline)Ê¹ÓÃDeadline×÷Ó²ÅÌ´æÈ¡ÅÅ³ÌÆ÷£¬·Ç³£ÊÊºÏIO½Ï´óµÄÊı   ¾İ¿â·şÎñÆ÷¡£
-2.5¡¢Ìí¼ÓExt4 FileSystem¡£
-2.6¡¢É¾³ıDell laptop support¡¢Toshiba Laptop support¡£
-2.7¡¢¿ªÆôNetfilterÖ§³Ö¡£
-2.8¡¢Export task/process statistics through netlink(sys taskÏà¹ØÑ¡Ïî)¡£
-2.9¡¢Enable extended accounting over taskstats(sys taskÏà¹ØÑ¡Ïî)¡£
-2.10¡¢Enable per-task storage I/O accounting(sys taskÏà¹ØÑ¡Ïî)¡£
-2.11¡¢Support for Large Block Devices (LBD) - Ö§³Ö³¬¹ı 2TB ´óĞ¡µÄ´¢´æÉè±¸¡£
-2.12¡¢Support for Large Single Files (LSF) - Ö§³Ö´¦Àí³¬¹ı 2TB ´óĞ¡µÄÎÄ¼ş
-2.13¡¢²Ã¼õsound card support¡£
-2.14¡¢²Ã¼õBluetooth subsystem support¡£
-2.15¡¢²Ã¼õWireless¡£
-2.16¡¢²Ã¼õKernel hacking ¡£
+2.1ã€è£å‡äº†51Må†…æ ¸æ¨¡å—ï¼Œç›®å‰å¤§å°ä¸º46Mã€‚
+2.2ã€No Forced Preemption(Server)é€‚åˆæœåŠ¡å™¨ç¯å¢ƒçš„ç¦æ­¢å†…æ ¸æŠ¢å ã€‚
+2.3ã€High Memory Support->64GBã€‚
+2.4ã€Default I/O scheduer(Deadline)ä½¿ç”¨Deadlineä½œç¡¬ç›˜å­˜å–æ’ç¨‹å™¨ï¼Œéå¸¸é€‚åˆIOè¾ƒå¤§çš„æ•°   æ®åº“æœåŠ¡å™¨ã€‚
+2.5ã€æ·»åŠ Ext4 FileSystemã€‚
+2.6ã€åˆ é™¤Dell laptop supportã€Toshiba Laptop supportã€‚
+2.7ã€å¼€å¯Netfilteræ”¯æŒã€‚
+2.8ã€Export task/process statistics through netlink(sys taskç›¸å…³é€‰é¡¹)ã€‚
+2.9ã€Enable extended accounting over taskstats(sys taskç›¸å…³é€‰é¡¹)ã€‚
+2.10ã€Enable per-task storage I/O accounting(sys taskç›¸å…³é€‰é¡¹)ã€‚
+2.11ã€Support for Large Block Devices (LBD) - æ”¯æŒè¶…è¿‡ 2TB å¤§å°çš„å‚¨å­˜è®¾å¤‡ã€‚
+2.12ã€Support for Large Single Files (LSF) - æ”¯æŒå¤„ç†è¶…è¿‡ 2TB å¤§å°çš„æ–‡ä»¶
+2.13ã€è£å‡sound card supportã€‚
+2.14ã€è£å‡Bluetooth subsystem supportã€‚
+2.15ã€è£å‡Wirelessã€‚
+2.16ã€è£å‡Kernel hacking ã€‚
 
-ÈçĞè±àÒëºóµÄRPM°üÇëÁªÏµÎÒ(ÎÄ¼şÌ«´ó£¬²»ºÃ´«)¡£
+å¦‚éœ€ç¼–è¯‘åçš„RPMåŒ…è¯·è”ç³»æˆ‘(æ–‡ä»¶å¤ªå¤§ï¼Œä¸å¥½ä¼ )ã€‚
 kernel-2.6.32.6-2.x86_64.rpm(17M)
 kernel-2.6.32.6-2.src.rpm(84M)
 
-Èç´ó¼ÒÓĞÊ²Ã´ÒÉÎÊ»ò¸ĞĞËÈ¤µÄ»°Ìâ¿ÉÒÔÍ¨¹ıweiboÓëÎÒ½»Á÷£ºhttp://t.qq.com/yorkoliu
+å¦‚å¤§å®¶æœ‰ä»€ä¹ˆç–‘é—®æˆ–æ„Ÿå…´è¶£çš„è¯é¢˜å¯ä»¥é€šè¿‡weiboä¸æˆ‘äº¤æµï¼šhttp://t.qq.com/yorkoliu
