@@ -1,8 +1,0 @@
-web:
-  image: opera443399/whoami
-  ports:
-    - '80'
-  restart: always
-  labels:
-    aliyun.routing.port_80: http://www.test.com
-    aliyun.scale: '1'
