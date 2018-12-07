@@ -1,8 +1,47 @@
 # BBR
-2018/11/27
+2018/12/7
+
+### *tcp_bbr: add BBR congestion control*
+This commit implements a new TCP congestion control algorithm: BBR
+(Bottleneck Bandwidth and RTT). A detailed description of BBR will be
+published in ACM Queue, Vol. 14 No. 5, September-October 2016, as
+"BBR: Congestion-Based Congestion Control".
+
+BBR has significantly increased throughput and reduced latency for
+connections on Google's internal backbone networks and google.com and
+YouTube Web servers.
+
+BBR requires only changes on the sender side, not in the network or
+the receiver side. Thus it can be incrementally deployed on today's
+Internet, or in datacenters.
+
+(omitted...)
+Our long-term goal is to improve the congestion control algorithms
+used on the Internet. We are hopeful that BBR can help advance the
+efforts toward this goal, and motivate the community to do further
+research.
+
+Test results, performance evaluations, feedback, and BBR-related
+discussions are very welcome in the public e-mail list for BBR:
+
+  https://groups.google.com/forum/#!forum/bbr-dev
+
+**NOTE**: BBR *must* be used with the fq qdisc ("man tc-fq") with pacing
+enabled, since pacing is integral to the BBR design and
+implementation. BBR without pacing would not function properly, and
+may incur unnecessary high packet loss rates.
+
+Signed-off-by: Van Jacobson <vanj@google.com>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: Nandita Dukkipati <nanditad@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Soheil Hassas Yeganeh <soheil@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 
 
-How to Deploy Google BBR on CentOS 7
+
+### *How to Deploy Google BBR on CentOS 7*
 Published on: Thu, Jan 5, 2017 at 6:34 pm EST
 
 
@@ -105,4 +144,6 @@ That's all. Thank you for reading.
 ```
 
 ### ZYXW、参考
-1、[How to Deploy Google BBR on CentOS 7](https://www.vultr.com/docs/how-to-deploy-google-bbr-on-centos-7)
+1. [How to Deploy Google BBR on CentOS 7](https://www.vultr.com/docs/how-to-deploy-google-bbr-on-centos-7)
+2. [linux.git - tcp_bbr: add BBR congestion control](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/net/ipv4/tcp_bbr.c?id=0f8782ea14974ce992618b55f0c041ef43ed0b78)
+3. [来自Google的TCP BBR拥塞控制算法解析(注意作者后续还有多篇研究文章)](https://blog.csdn.net/dog250/article/details/52830576)
