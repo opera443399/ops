@@ -1,7 +1,7 @@
-#!/bin/env python
+#!/usr/bin/env python
 # -*- coding:utf-8 -*-
 #
-# 2018/11/21
+# 2018/12/11
 
 from __future__ import print_function
 import random
