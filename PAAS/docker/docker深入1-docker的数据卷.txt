@@ -1,12 +1,12 @@
-dockerÉîÈë1-dockerµÄÊı¾İ¾í
-²Î¿¼£º
+dockeræ·±å…¥1-dockerçš„æ•°æ®å·
+å‚è€ƒï¼š
 http://docs.docker.com/userguide/dockervolumes/
 
 
-Õë¶ÔÊı¾İµÄ´æ´¢£¬ÓĞ¸ödata volumeµÄ¸ÅÄî¡£
-Ê¹ÓÃ²ÎÊı£º -v
-ÔÚcontainerÖĞ´´½¨Ò»¸övolume£¬»òÕßÀàËÆÄ¿Â¼Ó³ÉäµÄ·½Ê½£¬¹ÒÔØÒ»¸öÊı¾İÅÌ»òÕßÄ¿Â¼µ½dockerµÄcontainerÖĞ¡£
-»·¾³×¼±¸£º
+é’ˆå¯¹æ•°æ®çš„å­˜å‚¨ï¼Œæœ‰ä¸ªdata volumeçš„æ¦‚å¿µã€‚
+ä½¿ç”¨å‚æ•°ï¼š -v
+åœ¨containerä¸­åˆ›å»ºä¸€ä¸ªvolumeï¼Œæˆ–è€…ç±»ä¼¼ç›®å½•æ˜ å°„çš„æ–¹å¼ï¼ŒæŒ‚è½½ä¸€ä¸ªæ•°æ®ç›˜æˆ–è€…ç›®å½•åˆ°dockerçš„containerä¸­ã€‚
+ç¯å¢ƒå‡†å¤‡ï¼š
 [root@svr200-10 ~]# yum install docker-io -y
 [root@svr200-10 ~]# docker -v
 Docker version 1.5.0, build a8a31ef/1.5.0
@@ -21,12 +21,12 @@ centos              centos7             fd44297e2ddb        11 days ago         
 centos              latest              fd44297e2ddb        11 days ago         215.7 MB
 
 
-Ò»¡¢¼òµ¥µÄ·½Ê½ÊÇ£º¹ÒÔØÒ»¸öÊı¾İÄ¿Â¼µ½containerÖĞ
-[Jack@svr200-10 bin]$ docker run -d -it -v /home/datacenter:/datacenter --name datacenter centos                
+ä¸€ã€ç®€å•çš„æ–¹å¼æ˜¯ï¼šæŒ‚è½½ä¸€ä¸ªæ•°æ®ç›®å½•åˆ°containerä¸­
+[Jack@svr200-10 bin]$ docker run -d -it -v /home/datacenter:/datacenter --name datacenter centos
 66f5e0e0e7042e371c092ff24117598055b7f65d4224f9738efbf13ba6273127
 [Jack@svr200-10 bin]$ docker ps -a
 CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
-66f5e0e0e704        centos:7            "/bin/bash"         12 seconds ago      Up 11 seconds                           datacenter             
+66f5e0e0e704        centos:7            "/bin/bash"         12 seconds ago      Up 11 seconds                           datacenter
 [Jack@svr200-10 bin]$ docker attach test01
 
 [root@66f5e0e0e704 /]# ll /
@@ -62,19 +62,19 @@ shm                                                                             
 /dev/mapper/vg_svr20010-lv_home                                                                   405G   48G  338G  13% /datacenter
 tmpfs                                                                                             1.9G     0  1.9G   0% /proc/kcore
 
-Ğ´ÈëÊı¾İ£º
+å†™å…¥æ•°æ®ï¼š
 [root@66f5e0e0e704 /]# echo "`date` aaa" >/datacenter/test01
-[root@66f5e0e0e704 /]# echo "`date` 123" >/datacenter/test02   
+[root@66f5e0e0e704 /]# echo "`date` 123" >/datacenter/test02
 [root@66f5e0e0e704 /]# ls /datacenter/
 test01  test02
 [root@66f5e0e0e704 /]# cat /datacenter/test0*
 Mon May  4 02:57:19 UTC 2015 aaa
 Mon May  4 02:57:27 UTC 2015 123
 
-[root@66f5e0e0e704 /]# exit 
+[root@66f5e0e0e704 /]# exit
 exit
 
-²é¿´ËŞÖ÷»ú¹ÒÔØÄ¿Â¼µÄÎÄ¼şºÍÄÚÈİ£º
+æŸ¥çœ‹å®¿ä¸»æœºæŒ‚è½½ç›®å½•çš„æ–‡ä»¶å’Œå†…å®¹ï¼š
 [Jack@svr200-10 bin]$ ll /home/datacenter
 total 8
 -rw-r--r--. 1 root root 33 May  4 10:57 test01
@@ -86,28 +86,28 @@ Mon May  4 02:57:27 UTC 2015 123
 
 [Jack@svr200-10 bin]$ docker stop datacenter
 datacenter
-[Jack@svr200-10 bin]$ docker rm datacenter  
+[Jack@svr200-10 bin]$ docker rm datacenter
 datacenter
 
 
-¶ş¡¢¸´ÔÓÒ»µã¶ù£º´´½¨Ò»¸ödata volume container£¬¹²Ïí¸øÆäËûcontainer
-Èç¹ÙÍøËùÊ¾£º
+äºŒã€å¤æ‚ä¸€ç‚¹å„¿ï¼šåˆ›å»ºä¸€ä¸ªdata volume containerï¼Œå…±äº«ç»™å…¶ä»–container
+å¦‚å®˜ç½‘æ‰€ç¤ºï¼š
 If you have some persistent data that you want to share between containers, or want to use from non-persistent containers, it's best to create a named Data Volume Container, and then to mount the data from it.
 
 
-1£©´´½¨Ò»¸öcontainer£¬Ìá¹©Ò»¸öÊı¾İ¾í¹©ÆäËûcontainerÊ¹ÓÃ£º
-[Jack@svr200-10 bin]$ docker run -d -it -v /home/datacenter:/datacenter --name Data_Vol centos  
+1ï¼‰åˆ›å»ºä¸€ä¸ªcontainerï¼Œæä¾›ä¸€ä¸ªæ•°æ®å·ä¾›å…¶ä»–containerä½¿ç”¨ï¼š
+[Jack@svr200-10 bin]$ docker run -d -it -v /home/datacenter:/datacenter --name Data_Vol centos
 7691eccc73f6e4e2e2c3d6816cf6ba6a80a5f98f5067d48db6e8bafb4e4db021
 
 [Jack@svr200-10 bin]$ docker ps -a
 CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
-7691eccc73f6        centos:7            "/bin/bash"         7 seconds ago       Up 5 seconds                            Data_Vol   
+7691eccc73f6        centos:7            "/bin/bash"         7 seconds ago       Up 5 seconds                            Data_Vol
 
 
-ÔÙ´´½¨2¸öcontainer£¬Ê¹ÓÃ¸Õ²Å´´½¨µÄÊı¾İ¾íData_VolÀ´´æ´¢Êı¾İ¡£
-ÔÚÆô¶¯containerÊ±£¬ÓÃÕâ¸ö²ÎÊı£º--volumes-from Data_Vol£¬¶ø²»ÊÇÖ®Ç°Ìáµ½µÄ-v²ÎÊı£¬À´¹ÒÔØÊı¾İ¾í¡£
+å†åˆ›å»º2ä¸ªcontainerï¼Œä½¿ç”¨åˆšæ‰åˆ›å»ºçš„æ•°æ®å·Data_Volæ¥å­˜å‚¨æ•°æ®ã€‚
+åœ¨å¯åŠ¨containeræ—¶ï¼Œç”¨è¿™ä¸ªå‚æ•°ï¼š--volumes-from Data_Volï¼Œè€Œä¸æ˜¯ä¹‹å‰æåˆ°çš„-vå‚æ•°ï¼Œæ¥æŒ‚è½½æ•°æ®å·ã€‚
 
-2£©´´½¨Ò»¸öcontainer£ºapp1   £¬Ğ´ÈëÒ»µã¶ùÊı¾İ  
+2ï¼‰åˆ›å»ºä¸€ä¸ªcontainerï¼šapp1   ï¼Œå†™å…¥ä¸€ç‚¹å„¿æ•°æ®
 [Jack@svr200-10 bin]$ docker run -d -it --volumes-from Data_Vol --name app1 centos
 1474f622b7f04c98da98e320d10864538b50b0b053677bbda039c8fb657062c1
 [Jack@svr200-10 bin]$ docker attach app1
@@ -137,16 +137,16 @@ drwxr-xr-x.  19 root root 4096 Apr 15 14:29 var
 [root@1474f622b7f0 /]# ls /datacenter/
 test01  test02
 [root@1474f622b7f0 /]# touch /datacenter/app1
-[root@1474f622b7f0 /]# ls /datacenter/       
+[root@1474f622b7f0 /]# ls /datacenter/
 app1  test01  test02
-[root@1474f622b7f0 /]# echo "`date` hello app1" >/datacenter/app1 
-[root@1474f622b7f0 /]# cat /datacenter/app1 
+[root@1474f622b7f0 /]# echo "`date` hello app1" >/datacenter/app1
+[root@1474f622b7f0 /]# cat /datacenter/app1
 Mon May  4 03:43:11 UTC 2015 hello app1
 [root@1474f622b7f0 /]# exit
 exit
 
 
-2£©ÔÙ´´½¨Ò»¸öcontainer£ºapp2   £¬Ğ´ÈëÒ»µã¶ùÊı¾İ  
+2ï¼‰å†åˆ›å»ºä¸€ä¸ªcontainerï¼šapp2   ï¼Œå†™å…¥ä¸€ç‚¹å„¿æ•°æ®
 [Jack@svr200-10 bin]$ docker run -d -it --volumes-from Data_Vol --name app2 centos
 c4d743681ec95d78b21a52d3a558b4cab40a9f7ba43e884e4686c57c313b6923
 
@@ -160,56 +160,56 @@ shm                                                                             
 /dev/mapper/vg_svr20010-lv_root                                                                    50G  9.3G   38G  20% /etc/hosts
 /dev/mapper/vg_svr20010-lv_home                                                                   405G   48G  338G  13% /datacenter
 tmpfs                                                                                             1.9G     0  1.9G   0% /proc/kcore
-[root@c4d743681ec9 /]# ls /datacenter/ 
+[root@c4d743681ec9 /]# ls /datacenter/
 app1  test01  test02
-[root@c4d743681ec9 /]# cat /datacenter/app1 
+[root@c4d743681ec9 /]# cat /datacenter/app1
 Mon May  4 03:43:11 UTC 2015 hello app1
-[root@c4d743681ec9 /]# echo "`date` this is app2" >/datacenter/app2       
+[root@c4d743681ec9 /]# echo "`date` this is app2" >/datacenter/app2
 [root@c4d743681ec9 /]# exit
 exit
 
 [Jack@svr200-10 bin]$ docker ps -a
 CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                            PORTS               NAMES
-c4d743681ec9        centos:7            "/bin/bash"         6 minutes ago       Exited (0) 6 seconds ago                              app2                
-1474f622b7f0        centos:7            "/bin/bash"         6 minutes ago       Exited (130) About a minute ago                       app1                
-7691eccc73f6        centos:7            "/bin/bash"         7 minutes ago       Up 7 minutes                                          Data_Vol            
-[Jack@svr200-10 bin]$ 
+c4d743681ec9        centos:7            "/bin/bash"         6 minutes ago       Exited (0) 6 seconds ago                              app2
+1474f622b7f0        centos:7            "/bin/bash"         6 minutes ago       Exited (130) About a minute ago                       app1
+7691eccc73f6        centos:7            "/bin/bash"         7 minutes ago       Up 7 minutes                                          Data_Vol
+[Jack@svr200-10 bin]$
 
 
 
-3£©ÎÒÃÇÍ£Ö¹Data_VolÕâ¸öÈİÆ÷£¬ÔÙÊÔÊÔĞ´ÈëÊı¾İ
+3ï¼‰æˆ‘ä»¬åœæ­¢Data_Volè¿™ä¸ªå®¹å™¨ï¼Œå†è¯•è¯•å†™å…¥æ•°æ®
 [Jack@svr200-10 bin]$ docker stop Data_Vol
 Data_Vol
 
 [Jack@svr200-10 bin]$ docker start app1
 app1
-[Jack@svr200-10 bin]$ docker ps -a        
+[Jack@svr200-10 bin]$ docker ps -a
 CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                          PORTS               NAMES
-c4d743681ec9        centos:7            "/bin/bash"         7 minutes ago       Exited (0) About a minute ago                       app2                
-1474f622b7f0        centos:7            "/bin/bash"         8 minutes ago       Up 7 seconds                                        app1                
-7691eccc73f6        centos:7            "/bin/bash"         8 minutes ago       Exited (137) 16 seconds ago                         Data_Vol            
+c4d743681ec9        centos:7            "/bin/bash"         7 minutes ago       Exited (0) About a minute ago                       app2
+1474f622b7f0        centos:7            "/bin/bash"         8 minutes ago       Up 7 seconds                                        app1
+7691eccc73f6        centos:7            "/bin/bash"         8 minutes ago       Exited (137) 16 seconds ago                         Data_Vol
 [Jack@svr200-10 bin]$ docker attach app1
 
 [root@1474f622b7f0 /]# ls /datacenter/
 app1  app2  test01  test02
-[root@1474f622b7f0 /]# echo "`date` app1 is back here" >>/datacenter/app1        
+[root@1474f622b7f0 /]# echo "`date` app1 is back here" >>/datacenter/app1
 [root@1474f622b7f0 /]# cat /datacenter/app1
 Mon May  4 03:43:11 UTC 2015 hello app1
 Mon May  4 03:48:53 UTC 2015 app1 is back here
 [root@1474f622b7f0 /]# exit
 exit
 
-¿´ÆğÀ´£¬£¬Õâ¸öÓÃÀ´³Ö¾Ã»¯µÄData_Vol²»ÓÃÆô¶¯£¬£¬ÆäËûµÄcontainerÓÃ--volumes-from Data_VolÀ´¹ÒÔØÊı¾İ¾í£¬Ò²ÊÇ¿ÉÒÔÕı³£Ê¹ÓÃµÄ¡£
+çœ‹èµ·æ¥ï¼Œï¼Œè¿™ä¸ªç”¨æ¥æŒä¹…åŒ–çš„Data_Volä¸ç”¨å¯åŠ¨ï¼Œï¼Œå…¶ä»–çš„containerç”¨--volumes-from Data_Volæ¥æŒ‚è½½æ•°æ®å·ï¼Œä¹Ÿæ˜¯å¯ä»¥æ­£å¸¸ä½¿ç”¨çš„ã€‚
 
-4£©»Øµ½ËŞÖ÷»úÁË£¬ÎÒÃÇ¿´ÏÂÊı¾İ
+4ï¼‰å›åˆ°å®¿ä¸»æœºäº†ï¼Œæˆ‘ä»¬çœ‹ä¸‹æ•°æ®
 [Jack@svr200-10 bin]$ ls /home/datacenter/
 app1  app2  test01  test02
 
-¿´ÆğÀ´£¬ÎÄ¼ş¶¼ÔÚÕâÀïÄØ£¬ÔÙ¿´ÏÂÊı¾İ£º
+çœ‹èµ·æ¥ï¼Œæ–‡ä»¶éƒ½åœ¨è¿™é‡Œå‘¢ï¼Œå†çœ‹ä¸‹æ•°æ®ï¼š
 [Jack@svr200-10 bin]$ cat /home/datacenter/app1
 Mon May  4 03:43:11 UTC 2015 hello app1
 Mon May  4 03:48:53 UTC 2015 app1 is back here
 [Jack@svr200-10 bin]$ cat /home/datacenter/app2
 Mon May  4 03:46:37 UTC 2015 this is app2
 
-¿´£¬·ûºÏÔ¤ÆÚ¡£
+çœ‹ï¼Œç¬¦åˆé¢„æœŸã€‚

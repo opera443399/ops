@@ -1,41 +1,41 @@
-dockerÉîÈë1-´´½¨Ò»¸ö×Ô¼ºµÄdocker image
+dockeræ·±å…¥1-åˆ›å»ºä¸€ä¸ªè‡ªå·±çš„docker image
 
 ===
-²Î¿¼×ÊÁÏ£º
+å‚è€ƒèµ„æ–™ï¼š
 
-[ÒµÎñ¼Ü¹¹Êµ¼ù]Ó¦¸ÃÈçºÎÊ¹ÓÃ°¢ÀïÔÆ£¿¸ß¼¶Æª  http://bbs.aliyun.com/read/182036.html?spm=5176.7189909.0.0.R1MNwz&displayMode=1
-ÀûÓÃDocker¹¹½¨¿ª·¢»·¾³  http://tech.uc.cn/?p=2726
-Docker£ºÀûÓÃLinuxÈÝÆ÷ÊµÏÖ¿ÉÒÆÖ²µÄÓ¦ÓÃ²¿Êð  http://www.infoq.com/cn/articles/docker-containers
-cnetos7°²×°docker V1.0  http://www.51ou.com/browse/centos/57797.html
-±Ê¼Ç- api¹ÜÀídocker ContainerµÄlnmp²Ù×÷  http://www.tuicool.com/articles/3QJFRzI
-CentOS 6.5ÏÂÊ¹ÓÃdocker ÈÝÆ÷  http://www.21ops.com/linux/7324.html
-¹¹½¨Ò»¸ö¸ß¿ÉÓÃ¼°×Ô¶¯·¢ÏÖµÄDocker»ù´¡¼Ü¹¹-HECD[Ô­´´]  http://blog.liuts.com/post/242/
+[ä¸šåŠ¡æž¶æž„å®žè·µ]åº”è¯¥å¦‚ä½•ä½¿ç”¨é˜¿é‡Œäº‘ï¼Ÿé«˜çº§ç¯‡  http://bbs.aliyun.com/read/182036.html?spm=5176.7189909.0.0.R1MNwz&displayMode=1
+åˆ©ç”¨Dockeræž„å»ºå¼€å‘çŽ¯å¢ƒ  http://tech.uc.cn/?p=2726
+Dockerï¼šåˆ©ç”¨Linuxå®¹å™¨å®žçŽ°å¯ç§»æ¤çš„åº”ç”¨éƒ¨ç½²  http://www.infoq.com/cn/articles/docker-containers
+cnetos7å®‰è£…docker V1.0  http://www.51ou.com/browse/centos/57797.html
+ç¬”è®°- apiç®¡ç†docker Containerçš„lnmpæ“ä½œ  http://www.tuicool.com/articles/3QJFRzI
+CentOS 6.5ä¸‹ä½¿ç”¨docker å®¹å™¨  http://www.21ops.com/linux/7324.html
+æž„å»ºä¸€ä¸ªé«˜å¯ç”¨åŠè‡ªåŠ¨å‘çŽ°çš„DockeråŸºç¡€æž¶æž„-HECD[åŽŸåˆ›]  http://blog.liuts.com/post/242/
 Dockerfile Reference  https://docs.docker.com/reference/builder/
-DockerÊ¹ÓÃDockerfile´´½¨Ö§³Össh·þÎñ×ÔÆô¶¯µÄÈÝÆ÷¾µÏñ  http://blog.csdn.net/kongxx/article/details/38412119
-DockerÖ®ÅäÖÃCentos_ssh   http://blog.chinaunix.net/uid-10915175-id-4442800.html
-CentOS 6.5 ÖÆ×÷¿ÉÒÔsshµÇÂ¼µÄDocker¾µÏñ  http://www.21ops.com/linux/26334.html/comment-page-1
+Dockerä½¿ç”¨Dockerfileåˆ›å»ºæ”¯æŒsshæœåŠ¡è‡ªå¯åŠ¨çš„å®¹å™¨é•œåƒ  http://blog.csdn.net/kongxx/article/details/38412119
+Dockerä¹‹é…ç½®Centos_ssh   http://blog.chinaunix.net/uid-10915175-id-4442800.html
+CentOS 6.5 åˆ¶ä½œå¯ä»¥sshç™»å½•çš„Dockeré•œåƒ  http://www.21ops.com/linux/26334.html/comment-page-1
 ===
 
 
-¡¾¡¿°²×°
+ã€ã€‘å®‰è£…
 [root@server200-21 ~]# yum install docker-io
 [root@server200-21 ~]# docker -v
 Docker version 1.4.1, build 5bc2ff8/1.4.1
 
-¡¾¡¿Æô¶¯·þÎñ
+ã€ã€‘å¯åŠ¨æœåŠ¡
 [root@server200-21 ~]# service docker start
 
-¡¾¡¿²é¿´×´Ì¬
+ã€ã€‘æŸ¥çœ‹çŠ¶æ€
 [root@server200-21 ~]# docker info
 
-¡¾¡¿½«Ä³¸öÓÃ»§¼ÓÈëµ½docker×é£¬ÒÔ±ãÒÑ·ÇrootÓÃ»§À´ÔËÐÐdockerÃüÁî¡£
+ã€ã€‘å°†æŸä¸ªç”¨æˆ·åŠ å…¥åˆ°dockerç»„ï¼Œä»¥ä¾¿å·²éžrootç”¨æˆ·æ¥è¿è¡Œdockerå‘½ä»¤ã€‚
 [root@server200-21 ~]# usermod -a -G docker Jack
-ÇÐ»»µ½ÓÃ»§Ä¿Â¼
+åˆ‡æ¢åˆ°ç”¨æˆ·ç›®å½•
 
-¡¾¡¿´Ó¹úÄÚµÄ²Ö¿âdocker.cnÉÏpullÒ»¸öimageµ½±¾µØ
+ã€ã€‘ä»Žå›½å†…çš„ä»“åº“docker.cnä¸Špullä¸€ä¸ªimageåˆ°æœ¬åœ°
 [Jack@server200-21 ~]$ docker pull docker.cn/docker/centos
 
-¡¾¡¿²é¿´images
+ã€ã€‘æŸ¥çœ‹images
 [Jack@server200-21 ~]$ docker images
 REPOSITORY                TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
 docker.cn/docker/centos   latest              8efe422e6104        4 weeks ago         224 MB
@@ -43,13 +43,13 @@ docker.cn/docker/centos   7                   8efe422e6104        4 weeks ago   
 docker.cn/docker/centos   centos7             8efe422e6104        4 weeks ago         224 MB
 
 
-¡¾¡¿Dockerfile
+ã€ã€‘Dockerfile
 
 [Jack@server200-21 ~]$ mkdir repository
 [Jack@server200-21 ~]$ cd repository/
-¡¿±à¼­Æô¶¯½Å±¾
+ã€‘ç¼–è¾‘å¯åŠ¨è„šæœ¬
 [Jack@server200-21 repository]$ vim start.sh
-[Jack@server200-21 repository]$ cat start.sh 
+[Jack@server200-21 repository]$ cat start.sh
 #!/bin/bash
 
 __create_user() {
@@ -63,9 +63,9 @@ echo ssh user password: $SSH_USERPASS
 # Call all functions
 __create_user
 
-¡¿±à¼­Dockerfile
+ã€‘ç¼–è¾‘Dockerfile
 [Jack@server200-21 repository]$ vim Dockerfile
-[Jack@server200-21 repository]$ cat Dockerfile 
+[Jack@server200-21 repository]$ cat Dockerfile
 FROM docker.cn/docker/centos:7
 MAINTAINER pcnk
 
@@ -82,17 +82,17 @@ RUN chmod 755 /root/start.sh
 RUN ./root/start.sh
 ENTRYPOINT ["/usr/sbin/sshd", "-D"]
 
-¡¿²é¿´images£º
+ã€‘æŸ¥çœ‹imagesï¼š
 [Jack@server200-21 repository]$ docker images
 REPOSITORY                TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
 docker.cn/docker/centos   centos7             8efe422e6104        4 weeks ago         224 MB
 docker.cn/docker/centos   latest              8efe422e6104        4 weeks ago         224 MB
 docker.cn/docker/centos   7                   8efe422e6104        4 weeks ago         224 MB
 
-¡¿buildÒ»¸öimage£º
-[Jack@server200-21 repository]$ docker build --rm -t develop/ssh:v1 .          
+ã€‘buildä¸€ä¸ªimageï¼š
+[Jack@server200-21 repository]$ docker build --rm -t develop/ssh:v1 .
 Sending build context to Docker daemon 3.072 kB
-Sending build context to Docker daemon 
+Sending build context to Docker daemon
 Step 0 : FROM docker.cn/docker/centos:7
  ---> 8efe422e6104
 Step 1 : MAINTAINER pcnk
@@ -142,7 +142,7 @@ Delta RPMs disabled because /usr/bin/applydeltarpm not installed.
 warning: /var/cache/yum/x86_64/7/updates/packages/openssl-libs-1.0.1e-34.el7_0.7.x86_64.rpm: Header V3 RSA/SHA256 Signature, key ID f4a80eb5: NOKEY
 Public key for openssl-libs-1.0.1e-34.el7_0.7.x86_64.rpm is not installed
 --------------------------------------------------------------------------------
-Total                                              2.0 MB/s |  16 MB  00:08     
+Total                                              2.0 MB/s |  16 MB  00:08
 Retrieving key from file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 Importing GPG key 0xF4A80EB5:
  Userid     : "CentOS-7 Key (CentOS 7 Official Signing Key) <security@centos.org>"
@@ -153,31 +153,31 @@ Running transaction check
 Running transaction test
 Transaction test succeeded
 Running transaction
-  Updating   : tzdata-2015a-1.el7_0.noarch                                 1/10 
-  Updating   : glibc-common-2.17-55.el7_0.5.x86_64                         2/10 
-  Updating   : glibc-2.17-55.el7_0.5.x86_64                                3/10 
-  Updating   : 1:openssl-libs-1.0.1e-34.el7_0.7.x86_64                     4/10 
-  Updating   : systemd-libs-208-11.el7_0.6.x86_64                          5/10 
-  Cleanup    : systemd-libs-208-11.el7_0.5.x86_64                          6/10 
-  Cleanup    : 1:openssl-libs-1.0.1e-34.el7_0.6.x86_64                     7/10 
-  Cleanup    : glibc-common-2.17-55.el7_0.3.x86_64                         8/10 
-  Cleanup    : glibc-2.17-55.el7_0.3.x86_64                                9/10 
-  Cleanup    : tzdata-2014j-1.el7_0.noarch                                10/10 
-  Verifying  : glibc-2.17-55.el7_0.5.x86_64                                1/10 
-  Verifying  : tzdata-2015a-1.el7_0.noarch                                 2/10 
-  Verifying  : glibc-common-2.17-55.el7_0.5.x86_64                         3/10 
-  Verifying  : 1:openssl-libs-1.0.1e-34.el7_0.7.x86_64                     4/10 
-  Verifying  : systemd-libs-208-11.el7_0.6.x86_64                          5/10 
-  Verifying  : glibc-common-2.17-55.el7_0.3.x86_64                         6/10 
-  Verifying  : systemd-libs-208-11.el7_0.5.x86_64                          7/10 
-  Verifying  : tzdata-2014j-1.el7_0.noarch                                 8/10 
-  Verifying  : glibc-2.17-55.el7_0.3.x86_64                                9/10 
-  Verifying  : 1:openssl-libs-1.0.1e-34.el7_0.6.x86_64                    10/10 
+  Updating   : tzdata-2015a-1.el7_0.noarch                                 1/10
+  Updating   : glibc-common-2.17-55.el7_0.5.x86_64                         2/10
+  Updating   : glibc-2.17-55.el7_0.5.x86_64                                3/10
+  Updating   : 1:openssl-libs-1.0.1e-34.el7_0.7.x86_64                     4/10
+  Updating   : systemd-libs-208-11.el7_0.6.x86_64                          5/10
+  Cleanup    : systemd-libs-208-11.el7_0.5.x86_64                          6/10
+  Cleanup    : 1:openssl-libs-1.0.1e-34.el7_0.6.x86_64                     7/10
+  Cleanup    : glibc-common-2.17-55.el7_0.3.x86_64                         8/10
+  Cleanup    : glibc-2.17-55.el7_0.3.x86_64                                9/10
+  Cleanup    : tzdata-2014j-1.el7_0.noarch                                10/10
+  Verifying  : glibc-2.17-55.el7_0.5.x86_64                                1/10
+  Verifying  : tzdata-2015a-1.el7_0.noarch                                 2/10
+  Verifying  : glibc-common-2.17-55.el7_0.5.x86_64                         3/10
+  Verifying  : 1:openssl-libs-1.0.1e-34.el7_0.7.x86_64                     4/10
+  Verifying  : systemd-libs-208-11.el7_0.6.x86_64                          5/10
+  Verifying  : glibc-common-2.17-55.el7_0.3.x86_64                         6/10
+  Verifying  : systemd-libs-208-11.el7_0.5.x86_64                          7/10
+  Verifying  : tzdata-2014j-1.el7_0.noarch                                 8/10
+  Verifying  : glibc-2.17-55.el7_0.3.x86_64                                9/10
+  Verifying  : 1:openssl-libs-1.0.1e-34.el7_0.6.x86_64                    10/10
 
 Updated:
   glibc.x86_64 0:2.17-55.el7_0.5          glibc-common.x86_64 0:2.17-55.el7_0.5
-  openssl-libs.x86_64 1:1.0.1e-34.el7_0.7 systemd-libs.x86_64 0:208-11.el7_0.6 
-  tzdata.noarch 0:2015a-1.el7_0          
+  openssl-libs.x86_64 1:1.0.1e-34.el7_0.7 systemd-libs.x86_64 0:208-11.el7_0.6
+  tzdata.noarch 0:2015a-1.el7_0
 
 Complete!
 Loaded plugins: fastestmirror
@@ -232,30 +232,30 @@ Total download size: 911 k
 Installed size: 2.4 M
 Downloading packages:
 --------------------------------------------------------------------------------
-Total                                              1.1 MB/s | 911 kB  00:00     
+Total                                              1.1 MB/s | 911 kB  00:00
 Running transaction check
 Running transaction test
 Transaction test succeeded
 Running transaction
-  Installing : fipscheck-1.4.1-5.el7.x86_64                                 1/6 
-  Installing : fipscheck-lib-1.4.1-5.el7.x86_64                             2/6 
-  Installing : openssh-6.4p1-8.el7.x86_64                                   3/6 
-  Installing : tcp_wrappers-libs-7.6-77.el7.x86_64                          4/6 
-  Installing : openssh-server-6.4p1-8.el7.x86_64                            5/6 
-  Installing : passwd-0.79-4.el7.x86_64                                     6/6 
-  Verifying  : openssh-server-6.4p1-8.el7.x86_64                            1/6 
-  Verifying  : openssh-6.4p1-8.el7.x86_64                                   2/6 
-  Verifying  : tcp_wrappers-libs-7.6-77.el7.x86_64                          3/6 
-  Verifying  : fipscheck-lib-1.4.1-5.el7.x86_64                             4/6 
-  Verifying  : fipscheck-1.4.1-5.el7.x86_64                                 5/6 
-  Verifying  : passwd-0.79-4.el7.x86_64                                     6/6 
+  Installing : fipscheck-1.4.1-5.el7.x86_64                                 1/6
+  Installing : fipscheck-lib-1.4.1-5.el7.x86_64                             2/6
+  Installing : openssh-6.4p1-8.el7.x86_64                                   3/6
+  Installing : tcp_wrappers-libs-7.6-77.el7.x86_64                          4/6
+  Installing : openssh-server-6.4p1-8.el7.x86_64                            5/6
+  Installing : passwd-0.79-4.el7.x86_64                                     6/6
+  Verifying  : openssh-server-6.4p1-8.el7.x86_64                            1/6
+  Verifying  : openssh-6.4p1-8.el7.x86_64                                   2/6
+  Verifying  : tcp_wrappers-libs-7.6-77.el7.x86_64                          3/6
+  Verifying  : fipscheck-lib-1.4.1-5.el7.x86_64                             4/6
+  Verifying  : fipscheck-1.4.1-5.el7.x86_64                                 5/6
+  Verifying  : passwd-0.79-4.el7.x86_64                                     6/6
 
 Installed:
-  openssh-server.x86_64 0:6.4p1-8.el7         passwd.x86_64 0:0.79-4.el7        
+  openssh-server.x86_64 0:6.4p1-8.el7         passwd.x86_64 0:0.79-4.el7
 
 Dependency Installed:
-  fipscheck.x86_64 0:1.4.1-5.el7      fipscheck-lib.x86_64 0:1.4.1-5.el7        
-  openssh.x86_64 0:6.4p1-8.el7        tcp_wrappers-libs.x86_64 0:7.6-77.el7     
+  fipscheck.x86_64 0:1.4.1-5.el7      fipscheck-lib.x86_64 0:1.4.1-5.el7
+  openssh.x86_64 0:6.4p1-8.el7        tcp_wrappers-libs.x86_64 0:7.6-77.el7
 
 Complete!
 Loaded plugins: fastestmirror
@@ -315,8 +315,8 @@ Successfully built 42d8e120be8f
 
 
 
-¡¿ÔÙ´Î²é¿´images£º
-[Jack@server200-21 repository]$ docker images                         
+ã€‘å†æ¬¡æŸ¥çœ‹imagesï¼š
+[Jack@server200-21 repository]$ docker images
 REPOSITORY                TAG                 IMAGE ID            CREATED              VIRTUAL SIZE
 develop/ssh               v1                  42d8e120be8f        About a minute ago   387.8 MB
 docker.cn/docker/centos   7                   8efe422e6104        4 weeks ago          224 MB
@@ -325,55 +325,55 @@ docker.cn/docker/centos   latest              8efe422e6104        4 weeks ago   
 
 
 
-¡¿Æô¶¯
+ã€‘å¯åŠ¨
 [Jack@server200-21 repository]$ docker run -d --name test1 -p 127.0.0.1:10822:22 develop/ssh:v1
 0a9e8be52d9e1ee979de02e5afa5ae572d616a30589d265c3f575cb8f69f3e9c
 
 
-£¨Ò²¿ÉÒÔÊ¹ÓÃ±¾»úµÄËæ»ú¶Ë¿ÚÀ´Ó³Éäµ½ÈÝÆ÷µÄ22¶Ë¿Ú£º£©
+ï¼ˆä¹Ÿå¯ä»¥ä½¿ç”¨æœ¬æœºçš„éšæœºç«¯å£æ¥æ˜ å°„åˆ°å®¹å™¨çš„22ç«¯å£ï¼šï¼‰
 [Jack@server200-21 repository]$ docker run -d --name test1 -p 22 develop/ssh:v1
 
 
 
-¡¿²é¿´sshµÄ¶Ë¿Ú
-[Jack@server200-21 repository]$ docker port test1   
-22/tcp -> 0.0.0.0:49155    
+ã€‘æŸ¥çœ‹sshçš„ç«¯å£
+[Jack@server200-21 repository]$ docker port test1
+22/tcp -> 0.0.0.0:49155
 
-£¨Ò²¿ÉÒÔÕâÑù²é¿´£º£©
+ï¼ˆä¹Ÿå¯ä»¥è¿™æ ·æŸ¥çœ‹ï¼šï¼‰
 [Jack@server200-21 repository]$ docker top test1
 [Jack@server200-21 repository]$ docker ps test1
 
 
-¡¿²âÊÔsshÁ¬½Ó
+ã€‘æµ‹è¯•sshè¿žæŽ¥
 [Jack@server200-21 repository]$ ssh -p 10822 admin@127.0.0.1
 The authenticity of host '[127.0.0.1]:10822 ([127.0.0.1]:10822)' can't be established.
 RSA key fingerprint is 48:fc:06:c2:12:e9:b8:6d:1f:91:e5:68:d4:0a:54:4c.
 Are you sure you want to continue connecting (yes/no)? yes
 Warning: Permanently added '[127.0.0.1]:10822' (RSA) to the list of known hosts.
-admin@127.0.0.1's password: 
+admin@127.0.0.1's password:
 [admin@0a9e8be52d9e ~]$ exit
 logout
 Connection to 127.0.0.1 closed.
 
 
 
-¡¿É¾³ý¾µÏñ
+ã€‘åˆ é™¤é•œåƒ
 [Jack@server200-21 repository]$ docker rmi `docker images |grep develop |grep v1 |awk '{print $3}'`
 Error response from daemon: Conflict, cannot delete 42d8e120be8f because the running container 0a9e8be52d9e is using it, stop it and use -f to force
-FATA[0000] Error: failed to remove one or more images   
+FATA[0000] Error: failed to remove one or more images
 
-Õâ¸öimage±»Ê¹ÓÃ£¬ÏÈstopÔÙrm¶ÔÓ¦µÄcontainerµÄid
+è¿™ä¸ªimageè¢«ä½¿ç”¨ï¼Œå…ˆstopå†rmå¯¹åº”çš„containerçš„id
 [Jack@server200-21 repository]$ docker ps -a
 CONTAINER ID        IMAGE               COMMAND               CREATED             STATUS              PORTS                     NAMES
-0a9e8be52d9e        develop/ssh:v1      "/usr/sbin/sshd -D"   2 minutes ago       Up 2 minutes        127.0.0.1:10822->22/tcp   test1  
-             
+0a9e8be52d9e        develop/ssh:v1      "/usr/sbin/sshd -D"   2 minutes ago       Up 2 minutes        127.0.0.1:10822->22/tcp   test1
+
 [Jack@server200-21 repository]$ docker stop 0a9e8be52d9e
 0a9e8be52d9e
 
-[Jack@server200-21 repository]$ docker rm 0a9e8be52d9e  
+[Jack@server200-21 repository]$ docker rm 0a9e8be52d9e
 0a9e8be52d9e
 
-É¾³ýimage
+åˆ é™¤image
 [Jack@server200-21 repository]$ docker rmi `docker images |grep develop |grep v1 |awk '{print $3}'`
 Untagged: develop/ssh:v1
 Deleted: 42d8e120be8f70c5085d142f575e0b755d86ee41b5b1d842a19966d4fcfaa96b
@@ -386,5 +386,3 @@ Deleted: 06ff76970b4ac0cc853402073b1a2a6599c0785749e49d16c151a4cd1ab65609
 Deleted: d6d5d26a325aec67158e59b81517345e23790b50494cbdf34155e214ce708456
 Deleted: 65693f134694aa2ab51315f439d15afb02775c9a72fcb8c3e856b6cb63ce7954
 Deleted: 26a7e9d912969e1a21c0532121344b8cac232e060ffc0edb237073a9543b852e
-
-

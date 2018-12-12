@@ -1,11 +1,11 @@
-dockerÉîÈë1-ÅäÖÃdocker·şÎñµÄhttpsÍ¨ĞÅ
+dockeræ·±å…¥1-é…ç½®dockeræœåŠ¡çš„httpsé€šä¿¡
 
-²Î¿¼£ºhttps://docs.docker.com/articles/https/
+å‚è€ƒï¼šhttps://docs.docker.com/articles/https/
 
 
-Ò»¡¢Ê¹ÓÃOpenSSL´´½¨CA, server and client keys
+ä¸€ã€ä½¿ç”¨OpenSSLåˆ›å»ºCA, server and client keys
 
-1¡¢Éú³É CA private and public keys
+1ã€ç”Ÿæˆ CA private and public keys
 [root@server200-20 ~]# openssl genrsa -aes256 -out ca-key.pem 4096
 Generating RSA private key, 4096 bit long modulus
 .............................++
@@ -29,12 +29,12 @@ Locality Name (eg, city) [Default City]:GZ
 Organization Name (eg, company) [Default Company Ltd]:ABC
 Organizational Unit Name (eg, section) []:RD
 Common Name (eg, your name or your server's hostname) []:registry.company.com
-Email Address []:root@company.com   
+Email Address []:root@company.com
 
 
-ÏÖÔÚÎÒÃÇÓĞ¸öÒ»¸öCA£¬¿ÉÒÔ´´½¨server key and certificate signing request (CSR)£¬ÒªÈ·±£"Common Name"ÕâÒ»¿éÒªºÍÓÃÀ´Á¬½ÓdockerµÄÖ÷»úÒ»ÖÂ¡£
+ç°åœ¨æˆ‘ä»¬æœ‰ä¸ªä¸€ä¸ªCAï¼Œå¯ä»¥åˆ›å»ºserver key and certificate signing request (CSR)ï¼Œè¦ç¡®ä¿"Common Name"è¿™ä¸€å—è¦å’Œç”¨æ¥è¿æ¥dockerçš„ä¸»æœºä¸€è‡´ã€‚
 
-2¡¢Éú³É server keys
+2ã€ç”Ÿæˆ server keys
 [root@server200-20 ~]# openssl genrsa -out server-key.pem 4096
 Generating RSA private key, 4096 bit long modulus
 .....................................................++
@@ -43,10 +43,10 @@ e is 65537 (0x10001)
 
 [root@server200-20 ~]# openssl req -subj "/CN=registry.company.com" -sha256 -new -key server-key.pem -out server.csr
 
-½ÓÏÂÀ´£¬ÎÒÃÇÓÃ×Ô¼ºµÄCA¸øÕâ¸öpublic keyÇ©Ãû£¬ÓÉÓÚTLSÁ¬½Ó¿ÉÒÔÍ¨¹ıIPºÍÓòÃû£¬Õâ¸öĞèÒªÔÚ´´½¨Ö¤ÊéÊ±Ö¸Ã÷£¬ÀıÈç£¬ÔÊĞíÀ´×ÔÕâ¸öIPµÄÁ¬½Ó£º
-10.0.200.10£¬ 10.0.200.20£¬ 127.0.0.1
+æ¥ä¸‹æ¥ï¼Œæˆ‘ä»¬ç”¨è‡ªå·±çš„CAç»™è¿™ä¸ªpublic keyç­¾åï¼Œç”±äºTLSè¿æ¥å¯ä»¥é€šè¿‡IPå’ŒåŸŸåï¼Œè¿™ä¸ªéœ€è¦åœ¨åˆ›å»ºè¯ä¹¦æ—¶æŒ‡æ˜ï¼Œä¾‹å¦‚ï¼Œå…è®¸æ¥è‡ªè¿™ä¸ªIPçš„è¿æ¥ï¼š
+10.0.200.10ï¼Œ 10.0.200.20ï¼Œ 127.0.0.1
 
-[root@server200-20 ~]# echo subjectAltName = IP:10.0.200.10,IP:10.0.200.20,IP:127.0.0.1 > extfile.cnf 
+[root@server200-20 ~]# echo subjectAltName = IP:10.0.200.10,IP:10.0.200.20,IP:127.0.0.1 > extfile.cnf
 [root@server200-20 ~]# openssl x509 -req -days 365 -sha256 -in server.csr -CA ca.pem -CAkey ca-key.pem \
   -CAcreateserial -out server-cert.pem -extfile extfile.cnf
 Signature ok
@@ -55,8 +55,8 @@ Getting CA Private Key
 Enter pass phrase for ca-key.pem:
 
 
-3¡¢Éú³É client keys
-´´½¨Ò»¸öclient key and certificate signing requestÓÃÓÚclientÈÏÖ¤:
+3ã€ç”Ÿæˆ client keys
+åˆ›å»ºä¸€ä¸ªclient key and certificate signing requestç”¨äºclientè®¤è¯:
 [root@server200-20 ~]# openssl genrsa -out key.pem 4096
 Generating RSA private key, 4096 bit long modulus
 ..................++
@@ -64,11 +64,11 @@ Generating RSA private key, 4096 bit long modulus
 e is 65537 (0x10001)
 [root@server200-20 ~]# openssl req -subj '/CN=client' -new -key key.pem -out client.csr
 
-ÎªÁËÈÃkeyÊÊºÏ client authentication½¨Á¢Ò»¸öextensions config file:
+ä¸ºäº†è®©keyé€‚åˆ client authenticationå»ºç«‹ä¸€ä¸ªextensions config file:
 
 [root@server200-20 ~]# echo extendedKeyUsage = clientAuth > extfile.cnf
 
-¸øpublic keyÇ©Ãû
+ç»™public keyç­¾å
 [root@server200-20 ~]# openssl x509 -req -days 365 -sha256 -in client.csr -CA ca.pem -CAkey ca-key.pem \
 >   -CAcreateserial -out cert.pem -extfile extfile.cnf
 Signature ok
@@ -76,7 +76,7 @@ subject=/CN=client
 Getting CA Private Key
 Enter pass phrase for ca-key.pem:
 
-Éú³Écert.pem and server-cert.pem ºó¿ÉÒÔ·ÅĞÄµÄÉ¾³ı 2¸ö certificate signing requests:
+ç”Ÿæˆcert.pem and server-cert.pem åå¯ä»¥æ”¾å¿ƒçš„åˆ é™¤ 2ä¸ª certificate signing requests:
 [root@server200-20 ~]# rm -v client.csr server.csr
 rm: remove regular file `client.csr'? y
 removed `client.csr'
@@ -84,25 +84,25 @@ rm: remove regular file `server.csr'? y
 removed `server.csr'
 
 
-ÏµÍ³Ä¬ÈÏµÄdefault umask ÊÇ 022£¬ÕâÖÖÇé¿öÏÂ secret keysµÄÈ¨ÏŞÌ«´ó£¬ÎªÁË°²È«¿¼ÂÇ£¬µ÷ÕûÎªÖ»¶Á
+ç³»ç»Ÿé»˜è®¤çš„default umask æ˜¯ 022ï¼Œè¿™ç§æƒ…å†µä¸‹ secret keysçš„æƒé™å¤ªå¤§ï¼Œä¸ºäº†å®‰å…¨è€ƒè™‘ï¼Œè°ƒæ•´ä¸ºåªè¯»
 [root@server200-20 ~]# chmod -v 0400 ca-key.pem key.pem server-key.pem
 mode of `ca-key.pem' changed to 0400 (r--------)
 mode of `key.pem' changed to 0400 (r--------)
 mode of `server-key.pem' changed to 0400 (r--------)
 
-Certificates ¿ÉÒÔĞ´£¬Ò²´æÔÚ·çÏÕ£¬Ğèµ÷ÕûÎª£º
+Certificates å¯ä»¥å†™ï¼Œä¹Ÿå­˜åœ¨é£é™©ï¼Œéœ€è°ƒæ•´ä¸ºï¼š
 [root@server200-20 ~]# chmod -v 0444 ca.pem server-cert.pem cert.pem
 mode of `ca.pem' changed to 0444 (r--r--r--)
 mode of `server-cert.pem' changed to 0444 (r--r--r--)
 mode of `cert.pem' changed to 0444 (r--r--r--)
 
 
-ÏÖÔÚ£¬ Ö»ÓĞÌá¹©ÁË±»ÎÒÃÇµÄCAĞÅÀµµÄÖ¤ÊéµÄclients ²ÅÄÜÁ¬½Óµ½Docker daemon
+ç°åœ¨ï¼Œ åªæœ‰æä¾›äº†è¢«æˆ‘ä»¬çš„CAä¿¡èµ–çš„è¯ä¹¦çš„clients æ‰èƒ½è¿æ¥åˆ°Docker daemon
 
 $ docker -d --tlsverify --tlscacert=ca.pem --tlscert=server-cert.pem --tlskey=server-key.pem \
   -H=0.0.0.0:2376
-  
-  
+
+
 To be able to connect to Docker and validate its certificate, you now need to provide your client keys, certificates and trusted CA:
 
 Note: replace all instances of $HOST in the following example with the DNS name of your Docker daemon's host.
@@ -141,7 +141,3 @@ $ curl https://$HOST:2376/images/json \
   --cert ~/.docker/cert.pem \
   --key ~/.docker/key.pem \
   --cacert ~/.docker/ca.pem
-
-
-
-

@@ -1,13 +1,13 @@
-dockerÉîÈë1-µ¼Èëµ¼³öimagesºÍcontainerµÄ·½Ê½
+dockeræ·±å…¥1-å¯¼å…¥å¯¼å‡ºimageså’Œcontainerçš„æ–¹å¼
 
-»·¾³×¼±¸£º
+çŽ¯å¢ƒå‡†å¤‡ï¼š
 [Jack@test101 base]$ docker run -d --name app1 -p 10023:22 pcnk/base:v2
 [Jack@test101 base]$ docker ps -a
 CONTAINER ID        IMAGE                 COMMAND                CREATED             STATUS              PORTS                                       NAMES
-c10446ab9620        pcnk/base:v2          "/usr/bin/supervisor   9 seconds ago       Up 7 seconds        0.0.0.0:10023->22/tcp                       app1                
+c10446ab9620        pcnk/base:v2          "/usr/bin/supervisor   9 seconds ago       Up 7 seconds        0.0.0.0:10023->22/tcp                       app1
 
 
-[Jack@test101 base]$ docker commit -m "ssh,supervisor" -a "pcnk" c10446ab9620 base:latest    
+[Jack@test101 base]$ docker commit -m "ssh,supervisor" -a "pcnk" c10446ab9620 base:latest
 29e0b4550969220103e7179df62f31f3f1345a364c4fb103f73a5ba3b6f8fc5d
 
 
@@ -17,18 +17,18 @@ base                latest              29e0b4550969        About a minute ago  
 
 
 
-Ò»¡¢containerµÄµ¼Èëµ¼³ö
-±£´æ£º
+ä¸€ã€containerçš„å¯¼å…¥å¯¼å‡º
+ä¿å­˜ï¼š
 [Jack@test101 base]$ docker export app1 >/home/datacenter/docker/containers/app1.tar
 
-É¾³ý£º
+åˆ é™¤ï¼š
 [Jack@test101 base]$ docker stop app1
 app1
-[Jack@test101 base]$ docker rm app1  
+[Jack@test101 base]$ docker rm app1
 app1
 
 
-»Ö¸´£º
+æ¢å¤ï¼š
 [Jack@test101 base]$ cat /home/datacenter/docker/containers/app1.tar |docker import - base_import
 c9761ff46cf1ff3e0f1de04ed2fcf52b0b591b6fd0ea943611f2066046a17aae
 [Jack@test101 base]$ docker images
@@ -42,36 +42,36 @@ centos              latest              fd44297e2ddb        2 weeks ago         
 centos              7                   fd44297e2ddb        2 weeks ago         215.7 MB
 [Jack@test101 base]$ docker images -tree
 Warning: '-tree' is deprecated, it will be removed soon. See usage.
-©À©¤c9761ff46cf1 Virtual Size: 228.1 MB Tags: base_import:latest
-©¸©¤6941bfcbbfca Virtual Size: 0 B
-  ©¸©¤41459f052977 Virtual Size: 215.7 MB
-    ©¸©¤fd44297e2ddb Virtual Size: 215.7 MB Tags: centos:7, centos:centos7, centos:latest
-      ©¸©¤751a85a0d00b Virtual Size: 215.7 MB
-        ©¸©¤19b009f08542 Virtual Size: 228.1 MB
-          ©¸©¤420cb9e73c70 Virtual Size: 251.3 MB
-            ©¸©¤e97f94a79de0 Virtual Size: 251.3 MB
-              ©¸©¤fde06c761bde Virtual Size: 251.3 MB
-                ©¸©¤dbfae1099999 Virtual Size: 251.3 MB
-                  ©¸©¤064aa35dfcef Virtual Size: 251.3 MB Tags: pcnk/base:v2
-                    ©¸©¤b41b76b51e1a Virtual Size: 505.9 MB
-                      ©¸©¤1bda5d872bf7 Virtual Size: 508 MB Tags: website/sync:latest
+â”œâ”€c9761ff46cf1 Virtual Size: 228.1 MB Tags: base_import:latest
+â””â”€6941bfcbbfca Virtual Size: 0 B
+  â””â”€41459f052977 Virtual Size: 215.7 MB
+    â””â”€fd44297e2ddb Virtual Size: 215.7 MB Tags: centos:7, centos:centos7, centos:latest
+      â””â”€751a85a0d00b Virtual Size: 215.7 MB
+        â””â”€19b009f08542 Virtual Size: 228.1 MB
+          â””â”€420cb9e73c70 Virtual Size: 251.3 MB
+            â””â”€e97f94a79de0 Virtual Size: 251.3 MB
+              â””â”€fde06c761bde Virtual Size: 251.3 MB
+                â””â”€dbfae1099999 Virtual Size: 251.3 MB
+                  â””â”€064aa35dfcef Virtual Size: 251.3 MB Tags: pcnk/base:v2
+                    â””â”€b41b76b51e1a Virtual Size: 505.9 MB
+                      â””â”€1bda5d872bf7 Virtual Size: 508 MB Tags: website/sync:latest
 
-Ã»ÓÐÖ®Ç°µÄ²ãµÄÐÅÏ¢£¬±ä³ÉÁË¶ÀÁ¢µÄÒ»²ã£º
-©À©¤c9761ff46cf1 Virtual Size: 228.1 MB Tags: base_import:latest
+æ²¡æœ‰ä¹‹å‰çš„å±‚çš„ä¿¡æ¯ï¼Œå˜æˆäº†ç‹¬ç«‹çš„ä¸€å±‚ï¼š
+â”œâ”€c9761ff46cf1 Virtual Size: 228.1 MB Tags: base_import:latest
 
-¶þ¡¢imagesµÄµ¼Èëµ¼³ö
-×¢£º¾ÝÎÄµµ½âÊÍ£¬ÕâÖÖ·½Ê½£¬²»»á¶ªÊ§Ìá½»ÀúÊ·ºÍ²ã£¬¿ÉÒÔ»Ø¹ö£¬µ«£¬Ä¿Ç°ÉÐÎ´²Ù×÷¹ý»Ø¹ö¡£
+äºŒã€imagesçš„å¯¼å…¥å¯¼å‡º
+æ³¨ï¼šæ®æ–‡æ¡£è§£é‡Šï¼Œè¿™ç§æ–¹å¼ï¼Œä¸ä¼šä¸¢å¤±æäº¤åŽ†å²å’Œå±‚ï¼Œå¯ä»¥å›žæ»šï¼Œä½†ï¼Œç›®å‰å°šæœªæ“ä½œè¿‡å›žæ»šã€‚
 
-±£´æ£º
-[Jack@test101 base]$ docker save base > /home/datacenter/docker/images/base.tar 
+ä¿å­˜ï¼š
+[Jack@test101 base]$ docker save base > /home/datacenter/docker/images/base.tar
 
-É¾³ý£º
+åˆ é™¤ï¼š
 [Jack@test101 base]$ docker rmi 29e0b4550969
 Untagged: base:latest
 Deleted: 29e0b4550969220103e7179df62f31f3f1345a364c4fb103f73a5ba3b6f8fc5d
 
-»Ö¸´£º
-[Jack@test101 base]$ docker load </home/datacenter/docker/images/base.tar           
+æ¢å¤ï¼š
+[Jack@test101 base]$ docker load </home/datacenter/docker/images/base.tar
 [Jack@test101 base]$ docker images
 REPOSITORY          TAG                 IMAGE ID            CREATED              VIRTUAL SIZE
 base_import         latest              c9761ff46cf1        About a minute ago   228.1 MB
@@ -83,25 +83,25 @@ centos              centos7             fd44297e2ddb        2 weeks ago         
 centos              latest              fd44297e2ddb        2 weeks ago          215.7 MB
 [Jack@test101 base]$ docker images --tree
 Warning: '--tree' is deprecated, it will be removed soon. See usage.
-©À©¤c9761ff46cf1 Virtual Size: 228.1 MB Tags: base_import:latest
-©¸©¤6941bfcbbfca Virtual Size: 0 B
-  ©¸©¤41459f052977 Virtual Size: 215.7 MB
-    ©¸©¤fd44297e2ddb Virtual Size: 215.7 MB Tags: centos:latest, centos:7, centos:centos7
-      ©¸©¤751a85a0d00b Virtual Size: 215.7 MB
-        ©¸©¤19b009f08542 Virtual Size: 228.1 MB
-          ©¸©¤420cb9e73c70 Virtual Size: 251.3 MB
-            ©¸©¤e97f94a79de0 Virtual Size: 251.3 MB
-              ©¸©¤fde06c761bde Virtual Size: 251.3 MB
-                ©¸©¤dbfae1099999 Virtual Size: 251.3 MB
-                  ©¸©¤064aa35dfcef Virtual Size: 251.3 MB Tags: pcnk/base:v2
-                    ©À©¤29e0b4550969 Virtual Size: 251.3 MB Tags: base:latest
-                    ©¸©¤b41b76b51e1a Virtual Size: 505.9 MB
-                      ©¸©¤1bda5d872bf7 Virtual Size: 508 MB Tags: website/sync:latest
+â”œâ”€c9761ff46cf1 Virtual Size: 228.1 MB Tags: base_import:latest
+â””â”€6941bfcbbfca Virtual Size: 0 B
+  â””â”€41459f052977 Virtual Size: 215.7 MB
+    â””â”€fd44297e2ddb Virtual Size: 215.7 MB Tags: centos:latest, centos:7, centos:centos7
+      â””â”€751a85a0d00b Virtual Size: 215.7 MB
+        â””â”€19b009f08542 Virtual Size: 228.1 MB
+          â””â”€420cb9e73c70 Virtual Size: 251.3 MB
+            â””â”€e97f94a79de0 Virtual Size: 251.3 MB
+              â””â”€fde06c761bde Virtual Size: 251.3 MB
+                â””â”€dbfae1099999 Virtual Size: 251.3 MB
+                  â””â”€064aa35dfcef Virtual Size: 251.3 MB Tags: pcnk/base:v2
+                    â”œâ”€29e0b4550969 Virtual Size: 251.3 MB Tags: base:latest
+                    â””â”€b41b76b51e1a Virtual Size: 505.9 MB
+                      â””â”€1bda5d872bf7 Virtual Size: 508 MB Tags: website/sync:latest
 
-»Ö¸´³öÀ´µÄimage£¬»¹ÊÇÓÐÔ­À´µÄ²ãµÄÐÅÏ¢£º
-                    ©À©¤29e0b4550969 Virtual Size: 251.3 MB Tags: base:latest
+æ¢å¤å‡ºæ¥çš„imageï¼Œè¿˜æ˜¯æœ‰åŽŸæ¥çš„å±‚çš„ä¿¡æ¯ï¼š
+                    â”œâ”€29e0b4550969 Virtual Size: 251.3 MB Tags: base:latest
 
-Èý¡¢²é¿´history¿ÉÒÔ¹Û²ìµ½Õâ¸öimageµÄbuild¹ý³Ì
+ä¸‰ã€æŸ¥çœ‹historyå¯ä»¥è§‚å¯Ÿåˆ°è¿™ä¸ªimageçš„buildè¿‡ç¨‹
 
 [Jack@test101 base]$ docker history base_import
 IMAGE               CREATED             CREATED BY          SIZE
@@ -130,7 +130,7 @@ Show the history of an image
   --help=false         Print usage
   --no-trunc=false     Don't truncate output
   -q, --quiet=false    Only show numeric IDs
-  
+
 [Jack@test101 base]$ docker history --no-trunc=true base
 IMAGE                                                              CREATED             CREATED BY                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               SIZE
 29e0b4550969220103e7179df62f31f3f1345a364c4fb103f73a5ba3b6f8fc5d   58 minutes ago                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               699 B
@@ -144,4 +144,3 @@ e97f94a79de0fa89a437ace2a2d14d3cfbba83f8d2f0528660e9028832735d6e   8 hours ago  
 fd44297e2ddb050ec4fa9752b7a4e3a8439061991886e2091e7c1f007c906d75   2 weeks ago         /bin/sh -c #(nop) CMD ["/bin/bash"]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      0 B
 41459f052977938b824dd011e1f2bec2cb4d133dfc7e1aa0e90f7c5d337ca9c4   2 weeks ago         /bin/sh -c #(nop) ADD file:be2a22bb15fbbbf24b5f13830d9ec31fad7e8bdf251906c79b05ad52cb4eef61 in /                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         215.7 MB
 6941bfcbbfca7f4f48becd38f2639157042b5cf9ab8c080f1d8b6d047380ecfc   2 weeks ago         /bin/sh -c #(nop) MAINTAINER The CentOS Project <cloud-ops@centos.org>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   0 B
-

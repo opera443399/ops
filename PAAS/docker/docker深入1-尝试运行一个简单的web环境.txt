@@ -1,22 +1,22 @@
-dockerÉîÈë1-³¢ÊÔÔËĞĞÒ»¸ö¼òµ¥µÄweb»·¾³
+dockeræ·±å…¥1-å°è¯•è¿è¡Œä¸€ä¸ªç®€å•çš„webç¯å¢ƒ
 
-Ä¿µÄ£ºÔÚ»ù´¡¾µÏñ£¨pcnk/base:v2£©ÉÏÔö¼ÓÒ»¸öweb»·¾³£ºsync
-×ö·¨£ºÆô¶¯ĞÂµÄcontainer£¬È»ºóÖğ²½Ôö¼Óweb·şÎñ£¬ÔÙÌá½»µ½image£¬ÕâÀïÓÃµ½ÁË¶Ë¿ÚÓ³Éä£¬Êı¾İ¾í¹ÒÔØ¡£
+ç›®çš„ï¼šåœ¨åŸºç¡€é•œåƒï¼ˆpcnk/base:v2ï¼‰ä¸Šå¢åŠ ä¸€ä¸ªwebç¯å¢ƒï¼šsync
+åšæ³•ï¼šå¯åŠ¨æ–°çš„containerï¼Œç„¶åé€æ­¥å¢åŠ webæœåŠ¡ï¼Œå†æäº¤åˆ°imageï¼Œè¿™é‡Œç”¨åˆ°äº†ç«¯å£æ˜ å°„ï¼Œæ•°æ®å·æŒ‚è½½ã€‚
 
 
-Ò»¡¢ÔÚ¡¾pcnk/base:v2¡¿Õâ¸ö»ù´¡imageÉÏÔËĞĞÒ»¸öcontainer¡¾web¡¿À´°²×°syncËùĞèµÄhttpdµÈ·şÎñ
-1£©container¡¾web¡¿
-[Jack@test101 base]$ docker run -d -v /home/download:/home/download -v /home/datacenter:/data --name web -p 10032:22 pcnk/base:v2   
+ä¸€ã€åœ¨ã€pcnk/base:v2ã€‘è¿™ä¸ªåŸºç¡€imageä¸Šè¿è¡Œä¸€ä¸ªcontainerã€webã€‘æ¥å®‰è£…syncæ‰€éœ€çš„httpdç­‰æœåŠ¡
+1ï¼‰containerã€webã€‘
+[Jack@test101 base]$ docker run -d -v /home/download:/home/download -v /home/datacenter:/data --name web -p 10032:22 pcnk/base:v2
 152d0ca20346fc4a0d0a5a8fe04671910dcc685801f572159ae3c7f5dd2ecf43
 [Jack@test101 base]$ docker ps -l
 CONTAINER ID        IMAGE               COMMAND                CREATED             STATUS              PORTS                   NAMES
-152d0ca20346        pcnk/base:v2        "/usr/bin/supervisor   7 seconds ago       Up 6 seconds        0.0.0.0:10032->22/tcp   web   
+152d0ca20346        pcnk/base:v2        "/usr/bin/supervisor   7 seconds ago       Up 6 seconds        0.0.0.0:10032->22/tcp   web
 
 [Jack@test101 base]$ ssh -p 10032 root@127.0.0.1
-root@127.0.0.1's password: 
+root@127.0.0.1's password:
 Last login: Wed May  6 10:11:26 2015 from 172.17.42.1
 
-2£©µ÷ÕûÊ±¼ä£º
+2ï¼‰è°ƒæ•´æ—¶é—´ï¼š
 [root@152d0ca20346 /]# mv -f /etc/localtime /etc/localtime.old
 [root@152d0ca20346 /]# ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 [root@152d0ca20346 /]# echo 'ZONE="Asia/Shanghai"' >/etc/sysconfig/clock
@@ -25,11 +25,11 @@ Last login: Wed May  6 10:11:26 2015 from 172.17.42.1
 [root@152d0ca20346 vriteam-sync-0.2.4]# yum -y install wget gcc perl autoconf automake make bzip2 tar zip && yum clean all
 [root@152d0ca20346 vriteam-sync-0.2.4]# ./install all
 
-3£©°²×°phpÄ£¿é£º
+3ï¼‰å®‰è£…phpæ¨¡å—ï¼š
 [root@152d0ca20346 vriteam-sync-0.2.4]# ./install ssh2
 [root@152d0ca20346 vriteam-sync-0.2.4]# ./install svn
 [root@152d0ca20346 vriteam-sync-0.2.4]# cd /etc/php.d
-[root@152d0ca20346 php.d]# cat ssh2.ini svn.ini 
+[root@152d0ca20346 php.d]# cat ssh2.ini svn.ini
 ; Enable ssh2 extension module
 extension=ssh2.so
 ; Enable svn extension module
@@ -38,7 +38,7 @@ extension=svn.so
 curl.so  fileinfo.so  json.so  mysqli.so  mysql.so  pdo_mysql.so  pdo.so  pdo_sqlite.so  phar.so  sqlite3.so  ssh2.so  svn.so  zip.so
 [root@152d0ca20346 conf.d]# yum clean all
 
-4£©µ÷ÕûhttpdµÄÅäÖÃ£º
+4ï¼‰è°ƒæ•´httpdçš„é…ç½®ï¼š
 [root@152d0ca20346 supervisor.d]# ln -s /data/supervisor.d/httpd.ini .
 [root@152d0ca20346 supervisor.d]# ll
 total 4
@@ -55,12 +55,12 @@ total 16
 -rw-r--r--. 1 root root  366 Mar 12 15:08 README
 lrwxrwxrwx. 1 root root   28 May  6 02:47 sync.conf -> /data/httpd/conf.d/sync.conf
 -rw-r--r--. 1 root root 1252 Mar 12 14:57 userdir.conf
-[root@152d0ca20346 conf.d]# cat sync.conf 
+[root@152d0ca20346 conf.d]# cat sync.conf
 <VirtualHost *:80>
     ServerAdmin pc@ec.office
     ServerName sync.ec.office
     DocumentRoot /data/sync/src
-    DirectoryIndex index.html index.php   
+    DirectoryIndex index.html index.php
 
     <Directory /data/sync/src>
         AllowOverride None
@@ -74,22 +74,22 @@ lrwxrwxrwx. 1 root root   28 May  6 02:47 sync.conf -> /data/httpd/conf.d/sync.c
 
 
 
-¶ş¡¢Ìá½»³Éimage£º¡¾pcnk/web:sync¡¿
+äºŒã€æäº¤æˆimageï¼šã€pcnk/web:syncã€‘
 [Jack@test101 base]$ docker commit 152d0ca20346 pcnk/web:sync
 
 
 
 
-Èı¡¢ÔÚimage¡¾pcnk/web:sync¡¿µÄ»ù´¡ÉÏ£¬´´½¨ĞÂµÄcontainer¡¾app_sync¡¿£¬Ó³Éä80¶Ë¿Ú£¬Æô¶¯httpd·şÎñ
+ä¸‰ã€åœ¨imageã€pcnk/web:syncã€‘çš„åŸºç¡€ä¸Šï¼Œåˆ›å»ºæ–°çš„containerã€app_syncã€‘ï¼Œæ˜ å°„80ç«¯å£ï¼Œå¯åŠ¨httpdæœåŠ¡
 
-1£©container¡¾app_sync¡¿
+1ï¼‰containerã€app_syncã€‘
 [Jack@test101 base]$ docker run -d -v /home/download:/home/download -v /home/datacenter:/data --name app_sync -p 10042:22 -p 80:80 pcnk/web:sync
 [Jack@test101 base]$ ssh -p 10042 root@127.0.0.1
 The authenticity of host '[127.0.0.1]:10042 ([127.0.0.1]:10042)' can't be established.
 RSA key fingerprint is 15:18:db:44:ed:03:ca:ac:15:a3:d0:ea:ac:01:7e:27.
 Are you sure you want to continue connecting (yes/no)? yes
 Warning: Permanently added '[127.0.0.1]:10042' (RSA) to the list of known hosts.
-root@127.0.0.1's password: 
+root@127.0.0.1's password:
 Last login: Wed May  6 11:51:55 2015 from 172.17.42.1
 [root@4df93ea135a9 ~]# ps -ef
 UID        PID  PPID  C STIME TTY          TIME CMD
@@ -107,24 +107,24 @@ root        36    19  0 12:03 pts/0    00:00:00 ps -ef
 
 
 
-2£©httpd·şÎñµÄ¿ØÖÆ
+2ï¼‰httpdæœåŠ¡çš„æ§åˆ¶
 
-[root@ea8daf7b62d4 ~]# supervisorctl status httpd 
-httpd                            RUNNING   pid 9, uptime 0:00:48       
+[root@ea8daf7b62d4 ~]# supervisorctl status httpd
+httpd                            RUNNING   pid 9, uptime 0:00:48
 
 [root@6a199d754f77 ~]# chmod 777 /data/sync/src/tmp/
 [root@6a199d754f77 ~]# chmod 777 /data/sync/src/data/
 [root@6a199d754f77 ~]# chmod 777 /data/sync/src/install/
-[root@6a199d754f77 ~]# chmod 777 /data/sync/src/db.cfg.php 
+[root@6a199d754f77 ~]# chmod 777 /data/sync/src/db.cfg.php
 
-3£©Í¨¹ıweb·ÃÎÊ£¬Òıµ¼°²×°£¬dbÕâ¸ö»·½ÚÂÔ¹ı¡£
+3ï¼‰é€šè¿‡webè®¿é—®ï¼Œå¼•å¯¼å®‰è£…ï¼Œdbè¿™ä¸ªç¯èŠ‚ç•¥è¿‡ã€‚
 
 
-ËÄ¡¢Í£Ö¹Ö®Ç°ÓÃµÄcontainer£¬É¾µôimage¡¾pcnk/web:sync¡¿£¬Ìá½»³ÉÒ»¸öĞÂµÄimage¡¾website/sync¡¿£¬È»ºóÍ¨¹ıÕâ¸öÀ´Æô¶¯·şÎñ
-1£©image¡¾website/sync¡¿
+å››ã€åœæ­¢ä¹‹å‰ç”¨çš„containerï¼Œåˆ æ‰imageã€pcnk/web:syncã€‘ï¼Œæäº¤æˆä¸€ä¸ªæ–°çš„imageã€website/syncã€‘ï¼Œç„¶åé€šè¿‡è¿™ä¸ªæ¥å¯åŠ¨æœåŠ¡
+1ï¼‰imageã€website/syncã€‘
 [Jack@test101 base]$ docker stop app_sync
 [Jack@test101 base]$ docker rm app_sync
-[Jack@test101 base]$ dcoker rmi 
+[Jack@test101 base]$ dcoker rmi
 [Jack@test101 base]$ docker images
 REPOSITORY          TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
 website/sync        latest              1bda5d872bf7        22 minutes ago      508 MB
@@ -138,43 +138,30 @@ centos              latest              fd44297e2ddb        2 weeks ago         
 [Jack@test101 base]$ docker rmi b41b76b51e1a
 Untagged: pcnk/web:sync
 
-[Jack@test101 base]$ docker commit -m "Ôö¼Ó httpd,php ·şÎñ£¬ÓÃÓÚsyncÕâ¸öÓ¦ÓÃ¡£" -a "pcnk" ea8daf7b62d4 website/sync
+[Jack@test101 base]$ docker commit -m "å¢åŠ  httpd,php æœåŠ¡ï¼Œç”¨äºsyncè¿™ä¸ªåº”ç”¨ã€‚" -a "pcnk" ea8daf7b62d4 website/sync
 
 
 
-2£©container¡¾app_sync_web¡¿
+2ï¼‰containerã€app_sync_webã€‘
 [Jack@test101 base]$ docker run -d -v /home/download:/home/download -v /home/datacenter:/data --name app_sync_web -p 40022:22 -p 80:80 website/sync
 [Jack@test101 base]$ docker ps -l
 CONTAINER ID        IMAGE                 COMMAND                CREATED             STATUS              PORTS                                       NAMES
-2ab2a9866251        website/sync:latest   "/usr/bin/supervisor   6 seconds ago       Up 4 seconds        0.0.0.0:80->80/tcp, 0.0.0.0:40022->22/tcp   app_sync_web   
+2ab2a9866251        website/sync:latest   "/usr/bin/supervisor   6 seconds ago       Up 4 seconds        0.0.0.0:80->80/tcp, 0.0.0.0:40022->22/tcp   app_sync_web
 
 
 
-Îå¡¢ÏÖÔÚÎÒÃÇÀ´¿´Ò»ÏÂimagesÖ®¼äµÄ¹ØÁª
+äº”ã€ç°åœ¨æˆ‘ä»¬æ¥çœ‹ä¸€ä¸‹imagesä¹‹é—´çš„å…³è”
 [Jack@test101 ~]$ docker images --tree
 Warning: '--tree' is deprecated, it will be removed soon. See usage.
-©¸©¤6941bfcbbfca Virtual Size: 0 B
-  ©¸©¤41459f052977 Virtual Size: 215.7 MB
-    ©¸©¤fd44297e2ddb Virtual Size: 215.7 MB Tags: centos:centos7, centos:latest, centos:7
-      ©¸©¤751a85a0d00b Virtual Size: 215.7 MB
-        ©¸©¤19b009f08542 Virtual Size: 228.1 MB
-          ©¸©¤420cb9e73c70 Virtual Size: 251.3 MB
-            ©¸©¤e97f94a79de0 Virtual Size: 251.3 MB
-              ©¸©¤fde06c761bde Virtual Size: 251.3 MB
-                ©¸©¤dbfae1099999 Virtual Size: 251.3 MB
-                  ©¸©¤064aa35dfcef Virtual Size: 251.3 MB Tags: pcnk/base:v2
-                    ©¸©¤b41b76b51e1a Virtual Size: 505.9 MB
-                      ©¸©¤1bda5d872bf7 Virtual Size: 508 MB Tags: website/sync:latest
-
-
-
-
-
-
-
-
-
-
-
-
-
+â””â”€6941bfcbbfca Virtual Size: 0 B
+  â””â”€41459f052977 Virtual Size: 215.7 MB
+    â””â”€fd44297e2ddb Virtual Size: 215.7 MB Tags: centos:centos7, centos:latest, centos:7
+      â””â”€751a85a0d00b Virtual Size: 215.7 MB
+        â””â”€19b009f08542 Virtual Size: 228.1 MB
+          â””â”€420cb9e73c70 Virtual Size: 251.3 MB
+            â””â”€e97f94a79de0 Virtual Size: 251.3 MB
+              â””â”€fde06c761bde Virtual Size: 251.3 MB
+                â””â”€dbfae1099999 Virtual Size: 251.3 MB
+                  â””â”€064aa35dfcef Virtual Size: 251.3 MB Tags: pcnk/base:v2
+                    â””â”€b41b76b51e1a Virtual Size: 505.9 MB
+                      â””â”€1bda5d872bf7 Virtual Size: 508 MB Tags: website/sync:latest

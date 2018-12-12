@@ -1,19 +1,19 @@
-dockerÉîÈë1-°²×°Ê¹ÓÃdocker·şÎñ
+dockeræ·±å…¥1-å®‰è£…ä½¿ç”¨dockeræœåŠ¡
 
-°²×°Ê¹ÓÃdocker·şÎñ
-×¢1£º ½¨ÒélinuxÄÚºË>3.8.0£¬³¢ÊÔ¹ıÔÚ2.6.32Õâ¸ö°æ±¾°²×°£¬ÎŞ·¨Æô¶¯·şÎñ£¬ÓĞÈçÏÂÌáÊ¾£º
-level="info" msg="WARNING: You are running linux kernel version 2.6.32-431.el6.x86_64, which might be unstable running docker. Please upgrade your kernel to 3.8.0." 
+å®‰è£…ä½¿ç”¨dockeræœåŠ¡
+æ³¨1ï¼š å»ºè®®linuxå†…æ ¸>3.8.0ï¼Œå°è¯•è¿‡åœ¨2.6.32è¿™ä¸ªç‰ˆæœ¬å®‰è£…ï¼Œæ— æ³•å¯åŠ¨æœåŠ¡ï¼Œæœ‰å¦‚ä¸‹æç¤ºï¼š
+level="info" msg="WARNING: You are running linux kernel version 2.6.32-431.el6.x86_64, which might be unstable running docker. Please upgrade your kernel to 3.8.0."
 
-×¢2£º ĞèÒªepelÔ´µÄÖ§³Ö£¬½â¾ö·½·¨ÈçÏÂ£º
+æ³¨2ï¼š éœ€è¦epelæºçš„æ”¯æŒï¼Œè§£å†³æ–¹æ³•å¦‚ä¸‹ï¼š
 rpm -ivh http://mirrors.ustc.edu.cn/epel/epel-release-latest-6.noarch.rpm
 yum makecache
 
-×¢3£º ¿ÉÄÜÆô¶¯·şÎñÊ§°Ü£¬ÌáÊ¾£º
+æ³¨3ï¼š å¯èƒ½å¯åŠ¨æœåŠ¡å¤±è´¥ï¼Œæç¤ºï¼š
 /usr/bin/docker: relocation error: /usr/bin/docker: symbol dm_task_get_info_with_deferred_remove, version Base not defined in file libdevmapper.so.1.02 with link time reference
-½â¾ö·½·¨ÈçÏÂ£º
+è§£å†³æ–¹æ³•å¦‚ä¸‹ï¼š
 yum upgrade device-mapper-libs
 
-1¡¢°²×°ºÍÆô¶¯·şÎñ
+1ã€å®‰è£…å’Œå¯åŠ¨æœåŠ¡
 [root@server200-20 ~]# yum install -y docker-io
 [root@server200-20 ~]# service docker start
 Starting docker:                                           [  OK  ]
@@ -31,21 +31,14 @@ Server API version: 1.17
 Go version (server): go1.3.3
 Git commit (server): a8a31ef/1.5.0
 
-2¡¢½«Ä³¸öÓÃ»§¼ÓÈëµ½docker×é£¬ÒÔ±ãÒÔ·ÇrootÓÃ»§À´ÔËĞĞdockerÃüÁî¡£
+2ã€å°†æŸä¸ªç”¨æˆ·åŠ å…¥åˆ°dockerç»„ï¼Œä»¥ä¾¿ä»¥érootç”¨æˆ·æ¥è¿è¡Œdockerå‘½ä»¤ã€‚
 [root@server200-20 ~]# useradd Jack
 [root@server200-20 ~]# usermod -a -G docker Jack
-ÅäÖÃsudoÈ¨ÏŞ£¬´Ë´¦ÂÔ¹ı
+é…ç½®sudoæƒé™ï¼Œæ­¤å¤„ç•¥è¿‡
 [root@server200-20 ~]# cat <<_EOF >>/etc/sudoers
 Jack ALL=(ALL) NOPASSWD: ALL
 _EOF
 
-ÇĞ»»µ½ÓÃ»§Ä¿Â¼
+åˆ‡æ¢åˆ°ç”¨æˆ·ç›®å½•
 [root@server200-20 ~]# su Jack
-[Jack@server200-20 root]$ 
-
-
-
-
-
-
-
+[Jack@server200-20 root]$

@@ -1,48 +1,42 @@
-dockerÉîÈë1-Ê¹ÓÃdockerÔËĞĞnsq
+dockeræ·±å…¥1-ä½¿ç”¨dockerè¿è¡Œnsq
 
 
-Ò»¡¢ÔÚ10.0.200.21ÉÏ²âÊÔ
-Ê×ÏÈpullÒ»¸önsqµÄ¾µÏñ
+ä¸€ã€åœ¨10.0.200.21ä¸Šæµ‹è¯•
+é¦–å…ˆpullä¸€ä¸ªnsqçš„é•œåƒ
 docker pull nsqio/nsq
 
-¶ş¡¢Æô¶¯ÈİÆ÷
-1£©ÔËĞĞdockerÈİÆ÷lookupd
+äºŒã€å¯åŠ¨å®¹å™¨
+1ï¼‰è¿è¡Œdockerå®¹å™¨lookupd
 [root@svr200-21 docker]# docker run -d --name lookupd -p 4160:4160 -p 4161:4161 nsqio/nsq /nsqlookupd
 f37732ecb5a667da072bbdb132c0f7d616dca528885202152592267ac2a2cbdc
 
-2£©µÃµ½ÈİÆ÷lookupdËùÔÚµÄdocker hostµÄIPµØÖ·£º
+2ï¼‰å¾—åˆ°å®¹å™¨lookupdæ‰€åœ¨çš„docker hostçš„IPåœ°å€ï¼š
 [root@svr200-21 docker]# docker inspect -f '{{ .NetworkSettings.IPAddress }}' lookupd
 172.17.0.22
 
 
 
-3£©ÔËĞĞdockerÈİÆ÷nsqd
+3ï¼‰è¿è¡Œdockerå®¹å™¨nsqd
 [root@svr200-21 docker]# docker run -d --name nsqd -p 4150:4150 -p 4151:4151 nsqio/nsq /nsqd --broadcast-address=172.17.0.22 --lookupd-tcp-address=172.17.0.22:4160
 181da12ff439e47187a65bb003e45d838d1740ffb0a1bb7adb689df4354e4f9e
 
-4£©ÔËĞĞdockerÈİÆ÷nsqadmin
+4ï¼‰è¿è¡Œdockerå®¹å™¨nsqadmin
 [root@svr200-21 docker]# docker run -d --name nsqadmin -p 4171:4171 nsqio/nsq /nsqadmin  --lookupd-http-address=172.17.0.22:4161
 5cc90923902ce864b5632a4e1a406e4dbd8e4fd092f49b8159d10efa499df9d6
 
-5£©¿ª·ÅËŞÖ÷»ú10.0.200.21µÄ·À»ğÇ½
+5ï¼‰å¼€æ”¾å®¿ä¸»æœº10.0.200.21çš„é˜²ç«å¢™
 -A INPUT -p tcp -m state --state NEW -m tcp --dport 4150:4151 -j ACCEPT
 -A INPUT -p tcp -m state --state NEW -m tcp --dport 4160:4161 -j ACCEPT
 -A INPUT -p tcp -m state --state NEW -m tcp --dport 4171 -j ACCEPT
 
 
-²é¿´dockerÈİÆ÷£º
+æŸ¥çœ‹dockerå®¹å™¨ï¼š
 [root@svr200-21 docker]# docker ps -a
 CONTAINER ID        IMAGE               COMMAND                CREATED             STATUS              PORTS                                            NAMES
-5cc90923902c        nsqio/nsq:latest    "/nsqadmin --lookupd   3 seconds ago       Up 3 seconds        0.0.0.0:4171->4171/tcp                           nsqadmin            
-181da12ff439        nsqio/nsq:latest    "/nsqd --broadcast-a   11 seconds ago      Up 11 seconds       0.0.0.0:4150->4150/tcp, 0.0.0.0:4151->4151/tcp   nsqd                
-f37732ecb5a6        nsqio/nsq:latest    "/nsqlookupd"          51 seconds ago      Up 50 seconds       0.0.0.0:4160->4160/tcp, 0.0.0.0:4161->4161/tcp   lookupd   
+5cc90923902c        nsqio/nsq:latest    "/nsqadmin --lookupd   3 seconds ago       Up 3 seconds        0.0.0.0:4171->4171/tcp                           nsqadmin
+181da12ff439        nsqio/nsq:latest    "/nsqd --broadcast-a   11 seconds ago      Up 11 seconds       0.0.0.0:4150->4150/tcp, 0.0.0.0:4151->4151/tcp   nsqd
+f37732ecb5a6        nsqio/nsq:latest    "/nsqlookupd"          51 seconds ago      Up 50 seconds       0.0.0.0:4160->4160/tcp, 0.0.0.0:4161->4161/tcp   lookupd
 
 
 
-Í¨¹ıhttp://10.0.200.21:4171À´·ÃÎÊnsqadmin
-
-
-
-
-
-
+é€šè¿‡http://10.0.200.21:4171æ¥è®¿é—®nsqadmin

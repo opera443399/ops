@@ -1,18 +1,18 @@
-dockerÉîÈë1-Ê¹ÓÃsupervisorÀ´¹ÜÀí·şÎñ
-Ä¿µÄ£º
-a) Ìá¹©sshµÇÂ¼£»
-b) Ìá¹©supervisorÀ´¹ÜÀíÆäËû·şÎñ£»
+dockeræ·±å…¥1-ä½¿ç”¨supervisoræ¥ç®¡ç†æœåŠ¡
+ç›®çš„ï¼š
+a) æä¾›sshç™»å½•ï¼›
+b) æä¾›supervisoræ¥ç®¡ç†å…¶ä»–æœåŠ¡ï¼›
 
 
-Ò»¡¢ÖÆ×÷Ò»¸ö»ù´¡¾µÏñ
+ä¸€ã€åˆ¶ä½œä¸€ä¸ªåŸºç¡€é•œåƒ
 [Jack@test101 base]$ pwd
 /home/Jack/base
 [Jack@test101 base]$ ls
 bin  conf  Dockerfile  README
 
 
-1£©¡¾Dockerfile¡¿
-[Jack@test101 base]$ cat Dockerfile 
+1ï¼‰ã€Dockerfileã€‘
+[Jack@test101 base]$ cat Dockerfile
 FROM centos
 MAINTAINER pcnk
 
@@ -43,8 +43,8 @@ COPY ./conf/supervisor.d/sshd.ini /etc/supervisor.d/sshd.ini
 ENTRYPOINT ["/usr/bin/supervisord"]
 
 
-2£©¡¾Æô¶¯½Å±¾¡¿
-[Jack@test101 base]$ cat bin/start.sh 
+2ï¼‰ã€å¯åŠ¨è„šæœ¬ã€‘
+[Jack@test101 base]$ cat bin/start.sh
 #!/bin/bash
 #
 # 2015/5/5
@@ -70,47 +70,47 @@ _PUBKEY
 __update_root
 
 
-3£©¡¾supervisorÅäÖÃ¡¿
-[Jack@test101 base]$ cat conf/supervisor.d/sshd.ini    
+3ï¼‰ã€supervisoré…ç½®ã€‘
+[Jack@test101 base]$ cat conf/supervisor.d/sshd.ini
 [program:sshd]
 command=/usr/sbin/sshd -D
 
 
-4£©¡¾buildÒ»¸öimage¡¿
+4ï¼‰ã€buildä¸€ä¸ªimageã€‘
 [Jack@test101 base]$ docker build --rm -t pcnk/base:v2 .
 
 
-¶ş¡¢Æô¶¯Ò»¸öcontainerÀ´ÑéÖ¤
-¡¾²é¿´images¡¿
-[Jack@test101 base]$ docker images 
+äºŒã€å¯åŠ¨ä¸€ä¸ªcontaineræ¥éªŒè¯
+ã€æŸ¥çœ‹imagesã€‘
+[Jack@test101 base]$ docker images
 REPOSITORY          TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
 pcnk/base           v2                  064aa35dfcef        2 minutes ago       251.3 MB
 
 
-5£©¡¾Æô¶¯Ò»¸öcontainer¡¿
+5ï¼‰ã€å¯åŠ¨ä¸€ä¸ªcontainerã€‘
 [Jack@test101 base]$ docker run -d --name app_test -p 10022:22 pcnk/base:v2
 85df9a7ce698f69f5e14bb0bfdda5f8e16baf215315d7b2254bb86b52bc91f32
 [Jack@test101 base]$ docker ps -l
 CONTAINER ID        IMAGE               COMMAND                CREATED             STATUS              PORTS                   NAMES
-85df9a7ce698        pcnk/base:v2        "/usr/bin/supervisor   5 seconds ago       Up 4 seconds        0.0.0.0:10022->22/tcp   app_test 
+85df9a7ce698        pcnk/base:v2        "/usr/bin/supervisor   5 seconds ago       Up 4 seconds        0.0.0.0:10022->22/tcp   app_test
 
-µÇÂ¼²âÊÔ£º
-[Jack@test101 base]$ echo> /home/Jack/.ssh/known_hosts 
-ÉÏ±ßÏÈÇåÀíÒ»ÏÂ£¬ÒòÎªÖ®Ç°µÄ²âÊÔÓĞ±£ÁôÆäËûµÄkeyµÄĞÅÏ¢¡£
+ç™»å½•æµ‹è¯•ï¼š
+[Jack@test101 base]$ echo> /home/Jack/.ssh/known_hosts
+ä¸Šè¾¹å…ˆæ¸…ç†ä¸€ä¸‹ï¼Œå› ä¸ºä¹‹å‰çš„æµ‹è¯•æœ‰ä¿ç•™å…¶ä»–çš„keyçš„ä¿¡æ¯ã€‚
 
-ÏÈ²âÊÔÓÃpasswd·½Ê½µÇÂ¼£º 
+å…ˆæµ‹è¯•ç”¨passwdæ–¹å¼ç™»å½•ï¼š
 [Jack@test101 base]$ ssh -p 10022 root@127.0.0.1
 The authenticity of host '[127.0.0.1]:10022 ([127.0.0.1]:10022)' can't be established.
 RSA key fingerprint is 15:18:db:44:ed:03:ca:ac:15:a3:d0:ea:ac:01:7e:27.
 Are you sure you want to continue connecting (yes/no)? yes
 Warning: Permanently added '[127.0.0.1]:10022' (RSA) to the list of known hosts.
-root@127.0.0.1's password: 
+root@127.0.0.1's password:
 [root@85df9a7ce698 ~]# exit
 logout
 Connection to 127.0.0.1 closed.
 
 
-ÔÚ²âÊÔÓÃpublic key·½Ê½µÇÂ¼£º
+åœ¨æµ‹è¯•ç”¨public keyæ–¹å¼ç™»å½•ï¼š
 [Jack@test101 base]$ ssh -p 10022 root@127.0.0.1 -i /home/Jack/.ssh/Jack
 Last login: Wed May  6 01:37:11 2015 from 172.17.42.1
 [root@85df9a7ce698 ~]# exit
@@ -119,15 +119,10 @@ Connection to 127.0.0.1 closed.
 
 
 
-6£©¡¾É¾³ı¾µÏñµÄ·½Ê½¡¿
-ÏÈÍ£Ö¹ÓÃµ½Õâ¸öimageµÄcontainer£º
+6ï¼‰ã€åˆ é™¤é•œåƒçš„æ–¹å¼ã€‘
+å…ˆåœæ­¢ç”¨åˆ°è¿™ä¸ªimageçš„containerï¼š
 [Jack@test101 base]$ docker stop app_test
 [Jack@test101 base]$ docker rm app_test
 
-ÔÙÉ¾µôimage£º
+å†åˆ æ‰imageï¼š
 [Jack@test101 base]$ docker rmi `docker images |grep 'pcnk/base' |awk '{print $3}'`
-
-
-
-
-

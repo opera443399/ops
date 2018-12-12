@@ -1,25 +1,25 @@
-dockerÉîÈë1-docker³õ´Î°²×°Ê¹ÓÃ
+dockeræ·±å…¥1-dockeråˆæ¬¡å®‰è£…ä½¿ç”¨
 
 ===
-²Î¿¼×ÊÁÏ£º
-Docker ºÍÒ»¸öÕı³£µÄĞéÄâ»úÓĞºÎÇø±ğ£¿http://developer.51cto.com/art/201312/421964.htm
-È«ÇòÊ×²¿DockerÊé¼®£ºÈÃÄãÂõ³öÊ¹ÓÃDockerµÄµÚÒ»²½(1) http://cloud.51cto.com/art/201412/461998.htm
-docker¾µÏñÓëÈİÆ÷´æ´¢½á¹¹·ÖÎö http://www.csdn123.com/html/topnews201408/94/7494.htm
+å‚è€ƒèµ„æ–™ï¼š
+Docker å’Œä¸€ä¸ªæ­£å¸¸çš„è™šæ‹Ÿæœºæœ‰ä½•åŒºåˆ«ï¼Ÿhttp://developer.51cto.com/art/201312/421964.htm
+å…¨çƒé¦–éƒ¨Dockerä¹¦ç±ï¼šè®©ä½ è¿ˆå‡ºä½¿ç”¨Dockerçš„ç¬¬ä¸€æ­¥(1) http://cloud.51cto.com/art/201412/461998.htm
+dockeré•œåƒä¸å®¹å™¨å­˜å‚¨ç»“æ„åˆ†æ http://www.csdn123.com/html/topnews201408/94/7494.htm
 
 ===
-[root@test01 download]# yum update 
+[root@test01 download]# yum update
 
-¡¾¡¿°²×°
+ã€ã€‘å®‰è£…
 [root@test01 download]# yum install docker-io
-[root@test01 download]# docker -v     
+[root@test01 download]# docker -v
 Docker version 1.3.2, build 39fa2fa/1.3.2
 
-¡¾¡¿Æô¶¯·şÎñ
+ã€ã€‘å¯åŠ¨æœåŠ¡
 [root@test01 download]# service docker start
 
 
-¡¾¡¿²é¿´×´Ì¬
-[root@test01 download]# docker info         
+ã€ã€‘æŸ¥çœ‹çŠ¶æ€
+[root@test01 download]# docker info
 Containers: 0
 Images: 0
 Storage Driver: devicemapper
@@ -37,26 +37,26 @@ Kernel Version: 2.6.32-431.el6.x86_64
 Operating System: <unknown>
 
 
-¡¾¡¿½«Ä³¸öÓÃ»§¼ÓÈëµ½docker×é£¬ÒÔ±ãÒÑ·ÇrootÓÃ»§À´ÔËĞĞdockerÃüÁî¡£
-[root@test01 download]# useradd Jack             
+ã€ã€‘å°†æŸä¸ªç”¨æˆ·åŠ å…¥åˆ°dockerç»„ï¼Œä»¥ä¾¿å·²érootç”¨æˆ·æ¥è¿è¡Œdockerå‘½ä»¤ã€‚
+[root@test01 download]# useradd Jack
 [root@test01 download]# usermod -a -G docker Jack
 [root@test01 download]# id Jack
 uid=500(Jack) gid=500(Jack) groups=500(Jack),490(docker)
 [root@test01 download]# su Jack
 
-¡¾¡¿²é¿´images
+ã€ã€‘æŸ¥çœ‹images
 [Jack@test01 download]$ docker images
 REPOSITORY          TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
 
-´Ó¹úÄÚµÄ²Ö¿âdocker.cnÉÏpullÒ»¸ö
+ä»å›½å†…çš„ä»“åº“docker.cnä¸Špullä¸€ä¸ª
 [Jack@test01 download]$ docker pull docker.cn/docker/centos
 Pulling repository docker.cn/docker/centos
-34943839435d: Download complete 
-511136ea3c5a: Download complete 
-5b12ef8fd570: Download complete 
+34943839435d: Download complete
+511136ea3c5a: Download complete
+5b12ef8fd570: Download complete
 Status: Downloaded newer image for docker.cn/docker/centos:latest
 
-ÔÙ´Î²é¿´
+å†æ¬¡æŸ¥çœ‹
 [Jack@test01 download]$ docker images
 REPOSITORY                TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
 docker.cn/docker/centos   centos7             34943839435d        5 weeks ago         224 MB
@@ -68,20 +68,20 @@ docker.cn/docker/centos   latest              34943839435d        5 weeks ago   
 containers  devicemapper  execdriver  graph  init  linkgraph.db  repositories-devicemapper  tmp  trust  volumes
 
 
-¡¾¡¿²é¿´dockerÊ¹ÓÃµÄ¾µÏñ²ã´Î´æ´¢µÄdriverÊÇdevicemapper
-²é¿´ÄÚÈİ£º
+ã€ã€‘æŸ¥çœ‹dockerä½¿ç”¨çš„é•œåƒå±‚æ¬¡å­˜å‚¨çš„driveræ˜¯devicemapper
+æŸ¥çœ‹å†…å®¹ï¼š
 [root@test01 download]# cat /var/lib/docker/repositories-devicemapper |python -mjson.tool
 {
     "Repositories": {
         "docker.cn/docker/centos": {
-            "centos7": "34943839435dfb2ee646b692eebb06af13823a680ace00c0adc232c437c4f90c", 
+            "centos7": "34943839435dfb2ee646b692eebb06af13823a680ace00c0adc232c437c4f90c",
             "latest": "34943839435dfb2ee646b692eebb06af13823a680ace00c0adc232c437c4f90c"
         }
     }
 }
 
-Device mapper driver »á´´½¨Ò»¸ö100GµÄ¼òµ¥ÎÄ¼ş°üº¬ÄãµÄ¾µÏñºÍÈİÆ÷¡£Ã¿Ò»¸öÈİÆ÷±»ÏŞÖÆÔÚ10G´óĞ¡µÄ¾íÄÚ¡£
-´ÅÅÌÕ¼ÓÃ£º100G²»ÊÇÊµ¼ÊÕ¼ÓÃ£¬556M²ÅÊÇ¡£
+Device mapper driver ä¼šåˆ›å»ºä¸€ä¸ª100Gçš„ç®€å•æ–‡ä»¶åŒ…å«ä½ çš„é•œåƒå’Œå®¹å™¨ã€‚æ¯ä¸€ä¸ªå®¹å™¨è¢«é™åˆ¶åœ¨10Gå¤§å°çš„å·å†…ã€‚
+ç£ç›˜å ç”¨ï¼š100Gä¸æ˜¯å®é™…å ç”¨ï¼Œ556Mæ‰æ˜¯ã€‚
 [root@test01 devicemapper]# cd devicemapper/devicemapper
 
 [root@test01 devicemapper]# ll -h
@@ -90,28 +90,28 @@ total 556M
 -rw------- 1 root root 2.0G Jan  7 19:13 metadata
 
 
-¡¾¡¿Æô¶¯Ò»¸öÈİÆ÷£º
-Óï·¨£º
+ã€ã€‘å¯åŠ¨ä¸€ä¸ªå®¹å™¨ï¼š
+è¯­æ³•ï¼š
 docker run -it -d --name Container_Name REPOSITORY:TAG CMD
--i£º¿ªÆôÈİÆ÷ÖĞSTDIN
--t£º·ÖÅäÒ»¸öttyÀ´Ìá¹©Ò»¸ö½»»¥Ê½shell
--d£ººóÌ¨Ä£Ê½
---name: ÈİÆ÷Ãû
+-iï¼šå¼€å¯å®¹å™¨ä¸­STDIN
+-tï¼šåˆ†é…ä¸€ä¸ªttyæ¥æä¾›ä¸€ä¸ªäº¤äº’å¼shell
+-dï¼šåå°æ¨¡å¼
+--name: å®¹å™¨å
 
 [Jack@test01 download]$ docker run -it docker.cn/docker/centos /bin/bash
-    
+
 [root@896725223c75 /]# ip a
-13: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436 qdisc noqueue state UNKNOWN 
+13: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436 qdisc noqueue state UNKNOWN
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
     inet 127.0.0.1/8 scope host lo
-    inet6 ::1/128 scope host 
+    inet6 ::1/128 scope host
        valid_lft forever preferred_lft forever
 14: eth0: <BROADCAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
     link/ether 02:42:ac:11:00:04 brd ff:ff:ff:ff:ff:ff
     inet 172.17.0.4/16 scope global eth0
-    inet6 fe80::42:acff:fe11:4/64 scope link 
+    inet6 fe80::42:acff:fe11:4/64 scope link
        valid_lft forever preferred_lft forever
-       
+
 [root@896725223c75 /]# cat /etc/hosts
 172.17.0.4      896725223c75
 ff02::2 ip6-allrouters
@@ -122,97 +122,97 @@ ff00::0 ip6-mcastprefix
 ff02::1 ip6-allnodes
 
 
-¸ÃÑ¡ÏîÖ¸¶¨ÈİÆ÷Ãû
-[Jack@test01 download]$ docker run --name test-docker-01    
+è¯¥é€‰é¡¹æŒ‡å®šå®¹å™¨å
+[Jack@test01 download]$ docker run --name test-docker-01
 
-¡¾¡¿ÈçºÎÓÃTAG
-¿ÉÒÔÕâÑù£º
+ã€ã€‘å¦‚ä½•ç”¨TAG
+å¯ä»¥è¿™æ ·ï¼š
 [Jack@test01 download]$ docker run -it docker.cn/docker/centos /bin/bash
-Ò²¿ÉÒÔÕâÑù£º
+ä¹Ÿå¯ä»¥è¿™æ ·ï¼š
 [Jack@test01 download]$ docker run -it docker.cn/docker/centos:centos7 /bin/bash
 [Jack@test01 download]$ docker run -it docker.cn/docker/centos:7 /bin/bash
 
-²»ÄÜÕâÑù£º
+ä¸èƒ½è¿™æ ·ï¼š
 [Jack@server200-21 ~]$ docker run -it docker.cn/docker/centos:centos /bin/bash
 Unable to find image 'docker.cn/docker/centos:centos' locally
 Pulling repository docker.cn/docker/centos
-FATA[0000] Tag centos not found in repository docker.cn/docker/centos 
+FATA[0000] Tag centos not found in repository docker.cn/docker/centos
 
 
-¡¾¡¿²é¿´docker½ø³Ì
-docker ps -l    ¸ÃÑ¡Ïî»áÁĞ³ö×îºóÒ»´ÎÔËĞĞµÄÈİÆ÷£¬°üÀ¨ÕıÔÚÔËĞĞºÍÒÑ¾­Í£Ö¹µÄ¡£
-docker ps -a    ÏÔÊ¾È«²¿ÈİÆ÷
-docker ps -n 2  ÏÔÊ¾×î½ü2¸öÈİÆ÷
+ã€ã€‘æŸ¥çœ‹dockerè¿›ç¨‹
+docker ps -l    è¯¥é€‰é¡¹ä¼šåˆ—å‡ºæœ€åä¸€æ¬¡è¿è¡Œçš„å®¹å™¨ï¼ŒåŒ…æ‹¬æ­£åœ¨è¿è¡Œå’Œå·²ç»åœæ­¢çš„ã€‚
+docker ps -a    æ˜¾ç¤ºå…¨éƒ¨å®¹å™¨
+docker ps -n 2  æ˜¾ç¤ºæœ€è¿‘2ä¸ªå®¹å™¨
 
 [Jack@test01 download]$ docker ps -a
 CONTAINER ID        IMAGE                             COMMAND             CREATED             STATUS                       PORTS               NAMES
-896725223c75        docker.cn/docker/centos:centos7   "/bin/bash"         3 minutes ago       Exited (127) 2 seconds ago                       condescending_morse   
-3eb4e1567db2        docker.cn/docker/centos:centos7   "/bin/bash"         9 minutes ago       Exited (0) 8 minutes ago                         jolly_archimedes      
+896725223c75        docker.cn/docker/centos:centos7   "/bin/bash"         3 minutes ago       Exited (127) 2 seconds ago                       condescending_morse
+3eb4e1567db2        docker.cn/docker/centos:centos7   "/bin/bash"         9 minutes ago       Exited (0) 8 minutes ago                         jolly_archimedes
 8a4f4b9e5984        docker.cn/docker/centos:centos7   "/bin/bash"         11 minutes ago      Exited (0) 10 minutes ago                        test-docker-01
 
 
-¡¾¡¿ÖØĞÂÆô¶¯ÒÑ¾­Í£Ö¹µÄÈİÆ÷
+ã€ã€‘é‡æ–°å¯åŠ¨å·²ç»åœæ­¢çš„å®¹å™¨
 [Jack@test01 download]$ docker start test-docker-01
 test-docker-01
 [Jack@test01 download]$ docker ps
 CONTAINER ID        IMAGE                             COMMAND             CREATED             STATUS              PORTS               NAMES
 8a4f4b9e5984        docker.cn/docker/centos:centos7   "/bin/bash"         14 minutes ago      Up 22 seconds                           test-docker-01
 
-DockerÈİÆ÷ÖØĞÂÆô¶¯µÄÊ±ºò£¬»áÑØÓÃdocker runÃüÁîÊ±Ö¸¶¨µÄ²ÎÊıÀ´ÔËĞĞ£¬Òò´ËÎÒÃÇÈİÆ÷ÖØĞÂÆô¶¯ºó»áÔËĞĞÒ»¸ö½»»¥Ê½»á»°shell¡£´ËÍâ£¬ÎÒÃÇÒ²¿ÉÒÔÓÃdocker attachÃüÁî£¬ÖØĞÂ¸½×Åµ½¸ÃÈİÆ÷µÄ»á»°ÉÏ
+Dockerå®¹å™¨é‡æ–°å¯åŠ¨çš„æ—¶å€™ï¼Œä¼šæ²¿ç”¨docker runå‘½ä»¤æ—¶æŒ‡å®šçš„å‚æ•°æ¥è¿è¡Œï¼Œå› æ­¤æˆ‘ä»¬å®¹å™¨é‡æ–°å¯åŠ¨åä¼šè¿è¡Œä¸€ä¸ªäº¤äº’å¼ä¼šè¯shellã€‚æ­¤å¤–ï¼Œæˆ‘ä»¬ä¹Ÿå¯ä»¥ç”¨docker attachå‘½ä»¤ï¼Œé‡æ–°é™„ç€åˆ°è¯¥å®¹å™¨çš„ä¼šè¯ä¸Š
 
 [Jack@test01 download]$ docker attach test-docker-01
 [root@8a4f4b9e5984 /]# exit
 
-¡¾¡¿ÊØ»¤Ê½ÈİÆ÷
-³ıÁËÕâĞ©½»»¥Ê½ÔËĞĞµÄÈİÆ÷£¨interactive container£©£¬ÎÒÃÇÒ²¿ÉÒÔ´´½¨³¤ÆÚÔËĞĞµÄÈİÆ÷¡£
-ÊØ»¤Ê½ÈİÆ÷ £¨daemonized container£© Ã»ÓĞ½»»¥Ê½»á»°£¬·Ç³£ÊÊºÏÔËĞĞÓ¦ÓÃ³ÌĞòºÍ·şÎñ¡£´ó¶àÊıÊ±ºòÎÒÃÇ¶¼ĞèÒªÒÔÊØ»¤Ê½À´ÔËĞĞÎÒÃÇµÄÈİÆ÷¡£
+ã€ã€‘å®ˆæŠ¤å¼å®¹å™¨
+é™¤äº†è¿™äº›äº¤äº’å¼è¿è¡Œçš„å®¹å™¨ï¼ˆinteractive containerï¼‰ï¼Œæˆ‘ä»¬ä¹Ÿå¯ä»¥åˆ›å»ºé•¿æœŸè¿è¡Œçš„å®¹å™¨ã€‚
+å®ˆæŠ¤å¼å®¹å™¨ ï¼ˆdaemonized containerï¼‰ æ²¡æœ‰äº¤äº’å¼ä¼šè¯ï¼Œéå¸¸é€‚åˆè¿è¡Œåº”ç”¨ç¨‹åºå’ŒæœåŠ¡ã€‚å¤§å¤šæ•°æ—¶å€™æˆ‘ä»¬éƒ½éœ€è¦ä»¥å®ˆæŠ¤å¼æ¥è¿è¡Œæˆ‘ä»¬çš„å®¹å™¨ã€‚
 
 
-[Jack@test01 docker]$ docker run --name test-docker02-daemon -d docker.cn/docker/centos /bin/bash -c "while true; do echo hello world; sleep 1; done" 
+[Jack@test01 docker]$ docker run --name test-docker02-daemon -d docker.cn/docker/centos /bin/bash -c "while true; do echo hello world; sleep 1; done"
 589a71825c044120a5729dca24154dd32c257bfa529d83966a931ea67e2d058f
 
-¡¾¡¿Ê¹ÓÃlogsÀ´²é¿´ÈİÆ÷µÄÈÕÖ¾
+ã€ã€‘ä½¿ç”¨logsæ¥æŸ¥çœ‹å®¹å™¨çš„æ—¥å¿—
 [Jack@test01 docker]$ docker logs test-docker02-daemon
 hello world
 hello world
 
-ÀàËÆtail -n
+ç±»ä¼¼tail -n
 [Jack@test01 docker]$ docker logs --tail 10 test-docker02-daemon
 
-ÀàËÆtail -f
-[Jack@test01 docker]$ docker logs -f test-docker02-daemon       
+ç±»ä¼¼tail -f
+[Jack@test01 docker]$ docker logs -f test-docker02-daemon
 
-²é¿´ÈİÆ÷ÄÚµÄ½ø³Ì£¬ÀàËÆtop
+æŸ¥çœ‹å®¹å™¨å†…çš„è¿›ç¨‹ï¼Œç±»ä¼¼top
 [Jack@test01 docker]$ docker top test-docker02-daemon
 UID                 PID                 PPID                C                   STIME               TTY                 TIME                CMD
 root                28600               26577               0                   19:41               ?                   00:00:00            /bin/bash -c while true; do echo hello world; sleep 1; done
 root                28898               28600               0                   19:44               ?                   00:00:00            sleep 1
 
 
-¡¾¡¿ÔÚÈİÆ÷ÄÚ²¿ÔËĞĞ½ø³Ì
+ã€ã€‘åœ¨å®¹å™¨å†…éƒ¨è¿è¡Œè¿›ç¨‹
 [Jack@test01 docker]$ docker exec -d test-docker02-daemon touch /etc/new_file
 
-¡¾¡¿Æô¶¯Ò»¸öÖîÈç´ò¿ªshellµÄ½»»¥Ê½ÈÎÎñ
+ã€ã€‘å¯åŠ¨ä¸€ä¸ªè¯¸å¦‚æ‰“å¼€shellçš„äº¤äº’å¼ä»»åŠ¡
 [Jack@test01 docker]$ docker exec -t -i test-docker02-daemon /bin/bash
 [root@589a71825c04 /]# ls /etc/new*
 /etc/new_file
 
-¡¾¡¿Í£Ö¹ÊØ»¤Ê½ÈİÆ÷
-docker stopÃüÁî»áÏòDockerÈİÆ÷½ø³Ì·¢ËÍSIGTERMĞÅºÅ¡£
-docker killÃüÁîÀ´ÏòÈİÆ÷½ø³Ì·¢ËÍSIGKILLĞÅºÅ¡£Èç¹ûÄãÏë¿ìËÙÍ£Ö¹Ä³¸öÈİÆ÷¡£
+ã€ã€‘åœæ­¢å®ˆæŠ¤å¼å®¹å™¨
+docker stopå‘½ä»¤ä¼šå‘Dockerå®¹å™¨è¿›ç¨‹å‘é€SIGTERMä¿¡å·ã€‚
+docker killå‘½ä»¤æ¥å‘å®¹å™¨è¿›ç¨‹å‘é€SIGKILLä¿¡å·ã€‚å¦‚æœä½ æƒ³å¿«é€Ÿåœæ­¢æŸä¸ªå®¹å™¨ã€‚
 [Jack@test01 docker]$ docker stop test-docker02-daemon
 test-docker02-daemon
 
 
-¡¾¡¿×Ô¶¯ÖØÆôÈİÆ÷
-docker run --restart=always --name test-docker03 -d docker.cn/docker/centos bin/bash -c "while true; do echo hello world; sleep 1; done" 
+ã€ã€‘è‡ªåŠ¨é‡å¯å®¹å™¨
+docker run --restart=always --name test-docker03 -d docker.cn/docker/centos bin/bash -c "while true; do echo hello world; sleep 1; done"
 
---restart±êÖ¾±»ÉèÖÃÎªalways¡£ÎŞÂÛÈİÆ÷µÄÍË³ö´úÂëÊÇÊ²Ã´£¬Docker¶¼»á×Ô¶¯ÖØÆô¸ÃÈİÆ÷£¬³ıÁËalways¡£
-ÎÒÃÇ»¹¿ÉÒÔ½«Õâ¸ö±êÖ¾ÉèÎªon-failure£¬ÕâÑù£¬Ö»ÓĞµ±ÈİÆ÷µÄÍË³ö´úÂëÎª·Ç0ÖµµÄÊ±ºò£¬²Å»á×Ô¶¯ÖØÆô¡£ÁíÍâ£¬on-failure``»¹½ÓÊÜ``Ò»¸ö¿ÉÑ¡µÄÖØÆô´ÎÊı²ÎÊı£¬ÀıÈç£º
---restart=on-failure:5  
+--restartæ ‡å¿—è¢«è®¾ç½®ä¸ºalwaysã€‚æ— è®ºå®¹å™¨çš„é€€å‡ºä»£ç æ˜¯ä»€ä¹ˆï¼ŒDockeréƒ½ä¼šè‡ªåŠ¨é‡å¯è¯¥å®¹å™¨ï¼Œé™¤äº†alwaysã€‚
+æˆ‘ä»¬è¿˜å¯ä»¥å°†è¿™ä¸ªæ ‡å¿—è®¾ä¸ºon-failureï¼Œè¿™æ ·ï¼Œåªæœ‰å½“å®¹å™¨çš„é€€å‡ºä»£ç ä¸ºé0å€¼çš„æ—¶å€™ï¼Œæ‰ä¼šè‡ªåŠ¨é‡å¯ã€‚å¦å¤–ï¼Œon-failure``è¿˜æ¥å—``ä¸€ä¸ªå¯é€‰çš„é‡å¯æ¬¡æ•°å‚æ•°ï¼Œä¾‹å¦‚ï¼š
+--restart=on-failure:5
 
-¡¾¡¿Ê¹ÓÃinspectµÃµ½¸ü¶àĞÅÏ¢
-[Jack@test01 docker]$ docker inspect test-docker02-daemon 
+ã€ã€‘ä½¿ç”¨inspectå¾—åˆ°æ›´å¤šä¿¡æ¯
+[Jack@test01 docker]$ docker inspect test-docker02-daemon
 
 [Jack@test01 docker]$ docker inspect --help
 
@@ -223,24 +223,24 @@ Return low-level information on a container or image
   -f, --format=""    Format the output using the given go template.
   --help=false       Print usage
 
-  
-docker inspect Ä³¸öÈİÆ÷Ãû£¬»á·µ»ØÒ»¶Ñjson¸ñÊ½µÄÊı¾İ£»
-¿ÉÒÔÖ¸¶¨-f or --format  ºó±ß¸ú×ÅkeyµÄÃû³Æ£¬ÕâÑù¿ÉÒÔ¾«È·Æ¥Åäµ½value
 
-ÀıÈç£ºµÃµ½ÈİÆ÷app1ËùÔÚµÄdocker hostµÄIPµØÖ·£º
+docker inspect æŸä¸ªå®¹å™¨åï¼Œä¼šè¿”å›ä¸€å †jsonæ ¼å¼çš„æ•°æ®ï¼›
+å¯ä»¥æŒ‡å®š-f or --format  åè¾¹è·Ÿç€keyçš„åç§°ï¼Œè¿™æ ·å¯ä»¥ç²¾ç¡®åŒ¹é…åˆ°value
+
+ä¾‹å¦‚ï¼šå¾—åˆ°å®¹å™¨app1æ‰€åœ¨çš„docker hostçš„IPåœ°å€ï¼š
 [Jack@test01 docker]# docker inspect -f '{{ .NetworkSettings.IPAddress }}' app1
 172.17.0.12
 
 
 
-¡¾¡¿É¾³ıÈİÆ÷
-ĞèÒª×¢ÒâµÄÊÇ£¬ÔËĞĞÖĞµÄDockerÈİÆ÷ÊÇÎŞ·¨É¾³ıµÄ£¡Äã±ØĞëÏÈÍ¨¹ıdocker stop»òdocker killÃüÁîÍ£Ö¹ÈİÆ÷£¬²ÅÄÜ½«ÆäÉ¾³ı¡£
+ã€ã€‘åˆ é™¤å®¹å™¨
+éœ€è¦æ³¨æ„çš„æ˜¯ï¼Œè¿è¡Œä¸­çš„Dockerå®¹å™¨æ˜¯æ— æ³•åˆ é™¤çš„ï¼ä½ å¿…é¡»å…ˆé€šè¿‡docker stopæˆ–docker killå‘½ä»¤åœæ­¢å®¹å™¨ï¼Œæ‰èƒ½å°†å…¶åˆ é™¤ã€‚
 [Jack@test01 docker]$ docker rm test-docker02-daemon
 test-docker02-daemon
 
-É¾³ıËùÓĞÈİÆ÷
--a£ºÁĞ³öËùÓĞÈİÆ÷
--q£ºÖ»·µ»ØÈİÆ÷µÄID
+åˆ é™¤æ‰€æœ‰å®¹å™¨
+-aï¼šåˆ—å‡ºæ‰€æœ‰å®¹å™¨
+-qï¼šåªè¿”å›å®¹å™¨çš„ID
 [Jack@test01 docker]$ docker rm `docker ps -aq`
 896725223c75
 3eb4e1567db2
@@ -248,4 +248,3 @@ test-docker02-daemon
 
 [Jack@test01 docker]$ docker ps -a
 CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
-
