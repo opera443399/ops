@@ -1,4 +1,4 @@
-2017/9/29
+2018/12/12
 
   . ____         . ____
  /\  ___ '\     /\  ____'\
@@ -10,9 +10,9 @@
       \ \ \          \ \ \ __/\
        \ \ \          \_\/____/
         \_\/
-        
 
-~。~请点亮运维的技能树~。~
+
+~。~加油，请厚积薄发，点亮OPS/SRE的技能树~。~
 
 ===================================一、系统运维===================================
 1、IDC数据中心建设
@@ -67,49 +67,45 @@ c) 备份是否可用: 恢复测试
 d) 何时备份: 任务调度
 
 ===================================三、运维研发===================================
-1、运维平台
+1、云计算
+a) 服务器虚拟化: kvm(ovirt,zstack,cloudstack,openstack),xen(xen,Citrix XenServer),vmware(exsi,vCenter/vSphere)
+b) 公有云: aliyun,aws
+c) 容器化: docker
+d) 集群服务管理: swarm,k8s
+e) Service Mesh
+f) FAAS
+
+2、日志平台
+a) 日志系统: 开源系统(ELK)
+
+3、监控平台
+a) 监控系统: 开源系统(zabbix,grafana,prometheus),工具(smokeping,sar,iostat,vmstat,iftop,iotop),自研
+b) 告警系统: 开源系统(alertmanager),告警收敛,告警升级,自研
+
+4、部署平台
+a) 编译规范: 源码包结构,编译后输出结构
+b) 线上目录规范: 约束服务在线上运行时程序、日志、数据的位置,目录明确,日志和数据分离,服务起停控制
+c) 发布系统: 规范,CICD(jenkins)
+
+5、运维平台
 a) 资源管理: 服务器,IP,域名等
 b) 权限管理
 
-2、监控平台
-a) 监控系统: 开源系统(zabbix),工具(smokeping,sar,iostat,vmstat,iftop,iotop),自研
-b) 告警系统: 告警收敛,告警升级,自研
-
-3、部署平台
-a) 编译规范: 源码包结构,编译后输出结构
-b) 线上目录规范: 约束服务在线上运行时程序、日志、数据的位置,目录明确,日志和数据分离,服务起停控制
-c) 自动化部署系统: 规范,CI(jenkins),CD
-
-4、服务管理平台
-a) 服务树
-
-5、云计算平台
-a) 服务器虚拟化: kvm(ovirt,zstack,cloudstack,openstack),xen(xen,Citrix XenServer),vmware(exsi,vCenter/vSphere)
-b) 容器化: docker
-c) 集群服务管理: swarm,mesos,k8s
-d) 公有云: aliyun,qcloud,aws
-
 ===================================四、数据运维===================================
-1、数据库
+1、数据
 a) mysql(版本选择,部署方案,配置调优,集群管理,高可用,读写分离,主从同步,备份和恢复,权限,监控)
-b) memcache(couchbase)
-c) redis
+b) redis
+c) zk/etcd
 d) mongodb
-
-2、中间件
-a) RabbitMQ
-b) NSQ
-
-3、大数据
-a) hadoop
+e) RabbitMQ
 
 ===================================五、团队协作和开发===================================
 1、协作
-a) 代码库: svn,git
-b) 项目和缺陷管理: redmine,bugzilla
-c) 文档共享: seafile
+a) 代码库: git,svn
+b) 项目和缺陷管理: jira,redmine,bugzilla
+c) 文档共享: confluence,seafile
 
 2、开发
-a) 前端: html5,jQuery,Ajax,BootStrap,AngularJS
-b) 后端: Java(jdk),Python(Django),php(php-fpm),nodejs(pm2),go
-c) web服务:apache,nginx,tomcat
+a) 前端: h5,npm,yarn,webpack,angularjs,react/rn
+b) 后端: golang,python/Django
+c) web服务器: apache,nginx,tomcat,caddy
