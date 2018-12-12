@@ -14,7 +14,7 @@ pipeline {
     string(name: 'SVC_VERSION', defaultValue: 'EMPTY', description: '请指定`docker image tag`的值，默认将提取 `git rev id`')
     string(name: 'GIT_BRANCH_NAME', defaultValue: '*/develop', description: '请指定 git 分支：')
     choice(name: 'CICD_ENV', choices: 'dev\ntest', description: '请问您要部署至哪一个环境中呢？')
-    choice(name: 'CICD_OP', choices: 'build\ndeploy\nrollback', description: '请选择操作类型：')
+    choice(name: 'CICD_OP', choices: 'auto\nbuild\ndeploy\nrollback', description: '请选择操作类型：(auto=build+deploy)')
   }
 
   environment {
@@ -26,8 +26,8 @@ pipeline {
     stage('准备 git 仓库') {
       when {
         expression {
-          //------ 只在 dev 环境中执行
-          (params.CICD_ENV=='dev' && (params.CICD_OP=='build' || params.CICD_OP=='deploy')) ? true : false
+          //------ 只在指定条件中执行
+          (params.CICD_OP=='auto' || params.CICD_OP=='build') ? true : false
         }
       }
       steps {
@@ -112,8 +112,8 @@ pipeline {
     stage('构建') {
       when {
         expression {
-          //------ 只在 dev 环境中执行
-          (params.CICD_ENV=='dev' && (params.CICD_OP=='build' || params.CICD_OP=='deploy')) ? true : false
+          //------ 只在指定条件中执行
+          (params.CICD_OP=='auto' || params.CICD_OP=='build') ? true : false
         }
       }
       tools {
@@ -144,8 +144,8 @@ pipeline {
     stage('部署至 dev 环境') {
       when {
         expression {
-          //------ 只在 dev 环境中执行
-          (params.CICD_ENV=='dev' && params.CICD_OP=='deploy') ? true : false
+          //------ 只在指定条件中执行
+          (params.CICD_ENV=='dev' && (params.CICD_OP=='auto' || params.CICD_OP=='deploy')) ? true : false
         }
       }
       steps {
@@ -174,8 +174,8 @@ pipeline {
     stage('部署至 test 环境') {
       when {
         expression {
-          //------ 只在 test 环境中执行
-          (params.CICD_ENV=='test' && params.CICD_OP=='deploy') ? true : false
+          //------ 只在指定条件中执行
+          (params.CICD_ENV=='test' && (params.CICD_OP=='auto' || params.CICD_OP=='deploy')) ? true : false
         }
       }
       steps {
