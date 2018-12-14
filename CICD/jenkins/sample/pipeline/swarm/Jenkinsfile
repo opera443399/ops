@@ -18,8 +18,9 @@ pipeline {
   }
 
   environment {
-    SSH_OPTS_DEPLOY_TO_DEV = 'ssh -o StrictHostKeyChecking=no jack@10.250.1.201 /bin/bash /data/server/swarm-deploy/bin/swarm-ctl.sh'
-    DO_ALERT = 'python /data/server/jenkins_worker/bin/receiver_wechat.py'
+    SSH_OPTS_DEPLOY_TO_DEV = 'ssh -o StrictHostKeyChecking=no jack@10.250.1.201 /bin/bash /data/server/cicd/bin/swarm-ctl.sh'
+    DO_BUILD = '/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh'
+    DO_ALERT = 'python /usr/local/bin/receiver_wechat.py'
   }
 
   stages {
@@ -134,7 +135,7 @@ pipeline {
           }
         }
 
-        sh "/bin/bash /data/server/jenkins_worker/cicd/demoproject/ci.sh build demoproject '${APP_TAG}' '${SVC_NAMES}'"
+        sh "${DO_BUILD} build demoproject '${APP_TAG}' '${SVC_NAMES}'"
 
         echo '[-] ______________________END_OF_STAGE______________________'
       }

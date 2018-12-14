@@ -1,0 +1,4 @@
+# env=dev
+# app_name src_port dest_port
+svc1 80 5001
+svc2 80 5002

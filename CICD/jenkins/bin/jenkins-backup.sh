@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # 2018/11/21
-#0 2 * * * /bin/bash -xe /usr/local/bin/backup_jenkins.sh >>/data/logs/backup/jenkins.log 2>&1 &
+#0 2 * * * /bin/bash -xe /usr/local/bin/jenkins-backup.sh >>/data/logs/backup/jenkins.log 2>&1 &
 
 this_ip="$(/usr/sbin/ip a |grep global |grep brd |grep 'eth0' |awk '{print $2}' |awk -F'/' '{print $1}')"
 jenkins_home='/data/server/jenkins/data'
