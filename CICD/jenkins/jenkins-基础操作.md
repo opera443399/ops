@@ -62,24 +62,7 @@ _EOF
 ~]# nohup java -jar /opt/jenkins/jenkins.war >/opt/jenkins/logs/$(date +%F).log 2>&1 &
 ```
 
-### 二、使用 docker 部署启用了 blueocean 的版本
-```bash
-mkdir -p /data/server/jenkins/data
-
-docker run \
-  --name jenkinsci \
-  --restart=always \
-  -d \
-  -u root \
-  -p 8080:8080 \
-  -v /data/server/jenkins/data:/var/jenkins_home \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  jenkinsci/blueocean:1.8.2
-
-```
-
-
-### 三、使用 docker 部署 LTS 的版本
+### 二、使用 docker 部署 LTS 的版本
 ```bash
 mkdir -p /data/server/jenkins/data
 
