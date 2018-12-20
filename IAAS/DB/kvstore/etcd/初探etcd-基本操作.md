@@ -15,9 +15,9 @@ v3：grpc，使用protobuf，兼容了v2的接口，但不能混用（例如，�
 - 下载
 来自：https://github.com/coreos/etcd/releases
 ```bash
-wget https://github.com/coreos/etcd/releases/download/v3.2.9/etcd-v3.2.9-linux-amd64.tar.gz
-tar zxvf etcd-v3.2.9-linux-amd64.tar.gz
-cp etcd-v3.2.9-linux-amd64/etcd* /usr/local/bin/
+wget https://github.com/etcd-io/etcd/releases/download/v3.3.10/etcd-v3.3.10-linux-amd64.tar.gz
+tar zxvf etcd-v3.3.10-linux-amd64.tar.gz
+cp etcd-v3.3.10-linux-amd64/etcd* /usr/local/bin/
 ```
 
 
@@ -25,10 +25,10 @@ cp etcd-v3.2.9-linux-amd64/etcd* /usr/local/bin/
 ### etcd 服务使用示例
 ```bash
 ##### 启动服务
-nohup etcd --name etcd_test --data-dir /tmp/etcd_test \
-  --listen-client-urls 'http://127.0.0.1:2379,http://127.0.0.1:4001' \
-  --listen-peer-urls 'http://127.0.0.1:2380' \
-  --advertise-client-urls 'http://127.0.0.1:2379,http://127.0.0.1:4001' \
+nohup etcd --name etcd-dev --data-dir /data/server/etcd/dev \
+  --listen-client-urls 'http://0.0.0.0:2379' \
+  -advertise-client-urls 'http://0.0.0.0:2379' \
+  --listen-peer-urls 'http://0.0.0.0:2380' \
   >/var/log/etcd_test.log 2>&1 &
 
 ##### put
