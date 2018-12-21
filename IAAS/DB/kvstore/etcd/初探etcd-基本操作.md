@@ -1,5 +1,5 @@
 初探etcd-基本操作
-2018/4/20
+2018/12/21
 
 ### 初识
 - 用途
@@ -29,7 +29,7 @@ nohup etcd --name etcd-dev --data-dir /data/server/etcd/dev \
   --listen-client-urls 'http://0.0.0.0:2379' \
   -advertise-client-urls 'http://0.0.0.0:2379' \
   --listen-peer-urls 'http://0.0.0.0:2380' \
-  >/var/log/etcd_test.log 2>&1 &
+  >/var/log/etcd-dev.log 2>&1 &
 
 ##### put
 ETCDCTL_API=3 /usr/local/bin/etcdctl put foo bar
