@@ -1,5 +1,5 @@
 # 初探npm-安装
-2018/12/5
+2018/12/24
 
 
 注： npm 包含在 nodejs 中
@@ -19,7 +19,14 @@ npm config set registry https://registry.npm.taobao.org --global
 
 或者：安装 cnpm 来替代 npm
 ```bash
-$ sudo npm install -g cnpm --registry=https://registry.npm.taobao.org
+npm install -g cnpm --registry=https://registry.npm.taobao.org
+
+```
+
+
+### 清理cache
+```bash
+npm start --reset-cache
 
 ```
 
