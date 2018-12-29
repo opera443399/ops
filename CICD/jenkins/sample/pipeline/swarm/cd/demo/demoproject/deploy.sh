@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 2018/12/14
+# 2018/12/29
 
 REGISTRY_PREFIX="registry.cn-hangzhou.aliyuncs.com/ns-demo"
 APP_NAME="app1"
@@ -8,8 +8,9 @@ RUN_ENV="$2"
 APP_TAG="$3"
 SVC_NAMES="$4"
 SWARM_NET="net-${APP_NAME}-${RUN_ENV}"
-APP_LOGS_DIR="/data/logs/${APP_NAME}/${RUN_ENV}"
-DEPLOY_ENV="ns-${APP_NAME}-${RUN_ENV}"
+HOST_LOG_DIR="/data/logs/${APP_NAME}/${RUN_ENV}"
+RUN_ENV="ns-${APP_NAME}-${RUN_ENV}"
+RUN_LOG_DIR="/var/log/app"
 
 print_info() {
   echo "[-] $1"
@@ -40,10 +41,11 @@ do_init() {
         --restart-condition="on-failure" \
         --network=${SWARM_NET} \
         --publish ${dest_port}:${src_port} \
-        --mount type=bind,src="${APP_LOGS_DIR}",dst="/var/log/app" \
+        --mount type=bind,src="${HOST_LOG_DIR}",dst="${RUN_LOG_DIR}" \
         --container-label "aliyun.logs.${APP_NAME}-stdout=stdout" \
-        --container-label "aliyun.logs.${APP_NAME}-file=/var/log/app/*.log" \
-        --env DEPLOY_ENV="${DEPLOY_ENV}" \
+        --container-label "aliyun.logs.${APP_NAME}-file=${RUN_LOG_DIR}/*.log" \
+        --env RUN_ENV="${RUN_ENV}" \
+        --env RUN_LOG_DIR="${RUN_LOG_DIR}" \
         ${app_image}
     fi
 
