@@ -150,7 +150,8 @@ pipeline {
         }
       }
       steps {
-        echo '[+] 服务上线中...'
+        echo '[+] 上线机器人️🤖小p🤖开始干活...'
+        echo '[-] 跳过审核...'
         dir('src/demoproject') {
           script {
             //------ tag diff
@@ -160,49 +161,6 @@ pipeline {
               env.APP_TAG = params.SVC_VERSION
             }
             echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
-          }
-        }
-
-        sshagent(['11112222-1111-2222-1111-222211112222']) {
-          sh "${SSH_OPTS_DEPLOY_TO_DEV} update '${CICD_ENV}' demoproject '${APP_TAG}' '${SVC_NAMES}'"
-        }
-
-        echo '[-] ______________________END_OF_STAGE______________________'
-      }
-    }
-
-
-    stage('部署至 test 环境') {
-      when {
-        expression {
-          //------ 只在指定条件中执行
-          (params.CICD_ENV=='test' && (params.CICD_OP=='auto' || params.CICD_OP=='deploy')) ? true : false
-        }
-      }
-      steps {
-        echo '[+] 服务上线中...'
-        dir('src/demoproject') {
-          script {
-            //------ tag diff
-            if (params.SVC_VERSION == 'EMPTY') {
-              env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
-            } else {
-              env.APP_TAG = params.SVC_VERSION
-            }
-            echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
-
-            //------ ACL
-            userInput = input([
-              message: '服务上线中...(待审核)',
-              ok: '同意',
-              parameters: [
-                text(name: 'approvers', defaultValue: '🔜🔵admin🔵hanmeimei🔵lilei', description: '审核者:')
-              ],
-              //------ 指定审核者，请使用逗号','作为分隔符(无空格)
-              submitter: 'admin,hanmeimei,lilei',
-              submitterParameter: 'approverID'
-            ])
-            echo "[-] 由 ${userInput['approverID']} 审核通过"
           }
         }
 
@@ -215,10 +173,64 @@ pipeline {
 
       post {
         success {
-            echo '[demo-test]交付${APP_TAG}[${SVC_NAMES}]：✅任务完成！'
+            echo "[demoproject-dev]交付${APP_TAG}[${SVC_NAMES}]：✅任务完成！"
         }
         failure {
-            echo '[demo-test]交付${APP_TAG}[${SVC_NAMES}]：❌任务失败请检查！'
+            echo "[demoproject-dev]交付${APP_TAG}[${SVC_NAMES}]：❌任务失败请检查！"
+        }
+      }
+    }
+
+
+    stage('部署至 test 环境') {
+      when {
+        expression {
+          //------ 只在指定条件中执行
+          (params.CICD_ENV=='test' && (params.CICD_OP=='auto' || params.CICD_OP=='deploy')) ? true : false
+        }
+      }
+      steps {
+        echo '[+] 上线机器人️🤖小p🤖开始干活...'
+        echo '[-] 审核中...'
+        dir('src/demoproject') {
+          script {
+            //------ tag diff
+            if (params.SVC_VERSION == 'EMPTY') {
+              env.APP_TAG = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
+            } else {
+              env.APP_TAG = params.SVC_VERSION
+            }
+            echo "[-] 当前选择的版本为: ${APP_TAG} , 微服务包含: \n${SVC_NAMES}"
+
+            //------ ACL-01-START
+            userInput = input([
+              message: '服务上线中...(待审核)',
+              ok: '同意',
+              parameters: [
+                text(name: 'approvers', defaultValue: '🔜🔵admin🔵hanmeimei🔵lilei', description: '审核者:')
+              ],
+              //------ 指定审核者，请使用逗号','作为分隔符(无空格)
+              submitter: 'admin,hanmeimei,lilei',
+              submitterParameter: 'approverID'
+            ])
+            echo "[-] 由 ${userInput['approverID']} 审核通过"
+            //------ END-OF-ACL-01
+          }
+        }
+
+        sshagent(['11112222-1111-2222-1111-222211112222']) {
+          sh "${SSH_OPTS_DEPLOY_TO_DEV} update '${CICD_ENV}' demoproject '${APP_TAG}' '${SVC_NAMES}'"
+        }
+
+        echo '[-] ______________________END_OF_STAGE______________________'
+      }
+
+      post {
+        success {
+            echo "[demoproject-test]交付${APP_TAG}[${SVC_NAMES}]：✅任务完成！"
+        }
+        failure {
+            echo "[demoproject-test]交付${APP_TAG}[${SVC_NAMES}]：❌任务失败请检查！"
         }
       }
     }
