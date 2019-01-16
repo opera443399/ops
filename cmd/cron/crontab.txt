@@ -1,24 +1,24 @@
-crontabÖ´ĞĞÊ§°Ü
+crontabæ‰§è¡Œå¤±è´¥
 
 
-¿ÉÄÜÔ­Òò£º
--»·¾³±äÁ¿ÎÊÌâ¡£
--È¨ÏŞÎÊÌâ¡£
+å¯èƒ½åŸå› ï¼š
+-ç¯å¢ƒå˜é‡é—®é¢˜ã€‚
+-æƒé™é—®é¢˜ã€‚
 
 
-¿ÉÒÔÔö¼ÓÒ»¸öcron£¬Êä³ö$PATH£¬¼ì²é¡£
+å¯ä»¥å¢åŠ ä¸€ä¸ªcronï¼Œè¾“å‡º$PATHï¼Œæ£€æŸ¥ã€‚
 */1 * * * * echo $PATH >> /tmp/123
 
-¿ÉÒÔÍ¨¹ıÖ´ĞĞbashrcÎÄ¼şÀ´ÉèÖÃ±äÁ¿£º
+å¯ä»¥é€šè¿‡æ‰§è¡Œbashrcæ–‡ä»¶æ¥è®¾ç½®å˜é‡ï¼š
 
-Ã¿·ÖÖÓÖ´ĞĞ£º
+æ¯åˆ†é’Ÿæ‰§è¡Œï¼š
 */1 * * * * source ~/.bashrc && cd ~ && ./mailman.py
-# [daily]Ã¿20·ÖÖÓÍ¬²½Ò»´ÎÊ±¼ä¡£
+# [daily]æ¯20åˆ†é’ŸåŒæ­¥ä¸€æ¬¡æ—¶é—´ã€‚
 */20 * * * * /usr/sbin/ntpdate stdtime.gov.hk >/dev/null 2>&1 &
 
 
 
-Ã¿2Ğ¡Ê±Ö´ĞĞ£º
+æ¯2å°æ—¶æ‰§è¡Œï¼š
 00 */2 * * * /bin/sh /root/scripts/test.sh ADSLIP "`/usr/local/bin/python3 /root/scripts/adslip.py`"
 
 # This is a sample cron file for rsnapshot.
@@ -33,8 +33,8 @@ crontabÖ´ĞĞÊ§°Ü
 0      3     * * 1    root    /usr/bin/rsnapshot weekly 2>&1  | \/usr/local/bin/rsnapreport.pl | mail -s "Weekly Backup" yourname@email.com
 30     2     1 * *    root    /usr/bin/rsnapshot monthly 2>&1  | \/usr/local/bin/rsnapreport.pl | mail -s "Montly Backup" yourname@email.com
 
-»¹¿ÉÒÔ²é¿´ÕâÀï£º
-# cat /etc/crontab 
+è¿˜å¯ä»¥æŸ¥çœ‹è¿™é‡Œï¼š
+# cat /etc/crontab
 SHELL=/bin/bash
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 MAILTO=root

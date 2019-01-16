@@ -1,194 +1,194 @@
-7)rc.firewallʾ��
+7)rc.firewall示例
 
-7.2.3. proc������
-���ǿ���ʹ�����������IPת�����ܣ�IP forwarding����
+7.2.3. proc的设置
+我们可以使用下面的语句打开IP转发功能（IP forwarding）：
 
-echo "1" > /proc/sys/net/ipv4/ip_forward 
+echo "1" > /proc/sys/net/ipv4/ip_forward
 
-��һ��ʹ�õ���SLIP��PPP��DHCP��Ҳ����˵���Ƕ�̬��ȡIP�ģ��ǻ�Ҫ������������ip_dynaddr��
+万一你使用的是SLIP、PPP或DHCP，也就是说你是动态获取IP的，那还要用下面的命令打开ip_dynaddr：
 
-echo "1" > /proc/sys/net/ipv4/ip_dynaddr 
+echo "1" > /proc/sys/net/ipv4/ip_dynaddr
 
 --------------------------------------------------------------------------------
 
-7.2.6. �Զ�����������
+7.2.6. 自定义链的设置
 
-�����⼸���Զ�������
-icmp_packets��tcp_packets��udp_packets��allowed������allowed������tcp_packets�����õġ�
+建立这几条自定义链：
+icmp_packets、tcp_packets、udp_packets和allowed，其中allowed链是由tcp_packets链调用的。
 
-���н���$INET_IFACE��
-ICMP�� -> icmp_packets����
-TCP��  -> tcp_packets����
-UDP��  -> udp_packets����
+所有进入$INET_IFACE的
+ICMP包 -> icmp_packets链，
+TCP包  -> tcp_packets链，
+UDP包  -> udp_packets链，
 
-�����Զ�����������:
+创建自定义链的命令:
 
 iptables [-N chain]
 
 --------------------------------------------------------------------------------
 
-7.2.6.1. bad_tcp_packets��
-�����������Ĺ�����������incoming packet���İ�ͷ�Ƿ���������û���������⣬��������Ӧ�ش���������ʵ�ϣ�����ʹ����ֻ��Ϊ�˹��˵�һЩ����İ���û������SYNλ������NEW״̬��TCP����������Щ������SYN/ACK��Ҳ����Ϊ��NEW״̬��TCP������������������������п��ܵĲ�һ�µĶ�������������İ�����XMAS port-scans�ȡ����ǻ�����ΪINVALID״̬�İ�����һ������ġ�
+7.2.6.1. bad_tcp_packets链
+这条链包含的规则检查进入包（incoming packet）的包头是否不正常或有没有其他问题，并进行相应地处理。但事实上，我们使用它只是为了过滤掉一些特殊的包：没有设置SYN位但又是NEW状态的TCP包，还有那些设置了SYN/ACK但也被认为是NEW状态的TCP包。这条链可以用来检查所有可能的不一致的东西，比如上面的包或者XMAS port-scans等。我们还可以为INVALID状态的包增加一条规则的。
 
-���������ȫ�˽���SYNλ��NEW״̬��NEW not SYN��������ȥ��¼�������������￴��δ����SYN��NEW״̬��һ�ڣ���������δ����SYN��NEW״̬��ͨ������������������ĳЩ����¿����������ְ�ͨ������99%����������ǲ���������ͨ������ˣ����ǻ��ȼ�¼���ְ���Ȼ�����ӵ����ǡ�
+如果你想完全了解无SYN位的NEW状态（NEW not SYN），可以去附录常见问题与解答里看看未设置SYN的NEW状态包一节，它介绍了未设置SYN的NEW状态包通过其他规则的情况。在某些情况下可以允许这种包通过，但99%的情况是我们不想让它们通过。因此，我们会先记录这种包，然后再扔掉它们。
 
-���Ǿܾ�SYN/ACK����NEW״̬�����ԭ��Ҳ�Ƿǳ��򵥵ģ������˵���ڸ�¼�������������NEW״̬��SYN/ACK�� ������ϣ������������ǳ��ڶ����������ĺ��⣬��Ϊ����Ϊ����Ԥ�������к�Ԥ�⹥����sequence number prediction����
-
-
---------------------------------------------------------------------------------
-
-7.2.6.2. allowed��
-������Ǵ�$INET_IFACE����ģ�������TCP����������Ҫ����tcp_packets ���ļ��顣���������Ӿ��ǳ��ű�����ͨ���Ķ˿����ģ����ǻ�Ҫ��������һЩ��飬��ȷ���Ƿ����Ҫ����������Щ���������С�������allowed������еġ�
-
-���ȣ����ǿ���������Ƿ���SYN��������ǣ����ܿ����������ӵĵ�һ���������ǵ�Ȼ�����ˡ�������ǣ��ǾͿ������Ƿ�����ĳ��ESTABLISHED��RELATED״̬�����ӣ��ǵĻ����ͽ��ܡ�ESTABLISHED״̬�����������������������϶����������ڵ����ӡ�����״̬���ƵĹ۵㣬�������һ��������ESTABLISHED״̬�ģ���Ϊ���������ܿ����������˵����ǰ�϶��յ�����Ӧ��SYN�������һ������DROP���������İ���������������������򣬾ͼ�����ζ���������Ӷ�������˫��Ľ�����Ҳ����˵�����ǲ����Ӧ SYN��������ͼ�÷�SYN����ʼ�µ�����ʱ����Ҳ���ߵ��������򡣲���SYN������������û��ʲôʵ�ʵ��ô�����Ȼ���˿�ɨ��Ҫ�ų����⡣����֪���Ķ��ԣ�����û��ʲô���õ�TCP/ IP�����ʹ��SYN������İ�����һ��TCP���ӡ���ˣ�����Ҫ�������İ�DROP��������99%�İ���˵�����Ƕ˿�ɨ���õġ�
+我们拒绝SYN/ACK包以NEW状态进入的原因也是非常简单的，深入的说明在附录常见问题与解答的NEW状态的SYN/ACK包 里。基本上，我们这样做是出于对其他主机的好意，因为我们为他们预防了序列号预测攻击（sequence number prediction）。
 
 
 --------------------------------------------------------------------------------
 
-7.2.6.3. ����TCP����
-tcp_packets��ָ������Щ�˿ڿɴ�Internet���ʡ������ǻ�Ҫ�Խ���İ�������ļ�飬��ˣ�ÿ�������ᱻ���͵������ᵽ��allowed����
+7.2.6.2. allowed链
+如果包是从$INET_IFACE进入的，而且是TCP包，那它就要经过tcp_packets 链的检验。如果这个连接就是冲着被允许通过的端口来的，我们还要对它进行一些检查，以确定是否真的要接受它。这些“最后的审判”都是在allowed链里进行的。
 
--A tcp_packets����iptablesҪ�������������ӹ��򣬹��򱻷���ָ������ĩβ��-p TCPָ��Ҫƥ�����TCP����-s 0/0˵��Ҫƥ���Դ��ַ�Ǵ���������Ϊ0.0.0.0�ĵ�ַ0.0.0.0��ʼ�ģ����仰˵���������еĵ�ַ����ʵ������Ĭ��ֵ����д����ֻ�Ǿ�����ʹ������ס�--dport 21ָ��Ŀ�Ķ˿ڣ�Ҳ����˵������Ƿ����˿�21�ģ��ͻᱻƥ�䡣������еı�׼��ƥ���ˣ�����Ҫ������allowed����
-
-TCP��21�Ŷ˿�Ҳ���������ʵģ�Ҳ����FTP�Ŀ��ƶ˿ڣ������Կ���FTP���ӣ�ǰ���ᵽ�����һ���������RELATED״̬������ͨ��������������Ҳ�Ϳ���ʹ��PASSIVE����������ACTIVE���������������ˣ���Ȼ��Ҫ����װ��ip_conntrack_ftpģ�顣������ǲ������ṩ FTP���񣬾�ж��ip_conntrack_ftpģ�飬����$IPTABLES -A tcp_packets -p TCP -s 0/0 --dport 21 -j allowed ��һ�д��ļ� rc.firewall.txt��ɾ����
-
-22�Ŷ˿���SSHʹ�õġ��������������������˶���ͨ��telnet��ʹ��23�Ŷ˿ڣ�������Ļ��ӣ����㻹��ʹ��SSH�ɣ����İ�ȫ��Ҫ�úܶࡣע�⣬��������Ƿ���ǽ�����κη���Ȩ����������Լ�֮����˶�����ʲô�����⡣����ǽ����Ӧ�þ����ٵر�¶�Լ���
-
-80��HTTP�˿ڣ�Ҳ����˵���ڷ���ǽ����������ҳ��������㲻�ṩ��ҳ���񣬾�ɾ����������ɡ�
-
-
-���û��ƥ�������κ�һ�����򣬰��ͻᱻ�ͻ�tcp_packets���ĸ�����Ҳ���ǰ������� tcp_packets���������������ڵ������������򿪸���Ķ˿ڣ�ֻҪ��tcp_packets������κ�һ��ʹ�á����ơ�ճ���󷨡������޸�һ�¶˿ںż��ɡ�
+首先，我们看看这个包是否是SYN包，如果是，它很可能是新连接的第一个包，我们当然接受了。如果不是，那就看看包是否来自某个ESTABLISHED或RELATED状态的连接，是的话，就接受。ESTABLISHED状态的连接是那种在两个方向上都有流量存在的连接。依据状态机制的观点，这个连接一定处于是ESTABLISHED状态的，因为我们现在能看到这个包，说明以前肯定收到了相应的SYN包。最后一条规则将DROP所有其他的包。当包到达最后这条规则，就几乎意味着所有连接都不会有双向的交流，也就是说，我们不会回应 SYN包。当试图用非SYN包开始新的连接时，包也会走到这条规则。不用SYN包建立新连接没有什么实际的用处，当然，端口扫描要排除在外。就我知道的而言，现在没有什么有用的TCP/ IP程序会使用SYN包以外的包来打开一个TCP连接。因此，我们要把这样的包DROP掉，我有99%的把握说它们是端口扫描用的。
 
 
 --------------------------------------------------------------------------------
 
-7.2.6.4. ����UDP����
-���������INPUT����������UDP�����Ͱ������͵�udp_packets�������������ֻ����UDP��������Ҫ��-p UDP��ָ����Ӧ��Э�顣���ǽ��������κε�ַ�İ�������-s 0/0������ʵ����Դ��ַѡ���Ĭ��ֵ����Ϊ�˸���ȷ�����ǻ��ǰ���д�����ˡ����⣬����ֻ���ܷ����ض��˿ڵİ�����Щ�˿����������Internet���ŵġ�ע�⣬���ǲ���Ҫ���ݷ��Ͷ˵�Դ�˿��������Ƿ��ĳ���˿ڣ������������״̬������ɵġ��������������ĳ��ʹ�� UDP�˿ڵķ�����DNS����ֻҪ������Ӧ�Ķ˿ڣ������Ķ˿ڲ���Ҫ�򿪡���Щ���� ESTABLISHED״̬�����ڽ������ǽ�İ��ڵ������--state ESTABLISHED,RELATED�Ĺ������� INPUT������Щ����������Internet�İ��Ĺ����еĵ�һ������֮��ͻᱻ�����ˡ� 
+7.2.6.3. 处理TCP的链
+tcp_packets链指定了哪些端口可从Internet访问。但我们还要对进入的包做更多的检查，因此，每个包都会被发送到上面提到的allowed链。
 
-���ǲ�������������53�Ŷ˿�ΪĿ�ĵ�UDP����Ҳ����˵�����ǲ������������DNS��ѯ����ʵ�������Ѿ�д���ˣ���ֻ�ǰ�����ע�͵��ˡ��������ѷ���ǽ��Ϊһ̨����Internet���ʵ�DNS ���������ǾͰ�ע�ͷ���ȥ����
+-A tcp_packets告诉iptables要在哪条链里增加规则，规则被放在指定链的末尾。-p TCP指定要匹配的是TCP包，-s 0/0说明要匹配的源地址是从网络掩码为0.0.0.0的地址0.0.0.0开始的，换句话说，就是所有的地址。这实际上是默认值，我写出来只是尽可能使你更明白。--dport 21指定目的端口，也就是说如果包是发往端口21的，就会被匹配。如果所有的标准都匹配了，包就要被送往allowed链。
 
-���Ҹ��˶��ԣ��һ��123�Ŷ˿ڣ�����Ӧ��Э����network time protocol�����NTP �����ǿ����������Э����ĳ̨���о�ȷʱ���ʱ���������ϵ�������ñ�����ʱ�䡣�����еĴ󲿷ֿ����ò�����Э�飬������Ҳ����ע�͵��ˣ���Ȼ���Ѿ�д���˹���
+TCP的21号端口也是允许访问的，也就是FTP的控制端口，它可以控制FTP连接，前面提到过，我还允许所有RELATED状态的连接通过。这样，我们也就可以使用PASSIVE（主动）和ACTIVE（被动）的连接了，当然，要事先装载ip_conntrack_ftp模块。如果我们不想再提供 FTP服务，就卸载ip_conntrack_ftp模块，并把$IPTABLES -A tcp_packets -p TCP -s 0/0 --dport 21 -j allowed 这一行从文件 rc.firewall.txt里删掉。
 
+22号端口是SSH使用的。如果你允许外网的如何人都能通过telnet（使用23号端口）访问你的机子，那你还是使用SSH吧，它的安全性要好很多。注意，你操作的是防火墙，把任何访问权分配给除你自己之外的人都不是什么好主意。防火墙总是应该尽量少地暴露自己。
 
-��������ھ�����־����ɵĿ��գ���������������Ĺ������ʹ�ã���Ȼ����Ҫ������Ϊʲô������ˡ���������ĵ�һ�����������Ŀ�Ķ˿���135��139�Ĺ㲥�����󲿷�Microsoftʹ���߻��õ�NetBIOS ��SMB�������Ǿ�ʹ����Щ�㲥�����������������������λ����������ЩMicrosoft Network�����Ĺ㲥�������ǵ���־Ҳ�Ϳ��Լ��һЩ�ˡ��ڶ�������Ҳ�ǽ����־���⣬��������Ĳ����߱��ˣ������������DHCP��ѯ���������������ɷǽ�������̫����ɵģ�������ͻ�������ͨ��DHCP �õ�IP��ַ��Ҳ����˵�������������кܶ�DHCP��ѯ�㲥�����Ǿ�������������ɡ�
-
-
- ע�⣬�Ұ��������������Ҳע�͵��ˣ���Ϊ��Щ�˿����뿴����صļ�¼����������������Ϸ���־���ࡱ��ʹ�࣬�����Զ�����Щ���ɡ���ʵ����INPUT���У������������й���־�Ĺ���֮ǰ�����и����������͵Ĺ��� 
- 
+80是HTTP端口，也就是说你在防火墙上运行了网页服务。如果你不提供网页服务，就删掉这条规则吧。
 
 
---------------------------------------------------------------------------------
-
-7.2.6.5. ����ICMP����
-���ڣ����Ǹþ������Խ�����ЩICMP�����ˡ���INPUT���У����ICMP���Ǵ�eth0 ����������Internet�ӿڣ�����ģ����Ǿ�Ҫ�����ض���icmp_packets ����ǰ���ᵽ�������Լ���Ƿ��ǿ��Խ��ܵ����͡�Ŀǰ����ֻ��������ICMP����ICMP Echo requests��TTL equals 0 during transit��TTL equals 0 during reassembly��Ĭ�ϲ����������κ�ICMP���͵�ԭ���ǣ����������������͵�ICMP������RELATED״̬�ģ�Ҳ����˵���Ƕ��ᱻ���� RELATED״̬�Ĺ�����С�
-
-
- ���һ��ICMP����������Ӧ���Ѿ����ڵİ��������ģ�������������Щ����صģ�Ҳ����˵������״̬��RELATED���������Ϣ���½�״̬�����
- 
-
-����������һ����Ϊʲôֻ���������ᵽ������ICMP����Echo Request��������echo reply�����������Ҫ������ping�����Ļ��ӣ���ȷ����Щ�����Ƿ���á����û����һ�������������ӽ�����ͨ��ping��ȷ�������Ƿ���á�ע�⣬��Щ��������ɾ���˹���ֻ����Ϊ���ǲ��뱻Internet������ɾ��������򽫻�ʹ�κ�����Internet�ġ������Ƿ���ǽ��ping����Ч����Ϊ����ǽ��������ȫû�л�Ӧ��
-
-������ʱ��Time Exceeded����TTL equals 0 during transit�����ڼ�����ʱ��Ϊ0��TTL equals 0 during reassembly�����ݱ���װ�ڼ�����ʱ��Ϊ0����Ϣ���룬���ǾͿ���׷�ٴӱ��ص�ĳ̨������·���������ڰ���TTLΪ0ʱ�������ܵõ���Ӧ��Ϣ�����磬������׷�ٵ�ĳ̨������·��ʱ������ TTL = 1�İ���ʼ�������õ���һ��·��ʱ��TTL��Ϊ0������Ҳ��õ���һ��·�ɷ��صĳ�ʱ��Ϣ��Ȼ����TTL = 2�İ������Ǿͻ�õ��ڶ���·�������صĳ�ʱ��Ϣ����ˣ�ֱ���õ����ǵ�Ŀ���������ص���Ϣ�����������ǾͿ��Դ�·���ϵ�ÿһ̨�����õ�һ����Ӧ���Ӷ����ǿ��Կ���·���ϵ�ÿһ̨������Ҳ�Ϳ���֪��·���Ƕ�����̨�����ˡ�
-
-������ICMP�����б��ڸ�¼ICMP���������ICMP���͵ĸ�����Ϣ���÷����ҽ����㿴����������£�
-
-
-
-Ralph Walden��The Internet Control Message Protocol��
-
-J. Postel��RFC 792 - Internet Control Message Protocol��
-
-
-
- ע�⣬�������������Ҳ�����ܵ�ICMP����������������˵���ܻ������⣬���������һ�й���������
- 
+如果没有匹配上面任何一条规则，包就会被送回tcp_packets链的父链，也就是把它发到 tcp_packets链的那条规则所在的链。如果你想打开更多的端口，只要对tcp_packets链里的任何一行使用“复制、粘贴大法”，再修改一下端口号即可。
 
 
 --------------------------------------------------------------------------------
 
-7.2.7. INPUT��
-��д��INPUT���󲿷���ʹ�������������������ѵĹ����ġ������������ǾͲ���Ҫ��iptables װ��̫��Ĺ�������ע���������װ��INPUT���Ĺ���˵�ģ���Ϊ��ʱ���������Ѿ�װ�غ��ˣ����������ڽ����Ļ�����Ҳ���Թ����úܺã�����һ���棬�����Ļ����ڸ߸���ʱ���ǻᶪ���ܶ��������ע�������������ǲ��У���֮������������һ�㣬����Ϊ���ڴ�����ͬ�İ�������ͨ������ض���ϸ����ȷ�����ǵ�����ٰ���Щ�����͵���Ӧ���Զ�����ȥ���������������ǿ��Էָ����ʹ֮�������ٵĹ���ÿ����Ҫ�����Ĺ���Ҳ�����ˡ��Ӷ����ڹ��˰�ʱ������ǽ�Ŀ���Ҳ��С���ˡ�
+7.2.6.4. 处理UDP的链
+如果我们在INPUT链中遇到了UDP包，就把它发送到udp_packets链。在那里，我们只处理UDP包，所以要用-p UDP来指定相应的协议。我们接受来自任何地址的包，故有-s 0/0，这其实就是源地址选项的默认值，但为了更明确，我们还是把它写出来了。此外，我们只接受发往特定端口的包，这些端口是我们想对Internet开放的。注意，我们不需要依据发送端的源端口来决定是否打开某个端口，这个工作是由状态机制完成的。如果我们想运行某个使用 UDP端口的服务（如DNS），只要开放相应的端口，其他的端口不需要打开。那些处于 ESTABLISHED状态、正在进入防火墙的包在到达包含--state ESTABLISHED,RELATED的规则（这是 INPUT链里那些“处理来自Internet的包的规则”中的第一条规则）之后就会被接受了。
 
-���ȣ�����Ҫ�������tcp������̬�Ƿ��ǲ������Ļ����ǲ���Ҫ�ġ����������������ɵģ����ǰ����е�tcp���͵�bad_tcp_packets���������еĹ�����м�飬�����������С��bad_tcp_packets���
+我们不接受外来的以53号端口为目的的UDP包，也就是说，我们不想接受外来的DNS查询。其实，规则已经写好了，我只是把它给注释掉了。如果你想把防火墙作为一台允许Internet访问的DNS 服务器，那就把注释符号去掉。
 
-Ȼ�����ǿ�ʼ���������ε���������ݴ��䡣������������ԡ��������������������������������Ժͷ���loopback��������Ҫע�⣬��loopback���Ӧ��IP��ַ���������з��������ǽ�ĵ�ַ������Ҳ��������Internet�ĵ�ַ�������ǰѴ���LAN�������Ĺ�����ڷ���ǽ���ϲ�����Ϊ���ǵľ���������������ҪԶԶ����Internet���ӡ���������������Ч�ʣ�����ǽ�����Խ�С�Ŀ���ȥƥ������Ӷ����������Ŀ�����Ҳ�ͼ�С�ˣ�����Ҳ�������ǲ鿴��������ǽ�İ���Ҫ��ʲô���͡�
+就我个人而言，我会打开123号端口，它对应的协议是network time protocol，简称NTP 。我们可以利用这个协议与某台具有精确时间的时间服务器联系，以设置本机的时间。你们中的大部分可能用不到此协议，所以我也把它注释掉了，虽然我已经写出了规则。
 
-�����һЩ����ᴦ������Internet����Ϣ���ڽӴ���Щ����֮ǰ����һ����صĹ������ǿ�����������һЩ����������һ������״̬�Ĺ������������д���״̬ESTABLISHED��RELATED�ҷ��� Internet�ӿڵİ����롣��allowed������һ��������ƵĹ�������ע��ʵ���Ƕ��࣬�����Ұ����õ��ɣ���˳���ϣ���Ȼ��INPUT����Ĺ����ȴ������ˡ�Ȼ������allowed���ﱣ��--state ESTABLISHED,RELATED��������һЩԭ��ģ����磬����ĳЩ������д˹��ܣ�ճ���������ط���
 
-��INPUT������ǻ�Ѵ�$INET_IFACE���������TCP������tcp_packets�������Ƶأ���UDP������udp_packets������ ICMP������icmp_packets����һ��˵��������ǽ���������İ���TCP��������� UDP���������ICMP������Ҫע�⣬��ֻ��һ�������������ܲ����á�һ���Ĺ�����Ϊ˳��ͬ������˵�߼���ͬ��Ч�ʻ��кܴ�Ĳ���������д�ò��ã���ʹֻ��100�����򣬶�����100mbit��������������Pentium III�Ļ���Ҳ��Բ����ġ��������Լ�д����ʱһ��Ҫע����һ�㡣
+如果你正在经历日志满天飞的苦恼，这里有两个额外的规则可以使用，当然，这要看是因为什么引起的了。我们这里的第一条规则会阻塞目的端口是135到139的广播包。大部分Microsoft使用者会用到NetBIOS 或SMB，而它们就使用这些广播包。这条规则可以阻塞所有位于外网的那些Microsoft Network产生的广播包，我们的日志也就可以简洁一些了。第二条规则也是解决日志问题，不过问题的产生者变了，这回是外网的DHCP查询。如果你的外网是由非交换的以太网组成的，在那里客户机可以通过DHCP 得到IP地址，也就是说，如果外网里会有很多DHCP查询广播包，那就启用这条规则吧。
 
-������һ����ע�͵��˹�����һ�����ǵķ���ǽ�ⲿ��һЩMicrosoft���磬���ǿ����������������־����ķ��ա�Microsoft�Ŀͻ����и���ϰ�ߣ��������ַ224.0.0.0/8���ʹ����Ķಥ�����������Ҫ������������������Щ�����������ǵ���־���������������ǵ���udp_packets����Ҳ���������ƵĹ������˵Ļ����͵�����UDP���������ɡ�
 
-�������İ���INPUT���Ĳ��Դ���֮ǰ�����ǻ�����Ǽ�¼�������Ա���ҿ��ܵ������bug�������ܾ������ǲ�����������������ְ���Ҳ�����Ƕ���������ʲô���µ��û����������Ƿ���ǽ�����⣬������������Ӧ�ñ����еİ�������Ҫ�˽����е����������������ܵ��Խ��������ÿ��������¼3��������Ϊ���ǿɲ�������־����صĶ��Ƿϻ���Ϊ�����ױ�������Դ�����ǻ������еļ�¼������ǰ׺��
+ 注意，我把最后这两条规则也注释掉了，因为有些人可能想看看相关的记录。如果你正经历“合法日志过多”的痛苦，就试试丢弃那些包吧。其实，在INPUT链中，就在这两条有关日志的规则之前，还有更多这种类型的规则。
 
-����û������Ĺ������İ����ᱻ����DROP�������Ե������ڱ��µ�С��ȱʡ���Ե���������������Ѿ���Զඡ�
-
- 
 
 
 --------------------------------------------------------------------------------
 
-7.2.8. FORWARD��
-�ڱ����У�FORWARD�������Ĺ�����١����ȣ����ǻ�����еİ�����bad_tcp_packets ������������ǰ���ᵽ����Σ������Ա����������ã���ʵ��Ҳ����Ϊ���Ŀ�Ķ���Ƶġ�
+7.2.6.5. 处理ICMP的链
+现在，我们该决定可以接受哪些ICMP类型了。在INPUT链中，如果ICMP包是从eth0 （即本例的Internet接口）进入的，我们就要把它重定向到icmp_packets 链（前面提到过），以检查是否是可以接受的类型。目前，我只接受三种ICMP包：ICMP Echo requests，TTL equals 0 during transit和TTL equals 0 during reassembly。默认不接受其他任何ICMP类型的原因是，几乎所有其他类型的ICMP包都是RELATED状态的，也就是说它们都会被处理 RELATED状态的规则放行。
 
-֮�����FORWARD������Ҫ�����ˡ���һ��������������$LAN_IFACE������ͨ����û���κ����ƣ�Ҳ����˵�����ǵ�LAN�����ɵط���Internet���ڶ�������ESTABLISHED��RELATED״̬�İ���ͨ������ǽ�����仰˵���������ж����ǵ��������������ӵĻ�Ӧ�����Է��ؾ�������Ϊ��ʹ���ǵ������ܷ���Internet����Щ�����Ǳ���ģ���Ϊ������ǰ���Ѿ���FORWARD���Ĳ�����ΪDROP�ˡ��������ù���Ҳ�Ǻܴ����ģ���Ϊ���ڱ�֤���������Է���Internet��ͬʱ��ֹ��Internet�Ծ������ķ��ʡ�
 
-�������Ҳ��һ��������־�Ĺ���������¼û�������κι���ƥ��İ��������İ��ܿ�������̬�������Ļ������������⣬��������Ǻڿ͹��������������INPUT���е��Ǹ����ƣ�ֻ��ǰ׺��ͬ�������õ��ǣ�"IPT FORWARD packet died: "��ǰ׺��Ҫ����������־�ļ�¼���������ǲ��Ұ�����Դ�Ͱ�ͷ��һЩ��Ϣ��
+ 如果一个ICMP包是用来回应“已经存在的包或流”的，那它就是与那些流相关的，也就是说，它的状态是RELATED。更多的信息在章节状态机制里。
 
- 
+
+现在来解释一下我为什么只接受上面提到的三种ICMP包。Echo Request用来请求echo reply，这个操作主要被用来ping其他的机子，以确定那些机子是否可用。如果没有这一条规则，其他机子将不能通过ping来确定我们是否可用。注意，有些人倾向于删掉此规则，只是因为他们不想被Internet看到。删掉这个规则将会使任何来自Internet的、对我们防火墙的ping都无效，因为防火墙对他们完全没有回应。
+
+允许超时（Time Exceeded，如TTL equals 0 during transit传输期间生存时间为0和TTL equals 0 during reassembly在数据报组装期间生存时间为0）信息进入，我们就可以追踪从本地到某台主机的路径，或者在包的TTL为0时，我们能得到回应信息。比如，在我们追踪到某台主机的路径时，会以 TTL = 1的包开始。当它得到第一个路由时，TTL减为0，我们也会得到第一个路由返回的超时信息。然后是TTL = 2的包，我们就会得到第二个路由器返回的超时信息。如此，直到得到我们的目的主机返回的信息。这样，我们就可以从路径上的每一台主机得到一个回应，从而我们可以看到路径上的每一台主机，也就可以知道路径是断在哪台机子了。
+
+完整的ICMP类型列表在附录ICMP类型里。关于ICMP类型的更多信息与用法，我建议你看看下面的文章：
+
+
+
+Ralph Walden的The Internet Control Message Protocol。
+
+J. Postel的RFC 792 - Internet Control Message Protocol。
+
+
+
+ 注意，我阻塞了所有我不想接受的ICMP包，这对你的网络来说可能会有问题，但在我这里，一切工作正常。
+
 
 
 --------------------------------------------------------------------------------
 
-7.2.9. OUTPUT��
-�����Ҽ���û���˰ѷ���ǽ����������վ��ʹ�ã�������Ϊ�������������������дӷ���ǽ��IP������ LOCALHOST_IP��$LAN_IP��$STATIC_IP �����������ݣ������������������Ϊ�����κ���������ܱ�����ĳ�ַ�ʽ��ƭ�����Ĺ�����������¼��ЩҪ������DROP���İ������������ǾͿ����˽����ǣ��̶����ԶԲ��������⣨�����Ǿ�����в�ԵĴ��󣬻���������������ƭ�İ�����ȡ�ж���
+7.2.7. INPUT链
+我写的INPUT链大部分是使用其他链来完成这个艰难的工作的。这样做，我们就不需要从iptables 装载太多的规则（译者注：这是针对装载INPUT链的规则说的，因为这时其他规则已经装载好了），而且它在较慢的机子上也可以工作得很好，但另一方面，这样的机子在高负载时还是会丢弃很多包（译者注：机子慢，就是不行）。之所以能做到这一点，是因为对于大量不同的包，我们通过检查特定的细节来确定它们的类别，再把这些包发送到相应的自定义链去处理。这样，我们可以分割规则集使之包含很少的规则，每个包要经历的规则也就少了。从而，在过滤包时，防火墙的开销也就小多了。
+
+首先，我们要检查进入的tcp包的形态是否是不正常的或我们不想要的。这个工作是这样完成的，我们把所有的tcp包送到bad_tcp_packets链，由其中的规则进行检查，具体的描述在小节bad_tcp_packets链里。
+
+然后，我们开始处理被信任的网络的数据传输。这包括所有来自“连接内网的网卡”的流量，所有来自和发往loopback的流量（要注意，和loopback相对应的IP地址包括了所有分配给防火墙的地址，其中也包括连接Internet的地址）。我们把处理LAN的流量的规则放在防火墙的上部，因为我们的局域网产生的流量要远远多于Internet连接。这样，规则会更有效率，防火墙就能以较小的开销去匹配包，从而网络阻塞的可能性也就减小了，而且也便于我们查看经过防火墙的包主要是什么类型。
+
+下面的一些规则会处理来自Internet的信息，在接触这些规则之前，有一个相关的规则，我们可用它来减少一些开销。这是一个处理状态的规则，它允许所有处于状态ESTABLISHED或RELATED且发往 Internet接口的包进入。在allowed链中有一个与此类似的规则（译者注：实在是多余，建议大家把它拿掉吧）。顺序上，当然是INPUT链里的规则先处理包了。然而，在allowed链里保留--state ESTABLISHED,RELATED规则还是有一些原因的，比如，方便某些人想剪切此功能，粘贴到其他地方。
+
+在INPUT链里，我们会把从$INET_IFACE进入的所有TCP包发往tcp_packets链，类似地，把UDP包发往udp_packets链，把 ICMP包发往icmp_packets链。一般说来，防火墙遇到的最多的包是TCP包，其次是 UDP包，最后是ICMP包。但要注意，这只是一般情况，对你可能不适用。一样的规则因为顺序不同，或者说逻辑不同，效率会有很大的差别。如果规则集写得不好，即使只有100条规则，而且有100mbit的网卡，就算是Pentium III的机子也会吃不消的。所以你自己写规则集时一定要注意这一点。
+
+这里有一条被注释掉了规则，万一在我们的防火墙外部有一些Microsoft网络，我们可以启用它来解除日志过多的烦恼。Microsoft的客户机有个坏习惯，就是向地址224.0.0.0/8发送大量的多播包。因此我们要有这条规则来阻塞那些包，以免我们的日志被它们填满。还记得吗？udp_packets链里也有两条类似的规则。忘了的话，就到处理UDP的链看看吧。
+
+在其他的包被INPUT链的策略处理之前，我们会把它们记录下来，以便查找可能的问题或bug：它可能就是我们不想允许它进入的那种包，也可能是对我们做了什么坏事的用户，还可能是防火墙的问题，如我们阻塞了应该被放行的包。我们要了解所有的情况，这样问题才能得以解决。我们每分钟最多记录3个包，因为我们可不想让日志里记载的都是废话。为了容易辨别包的来源，我们还对所有的记录设置了前缀。
+
+所有没被上面的规则处理的包都会被策略DROP掉。策略的设置在本章的小节缺省策略的设置里，距离我们已经很远喽。
 
 
- 
-
-
---------------------------------------------------------------------------------
-
-7.2.10. PREROUTING��
-����˼�壬PREROUTING����nat���ģ�����·��֮ǰ�������ַת�������ġ�Ȼ�󣬰��پ���·�ɣ��ͻᱻ�͵�filter����INPUT��FORWARD�������������������������Ψһԭ���ǣ����Ǿ����������ٴ�ָ���㲻Ӧ���ڴ��������κι��ˡ�PREROUTING��ֻ��ƥ�����ĵ�һ������Ҳ����˵������������������İ������ᱻ������顣��ʵ�ϣ�������ű��У����Ǹ���û���õ�PREROUTING ������������һЩ����DNAT���������磬���web server�����˾������ڣ������������ù���ĵط����й�PREROUTING������ϸ��Ϣ���½ڱ������С�
-
-
- ǧ��ע�⣬PREROUTING��ֻ���������ַת�������ܱ��������κι��ˣ���Ϊÿ����ֻ�е�һ�����Żᾭ��������
- 
- 
-
-
---------------------------------------------------------------------------------
-
-7.2.11. POSTROUTING��
-������������Ӧ���ǹ��������ַת�����԰ɣ����ٶ�����˵�ǵġ�������nat���� POSTROUTING��ֻ������һ��������������д�Internet�ӿڣ�������˵������eth0�������İ�����NAT�����������е����ӽű������һЩ����������Ҫ������ȷ�����á�ѡ��-tָ��Ҫ���Ǹ�����������������nat��������-A˵������Ҫ�ѹ������ӵ� POSTROUTING��ĩβ��-o $INET_IFACEָ��Ҫƥ�����дӽӿ�INET_IFACE��ȥ�İ�����������ʹ�õ���eth0��������ǰ�target����ΪSNAT������������ƥ��˹���İ�������SNAT target������֮�����ǵ�Դ��ַ����Internet�ӿڵĵ�ַ�ˡ���Ҫ����SNAT����һ��Ҫ��IP��ַ�ģ���--to-source ������Ŷ��
-
-������ű��У�����ѡ��SNAT������MASQUERADE����ԭ��ġ���Ҫ��ԭ�������ǵķ���ǽ�о�̬IP��ַ��ʹ��SNAT��������Ч������һ��ԭ��������Ҫ�����������չʾ���������Լ�����ʹ�����������û�о�̬��IP��ַ��Ҫ��ʵ��SNAT������ʹ��MASQUERADEΪ�ã���Ϊ�������ã������������Զ����IP��ַ����Ȼ������������Ļ��һ�㣬�������ʹ��DHCP���������Ǻ�ֵ�õġ���������˽�MASQUERADE target�ı��֣�Ӧ�ÿ����ű�rc.DHCP.firewall.txt��
- 
 
 
 --------------------------------------------------------------------------------
 
+7.2.8. FORWARD链
+在本例中，FORWARD链包含的规则很少。首先，我们会把所有的包发往bad_tcp_packets 链。此链我们前面提到过多次，它可以被多条链调用，其实它也就是为这个目的而设计的。
+
+之后就是FORWARD链的主要规则了。第一个允许所有来自$LAN_IFACE的数据通过，没有任何限制，也就是说，我们的LAN可自由地访问Internet。第二个允许ESTABLISHED和RELATED状态的包能通过防火墙。换句话说，就是所有对我们的内网发出的连接的回应都可以返回局域网。为了使我们的内网能访问Internet，这些规则是必须的，因为我们在前面已经把FORWARD链的策略设为DROP了。这样设置规则也是很聪明的，因为它在保证局域网可以访问Internet的同时阻止了Internet对局域网的访问。
+
+最后我们也有一个处理日志的规则，用来记录没被上面任何规则匹配的包。这样的包很可能是形态不正常的或者是其他问题，比如可能是黑客攻击。这个规则与INPUT链中的那个类似，只是前缀不同，这里用的是："IPT FORWARD packet died: "。前缀主要用来分离日志的记录，便于我们查找包的来源和包头的一些信息。
 
 
-�ű�rc.firewall.txt�Ǻ��ģ������·���ǽ����ʵ�� rc.firewall�����Ѿ����˺���ϸ�Ľ��ͣ������Ľű���������Ϊ�����õ��ġ�����ű���Ҫ����Ծ����������ӵļ�ͥ�������Ƶģ���һ�����������ӣ�һ��Internet���ӡ����Ǽ�������������һ����̬IP��ַ������ҪDHCP��PPP�� SLIP������ʲôЭ��Ϊ�㶯̬����IP���������Ҫ��ǡǡ��ʹ����ЩЭ��Ľű����͵�rc.DHCP.firewall.txt�����ɡ�
-
-�ű�rc.firewall.txtҪ��ȫ�������ã�ϵͳ����Ҫ�������г��Ĺ��ܣ�����԰����Ǳ�����ںˣ�Ҳ���Ա����ģ�顣�����ı��˽ű�����Ҫ������Ӧ�Ĺ���ģ�������Ǳ���ںˡ�
 
 
-CONFIG_NETFILTER 
+--------------------------------------------------------------------------------
 
-CONFIG_IP_NF_CONNTRACK 
+7.2.9. OUTPUT链
+除了我几乎没有人把防火墙还当作工作站来使用，但正因为这样，我允许几乎所有从防火墙的IP（包括 LOCALHOST_IP，$LAN_IP或$STATIC_IP ）出发的数据，而阻塞其他情况。因为其他任何情况都可能被人以某种方式欺骗。最后的规则还是用来记录那些要被策略DROP掉的包。这样，我们就可以了解它们，继而可以对产生的问题（可能是具有威胁性的错误，或者是用来进行欺骗的包）采取行动。
 
-CONFIG_IP_NF_IPTABLES 
 
-CONFIG_IP_NF_MATCH_LIMIT 
 
-CONFIG_IP_NF_MATCH_STATE 
 
-CONFIG_IP_NF_FILTER 
 
-CONFIG_IP_NF_NAT 
+--------------------------------------------------------------------------------
+
+7.2.10. PREROUTING链
+顾名思义，PREROUTING链（nat表的）是在路由之前做网络地址转换工作的。然后，包再经过路由，就会被送到filter表的INPUT或FORWARD链。我们在这里讨论这个链的唯一原因是，我们觉得有责任再次指出你不应该在此链中做任何过滤。PREROUTING链只会匹配流的第一个包，也就是说，这个流的所有其他的包都不会被此链检查。事实上，在这个脚本中，我们根本没有用到PREROUTING 链。如果你想对一些包做DNAT操作，例如，你把web server放在了局域网内，这里就是你放置规则的地方。有关PREROUTING链的详细信息在章节表和链中。
+
+
+ 千万注意，PREROUTING链只能做网络地址转换，不能被用来做任何过滤，因为每个流只有第一个包才会经过此链。
+
+
+
+
+--------------------------------------------------------------------------------
+
+7.2.11. POSTROUTING链
+我们最后的任务应该是构造网络地址转换，对吧？至少对我来说是的。我们在nat表的 POSTROUTING里只加入了一条规则，它会对所有从Internet接口（对我来说，这是eth0）发出的包进行NAT操作。在所有的例子脚本里，都有一些变量，它们要给以正确的配置。选项-t指定要在那个表里插入规则，这里是nat表。命令-A说明我们要把规则添加到 POSTROUTING链末尾。-o $INET_IFACE指定要匹配所有从接口INET_IFACE出去的包，这里我们使用的是eth0。最后，我们把target设置为SNAT。这样，所有匹配此规则的包都会由SNAT target处理，之后，它们的源地址就是Internet接口的地址了。不要忘了SNAT可是一定要有IP地址的，用--to-source 来设置哦。
+
+在这个脚本中，我们选择SNAT而不用MASQUERADE是有原因的。主要的原因是我们的防火墙有静态IP地址，使用SNAT会更快更有效。还有一个原因是我们要在这个例子中展示它的作用以及怎样使用它。如果你没有静态的IP地址，要想实现SNAT，还是使用MASQUERADE为好，因为它简单易用，而且它可以自动获得IP地址。当然，计算机的消耗会多一点，但如果你使用DHCP，这样做是很值得的。如果你想了解MASQUERADE target的表现，应该看看脚本rc.DHCP.firewall.txt。
+
+
+
+--------------------------------------------------------------------------------
+
+
+
+脚本rc.firewall.txt是核心，第七章防火墙配置实例 rc.firewall对它已经做了很详细的解释，其他的脚本都是以它为基础得到的。这个脚本主要是针对具有两个连接的家庭网络而设计的，如一个局域网连接，一个Internet连接。我们假设的情况是你有一个静态IP地址，不需要DHCP，PPP， SLIP或其他什么协议为你动态分配IP。如果你想要的恰恰是使用这些协议的脚本，就到rc.DHCP.firewall.txt看看吧。
+
+脚本rc.firewall.txt要完全发挥作用，系统必需要有下面列出的功能，你可以把它们编译进内核，也可以编译成模块。如果你改变了脚本，就要加入相应的功能模块或把它们编进内核。
+
+
+CONFIG_NETFILTER
+
+CONFIG_IP_NF_CONNTRACK
+
+CONFIG_IP_NF_IPTABLES
+
+CONFIG_IP_NF_MATCH_LIMIT
+
+CONFIG_IP_NF_MATCH_STATE
+
+CONFIG_IP_NF_FILTER
+
+CONFIG_IP_NF_NAT
 
 CONFIG_IP_NF_TARGET_LOG
 

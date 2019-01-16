@@ -1,9 +1,8 @@
+Linux stickyä½çš„ç”¨æ³•
 
-Linux stickyÎ»µÄÓÃ·¨
 
-
-1£©´´½¨ server ÓÃ»§×é£¬svr×éÓÃ»§¼ÓÈë×é server £¬ÓÃ»§²»ÄÜĞŞ¸Ä×é³ÉÔ±µÄÎÄ¼ş£¨Ê¹ÓÃÕ³ÖÍÎ»sticky£©¡£
-½«¿É·¢²¼µÄ·şÎñ¶Ë³ÌĞòºÍÅäÖÃ£¬Í³Ò»¿½±´µ½/home/server/{bin,conf,log,var}Ä¿Â¼ÖĞ£¬µ÷ÕûÅäÖÃÎÄ¼şºóÔËĞĞ·şÎñ£»
+1ï¼‰åˆ›å»º server ç”¨æˆ·ç»„ï¼Œsvrç»„ç”¨æˆ·åŠ å…¥ç»„ server ï¼Œç”¨æˆ·ä¸èƒ½ä¿®æ”¹ç»„æˆå‘˜çš„æ–‡ä»¶ï¼ˆä½¿ç”¨ç²˜æ»ä½stickyï¼‰ã€‚
+å°†å¯å‘å¸ƒçš„æœåŠ¡ç«¯ç¨‹åºå’Œé…ç½®ï¼Œç»Ÿä¸€æ‹·è´åˆ°/home/server/{bin,conf,log,var}ç›®å½•ä¸­ï¼Œè°ƒæ•´é…ç½®æ–‡ä»¶åè¿è¡ŒæœåŠ¡ï¼›
 
 groupadd server
 mkdir -p /home/server/{bin,conf,var,log}
@@ -20,7 +19,7 @@ drwxrwx--T 2 root server 4096 Jan 26 11:42 var
 
 
 
-2£©¿ª·¢ÈËÔ±a01£¬ÔÚ×Ô¼ºµÄÓÃ»§Ä¿Â¼/home/a01ÏÂ¹¤×÷£¬¿É¶ÁĞ´/home/serverÄ¿Â¼¡£
+2ï¼‰å¼€å‘äººå‘˜a01ï¼Œåœ¨è‡ªå·±çš„ç”¨æˆ·ç›®å½•/home/a01ä¸‹å·¥ä½œï¼Œå¯è¯»å†™/home/serverç›®å½•ã€‚
 [root@testsvr ~]# useradd -g server a01
 [root@testsvr ~]# useradd -g server a03
 [root@testsvr ~]# id a01
@@ -30,31 +29,31 @@ uid=507(a03) gid=508(server) groups=508(server)
 
 
 
-3£©Ğ§¹û
+3ï¼‰æ•ˆæœ
 
-ÏÈÊ¹ÓÃÓÃ»§a01´´½¨Ò»¸ö½Å±¾³ÌĞò£º
+å…ˆä½¿ç”¨ç”¨æˆ·a01åˆ›å»ºä¸€ä¸ªè„šæœ¬ç¨‹åºï¼š
 [root@testsvr bin]# vim a01.sh
-[root@testsvr bin]# cat a01.sh 
+[root@testsvr bin]# cat a01.sh
 #!/bin/bash
-# 
+#
 for a in $(seq 1 100);
-do        
-    echo $a       
+do
+    echo $a
     sleep 1s
 done
 [root@testsvr bin]# ll
 total 4
 -rw-r--r-- 1 root root 86 Jan 26 15:34 a01.sh
 
-£¨Èô²»Ï£Íûa03Ò²¿ÉÒÔ¶ÁÈ¡»òÕßÖ´ĞĞÕâ¸ö½Å±¾£¬ÇëÉèÖÃ½Å±¾³ÌĞòµÄÈ¨ÏŞ£©
-[root@testsvr bin]# chmod 700 a01.sh 
+ï¼ˆè‹¥ä¸å¸Œæœ›a03ä¹Ÿå¯ä»¥è¯»å–æˆ–è€…æ‰§è¡Œè¿™ä¸ªè„šæœ¬ï¼Œè¯·è®¾ç½®è„šæœ¬ç¨‹åºçš„æƒé™ï¼‰
+[root@testsvr bin]# chmod 700 a01.sh
 [root@testsvr bin]# ll
 total 4
 -rwx------ 1 root root 86 Jan 26 15:34 a01.sh
 
 
 
-½Ó×Å£¬ÔÙÑéÖ¤a03ÄÜ·ñĞŞ¸Ä£º
+æ¥ç€ï¼Œå†éªŒè¯a03èƒ½å¦ä¿®æ”¹ï¼š
 
 [root@testsvr ~]# su a03
 [a03@testsvr root]$ cd /home/server/bin/
@@ -64,16 +63,16 @@ a01.sh
 total 4
 -rwx------ 1 root root 86 Jan 26 15:34 a01.sh
 
-±à¼­ÎÄ¼ş£º
+ç¼–è¾‘æ–‡ä»¶ï¼š
 [a03@testsvr bin]$ vim a01.sh
-"a01.sh" [Permission Denied] 
+"a01.sh" [Permission Denied]
 
-ÒÆ¶¯ÎÄ¼ş£º
+ç§»åŠ¨æ–‡ä»¶ï¼š
 [a03@testsvr bin]$ mv a01.sh a03.sh
 mv: cannot move `a01.sh' to `a03.sh': Operation not permitted
 
-É¾³ıÎÄ¼ş£º
-[a03@testsvr bin]$ rm a01.sh 
+åˆ é™¤æ–‡ä»¶ï¼š
+[a03@testsvr bin]$ rm a01.sh
 rm: remove write-protected regular file `a01.sh'? y
 rm: cannot remove `a01.sh': Operation not permitted
 [a03@testsvr bin]$ ls
@@ -81,9 +80,5 @@ a01.sh
 
 
 
-linux ÌØÊâÎ»µÄÓÃ·¨¿ÉÒÔ²Î¿¼£º
+linux ç‰¹æ®Šä½çš„ç”¨æ³•å¯ä»¥å‚è€ƒï¼š
 http://www.cnblogs.com/huangzhen/archive/2011/08/22/2149300.html
-
-
-
-

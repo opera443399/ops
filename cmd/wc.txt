@@ -1,15 +1,15 @@
-¼ÆËãĞĞÊı¡¢×ÖÊıÒÔ¼°×Ö·ûÊı:
+è®¡ç®—è¡Œæ•°ã€å­—æ•°ä»¥åŠå­—ç¬¦æ•°:
 
-    LinuxÌá¹©ÁËÒ»¸ö¼òµ¥µÄ¹¤¾ßwcÓÃÓÚÍê³É¸Ã¹¦ÄÜ£¬¼ûÈçÏÂÓÃÀı£º
-    /> echo This is a test of the emergency broadcast system | wc
-    1    9    49                              #1ĞĞ£¬9¸öµ¥´Ê£¬49¸ö×Ö·û
-    /> echo Testing one two three | wc -c
-    22                                         #22¸ö×Ö·û
-    /> echo Testing one two three | wc -l
-    1                                           #1ĞĞ
-    /> echo Testing one two three | wc -w
-    4                                           #4¸öµ¥´Ê
-    /> wc /etc/passwd /etc/group    #¼ÆËãÁ½¸öÎÄ¼şÀïµÄÊı¾İ¡£
-    39   71  1933  /etc/passwd
-    62   62  906    /etc/group
-    101 133 2839  ×ÜÓÃÁ¿
+Linuxæä¾›äº†ä¸€ä¸ªç®€å•çš„å·¥å…·wcç”¨äºå®Œæˆè¯¥åŠŸèƒ½ï¼Œè§å¦‚ä¸‹ç”¨ä¾‹ï¼š
+/> echo This is a test of the emergency broadcast system | wc
+1    9    49                              #1è¡Œï¼Œ9ä¸ªå•è¯ï¼Œ49ä¸ªå­—ç¬¦
+/> echo Testing one two three | wc -c
+22                                         #22ä¸ªå­—ç¬¦
+/> echo Testing one two three | wc -l
+1                                           #1è¡Œ
+/> echo Testing one two three | wc -w
+4                                           #4ä¸ªå•è¯
+/> wc /etc/passwd /etc/group    #è®¡ç®—ä¸¤ä¸ªæ–‡ä»¶é‡Œçš„æ•°æ®ã€‚
+39   71  1933  /etc/passwd
+62   62  906    /etc/group
+101 133 2839  æ€»ç”¨é‡

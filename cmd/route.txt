@@ -1,22 +1,22 @@
-routeµÄÓÃ·¨¼ò½é
+routeçš„ç”¨æ³•ç®€ä»‹
 
-´òÓ¡µ±Ç°µÄÂ·ÓÉ±í£º
+æ‰“å°å½“å‰çš„è·¯ç”±è¡¨ï¼š
 route -n
 
-³£ÓÃ²ÎÊı£º
+å¸¸ç”¨å‚æ•°ï¼š
 
-          add:Ìí¼ÓÒ»ÌõĞÂÂ·ÓÉ¡£
-          del:É¾³ıÒ»ÌõÂ·ÓÉ¡£
-          -net:Ä¿±êµØÖ·ÊÇÒ»¸öÍøÂç¡£
-          -host:Ä¿±êµØÖ·ÊÇÒ»¸öÖ÷»ú¡£
-          netmask:µ±Ìí¼ÓÒ»¸öÍøÂçÂ·ÓÉÊ±£¬ĞèÒªÊ¹ÓÃÍøÂçÑÚÂë¡£
-          gw:Â·ÓÉÊı¾İ°üÍ¨¹ıÍø¹Ø¡£×¢Òâ£¬ÄãÖ¸¶¨µÄÍø¹Ø±ØĞëÄÜ¹»´ïµ½¡£
-          metric£ºÉèÖÃÂ·ÓÉÌøÊı¡£
+          add:æ·»åŠ ä¸€æ¡æ–°è·¯ç”±ã€‚
+          del:åˆ é™¤ä¸€æ¡è·¯ç”±ã€‚
+          -net:ç›®æ ‡åœ°å€æ˜¯ä¸€ä¸ªç½‘ç»œã€‚
+          -host:ç›®æ ‡åœ°å€æ˜¯ä¸€ä¸ªä¸»æœºã€‚
+          netmask:å½“æ·»åŠ ä¸€ä¸ªç½‘ç»œè·¯ç”±æ—¶ï¼Œéœ€è¦ä½¿ç”¨ç½‘ç»œæ©ç ã€‚
+          gw:è·¯ç”±æ•°æ®åŒ…é€šè¿‡ç½‘å…³ã€‚æ³¨æ„ï¼Œä½ æŒ‡å®šçš„ç½‘å…³å¿…é¡»èƒ½å¤Ÿè¾¾åˆ°ã€‚
+          metricï¼šè®¾ç½®è·¯ç”±è·³æ•°ã€‚
 
 
-# route ÃüÁîÌí¼ÓµÄÂ·ÓÉ£¬»úÆ÷ÖØÆô»òÕßÍø¿¨ÖØÆôºó¾ÍÃ»µôÁË£¬ÔÚlinuxÏÂÉèÖÃÓÀ¾ÃÂ·ÓÉµÄ·½·¨£º
-1.ÔÚ/etc/rc.localÀïÌí¼Ó
-2.ÔÚ/etc/sysconfig/networkÀïÌí¼Óµ½Ä©Î²
+# route å‘½ä»¤æ·»åŠ çš„è·¯ç”±ï¼Œæœºå™¨é‡å¯æˆ–è€…ç½‘å¡é‡å¯åå°±æ²¡æ‰äº†ï¼Œåœ¨linuxä¸‹è®¾ç½®æ°¸ä¹…è·¯ç”±çš„æ–¹æ³•ï¼š
+1.åœ¨/etc/rc.localé‡Œæ·»åŠ 
+2.åœ¨/etc/sysconfig/networké‡Œæ·»åŠ åˆ°æœ«å°¾
 3./etc/sysconfig/static-router :
 any net x.x.x.x/24 gw y.y.y.y
 
@@ -31,9 +31,9 @@ route del -host ip
 
 
 
-ÈôÊÇÒÑ¾­ÕıÈ·ÅäÖÃ¹ıIP£¬µ«Ïëµ÷ÕûÄ¬ÈÏÍø¹Ø£¬ÈçºÎ²Ù×÷ÄØ£¿
-¡¾µ÷ÕûÄ¬ÈÏÍø¹ØµÄÊµÀı¡¿
-²é¿´Â·ÓÉ£º
+è‹¥æ˜¯å·²ç»æ­£ç¡®é…ç½®è¿‡IPï¼Œä½†æƒ³è°ƒæ•´é»˜è®¤ç½‘å…³ï¼Œå¦‚ä½•æ“ä½œå‘¢ï¼Ÿ
+ã€è°ƒæ•´é»˜è®¤ç½‘å…³çš„å®ä¾‹ã€‘
+æŸ¥çœ‹è·¯ç”±ï¼š
 [root@test44 ~]# route -n
 Kernel IP routing table
 Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
@@ -41,8 +41,8 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 169.254.0.0     0.0.0.0         255.255.0.0     U     1003   0        0 em2
 0.0.0.0         10.0.200.128   0.0.0.0         UG    0      0        0 em2
 
-Ôö¼ÓÄ¬ÈÏÍø¹Ø
-[root@test44 ~]# route add default gw 10.0.200.2 && route -n 
+å¢åŠ é»˜è®¤ç½‘å…³
+[root@test44 ~]# route add default gw 10.0.200.2 && route -n
 Kernel IP routing table
 Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 10.0.200.0     0.0.0.0         255.255.255.0   U     0      0        0 em2
@@ -50,7 +50,7 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 0.0.0.0         10.0.200.2     0.0.0.0         UG    0      0        0 em2
 0.0.0.0         10.0.200.128   0.0.0.0         UG    0      0        0 em2
 
-Ä¬ÈÏÂ·ÓÉÖ»ÓĞÒ»Ìõ£¬Òò´ËÒªÉ¾³ı¾ÉµÄÒÑÊ§Ğ§µÄÄÇÌõÄ¬ÈÏÂ·ÓÉ
+é»˜è®¤è·¯ç”±åªæœ‰ä¸€æ¡ï¼Œå› æ­¤è¦åˆ é™¤æ—§çš„å·²å¤±æ•ˆçš„é‚£æ¡é»˜è®¤è·¯ç”±
 [root@test44 ~]# route del default gw 10.0.200.128 && route -n && ping qq.com
 Kernel IP routing table
 Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
@@ -58,12 +58,12 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 169.254.0.0     0.0.0.0         255.255.0.0     U     1003   0        0 em2
 0.0.0.0         10.0.200.2     0.0.0.0         UG    0      0        0 em2
 
-×îºó£¬¼ÇµÃ¸üĞÂÒ»ÏÂÅäÖÃÎÄ¼ş£º
+æœ€åï¼Œè®°å¾—æ›´æ–°ä¸€ä¸‹é…ç½®æ–‡ä»¶ï¼š
 [root@test44 ~]# sed -i 's/200.128/200.2/' /etc/sysconfig/network-scripts/ifcfg-em1 && cat /etc/sysconfig/network-scripts/ifcfg-em1
 
 
 
-É¾³ıµ¥ÌõÂ·ÓÉµÄ·½Ê½£º
+åˆ é™¤å•æ¡è·¯ç”±çš„æ–¹å¼ï¼š
 [root@test222 ~]# route -n
 Kernel IP routing table
 Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
@@ -90,15 +90,15 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 
 
 
-Èç¹ûÓĞ2¸öÍø¿¨eth0ºÍeth1£¬¶¼ÊÇstaticÅäÖÃÁËgateway£¬Ôò×îÖÕÉúĞ§µÄgatewayÊÇµÚ¶ş¸ögatewayÖĞÅäÖÃµÄ¡£
-´ËÊ±£¬¿ÉÒÔÔö¼ÓÒ»ÌõÂ·ÓÉ¹æÔò£¬
-ÀıÈç£¬µ÷ÕûÅäÖÃÎÄ¼ş¡°/etc/rc.local¡±£º
+å¦‚æœæœ‰2ä¸ªç½‘å¡eth0å’Œeth1ï¼Œéƒ½æ˜¯staticé…ç½®äº†gatewayï¼Œåˆ™æœ€ç»ˆç”Ÿæ•ˆçš„gatewayæ˜¯ç¬¬äºŒä¸ªgatewayä¸­é…ç½®çš„ã€‚
+æ­¤æ—¶ï¼Œå¯ä»¥å¢åŠ ä¸€æ¡è·¯ç”±è§„åˆ™ï¼Œ
+ä¾‹å¦‚ï¼Œè°ƒæ•´é…ç½®æ–‡ä»¶â€œ/etc/rc.localâ€ï¼š
 echo 'route add -net 10.0.96.0/20 eth0 >> /etc/rc.local
 
-»òÕß£¬µ÷ÕûÅäÖÃÎÄ¼ş¡°/etc/sysconfig/static-routes¡±£º
+æˆ–è€…ï¼Œè°ƒæ•´é…ç½®æ–‡ä»¶â€œ/etc/sysconfig/static-routesâ€ï¼š
 echo 'any net 10.0.96.0/20 eth0 >> /etc/sysconfig/static-routes
 
-ÀíÓÉÊÇ£º
+ç†ç”±æ˜¯ï¼š
 # cat /etc/init.d/network |grep static-routes --color -A 3
         # Add non interface-specific static-routes.
         if [ -f /etc/sysconfig/static-routes ]; then
@@ -107,12 +107,9 @@ echo 'any net 10.0.96.0/20 eth0 >> /etc/sysconfig/static-routes
            done
         fi
 
-Èç¹ûeth1ÊÇdhcp»ñÈ¡µÄ£¬Ôò¿ÉÒÔÖ¸¶¨gatewayÌí¼Óµ½ÎÄ¼ş£º
+å¦‚æœeth1æ˜¯dhcpè·å–çš„ï¼Œåˆ™å¯ä»¥æŒ‡å®šgatewayæ·»åŠ åˆ°æ–‡ä»¶ï¼š
 /etc/sysconfig/network
-¸ñÊ½ÊÇ£º
+æ ¼å¼æ˜¯ï¼š
 GATEWAY=10.0.100.1
-È»ºó£¬¿ÉÒÔÖØÆônetworkÊÔÊÔĞ§¹û£º
+ç„¶åï¼Œå¯ä»¥é‡å¯networkè¯•è¯•æ•ˆæœï¼š
 service network restart
-
-
-

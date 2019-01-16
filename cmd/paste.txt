@@ -1,18 +1,18 @@
-pasteµÄÓÃ·¨
+pasteä½¿ç”¨å°ç»“
 
-[root@server200-20 ~]# cat a.txt  
+[root@server200-20 ~]# cat a.txt
 1
 2
 3
 4
 5
-[root@server200-20 ~]# cat b.txt 
+[root@server200-20 ~]# cat b.txt
 a
 b
 c
 d
 e
-[root@server200-20 ~]# paste a.txt  b.txt 
+[root@server200-20 ~]# paste a.txt  b.txt
 1       a
 2       b
 3       c

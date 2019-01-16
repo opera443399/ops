@@ -1,23 +1,23 @@
-²ÎÊı -vµÄÓÃ·¨
+å‚æ•° -vçš„ç”¨æ³•
 
-Ó²Á´½Ó£º
+ç¡¬é“¾æ¥ï¼š
 
-[root@A home]# ln -v /home/kk/ss.sh /home    #¼ÓÉÏ²ÎÊıvºó£¬
+[root@A home]# ln -v /home/kk/ss.sh /home    #åŠ ä¸Šå‚æ•°våï¼Œ
 
-create hard link `/home/ss.sh' to `/home/kk/ss.sh' #»áÓÃÎÄ×ÖÏÔÊ¾Ô´ÎÄ¼şµ½Ä¿±êµÄÁ´½Ó
+create hard link `/home/ss.sh' to `/home/kk/ss.sh' #ä¼šç”¨æ–‡å­—æ˜¾ç¤ºæºæ–‡ä»¶åˆ°ç›®æ ‡çš„é“¾æ¥
 
 [root@A home]# ls
 
 apache  kk  oldboy  ss.sh
 
-[root@A home]# ln -vs /home/kk/ss.sh /home  #´´½¨Ãû×ÖÏàÍ¬µÄÈíÁ´½Ó
+[root@A home]# ln -vs /home/kk/ss.sh /home  #åˆ›å»ºåå­—ç›¸åŒçš„è½¯é“¾æ¥
 
-create symbolic link `/home/ss.sh' to `/home/kk/ss.sh' #»áÓÃÎÄ×ÖÏÔÊ¾Ô´ÎÄ¼şµ½Ä¿±êµÄÁ´½Ó
+create symbolic link `/home/ss.sh' to `/home/kk/ss.sh' #ä¼šç”¨æ–‡å­—æ˜¾ç¤ºæºæ–‡ä»¶åˆ°ç›®æ ‡çš„é“¾æ¥
 
-ln: creating symbolic link `/home/ss.sh' to `/home/kk/ss.sh': File exists  #Í¬Ê±Ò²³öÏÖÁË¼º´æÔÚÌáÊ¾
+ln: creating symbolic link `/home/ss.sh' to `/home/kk/ss.sh': File exists  #åŒæ—¶ä¹Ÿå‡ºç°äº†å·±å­˜åœ¨æç¤º
 
-ÈíÁ´½Ó
+è½¯é“¾æ¥
 
-[root@A home]# ln -vs /home/kk/ss.sh /home/dd  #¼ÓÉÏ²ÎÊıvºóµÄÈíÁ´½Ó
+[root@A home]# ln -vs /home/kk/ss.sh /home/dd  #åŠ ä¸Šå‚æ•°våçš„è½¯é“¾æ¥
 
-create symbolic link `/home/dd' to `/home/kk/ss.sh' #»áÓÃÎÄ×ÖÏÔÊ¾Ô´ÎÄ¼şµ½Ä¿±êµÄÁ´½Ó
+create symbolic link `/home/dd' to `/home/kk/ss.sh' #ä¼šç”¨æ–‡å­—æ˜¾ç¤ºæºæ–‡ä»¶åˆ°ç›®æ ‡çš„é“¾æ¥

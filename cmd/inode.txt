@@ -1,39 +1,39 @@
-inodeÕ¼ÓÃÒì³£ÎÊÌâ
+inodeå ç”¨å¼‚å¸¸é—®é¢˜
 
 
-±¨¾¯£ºFree inodes on /var (percentage) (linuxhost:vfs.fs.inode[/var,pfree]): 20 %
-¹ÊÕÏÔ­Òò£º/var/spool/postfix/maildrop Ğ¡ÎÄ¼şÌ«¶àÔì³ÉinodeË÷ÒıÊ¹ÓÃÍê
+æŠ¥è­¦ï¼šFree inodes on /var (percentage) (linuxhost:vfs.fs.inode[/var,pfree]): 20 %
+æ•…éšœåŸå› ï¼š/var/spool/postfix/maildrop å°æ–‡ä»¶å¤ªå¤šé€ æˆinodeç´¢å¼•ä½¿ç”¨å®Œ
 
-1£©²é¿´inodeÊ¹ÓÃ×´¿ö£»
+1ï¼‰æŸ¥çœ‹inodeä½¿ç”¨çŠ¶å†µï¼›
 # df -i
 /dev/sda3         985424 788777    196647   81% /var
 
-ÇĞ»»µ½Ä¿Â¼/var£¬¼ì²éÄÄ¸öÄ¿Â¼Õ¼ÓÃinode¶à
+åˆ‡æ¢åˆ°ç›®å½•/varï¼Œæ£€æŸ¥å“ªä¸ªç›®å½•å ç”¨inodeå¤š
 # find */ ! -type l |cut -d / -f 1 |uniq -c
-/var Ä¿Â¼ÏÂ£º   
+/var ç›®å½•ä¸‹ï¼š
  786362 spool
 
- /var/spool Ä¿Â¼ÏÂ£º
+ /var/spool ç›®å½•ä¸‹ï¼š
  786338 postfix
 /
-var/spool/postfix Ä¿Â¼ÏÂ£º 
+var/spool/postfix ç›®å½•ä¸‹ï¼š
  786301 maildrop
 
-2£©²é¿´/var/spool/postfix/maildropÊÇ·ñÓĞ·Ç³£¶àµÄĞ¡ÎÄ¼ş£»
-ÇåÀíĞ¡ÎÄ¼ş£º
-# cd /var/spool/postfix/maildrop£» ls | xargs rm -rf; 
-Ğ§¹û£º
+2ï¼‰æŸ¥çœ‹/var/spool/postfix/maildropæ˜¯å¦æœ‰éå¸¸å¤šçš„å°æ–‡ä»¶ï¼›
+æ¸…ç†å°æ–‡ä»¶ï¼š
+# cd /var/spool/postfix/maildropï¼› ls | xargs rm -rf;
+æ•ˆæœï¼š
 /dev/sda3         985424   2495    982929    1% /var
 
-½â¾ö¸ù±¾ÎÊÌâ£º
+è§£å†³æ ¹æœ¬é—®é¢˜ï¼š
 # vim /etc/crontab
-½«MAILTO=rootÌæ»»³ÉMAILTO=""
+å°†MAILTO=rootæ›¿æ¢æˆMAILTO=""
 # service crond restart
 
-Èç¹ûcronÓĞÊ²Ã´Ô­ÒòĞèÒª½«ÃüÁî½á¹û·¢Ò»·âÓÊ¼ş£¬ÄÇÃ´¾ÍÒª¿´MAILTOÕâ²¿·ÖÁË£¬Èç¹û¸øMAILTO¸³ÖµÁË£¬²¢ÇÒ²»ÊÇ¿Õ£¬ÄÇÃ´¾Í»á·¢¸øÕâ¸öÓÃ»§£»Èç¹ûÊÇ¿Õ£¬MAILTO=""£¬ÄÇ¾Í²»·¢ÈÎºÎÓÊ¼ş¡£Èç¹ûÃ»ÓĞ¶¨ÒåMAILTO£¬Ò²¾ÍÊÇËµcrontabÀïÃæÃ»ÓĞĞ´ÕâÒ»ĞĞ£¬ÄÇÃ´¾Í·¢¸øÕâ¸öcrontabµÄÖ÷ÈË¡£
+å¦‚æœcronæœ‰ä»€ä¹ˆåŸå› éœ€è¦å°†å‘½ä»¤ç»“æœå‘ä¸€å°é‚®ä»¶ï¼Œé‚£ä¹ˆå°±è¦çœ‹MAILTOè¿™éƒ¨åˆ†äº†ï¼Œå¦‚æœç»™MAILTOèµ‹å€¼äº†ï¼Œå¹¶ä¸”ä¸æ˜¯ç©ºï¼Œé‚£ä¹ˆå°±ä¼šå‘ç»™è¿™ä¸ªç”¨æˆ·ï¼›å¦‚æœæ˜¯ç©ºï¼ŒMAILTO=""ï¼Œé‚£å°±ä¸å‘ä»»ä½•é‚®ä»¶ã€‚å¦‚æœæ²¡æœ‰å®šä¹‰MAILTOï¼Œä¹Ÿå°±æ˜¯è¯´crontabé‡Œé¢æ²¡æœ‰å†™è¿™ä¸€è¡Œï¼Œé‚£ä¹ˆå°±å‘ç»™è¿™ä¸ªcrontabçš„ä¸»äººã€‚
 
-½øÒ»²½¼ì²é·¢ÏÖÊÇÄ³ÓÃ»§µÄcrontabÖ´ĞĞµÄ½Å±¾Ê§Ğ§£¬ÒÑÇåÀí¡£
+è¿›ä¸€æ­¥æ£€æŸ¥å‘ç°æ˜¯æŸç”¨æˆ·çš„crontabæ‰§è¡Œçš„è„šæœ¬å¤±æ•ˆï¼Œå·²æ¸…ç†ã€‚
 
-²Î¿¼£º
+å‚è€ƒï¼š
 http://www.ittang.com/2014/0115/13165.html
 http://linux.chinaunix.net/techdoc/system/2008/08/28/1028572.shtml

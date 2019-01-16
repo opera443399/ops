@@ -1,103 +1,102 @@
-iptables.�ű��ṹ
-����Ǳ�ָ�����нű���ѭ�Ľű��ṹ������в�ͬ�ڴ˵ĵط������ܾ����ҳ����ˣ�����������˵��ΪʲôҪ�������ֽṹ��
+iptables.脚本结构
+这就是本指南所有脚本遵循的脚本结构。如果有不同于此的地方，可能就是我出错了，除非我特意说明为什么要打破这种结构。
 
 
-Configuration ���� ������һ������ѡ����������ı����ڽű��л��õ��������κνű���shell-script���ĵ�һ���ֶ�������ѡ������
+Configuration ―― 首先是一个配置选项区，里面的变量在脚本中会用到。几乎任何脚本（shell-script）的第一部分都是配置选项区。
 
 
-Internet ���� �й�Internet���ӵ����á��������û���κ�Internet���ӣ���һ���־Ϳ�������ȥ��ע�⣬��������г����ģ���һ���ֿ��ܻ��������С�ڣ���Ȼ��������ֻ�����˼��������㹻Ӧ���������еĸ���Internet�����ˡ�
+Internet ―― 有关Internet连接的配置。如果我们没有任何Internet连接，这一部分就可以跳过去。注意，相比我们列出来的，这一部分可能会包含更多小节，虽然我们这里只有了了几个，但足够应对我们已有的各种Internet连接了。
 
 
-DHCP ���� ����ű��õ���DHCP�����Ǿ�Ҫ�ڴ�������Ӧ�����á�
+DHCP ―― 如果脚本用到了DHCP，我们就要在此添加相应的配置。
 
-PPPoE ���� �����ѽű�����PPPoE���ӣ���Ҫ�ڴ�������Ӧ�����á� 
+PPPoE ―― 如果想把脚本用于PPPoE连接，就要在此添加相应的配置。
 
-LAN ���� �������ǽ���о���������Ҫʹ������������ˡ��󲿷�����¶����õ��������Ϊ�������������Ǵ��ڵġ�
+LAN ―― 如果防火墙后有局域网，就要使用这里的配置了。大部分情况下都会用到这儿，因为局域网几乎总是存在的。
 
-DMZ ���� �ԷǾ�������DMZ zone�������á��󲿷ֽű������õ�������ã���Ϊ��Щ�ű���Ե���Ҫ��һЩ��ͨ�ļ�ͥ���磬��С��ҵ�����硣
+DMZ ―― 对非军事区（DMZ zone）的配置。大部分脚本不会用到这个设置，因为这些脚本针对的主要是一些普通的家庭网络，或小企业的网络。
 
-Localhost ���� ���أ�local-host�����й����á���Ȼ�Ұ�����д�ɱ�������ʽ����һ�㲻�ᱻ�ı䣬Ҳ��Ӧ����ʲô����Ҫ�ı����ǡ�
+Localhost ―― 本地（local-host）的有关设置。虽然我把它们写成变量的形式，但一般不会被改变，也不应该有什么理由要改变它们。
 
-iptables ���� �й�iptables�����á��󲿷�����£�����ֻ����һ������������ָ��iptables�����λ�á�
+iptables ―― 有关iptables的设置。大部分情况下，这里只设置一个变量，用来指向iptables程序的位置。
 
-Other ���� �������ʲô��Ϣ������Ӧ�ð����Ƿ�����Ӧ��С���ʵ��û����Ӧ��С�ڣ��ͷ�����ɡ�
+Other ―― 如果还有什么信息，首先应该把它们放在相应的小节里，实在没有相应的小节，就放这儿吧。
 
-Module loading ���� �ű�Ӧ��ά��һ��ģ���б�������Ϊ�����֣���һ���ְ��������ģ�飬ͬʱ�ڶ�����Ҫ��������Ҫ��ģ����б���
-
-
- ע�⣬��Щģ����ܻ���߰�ȫ�ԣ���Ϊ�����ߡ��ͻ�����ĳЩ���񣬻���һЩģ�鲻�Ǳ���ģ������ǿ���Ҳ���������б����������ڱ����У����Ѿ�ע����������⡣
- 
+Module loading ―― 脚本应该维护一个模块列表。它分为两部分，第一部分包含必需的模块，同时第二部分要包含不必要的模块的列表。
 
 
-Required modules ���� ����װ�ص��Ǳ�Ҫ��ģ�飬���ǿ��ܻ���߰�ȫ�Ի�Ϊ�����ߡ��ͻ�����ĳЩ����
-
-Non-required modules ���� �����г����ǲ���Ҫ��ģ�飬�������Ƕ���ע�͵��ˡ�������õ��������ṩ�Ĺ��ܣ��Ϳ����������ǡ�
-
-proc configuration ���� ������ĵ����й�procϵͳ�����á����һЩѡ���Ǳ���ģ����Ǿ���������������ǣ��Ͱ���ע�͵����󲿷����õ�proc���ö���������ˣ���ԶԶ����ȫ���ġ�
+ 注意，这些模块可能会提高安全性，或为管理者、客户添加某些服务，还有一些模块不是必需的，但它们可能也被加入了列表。不过，在本例中，我已经注意了这个问题。
 
 
-Required proc configuration ���� ������ʹ�ű����������������б����proc���ã���Ҳ���԰���һЩ����߰�ȫ�Ի�Ϊ�����ߡ��ͻ������ض������ѡ�
 
-Non-required proc configuration ���� �����ᵽ��ѡ��Ǳ���ģ���Ȼ���ǿ��ܺ����á���ˣ��Ұ����Ƕ�ע�͵��ˡ���Ȼ�����ﲢû�а�������������ѡ�
+Required modules ―― 这里装载的是必要的模块，它们可能会提高安全性或为管理者、客户增加某些服务。
 
-rules set up ���� ���ڣ�Ӧ�����ӹ����ˡ��Ұ����еĹ�����ȷ�ط��䵽�����������Ӧ��С��������Զ���Ĺ���д��ϵͳ�ڽ�����֮ǰ������ע����ȻҪд��ǰ���ˣ���Ϊ����Ҫ��������Ŷ�������⣬���ǰ�������iptables -L�����˳�������Ŵ˽ű���������ĳ���˳��ģ�����ע���������������ǲ鿴Ŷ����
+Non-required modules ―― 这里列出的是不必要的模块，所以它们都被注释掉了。如果你用到了它们提供的功能，就可以启用它们。
 
-
-Filter table ���� ������filter��������������Ҫ���ò��ԡ�
+proc configuration ―― 这儿关心的是有关proc系统的设置。如果一些选项是必须的，我们就启用它，如果不是，就把它注释掉。大部分有用的proc配置都列在这儿了，但远远不是全部的。
 
 
-Set policies ���� Ϊ����ϵͳ�ڽ��������ò��ԡ�ͨ�����һ����� DROP����������ʹ�õķ���������ں�����ȷ�ظ���ACCEPT�����������ǾͿ��Է�����ų��������ǲ���������ʹ�õĶ˿ڡ�
+Required proc configuration ―― 包含了使脚本能正常工作的所有必需的proc配置，它也可以包含一些能提高安全性或为管理者、客户增加特定服务的选项。
 
-Create user specified chains ���� �����ﴴ�������Ժ���õ����Զ����������û�����Ƚ����ã������ǲ���ʹ�����ǵģ���������Ҫ����ؽ�����Щ����
+Non-required proc configuration ―― 这里提到的选项不是必需的，虽然它们可能很有用。因此，我把它们都注释掉了。当然，这里并没有包括所有这样的选项。
 
-Create content in user specified chains ���� �����Զ�������ʹ�õĹ�����ʵ��Ҳ�����ں����ĳ���ط�д��Щ����֮����д�������Ψһ��ԭ���������������������ý�Щ���������ǲ鿴��
-
-INPUT chain ���� ����INPUT���Ĺ���
+rules set up ―― 现在，应该添加规则了。我把所有的规则都明确地分配到了与表、链相应的小节里。所有自定义的规则都写在系统内建的链之前（译者注：当然要写在前面了，因为后面要调用它们哦）。另外，我是按照命令iptables -L输出的顺序来安排此脚本里表与链的出现顺序的（译者注：这样，便于我们查看哦）。
 
 
- �����￪ʼ���Ҿ�����ѭiptables -L�������ʽ����������ģ���������Ψһԭ�����Ϊ�˱����Ķ������������
- 
-
-FORWARD chain ���� ΪFORWARD����������
-
-OUTPUT chain ���� ΪOUTPUT������������ʵ��������Ҫ���Ĺ�����١�
-
-nat table ���� �ڴ�����filter��֮�󣬸�����nat���ˡ���������������һ��ԭ��ġ����ȣ����ǲ���̫��ش�ת�����ƣ�����ע��ע�⣬filter���趨���ǹ��˻��ƣ�������ת������NAT���ܣ���Ϊ���ǿ��ܵ������ݻ��ڴ����ʱ�䣨Ҳ����������ʱ�̣����Ǵ���NAT�������˹���û�����У�ͨ������ǽ�����У��Ұ�nat��������Χ��filter����һ���㡣Ҳ����˵��filter���Ǻ��ģ� nat�������ⲿ��һ���㣬mangle���ǵڶ��㡣��ĳЩ�۵�������������е㲻�ԣ���Ҳ�˾Ų���ʮ�ˡ�
+Filter table ―― 首先是filter表，而且我们先要设置策略。
 
 
-Set policies ���� ��filterһ���������������ò��ԡ�һ��˵����ȱʡ�Ĳ��ԣ���ACCEPT���ͺܺá��������Ӧ�ñ��������κι��ˣ���������Ҳ��Ӧ������������κΰ�����Ϊ�����Ǽ�������������˵�����ܻᷢ��һЩ����Ӧ�������顣�ҰѲ�����ΪACCEPT����Ϊû��ʲôԭ����������
+Set policies ―― 为所有系统内建的链设置策略。通常，我会设置 DROP，对于允许使用的服务或流会在后面明确地给以ACCEPT。这样，我们就可以方便地排除所有我们不想让人们使用的端口。
 
-Create user specified chains ���� ���������nat�����õ����Զ�������һ������£���û���κι���Ҫ��������������һ��Ǳ��������С�ڣ��Է���һ���ˡ�ע�⣬�ڱ�ϵͳ�ڽ�������֮ǰһ��Ҫ������Ӧ���Զ�������
+Create user specified chains ―― 在这里创建所有以后会用到的自定义链。如果没有事先建立好，后面是不能使用它们的，所以我们要尽早地建立这些链。
 
-Create content in user specified chains ���� �����Զ������Ĺ���
+Create content in user specified chains ―― 建立自定义链里使用的规则。其实你也可以在后面的某个地方写这些规则，之所以写在这儿，唯一的原因是这样做规则和链会离得近些，便于我们查看。
 
-PREROUTING chain ���� Ҫ�԰���DNAT�����Ļ�����Ҫ�õ������ˡ��󲿷ֽű������õ��������������ǰ�����Ĺ���ע�͵��ˣ���Ϊ���ǲ����ڲ��˽���������¾��ڷ���ǽ��˺��һ������ӣ��������ǵľ����������в����Ȼ��Ҳ��һЩ�ű�Ĭ��ʹ��������������Ϊ��Щ�ű���Ŀ�ľ����ṩ�����ķ���
-
-POSTROUTING chain ���� ���ʹ��SNAT��������Ҫ�ڴ˽��������������һ��������������Ҫ����ǽ�ı��������Ҿ������������������д�˽ű��ģ���������ű���ʹ�õ� POSTROUTING�����൱ʵ�õġ��󲿷�����£����ǻ�ʹ��SNAT target������Щ�������PPPoE�����ǲ��ò�ʹ��MASQUERADE target��
-
-OUTPUT chain ���� ����ʲô�ű������������õ������������Ϊֹ���һ�û���κκõ�����ʹ�������������ʲô���������˵Ļ����鷳�����Ӧ�Ĺ���Ҳ����һ�ݣ��һ�����ӵ���ָ����ġ�
-
-mangle table ���� ���Ҫ���ľ��Ǵ���mangle���ˡ�ͨ�����Ҳ���ʹ�����������Ϊһ������£������ᱻ�κ���Ҫ��������������ʲô�������Ҫ������Ϊ������һ�����Ӻ�Ķ�̨���ӣ�����Ҫͳһ����TTL��TOS�ȡ�������ű���˱��ǿհ׵ġ����ڴ�ָ���л����и�СС������˵����mangle�����ô���
+INPUT chain ―― 创建INPUT链的规则。
 
 
-Set policies ���� ���ò��ԡ���������κ�nat��������ȫ��ͬ�����ﲻӦ�������ˣ�Ҳ��Ӧ�ö����κΰ������κνű����Ҷ������mangle���Ĳ�����Ϊ������ֵ��Ҳ����������������
-
-Create user specified chains ���� �����Զ��������Ҽ��������õ������������û�н����κι��򡣱�����С�ڣ�ֻ���ѱ����á�
-
-Create content in user specified chains ���� �����Զ������Ĺ���
-
-PREROUTING ���� ��ָ�ϵ����нű���δ�ڴ�����������
-
-INPUT chain ���� ��ָ�ϵ����нű���δ�ڴ�����������
-
-FORWARD chain ���� ��ָ�ϵ����нű���δ�ڴ�����������
-
-OUTPUT chain ���� ��ָ�ϵ����нű���δ�ڴ�����������
-
-POSTROUTING chain ���� ��ָ�ϵ����нű���δ�ڴ�����������
-
-��Ӧ�ÿ��Խ���ϸ�ؽ���ÿ���ű��Ľṹ���������Լ�����ΪʲôҪʹ������ṹ�ˡ�
+ 从这里开始，我就是遵循iptables -L的输出格式来创建规则的，这样做的唯一原因就是为了便于阅读，避免混淆。
 
 
- ע�⣬�����������ʵ���Ƿǳ��򵥵ģ�Ӧ�ñ�����һ��ժҪ������Ҫ�ؽ����˽ű�ΪʲôҪ����������ɢ�Ľṹ��д��ǧ��ע�⣬�ҿ�û��˵�����ֽṹ��Ψһ�ġ���õġ�
- 
+FORWARD chain ―― 为FORWARD链创建规则。
+
+OUTPUT chain ―― 为OUTPUT链创建规则。其实，在这里要建的规则很少。
+
+nat table ―― 在处理完filter表之后，该设置nat表了。我们这样做是有一定原因的。首先，我们不想太早地打开转发机制（译者注：注意，filter表设定的是过滤机制，而不是转发）和NAT功能，因为它们可能导致数据会在错误的时间（也就是这样的时刻：我们打开了NAT，但过滤规则还没有运行）通过防火墙。还有，我把nat表看作是围绕filter表的一个层。也就是说，filter表是核心， nat表是它外部的一个层，mangle表是第二层。从某些观点来看，这可能有点不对，但也八九不离十了。
+
+
+Set policies ―― 与filter一样，我们先来设置策略。一般说来，缺省的策略，即ACCEPT，就很好。这个表不应该被用来做任何过滤，而且我们也不应该在这儿丢弃任何包，因为对我们假设的网络情况来说，可能会发生一些难以应付的事情。我把策略设为ACCEPT，因为没有什么原因不这样做。
+
+Create user specified chains ―― 在这儿创建nat表会用到的自定义链。一般情况下，我没有任何规则要在这儿建立，但我还是保留了这个小节，以防万一罢了。注意，在被系统内建链调用之前一定要建好相应的自定义链。
+
+Create content in user specified chains ―― 建立自定义链的规则。
+
+PREROUTING chain ―― 要对包做DNAT操作的话，就要用到此链了。大部分脚本不会用到这条链，或者是把里面的规则注释掉了，因为我们不想在不了解它的情况下就在防火墙上撕开一个大口子，这会对我们的局域网造成威胁。当然，也有一些脚本默认使用了这条链，因为那些脚本的目的就是提供这样的服务。
+
+POSTROUTING chain ―― 如果使用SNAT操作，就要在此建立规则。你可能有一个或多个局域网需要防火墙的保护，而我就是依据这样的情况来写此脚本的，所以这个脚本中使用的 POSTROUTING链是相当实用的。大部分情况下，我们会使用SNAT target，但有些情况，如PPPoE，我们不得不使用MASQUERADE target。
+
+OUTPUT chain ―― 不管什么脚本都几乎不会用到这个链。迄今为止，我还没有任何好的理由使用它，如果你有什么理由用它了的话，麻烦你把相应的规则也给我一份，我会把它加到本指南里的。
+
+mangle table ―― 最后要做的就是处理mangle表了。通常，我不会使用这个表，因为一般情况下，它不会被任何人要到，除非他们有什么特殊的需要，比如为了隐藏一条连接后的多台机子，我们要统一设置TTL或TOS等。在这个脚本里，此表是空白的。但在此指南中还是有个小小的例子说明了mangle表的用处。
+
+
+Set policies ―― 设置策略。这里的情形和nat表几乎完全相同。这里不应该做过滤，也不应该丢弃任何包。在任何脚本里我都不会把mangle表的策略设为其他的值，也不鼓励你这样做。
+
+Create user specified chains ―― 建立自定义链。我几乎不会用到这个链，所以没有建立任何规则。保留此小节，只是已备后用。
+
+Create content in user specified chains ―― 建立自定义链的规则。
+
+PREROUTING ―― 本指南的所有脚本都未在此链建立规则。
+
+INPUT chain ―― 本指南的所有脚本都未在此链建立规则。
+
+FORWARD chain ―― 本指南的所有脚本都未在此链建立规则。
+
+OUTPUT chain ―― 本指南的所有脚本都未在此链建立规则。
+
+POSTROUTING chain ―― 本指南的所有脚本都未在此链建立规则。
+
+这应该可以较详细地解释每个脚本的结构是怎样的以及它们为什么要使用这个结构了。
+
+
+ 注意，上面的描述其实还是非常简单的，应该被看作一个摘要，它简要地解释了脚本为什么要按照这种松散的结构来写。千万注意，我可没有说过这种结构是唯一的、最好的。

@@ -1,8 +1,8 @@
 
-Ö¸¶¨Ê±¼äµÄ¼Æ»®ÈÎÎñ¡£
+æŒ‡å®šæ—¶é—´çš„è®¡åˆ’ä»»åŠ¡ã€‚
 # at 7pm + 1 day
 at> /bin/sync
 at> /bin/sync
 at> /sbin/shutdown -h now
-at> <EOT>  <-°´ÏÂ£º<ctrl + D>
+at> <EOT>  <-æŒ‰ä¸‹ï¼š<ctrl + D>
 job 3 at 2013-11-16 19:00
