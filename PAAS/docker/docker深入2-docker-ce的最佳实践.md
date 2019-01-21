@@ -407,6 +407,21 @@ opera443399/whoami          0.7                  160ed79ce86f        5 weeks ago
 已经试图反馈给[阿里云](https://github.com/aliyun/aliyun-cli/issues/36)，如果进展，后续更新。
 
 
+**在 swarm mode 中 update service 时遇到异常的问题**
+---
+
+执行 update 操作时，失败(尽管swarm会在数秒后自动再次调度资源来修正问题)，排查时得到如下报错信息：
+```
+"starting container failed: OCI runtime create failed: container_linux.go:348: starting container process caused "process_linux.go:301: running exec setns process for init caused \"exit status 40\"": unknown"
+```
+
+未查明具体原因，可能原因是：
+```
+痕迹1: docker service update 操作完成后，会有很多 'Exited' 状态的 container 遗留下来(观察时，3节点的集群存在这样的container的数量2000+)，可能占用了部分资源。
+通过清理后：
+docker container prune --filter "until=24h" --force
+```
+
 
 
 zyxw、参考
