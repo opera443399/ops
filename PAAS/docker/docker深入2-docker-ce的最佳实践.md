@@ -1,12 +1,13 @@
-docker深入2-docker-ce的最佳实践
-2018/11/15
+# docker深入2-docker-ce的最佳实践
+
+2019/1/22
 
 > 注1：凡是本人整理的，开源产品相关的文章中，标题党写明了“最佳实践”的文章，要特别注意，本人总结的文字并未涉及安全方面的指导，请参考官方的指导教程，因为安全是一个有深度的话题，且安全是相对而言的，并不是个容易的话题。
 
 > 注2：本人整理的所有知识库，基础内容占比多，因为在学习的路上，总是容易卡在某个点上，希望能对路过的你有点帮助即可，力求普及知识，而非教科书一般的按步骤12345来指导即可上生产环境，请自行总结，走出自己的路，加油。
 
 
-### 目标
+## 目标
 
 部署 docker-ce 服务的最佳实践（持续更新）
 
@@ -19,10 +20,9 @@ docker深入2-docker-ce的最佳实践
 在[这里](https://github.com/docker/docker-ce/releases)查看版本
 
 
-### 部署 docker
+## 准备 docker 服务
 
-**安装**
----
+### 1. 安装
 
 ```bash
 # yum仓库配置
@@ -48,12 +48,11 @@ systemctl start docker
 # 重启服务
 systemctl daemon-reload
 systemctl restart docker
-
 ```
 
 
-**配置**
----
+### 2. 配置文件
+
 推荐配置如下内容：
 - 存储驱动
 - 日志
@@ -67,8 +66,10 @@ linux 上默认没有配置文件，需要创建：
 `mkdir -p /etc/docker`
 
 
-**配置存储**
-###### overlay 驱动(以 CentOS 最为典型)
+### 3. 存储驱动的选择
+
+#### 3.1 overlay 驱动(以 CentOS 最为典型)
+
 ```bash
 tee /etc/docker/daemon.json <<-'EOF'
 {
@@ -82,12 +83,14 @@ tee /etc/docker/daemon.json <<-'EOF'
 }
 EOF
 ```
+
 > 注：针对 自定义存储目录，使用 "graph": "/mnt/docker-data"
 [参考文档](https://docs.docker.com/engine/admin/systemd/#start-automatically-at-system-boot)
 
 
 
-###### overlay2 驱动(文件存储，以 Ubuntu 最为典型)
+#### 3.2 overlay2 驱动(文件存储，以 Ubuntu 最为典型)
+
 ```bash
 tee /etc/docker/daemon.json <<-'EOF'
 {
@@ -104,6 +107,7 @@ tee /etc/docker/daemon.json <<-'EOF'
 }
 EOF
 ```
+
 > 注：针对 centos 系统和 docker-ce 版本，使用 `overlay2.override_kernel_check=true`
 [参考文档](https://docs.docker.com/engine/userguide/storagedriver/overlayfs-driver/#configure-docker-with-the-overlay-or-overlay2-storage-driver)
 
@@ -111,7 +115,8 @@ EOF
 
 
 
-###### DeviceMapper 驱动(块存储)
+#### 3.3 DeviceMapper 驱动(块存储)
+
 ```bash
 yum install -y yum-utils device-mapper-persistent-data lvm2
 
@@ -139,30 +144,38 @@ EOF
 [参考文档](https://docs.docker.com/engine/userguide/storagedriver/device-mapper-driver/#configure-direct-lvm-mode-for-production)
 
 
-**配置其他特性**
-###### 激活 metrics 功能
+### 4. 配置其他特性
+
+#### 4.1 激活 metrics 功能
+
 ```bash
 # cat /etc/docker/daemon.json
 {
   "metrics-addr" : "0.0.0.0:9323",
   "experimental" : true,
-  ...
+  (omited..)
 }
+
+# curl -s 127.0.0.1:9323/metrics
+(omited..)
 ```
 
 
-###### 定义 cgroupdriver
+#### 4.2 定义 cgroupdriver
+
 ```bash
 # cat /etc/docker/daemon.json
 {
-  ...
+  (omited..)
   "exec-opts": ["native.cgroupdriver=cgroupfs"],
-  ...
+  (omited..)
 }
 ```
 
-**配置示例**
-##### centos7 下的典型配置示范
+
+### 5. 完整的配置示例
+
+#### 5.1 实例 - centos7
 ```bash
 # cat /etc/docker/daemon.json
 {
@@ -180,10 +193,10 @@ EOF
 ```
 
 
-### 常用技巧
+## swarm mode 集群常用操作示范
 
-##### 如何在 swarm mode 中使用自定义的网络
----
+### 1. 网络
+#### 如何在 swarm mode 中使用自定义的网络
 
 用途：处于同一个 overlay 网络中的服务，互相之间可以通过服务名称来访问
 ```
@@ -195,113 +208,9 @@ docker service create \
     --network=my-network \
     --publish 11111:80 \
     your-private-registry/your-ns/whoami:0.9
-
 ```
 
-##### 使用 go 模版来获取指定内容
----
-
-例如，获取所有 overlay 网络的 subnet 信息
-```bash
-docker network inspect $(docker network ls -f driver='overlay' -q) \
---format='{{.Name}} -> {{if .IPAM.Config}}{{(index .IPAM.Config 0).Subnet}}{{else}}null{{end}}' |sort -k2
-```
-
-
-##### 使用 `labels` 和 `constraint` 来调度容器
----
-* 给 node 打标签
-```bash
-##### 增加标签
-docker node update --label-add 'deploy.env=ops' worker1
-docker node update --label-add 'deploy.env=dev' worker2
-docker node update --label-add 'deploy.env=dev' worker3
-docker node update --label-add 'deploy.env=qa' worker4
-docker node update --label-add 'deploy.env=qa' worker5
-
-for i in `seq 1 5`; do
-  docker node inspect -f "{{.Description.Hostname}} -> {{.Spec.Labels}}" worker$i
-done
-
-##### 移除标签
-docker node update --label-rm 'deploy.env' worker5
-
-```
-
-* 更新服务，加上调度策略(注意：每执行一次 `--constraint-add` 将增加一个标签)
-```bash
-##### 批量查看一组 service 的调度策略
-for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
-  echo "[+] 查看 $h 的调度策略"
-  docker service inspect -f "{{.Spec.TaskTemplate.Placement.Constraints}}" $h |grep 'node.labels.deploy.env' \
-  && echo '' \
-  || echo 'x'
-done
-
-##### 批量更新一组 service 的调度策略
-for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
-  echo "[+] 更新 $h 的调度策略"
-  docker service inspect -f "{{.Spec.TaskTemplate.Placement.Constraints}}" $h |grep 'node.labels.deploy.env' \
-  && echo '' \
-  || docker service update --with-registry-auth --detach=false --constraint-add "node.labels.deploy.env==test" $h
-done
-
-##### 移除标签(如果有多个标签，可以重复使用 `--constraint-rm` 指令)
-docker service update --with-registry-auth --detach=false --constraint-rm "node.labels.deploy.env==dev" svc1
-
-```
-
-##### 更新 service 的资源限制
----
-
-```bash
-# 批量查看一组 service 的 `Resource`
-for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
-  echo "[+] 查看 $h 的资源限制"
-  docker service inspect -f "NanoCPUs={{.Spec.TaskTemplate.Resources.Limits.NanoCPUs}}, MemoryBytes={{.Spec.TaskTemplate.Resources.Limits.MemoryBytes}}" $h
-done
-
-# 批量更新一组 service 的 Resource
-for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
-  echo "[+] 更新 $h 的资源限制"
-  docker service update --with-registry-auth --detach=false --limit-cpu 0.75 --limit-memory 500m $h
-done
-```
-
-##### 更新 service 的环境变量
----
-
-```bash
-# 批量查看一组 service 的 环境变量
-for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
-  echo "[+] 查看 $h 的环境变量"
-  docker service inspect -f "{{.Spec.TaskTemplate.ContainerSpec.Env}}" $h
-done
-
-# 批量更新一组 service 的环境变量
-for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
-  echo "[+] 更新 $h 的环境变量"
-  docker service update --with-registry-auth --detach=false --env-add foo=bar $h
-done
-```
-
-
-##### 移除 swarm node 的姿势
----
-
-```bash
-# 请参考如下顺序来执行，否则可能会有多个 node id 信息遗留
-# curl -s 127.0.0.1:9323/metrics |grep 'swarm_node_info' 可以检查
-[管理节点]# docker node demote vuwwcanp1ma14g8m3wmlp5umj
-[被移除的节点]# docker swarm leave
-[被移除的节点]# systemctl restart docker
-[管理节点]# docker node rm vuwwcanp1ma14g8m3wmlp5umj
-
-```
-
-
-##### 自定义 docker_gwbridge 的网段
----
+#### 自定义 docker_gwbridge 的网段
 
 ```bash
 gwbridge_users=$(docker network inspect --format '{{range $key, $val := .Containers}} {{$key}}{{end}}' docker_gwbridge | \
@@ -317,13 +226,164 @@ docker network create  \
 -o com.docker.network.bridge.enable_icc=false \
 -o com.docker.network.bridge.name=docker_gwbridge \
 docker_gwbridge
-
 ```
 
 
-### FAQ
-**在 swarm mode 中使用私有镜像仓库时遇到的问题**
----
+### 2. 格式化输出
+
+#### 使用 go 模版来获取指定内容
+
+例如，获取所有 overlay 网络的 subnet 信息
+```bash
+docker network inspect $(docker network ls -f driver='overlay' -q) \
+--format='{{.Name}} -> {{if .IPAM.Config}}{{(index .IPAM.Config 0).Subnet}}{{else}}null{{end}}' |sort -k2
+```
+
+
+### 3. 管理 - node
+
+#### 使用 `labels` 和 `constraint` 来调度容器
+
+* 给 node 打标签
+```bash
+##### 增加标签
+docker node update --label-add 'deploy.env=ops' worker1
+docker node update --label-add 'deploy.env=dev' worker2
+docker node update --label-add 'deploy.env=dev' worker3
+docker node update --label-add 'deploy.env=qa' worker4
+docker node update --label-add 'deploy.env=qa' worker5
+
+for i in `seq 1 5`; do
+  docker node inspect -f "{{.Description.Hostname}} -> {{.Spec.Labels}}" worker$i
+done
+
+##### 移除标签
+docker node update --label-rm 'deploy.env' worker5
+```
+
+#### 移除 swarm node 的姿势
+
+```bash
+# 请参考如下顺序来执行，否则可能会有多个 node id 信息遗留
+# curl -s 127.0.0.1:9323/metrics |grep 'swarm_node_info' 可以检查
+[管理节点]# docker node demote vuwwcanp1ma14g8m3wmlp5umj
+[被移除的节点]# docker swarm leave
+[被移除的节点]# systemctl restart docker
+[管理节点]# docker node rm vuwwcanp1ma14g8m3wmlp5umj
+```
+
+
+### 4. 管理 - service
+
+#### 调度策略(Constraint)
+
+```bash
+##### 查看
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 查看 $h 的调度策略"
+  docker service inspect -f "{{.Spec.TaskTemplate.Placement.Constraints}}" $h |grep 'node.labels.deploy.env' \
+  && echo '' \
+  || echo 'x'
+done
+
+##### 更新
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 更新 $h 的调度策略"
+  docker service inspect -f "{{.Spec.TaskTemplate.Placement.Constraints}}" $h |grep 'node.labels.deploy.env' \
+  && echo '' \
+  || docker service update --with-registry-auth --detach=false --constraint-add "node.labels.deploy.env==test" $h
+done
+
+##### 移除
+docker service update --with-registry-auth --detach=false --constraint-rm "node.labels.deploy.env==dev" svc1
+```
+
+#### 资源限制(Resource Limit)
+
+```bash
+# 查看
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 查看 $h 的资源限制"
+  docker service inspect -f "NanoCPUs={{.Spec.TaskTemplate.Resources.Limits.NanoCPUs}}, MemoryBytes={{.Spec.TaskTemplate.Resources.Limits.MemoryBytes}}" $h
+done
+
+# 更新
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 更新 $h 的资源限制"
+  docker service update --with-registry-auth --detach=false --limit-cpu 0.75 --limit-memory 500m $h
+done
+```
+
+#### 环境变量(Env)
+
+```bash
+# 查看
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 查看 $h 的环境变量"
+  docker service inspect -f "{{.Spec.TaskTemplate.ContainerSpec.Env}}" $h
+done
+
+# 更新
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 更新 $h 的环境变量"
+  docker service update --with-registry-auth --detach=false --env-add foo=bar $h
+done
+
+# 移除
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 移除 $h 的环境变量"
+  docker service update --with-registry-auth --detach=false --env-rm foo $h
+done
+```
+
+
+#### 容器标签(container labels)
+
+```bash
+# 查看
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 查看 $h 的标签"
+  docker service inspect -f "{{.Spec.TaskTemplate.ContainerSpec.Labels}}" $h
+done
+
+# 更新
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 更新 $h 的标签"
+  svc_name=$(echo $h |awk -F'-' '{print $NF}')
+  docker service update --with-registry-auth --detach=false \
+    --container-label-add "aliyun.logs.demo-stdout=stdout" \
+    --container-label-add "aliyun.logs.demo-file=/data/server/demo/logs/${svc_name}_*.log" $h
+done
+
+# 移除
+for h in $(docker service ls |grep 'dev-' |awk '{print $2}' |sort); do
+  echo "[+] 移除 $h 的标签"
+  docker service update --with-registry-auth --detach=false \
+    --container-label-rm "aliyun.logs.demo-stdout" \
+    --container-label-rm "aliyun.logs.demo-file" $h
+done
+```
+
+#### 更新 service 的镜像
+
+```bash
+docker service update --with-registry-auth --detach=false portainer-agent --image portainer/agent:1.2.0
+docker service update --with-registry-auth --detach=false portainer --image portainer/portainer:1.20.0
+docker service ls |grep portainer
+```
+
+#### 查看 service 错误信息
+
+```bash
+docker service ps --no-trunc --format "{{.Node}}: {{.Error}}" dev-demo
+```
+
+
+
+## FAQ
+
+### 在 swarm mode 中使用私有镜像仓库时遇到的问题
+
 image xxx could not be accessed on a registry to record its digest. Each node will access xxx independently, possibly leading to different nodes running different versions of the image.
 
 执行下面的指令时：
@@ -335,8 +395,8 @@ docker service update
 `--with-registry-auth`
 
 
-**在 swarm mode 中挂载的数据卷的目录中存在软链接目录时遇到的问题**
----
+### 在 swarm mode 中挂载的数据卷的目录中存在软链接目录时遇到的问题
+
 在容器中，访问挂载卷中的路径，出现如下异常的场景：
 ```bash
 ##### 创建 service 的指令：
@@ -360,8 +420,7 @@ lrwxrwxrwx  1 demo1  demo1    11 Jul 30 10:43 logs -> /data1/logs
 请注意检查挂载的数据卷中是否存在软链接，可替换为完整的真实路径。
 
 
-**使用阿里云 Docker Hub 镜像站点和 latest 这个 tag 带来的问题**
----
+### 使用阿里云 Docker Hub 镜像站点和 latest 这个 tag 带来的问题
 
 > 注1：拉取镜像时，不推荐使用 latest 这个 tag 来拉取，否则可能拉取到旧的镜像，建议指定明确的版本号。
 
@@ -407,15 +466,14 @@ opera443399/whoami          0.7                  160ed79ce86f        5 weeks ago
 已经试图反馈给[阿里云](https://github.com/aliyun/aliyun-cli/issues/36)，如果进展，后续更新。
 
 
-**在 swarm mode 中 update service 时遇到异常的问题**
----
+### 在 swarm mode 中 update service 时遇到异常的问题
 
 执行 update 操作时，失败(尽管swarm会在数秒后自动再次调度资源来修正问题)，排查时得到如下报错信息：
 ```
 "starting container failed: OCI runtime create failed: container_linux.go:348: starting container process caused "process_linux.go:301: running exec setns process for init caused \"exit status 40\"": unknown"
 ```
 
-未查明具体原因，可能原因是：
+未查明具体原因，可能原因是，还在跟踪中：
 ```
 痕迹1: docker service update 操作完成后，会有很多 'Exited' 状态的 container 遗留下来(观察时，3节点的集群存在这样的container的数量2000+)，可能占用了部分资源。
 通过清理后：
@@ -424,8 +482,7 @@ docker container prune --filter "until=24h" --force
 
 
 
-zyxw、参考
----
+## 参考
 1. [systemd](https://docs.docker.com/engine/admin/systemd/)
 2. [storagedriver](https://docs.docker.com/engine/userguide/storagedriver)
 3. [Docker CE 镜像源站](https://yq.aliyun.com/articles/110806)
