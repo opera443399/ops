@@ -8,16 +8,16 @@ https://nodejs.org/zh-cn/
 
 下载稳定版本到 mac 下安装即可。
 
-为了加速安装过程，安装 cnpm 来替代 npm
+为了加速安装过程，设置仓库
 ```bash
-$ sudo npm install -g cnpm --registry=https://registry.npm.taobao.org
+npm config set registry https://registry.npm.taobao.org --global
 
 ```
 
 
 ### React 的项目初始化工具
 ```bash
-$ sudo cnpm install -g create-react-app
+$ sudo npm install -g create-react-app
 $ npx create-react-app my-app
 $ cd my-app
 $ npm start
