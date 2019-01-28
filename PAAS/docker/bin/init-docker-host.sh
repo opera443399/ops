@@ -30,7 +30,7 @@ cat <<'_EOF' > /usr/local/bin/docker-cleanup.sh
 #
 # 0 3 * * * sh -xe /usr/local/bin/docker-cleanup.sh >/dev/null 2>&1 &
 
-docker image prune --filter "until=24h" --force
+docker image prune -a --filter "until=24h" --force
 
 _EOF
 chmod +x /usr/local/bin/docker-cleanup.sh
